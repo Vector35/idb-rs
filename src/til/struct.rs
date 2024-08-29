@@ -16,7 +16,11 @@ pub enum Struct {
     },
 }
 impl Struct {
-    pub(crate) fn new(til: &TILSectionHeader, value: StructRaw, fields: Option<Vec<String>>) -> anyhow::Result<Self> {
+    pub(crate) fn new(
+        til: &TILSectionHeader,
+        value: StructRaw,
+        fields: Option<Vec<String>>,
+    ) -> anyhow::Result<Self> {
         match value {
             StructRaw::Ref {
                 ref_type,
@@ -97,7 +101,11 @@ pub struct StructMember {
 }
 
 impl StructMember {
-    fn new(til: &TILSectionHeader, name: Option<String>, m: StructMemberRaw) -> anyhow::Result<Self> {
+    fn new(
+        til: &TILSectionHeader,
+        name: Option<String>,
+        m: StructMemberRaw,
+    ) -> anyhow::Result<Self> {
         Ok(Self {
             name,
             member_type: Type::new(til, m.0, None)?,

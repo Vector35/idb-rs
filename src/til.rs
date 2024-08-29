@@ -1,3 +1,6 @@
+pub mod array;
+pub mod bitfield;
+pub mod r#enum;
 /// The u8 values used to describes the type information records in IDA.
 ///
 /// The recommended way of using type info is to use the [tinfo_t] class.
@@ -9,14 +12,11 @@
 /// NOTE: to work with the types of instructions or data in the database,
 /// use `get_tinfo()`/`set_tinfo()` and similar functions.
 pub mod flag;
-pub mod section;
 pub mod function;
-pub mod array;
+pub mod pointer;
+pub mod section;
 pub mod r#struct;
 pub mod union;
-pub mod r#enum;
-pub mod pointer;
-pub mod bitfield;
 
 use std::io::{BufRead, Read};
 use std::num::NonZeroU8;
@@ -304,11 +304,13 @@ impl Basic {
                     BTMT_SIGNED => Some(true),
                     BTMT_UNSIGNED => Some(false),
                     // special case for char
-                    BTMT_CHAR => return match bt_int {
-                        BT_INT8 => Ok(Self::Char),
-                        BT_INT => Ok(Self::SegReg),
-                        _ => Err(anyhow!("Reserved use of tf_int::BTMT_CHAR {:x}", btmt)),
-                    },
+                    BTMT_CHAR => {
+                        return match bt_int {
+                            BT_INT8 => Ok(Self::Char),
+                            BT_INT => Ok(Self::SegReg),
+                            _ => Err(anyhow!("Reserved use of tf_int::BTMT_CHAR {:x}", btmt)),
+                        }
+                    }
                     _ => unreachable!(),
                 };
                 let bytes = match bt_int {

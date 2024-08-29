@@ -495,9 +495,9 @@ mod test {
                 let current = input.seek(SeekFrom::Current(0))?;
                 let end = input.seek(SeekFrom::End(0))?;
                 ensure!(
-                current == end,
-                "unable to consume the entire TIL file, {current} != {end}"
-            );
+                    current == end,
+                    "unable to consume the entire TIL file, {current} != {end}"
+                );
                 Ok(())
             }
             Err(e) => Err(e),

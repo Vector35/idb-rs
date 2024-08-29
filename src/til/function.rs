@@ -1,5 +1,7 @@
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, read_de, read_dt, Basic, Type, TypeMetadata, TypeRaw, TAH};
+use crate::til::{
+    associate_field_name_and_member, read_de, read_dt, Basic, Type, TypeMetadata, TypeRaw, TAH,
+};
 use anyhow::{ensure, Context};
 use std::io::BufRead;
 
@@ -70,7 +72,11 @@ pub struct ArgLocDist {
 }
 
 impl FunctionRaw {
-    pub(crate) fn read<I: BufRead>(input: &mut I, header: &TILSectionHeader, metadata: u8) -> anyhow::Result<Self> {
+    pub(crate) fn read<I: BufRead>(
+        input: &mut I,
+        header: &TILSectionHeader,
+        metadata: u8,
+    ) -> anyhow::Result<Self> {
         // TODO what is that?
         let mut flags = metadata << 2;
 

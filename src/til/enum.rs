@@ -1,5 +1,8 @@
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, flag, read_de, read_dt, read_dt_de, Type, TypeAttribute, TypeRaw, SDACL, TAH};
+use crate::til::{
+    associate_field_name_and_member, flag, read_de, read_dt, read_dt_de, Type, TypeAttribute,
+    TypeRaw, SDACL, TAH,
+};
 use anyhow::{anyhow, Context};
 use std::io::BufRead;
 
@@ -18,7 +21,11 @@ pub enum Enum {
     },
 }
 impl Enum {
-    pub(crate) fn new(til: &TILSectionHeader, value: EnumRaw, fields: Option<Vec<String>>) -> anyhow::Result<Self> {
+    pub(crate) fn new(
+        til: &TILSectionHeader,
+        value: EnumRaw,
+        fields: Option<Vec<String>>,
+    ) -> anyhow::Result<Self> {
         match value {
             EnumRaw::Ref {
                 ref_type,
@@ -70,7 +77,10 @@ pub(crate) enum EnumRaw {
 }
 
 impl EnumRaw {
-    pub(crate) fn read<I: BufRead>(input: &mut I, header: &TILSectionHeader) -> anyhow::Result<Self> {
+    pub(crate) fn read<I: BufRead>(
+        input: &mut I,
+        header: &TILSectionHeader,
+    ) -> anyhow::Result<Self> {
         let Some(n) = read_dt_de(&mut *input)? else {
             // is ref
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;

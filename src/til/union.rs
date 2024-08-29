@@ -16,7 +16,11 @@ pub enum Union {
     },
 }
 impl Union {
-    pub(crate) fn new(til: &TILSectionHeader, value: UnionRaw, fields: Option<Vec<String>>) -> anyhow::Result<Self> {
+    pub(crate) fn new(
+        til: &TILSectionHeader,
+        value: UnionRaw,
+        fields: Option<Vec<String>>,
+    ) -> anyhow::Result<Self> {
         match value {
             UnionRaw::Ref {
                 ref_type,

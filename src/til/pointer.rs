@@ -10,7 +10,11 @@ pub struct Pointer {
 }
 
 impl Pointer {
-    pub(crate) fn new(til: &TILSectionHeader, raw: PointerRaw, fields: Option<Vec<String>>) -> anyhow::Result<Self> {
+    pub(crate) fn new(
+        til: &TILSectionHeader,
+        raw: PointerRaw,
+        fields: Option<Vec<String>>,
+    ) -> anyhow::Result<Self> {
         Ok(Self {
             closure: raw.closure.map(|x| Closure::new(til, x)).transpose()?,
             tah: raw.tah,
@@ -42,7 +46,11 @@ pub(crate) struct PointerRaw {
 }
 
 impl PointerRaw {
-    pub(crate) fn read<I: BufRead>(input: &mut I, header: &TILSectionHeader, metadata: u8) -> anyhow::Result<Self> {
+    pub(crate) fn read<I: BufRead>(
+        input: &mut I,
+        header: &TILSectionHeader,
+        metadata: u8,
+    ) -> anyhow::Result<Self> {
         use crate::til::flag::tf_ptr::*;
         let closure = match metadata {
             BTMT_DEFPTR => None,

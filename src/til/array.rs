@@ -11,7 +11,11 @@ pub struct Array {
     pub elem_type: Box<Type>,
 }
 impl Array {
-    pub(crate) fn new(til: &TILSectionHeader, value: ArrayRaw, fields: Option<Vec<String>>) -> anyhow::Result<Self> {
+    pub(crate) fn new(
+        til: &TILSectionHeader,
+        value: ArrayRaw,
+        fields: Option<Vec<String>>,
+    ) -> anyhow::Result<Self> {
         if matches!(&fields, Some(f) if !f.is_empty()) {
             return Err(anyhow!("fields in a Array"));
         }
@@ -33,7 +37,11 @@ pub(crate) struct ArrayRaw {
 }
 
 impl ArrayRaw {
-    pub(crate) fn read<I: BufRead>(input: &mut I, header: &TILSectionHeader, metadata: u8) -> anyhow::Result<Self> {
+    pub(crate) fn read<I: BufRead>(
+        input: &mut I,
+        header: &TILSectionHeader,
+        metadata: u8,
+    ) -> anyhow::Result<Self> {
         use crate::til::flag::tf_array::*;
         let (base, nelem) = match metadata {
             BTMT_NONBASED => {

@@ -75,7 +75,10 @@ impl TILSection {
         Self::read_inner(&mut input)
     }
 
-    pub(crate) fn read<I: BufRead>(input: &mut I, compress: IDBSectionCompression) -> anyhow::Result<Self> {
+    pub(crate) fn read<I: BufRead>(
+        input: &mut I,
+        compress: IDBSectionCompression,
+    ) -> anyhow::Result<Self> {
         match compress {
             IDBSectionCompression::None => Self::read_inner(input),
             IDBSectionCompression::Zlib => {
@@ -380,7 +383,10 @@ impl TILSection {
         Ok(type_info)
     }
 
-    fn read_macros<I: BufRead>(input: &mut I, header: &TILSectionHeader) -> anyhow::Result<Vec<TILMacro>> {
+    fn read_macros<I: BufRead>(
+        input: &mut I,
+        header: &TILSectionHeader,
+    ) -> anyhow::Result<Vec<TILMacro>> {
         if header.flags.is_zip() {
             Self::read_macros_zip(&mut *input)
         } else {
