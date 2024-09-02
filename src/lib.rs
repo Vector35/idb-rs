@@ -1,8 +1,4 @@
-#[cfg(test)]
-mod test;
-
 pub mod til;
-pub use til::{TILSection, TILTypeInfo};
 
 use std::fmt::Debug;
 use std::io::{BufRead, Read, Seek, SeekFrom};
@@ -10,6 +6,7 @@ use std::num::NonZeroU64;
 
 use serde::Deserialize;
 
+use crate::til::section::TILSection;
 use anyhow::{anyhow, ensure, Result};
 
 #[derive(Debug, Clone, Copy)]
@@ -27,7 +24,7 @@ impl<I: BufRead + Seek> IDBParser<I> {
         Ok(Self { input, header })
     }
 
-    pub fn til_section(&self) -> Option<TILOffset> {
+    pub fn til_section_offset(&self) -> Option<TILOffset> {
         self.header.til_offset.map(TILOffset)
     }
 
@@ -333,7 +330,7 @@ impl IDBHeader {
 impl IDBSectionHeader {
     pub fn read<I: BufRead>(header: &IDBHeader, input: I) -> Result<Self> {
         match header.version {
-            crate::IDBVersion::V1 | crate::IDBVersion::V4 => {
+            IDBVersion::V1 | IDBVersion::V4 => {
                 #[derive(Debug, Deserialize)]
                 struct Section32Raw {
                     compress: u8,
@@ -348,7 +345,7 @@ impl IDBSectionHeader {
                     len: header.len.into(),
                 })
             }
-            crate::IDBVersion::V5 | crate::IDBVersion::V6 => {
+            IDBVersion::V5 | IDBVersion::V6 => {
                 #[derive(Debug, Deserialize)]
                 struct Section64Raw {
                     compress: u8,
@@ -431,4 +428,108 @@ fn read_c_string_vec<I: BufRead>(input: &mut I) -> std::io::Result<Vec<String>> 
         current = &rest[1..];
     }
     Ok(result)
+}
+
+#[cfg(test)]
+mod test {
+    use crate::til::section::TILSection;
+    use crate::*;
+    use std::ffi::OsStr;
+    use std::fs::File;
+    use std::io::{BufReader, BufWriter};
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn parse_idbs() {
+        let files = find_all("resources/idbs".as_ref(), &["idb".as_ref(), "i64".as_ref()]).unwrap();
+        for filename in files {
+            println!("{}", filename.to_str().unwrap());
+            let file = BufReader::new(File::open(&filename).unwrap());
+            let mut parser = IDBParser::new(file).unwrap();
+            let til = parser.read_til_section(parser.til_section_offset().unwrap());
+
+            // if success, parse next file
+            let error = match til {
+                Ok(_til) => continue,
+                Err(e) => e,
+            };
+
+            //otherwise create a decompress version of the file for more testing
+            let mut output = BufWriter::new(File::create("/tmp/lasterror.til").unwrap());
+            parser
+                .decompress_til_section(parser.til_section_offset().unwrap(), &mut output)
+                .unwrap();
+            panic!("{error:?}")
+        }
+    }
+
+    #[test]
+    fn parse_tils() {
+        let files = find_all("resources/tils".as_ref(), &["til".as_ref()]).unwrap();
+        let results = files
+            .into_iter()
+            .map(|x| parse_til_file(&x).map_err(|e| (x, e)))
+            .collect::<Result<(), _>>();
+        let Err((file, error)) = results else {
+            // if success, finish the test
+            return;
+        };
+        println!("Unable to parse {}", file.to_str().unwrap());
+        //otherwise create a decompress version of the file for more testing
+        let mut input = BufReader::new(File::open(&file).unwrap());
+        let mut output = BufWriter::new(File::create("/tmp/lasterror.til").unwrap());
+        TILSection::decompress_inner(&mut input, &mut output).unwrap();
+        panic!(
+            "Unable to parse file `{}`: {error:?}",
+            file.to_str().unwrap()
+        );
+    }
+
+    fn parse_til_file(file: &Path) -> Result<()> {
+        println!("{}", file.to_str().unwrap());
+        // makes sure it don't read out-of-bounds
+        let mut input = BufReader::new(File::open(file)?);
+        // TODO make a SmartReader
+        match TILSection::read(&mut input, IDBSectionCompression::None) {
+            Ok(_til) => {
+                let current = input.seek(SeekFrom::Current(0))?;
+                let end = input.seek(SeekFrom::End(0))?;
+                ensure!(
+                    current == end,
+                    "unable to consume the entire TIL file, {current} != {end}"
+                );
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    fn find_all(path: &Path, exts: &[&OsStr]) -> Result<Vec<PathBuf>> {
+        fn inner_find_all(path: &Path, exts: &[&OsStr], buf: &mut Vec<PathBuf>) -> Result<()> {
+            for entry in std::fs::read_dir(path)?.map(Result::unwrap) {
+                let entry_type = entry.metadata()?.file_type();
+                if entry_type.is_dir() {
+                    inner_find_all(&entry.path(), exts, buf)?;
+                    continue;
+                }
+
+                if !entry_type.is_file() {
+                    continue;
+                }
+
+                let filename = entry.file_name();
+                let Some(ext) = Path::new(&filename).extension() else {
+                    continue;
+                };
+
+                if exts.contains(&ext) {
+                    buf.push(entry.path())
+                }
+            }
+            Ok(())
+        }
+        let mut result = vec![];
+        inner_find_all(path, exts, &mut result)?;
+        Ok(result)
+    }
 }
