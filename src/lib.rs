@@ -1,3 +1,4 @@
+pub mod id0;
 pub mod til;
 
 use std::fmt::Debug;
@@ -6,6 +7,7 @@ use std::num::NonZeroU64;
 
 use serde::Deserialize;
 
+use crate::id0::ID0Entry;
 use crate::til::section::TILSection;
 use anyhow::{anyhow, ensure, Result};
 
@@ -16,6 +18,9 @@ pub struct IDBParser<I: BufRead + Seek> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ID0Offset(NonZeroU64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TILOffset(NonZeroU64);
 
 impl<I: BufRead + Seek> IDBParser<I> {
@@ -24,21 +29,40 @@ impl<I: BufRead + Seek> IDBParser<I> {
         Ok(Self { input, header })
     }
 
+    pub fn id0_section_offset(&self) -> Option<ID0Offset> {
+        self.header.id0_offset.map(ID0Offset)
+    }
+
     pub fn til_section_offset(&self) -> Option<TILOffset> {
         self.header.til_offset.map(TILOffset)
     }
 
+    pub fn read_id0_section(&mut self, id0: ID0Offset) -> Result<Vec<ID0Entry>> {
+        self.read_section(id0.0.get(), ID0Entry::read)
+    }
+
     pub fn read_til_section(&mut self, til: TILOffset) -> Result<TILSection> {
-        self.input.seek(SeekFrom::Start(til.0.get()))?;
+        self.read_section(til.0.get(), TILSection::read)
+    }
+
+    fn read_section<'a, T, F>(&'a mut self, offset: u64, mut process: F) -> Result<T>
+    where
+        F: FnMut(&mut std::io::Take<&'a mut I>, IDBSectionCompression) -> Result<T>,
+    {
+        self.input.seek(SeekFrom::Start(offset))?;
         let section_header = IDBSectionHeader::read(&self.header, &mut self.input)?;
         // makes sure the reader doesn't go out-of-bounds
         let mut input = Read::take(&mut self.input, section_header.len);
-        let result = TILSection::read(&mut input, section_header.compress)?;
+        let result = process(&mut input, section_header.compress)?;
 
         // TODO seems its normal to have a few extra bytes at the end of the sector, maybe
         // because of the compressions stuff, anyway verify that
         ensure!(
-            input.limit() <= 16,
+            if matches!(section_header.compress, IDBSectionCompression::None) {
+                input.limit() == 0
+            } else {
+                input.limit() <= 16
+            },
             "Sector have more data then expected, left {} bytes",
             input.limit()
         );
@@ -364,6 +388,14 @@ impl IDBSectionHeader {
     }
 }
 
+fn read_bytes_len_u16<I: Read>(mut input: I) -> Result<Vec<u8>> {
+    let mut len = [0, 0];
+    input.read_exact(&mut len)?;
+    let mut bytes = vec![0u8; u16::from_le_bytes(len).into()];
+    input.read_exact(&mut bytes)?;
+    Ok(bytes)
+}
+
 fn read_bytes_len_u8<I: Read>(mut input: I) -> Result<Vec<u8>> {
     let mut len = [0];
     input.read_exact(&mut len)?;
@@ -446,6 +478,9 @@ mod test {
             println!("{}", filename.to_str().unwrap());
             let file = BufReader::new(File::open(&filename).unwrap());
             let mut parser = IDBParser::new(file).unwrap();
+            let _id0 = parser
+                .read_id0_section(parser.id0_section_offset().unwrap())
+                .unwrap();
             let til = parser.read_til_section(parser.til_section_offset().unwrap());
 
             // if success, parse next file
