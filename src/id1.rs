@@ -1,11 +1,9 @@
 use anyhow::{anyhow, ensure, Result};
 
-use std::{
-    io::{Cursor, Read},
-    ops::Range,
-};
+use std::io::{Cursor, Read};
+use std::ops::Range;
 
-use crate::{IDBHeader, IDBSectionCompression};
+use crate::{IDBHeader, IDBSectionCompression, VaVersion};
 
 #[derive(Clone, Debug)]
 pub struct ID1Section {
@@ -18,32 +16,6 @@ pub struct SegInfo {
     pub data: Vec<u8>,
     // TODO find a way to decode this data
     _flags: Vec<u32>,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum ID1Version {
-    Va0,
-    Va1,
-    Va2,
-    Va3,
-    Va4,
-    VaX,
-}
-
-impl ID1Version {
-    fn read<I: Read>(input: &mut I) -> Result<Self> {
-        let mut magic: [u8; 4] = [0; 4];
-        input.read_exact(&mut magic)?;
-        match &magic[..] {
-            b"Va0\x00" => Ok(Self::Va0),
-            b"Va1\x00" => Ok(Self::Va1),
-            b"Va2\x00" => Ok(Self::Va2),
-            b"Va3\x00" => Ok(Self::Va3),
-            b"Va4\x00" => Ok(Self::Va4),
-            b"VA*\x00" => Ok(Self::VaX),
-            other_magic => Err(anyhow!("Invalid ID1 magic: {other_magic:?}")),
-        }
-    }
 }
 
 impl ID1Section {
@@ -67,13 +39,9 @@ impl ID1Section {
         let mut buf = vec![0; PAGE_SIZE];
         input.read_exact(&mut buf[..])?;
         let mut header_page = Cursor::new(&buf);
-        let version = ID1Version::read(&mut header_page)?;
+        let version = VaVersion::read(&mut header_page)?;
         let (npages, seglist_raw) = match version {
-            ID1Version::Va0
-            | ID1Version::Va1
-            | ID1Version::Va2
-            | ID1Version::Va3
-            | ID1Version::Va4 => {
+            VaVersion::Va0 | VaVersion::Va1 | VaVersion::Va2 | VaVersion::Va3 | VaVersion::Va4 => {
                 let nsegments: u16 = bincode::deserialize_from(&mut header_page)?;
                 let npages: u16 = bincode::deserialize_from(&mut header_page)?;
                 ensure!(
@@ -84,20 +52,8 @@ impl ID1Section {
 
                 // TODO the reference code uses the magic version, should it use
                 // the version itself instead?
-                let seglist: Vec<SegInfoVaNRaw> = match header.magic_version {
-                    crate::IDBMagic::IDA0 | crate::IDBMagic::IDA1 => (0..nsegments)
-                        .map(|_| {
-                            let start: u32 = bincode::deserialize_from(&mut header_page)?;
-                            let end: u32 = bincode::deserialize_from(&mut header_page)?;
-                            ensure!(start <= end);
-                            let offset: u32 = bincode::deserialize_from(&mut header_page)?;
-                            Ok(SegInfoVaNRaw {
-                                address: start.into()..end.into(),
-                                offset: offset.into(),
-                            })
-                        })
-                        .collect::<Result<_>>()?,
-                    crate::IDBMagic::IDA2 => (0..nsegments)
+                let seglist: Vec<SegInfoVaNRaw> = if header.magic_version.is_64() {
+                    (0..nsegments)
                         .map(|_| {
                             let start: u64 = bincode::deserialize_from(&mut header_page)?;
                             let end: u64 = bincode::deserialize_from(&mut header_page)?;
@@ -108,11 +64,24 @@ impl ID1Section {
                                 offset,
                             })
                         })
-                        .collect::<Result<_>>()?,
+                        .collect::<Result<_>>()?
+                } else {
+                    (0..nsegments)
+                        .map(|_| {
+                            let start: u32 = bincode::deserialize_from(&mut header_page)?;
+                            let end: u32 = bincode::deserialize_from(&mut header_page)?;
+                            ensure!(start <= end);
+                            let offset: u32 = bincode::deserialize_from(&mut header_page)?;
+                            Ok(SegInfoVaNRaw {
+                                address: start.into()..end.into(),
+                                offset: offset.into(),
+                            })
+                        })
+                        .collect::<Result<_>>()?
                 };
                 (u32::from(npages), SegInfoRaw::VaN(seglist))
             }
-            ID1Version::VaX => {
+            VaVersion::VaX => {
                 let unknown_always3: u32 = bincode::deserialize_from(&mut header_page)?;
                 ensure!(unknown_always3 == 3);
                 let nsegments: u32 = bincode::deserialize_from(&mut header_page)?;

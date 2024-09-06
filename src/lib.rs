@@ -1,5 +1,6 @@
 pub mod id0;
 pub mod id1;
+pub mod nam;
 pub mod til;
 
 use std::fmt::Debug;
@@ -10,6 +11,7 @@ use serde::Deserialize;
 
 use crate::id0::ID0Entry;
 use crate::id1::ID1Section;
+use crate::nam::NamSection;
 use crate::til::section::TILSection;
 use anyhow::{anyhow, ensure, Result};
 
@@ -24,6 +26,9 @@ pub struct ID0Offset(NonZeroU64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ID1Offset(NonZeroU64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct NamOffset(NonZeroU64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TILOffset(NonZeroU64);
@@ -42,6 +47,10 @@ impl<I: BufRead + Seek> IDBParser<I> {
         self.header.id1_offset.map(ID1Offset)
     }
 
+    pub fn nam_section_offset(&self) -> Option<NamOffset> {
+        self.header.nam_offset.map(NamOffset)
+    }
+
     pub fn til_section_offset(&self) -> Option<TILOffset> {
         self.header.til_offset.map(TILOffset)
     }
@@ -57,6 +66,10 @@ impl<I: BufRead + Seek> IDBParser<I> {
 
     pub fn read_id1_section(&mut self, id1: ID1Offset) -> Result<ID1Section> {
         read_section(&mut self.input, &self.header, id1.0.get(), ID1Section::read)
+    }
+
+    pub fn read_nam_section(&mut self, nam: NamOffset) -> Result<NamSection> {
+        read_section(&mut self.input, &self.header, nam.0.get(), NamSection::read)
     }
 
     pub fn read_til_section(&mut self, til: TILOffset) -> Result<TILSection> {
@@ -150,6 +163,15 @@ impl TryFrom<[u8; 4]> for IDBMagic {
             b"IDA1" => Ok(IDBMagic::IDA1),
             b"IDA2" => Ok(IDBMagic::IDA2),
             _ => Err(anyhow!("Invalid IDB Magic number")),
+        }
+    }
+}
+
+impl IDBMagic {
+    fn is_64(&self) -> bool {
+        match self {
+            IDBMagic::IDA0 | IDBMagic::IDA1 => false,
+            IDBMagic::IDA2 => true,
         }
     }
 }
@@ -455,6 +477,31 @@ impl IDBSectionHeader {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+enum VaVersion {
+    Va0,
+    Va1,
+    Va2,
+    Va3,
+    Va4,
+    VaX,
+}
+
+impl VaVersion {
+    fn read<I: Read>(input: &mut I) -> Result<Self> {
+        let mut magic: [u8; 4] = [0; 4];
+        input.read_exact(&mut magic)?;
+        match &magic[..] {
+            b"Va0\x00" => Ok(Self::Va0),
+            b"Va1\x00" => Ok(Self::Va1),
+            b"Va2\x00" => Ok(Self::Va2),
+            b"Va3\x00" => Ok(Self::Va3),
+            b"Va4\x00" => Ok(Self::Va4),
+            b"VA*\x00" => Ok(Self::VaX),
+            other_magic => Err(anyhow!("Invalid Va magic: {other_magic:?}")),
+        }
+    }
+}
 fn read_bytes_len_u16<I: Read>(mut input: I) -> Result<Vec<u8>> {
     let mut len = [0, 0];
     input.read_exact(&mut len)?;
@@ -559,6 +606,14 @@ mod test {
                     .decompress_section(parser.id1_section_offset().unwrap().0.get(), &mut output)
                     .unwrap();
                 panic!("id1 {error:?}")
+            }
+
+            if let Err(error) = parser.read_nam_section(parser.nam_section_offset().unwrap()) {
+                let mut output = BufWriter::new(File::create("/tmp/lasterror.nam").unwrap());
+                parser
+                    .decompress_section(parser.nam_section_offset().unwrap().0.get(), &mut output)
+                    .unwrap();
+                panic!("nam {error:?}")
             }
 
             // if success, parse next file
