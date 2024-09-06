@@ -1,4 +1,4 @@
-use std::io::{BufRead, BufReader, Cursor, ErrorKind, Seek, SeekFrom};
+use std::io::{BufRead, Cursor, ErrorKind, Read, Seek, SeekFrom};
 use std::num::NonZeroU32;
 
 use crate::{read_bytes_len_u16, read_c_string_raw, IDBSectionCompression};
@@ -41,9 +41,9 @@ struct ID0Header {
 }
 
 impl ID0Header {
-    pub(crate) fn read<I: BufRead>(input: &mut I) -> Result<Self> {
-        let mut buf = [0; 64];
-        input.read_exact(&mut buf)?;
+    pub(crate) fn read<I: Read>(input: &mut I, buf: &mut Vec<u8>) -> Result<Self> {
+        buf.resize(64, 0);
+        input.read_exact(buf)?;
         // TODO handle the 15 version of the header:
         // {
         //    let next_free_offset: u16 = bincode::deserialize_from(&mut *input)?;
@@ -66,8 +66,13 @@ impl ID0Header {
         // TODO move this code out of here and use seek instead
         // read the rest of the page
         ensure!(page_size >= 64);
-        let mut buf = vec![0; usize::from(page_size) - 64];
-        input.read_exact(&mut buf)?;
+        buf.resize(page_size.into(), 0);
+        input.read_exact(&mut buf[64..])?;
+        // the rest of the header should be only zeros
+        ensure!(
+            buf[64..].iter().all(|b| *b == 0),
+            "Extra data on the header was not parsed"
+        );
         Ok(ID0Header {
             _next_free_offset: NonZeroU32::new(next_free_offset),
             page_size,
@@ -86,14 +91,14 @@ pub struct ID0Entry {
 }
 
 impl ID0Entry {
-    pub(crate) fn read<I: BufRead>(
+    pub(crate) fn read<I: Read>(
         input: &mut I,
         compress: IDBSectionCompression,
     ) -> Result<Vec<Self>> {
         match compress {
             IDBSectionCompression::None => Self::read_inner(input),
             IDBSectionCompression::Zlib => {
-                let mut input = BufReader::new(flate2::read::ZlibDecoder::new(input));
+                let mut input = flate2::read::ZlibDecoder::new(input);
                 Self::read_inner(&mut input)
             }
         }
@@ -105,9 +110,11 @@ impl ID0Entry {
     // TODO This is probably much more efficient if written with <I: BufRead + Seek>, this
     // way it's not necessary to read and cache the unused/deleted pages, if you are sure this
     // implementation is correct, you could rewrite this function to do that.
-    fn read_inner<I: BufRead>(input: &mut I) -> Result<Vec<Self>> {
-        let header = ID0Header::read(&mut *input)?;
-        let mut buf = vec![0; header.page_size.into()];
+    fn read_inner<I: Read>(input: &mut I) -> Result<Vec<Self>> {
+        // pages size are usually around that size
+        let mut buf = Vec::with_capacity(0x2000);
+        let header = ID0Header::read(&mut *input, &mut buf)?;
+        buf.resize(header.page_size.into(), 0);
         // NOTE sometimes deleted pages are included here, seems to happen specially if a
         // index is deleted with all it's leafs, leaving the now-empty index and the
         // now-disconnected children
@@ -127,7 +134,7 @@ impl ID0Entry {
             pages.push(Some(page));
         }
 
-        // verify for unused or duplicated entries
+        // verify for duplicated entries
         let pages_tree = Self::create_tree(header.root_page, &mut pages)?;
 
         // verify that the correct number of pages were consumed and added to the tree
@@ -169,7 +176,7 @@ impl ID0Entry {
         let mut entries = Vec::with_capacity(header.record_count.try_into().unwrap());
         Self::tree_to_vec(pages_tree, &mut entries);
 
-        // make sure all entries are in the final vector
+        // make sure the right number of entries are in the final vector
         ensure!(entries.len() == header.record_count.try_into().unwrap());
 
         Ok(entries)
