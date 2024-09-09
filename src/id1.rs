@@ -190,7 +190,7 @@ impl ID1Section {
         //// ensure the rest of the data (page alignment) is just zeros
         //ensure_all_bytes_are_zero(input, &mut buf)?;
         // TODO sometimes there some extra data with unknown meaning, maybe it's just a
-        // delete segment
+        // deleted segment
         ignore_bytes(input, &mut buf)?;
 
         Ok(Self { seglist })
@@ -198,13 +198,13 @@ impl ID1Section {
 }
 
 #[derive(Clone, Debug)]
-pub enum SegInfoRaw {
+enum SegInfoRaw {
     VaN(Vec<SegInfoVaNRaw>),
     VaX(Vec<Range<u64>>),
 }
 
 #[derive(Clone, Debug)]
-pub struct SegInfoVaNRaw {
+struct SegInfoVaNRaw {
     address: Range<u64>,
     offset: u64,
 }

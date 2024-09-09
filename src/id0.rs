@@ -1,7 +1,7 @@
 use std::io::{BufRead, Cursor, ErrorKind, Read, Seek, SeekFrom};
 use std::num::NonZeroU32;
 
-use crate::{read_bytes_len_u16, read_c_string_raw, IDBSectionCompression};
+use crate::{read_bytes_len_u16, read_c_string_raw, IDBHeader, IDBSectionCompression};
 
 use anyhow::{anyhow, ensure, Result};
 
@@ -85,21 +85,28 @@ impl ID0Header {
 }
 
 #[derive(Debug, Clone)]
-pub struct ID0Entry {
-    key: Vec<u8>,
-    value: Vec<u8>,
+pub struct ID0Section {
+    is_64: bool,
+    pub entries: Vec<ID0Entry>,
 }
 
-impl ID0Entry {
+#[derive(Debug, Clone)]
+pub struct ID0Entry {
+    pub key: Vec<u8>,
+    pub value: Vec<u8>,
+}
+
+impl ID0Section {
     pub(crate) fn read<I: Read>(
         input: &mut I,
+        header: &IDBHeader,
         compress: IDBSectionCompression,
-    ) -> Result<Vec<Self>> {
+    ) -> Result<Self> {
         match compress {
-            IDBSectionCompression::None => Self::read_inner(input),
+            IDBSectionCompression::None => Self::read_inner(input, header),
             IDBSectionCompression::Zlib => {
                 let mut input = flate2::read::ZlibDecoder::new(input);
-                Self::read_inner(&mut input)
+                Self::read_inner(&mut input, header)
             }
         }
     }
@@ -110,7 +117,7 @@ impl ID0Entry {
     // TODO This is probably much more efficient if written with <I: BufRead + Seek>, this
     // way it's not necessary to read and cache the unused/deleted pages, if you are sure this
     // implementation is correct, you could rewrite this function to do that.
-    fn read_inner<I: Read>(input: &mut I) -> Result<Vec<Self>> {
+    fn read_inner<I: Read>(input: &mut I, idb_header: &IDBHeader) -> Result<Self> {
         // pages size are usually around that size
         let mut buf = Vec::with_capacity(0x2000);
         let header = ID0Header::read(&mut *input, &mut buf)?;
@@ -176,10 +183,19 @@ impl ID0Entry {
         let mut entries = Vec::with_capacity(header.record_count.try_into().unwrap());
         Self::tree_to_vec(pages_tree, &mut entries);
 
+        // make sure the vector is sorted
+        ensure!(entries.windows(2).all(|win| {
+            let [a, b] = win else { unreachable!() };
+            a.key < b.key
+        }));
+
         // make sure the right number of entries are in the final vector
         ensure!(entries.len() == header.record_count.try_into().unwrap());
 
-        Ok(entries)
+        Ok(ID0Section {
+            is_64: idb_header.magic_version.is_64(),
+            entries,
+        })
     }
 
     fn create_tree(
@@ -233,6 +249,108 @@ impl ID0Entry {
             }
             ID0TreeEntry::Leaf(entries) => output.extend(entries),
         }
+    }
+
+    fn binary_search(&self, key: impl AsRef<[u8]>) -> Result<usize, usize> {
+        let key = key.as_ref();
+        self.entries.binary_search_by(|b| b.key[..].cmp(&key))
+    }
+
+    pub fn get(&self, key: impl AsRef<[u8]>) -> Option<&ID0Entry> {
+        self.binary_search(key).ok().map(|i| &self.entries[i])
+    }
+
+    pub fn sub_values(&self, value: &[u8]) -> Result<impl Iterator<Item = &ID0Entry>> {
+        let mut key: Vec<u8> = [b'.']
+            .into_iter()
+            .chain(value.iter().rev().copied())
+            .chain([b'S'])
+            .collect();
+        let start = self.binary_search(&key);
+        let start = match start {
+            Ok(pos) => pos,
+            Err(start) => start,
+        };
+
+        *key.last_mut().unwrap() = b'T';
+        let end = self.binary_search(&key);
+        let end = match end {
+            Ok(pos) => pos,
+            Err(end) => end,
+        };
+
+        ensure!(start <= end);
+        ensure!(end <= self.entries.len());
+
+        Ok(self.entries[start..end].iter())
+    }
+
+    pub fn segments<'a>(&'a self) -> Result<impl Iterator<Item = Result<Segment>> + 'a> {
+        let entry = self
+            .get("N$ segs")
+            .ok_or_else(|| anyhow!("Unable to find entry segs"))?;
+        Ok(self
+            .sub_values(&entry.value)?
+            .map(|e| Segment::read(&e.value, self.is_64)))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Segment {
+    startea: u64,
+    size: u64,
+    name_id: u64,
+    class_id: u64,
+    orgbase: u64,
+    flags: u32,
+    align: u32,
+    comb: u32,
+    perm: u32,
+    bitness: u32,
+    seg_type: u32,
+    selector: u64,
+    defsr: [u64; 16],
+    color: u32,
+}
+
+impl Segment {
+    fn read(value: &[u8], is_64: bool) -> Result<Self> {
+        let mut cursor = Cursor::new(value);
+        let startea = parse_word(&mut cursor, is_64)?;
+        let size = parse_word(&mut cursor, is_64)?;
+        let name_id = parse_word(&mut cursor, is_64)?;
+        let class_id = parse_word(&mut cursor, is_64)?;
+        let orgbase = parse_word(&mut cursor, is_64)?;
+        let flags = read_dd(&mut cursor)?;
+        let align = read_dd(&mut cursor)?;
+        let comb = read_dd(&mut cursor)?;
+        let perm = read_dd(&mut cursor)?;
+        let bitness = read_dd(&mut cursor)?;
+        let seg_type = read_dd(&mut cursor)?;
+        let selector = parse_word(&mut cursor, is_64)?;
+        let defsr: Vec<_> = (0..16)
+            .map(|_| parse_word(&mut cursor, is_64))
+            .collect::<Result<_, _>>()?;
+        let color = read_dd(&mut cursor)?;
+
+        // TODO maybe new versions include extra information and thid check fails
+        ensure!(cursor.position() == value.len().try_into().unwrap());
+        Ok(Segment {
+            startea,
+            size,
+            name_id,
+            class_id,
+            orgbase,
+            flags,
+            align,
+            comb,
+            perm,
+            bitness,
+            seg_type,
+            selector,
+            defsr: defsr.try_into().unwrap(),
+            color,
+        })
     }
 }
 
@@ -498,4 +616,40 @@ fn read_exact_or_nothing<R: std::io::Read + ?Sized>(
         }
     }
     Ok(len - buf.len())
+}
+
+fn parse_word<I: Read>(input: &mut I, is_64: bool) -> Result<u64> {
+    if is_64 {
+        read_dq(input)
+    } else {
+        read_dd(input).map(u64::from)
+    }
+}
+
+/// Reads 1 to 5 bytes.
+fn read_dd<I: Read>(input: &mut I) -> Result<u32> {
+    let header: u8 = bincode::deserialize_from(&mut *input)?;
+    if header & 0x80 == 0 {
+        return Ok(header.into());
+    }
+
+    if header & 0xC0 != 0xC0 {
+        let low: u8 = bincode::deserialize_from(&mut *input)?;
+        return Ok((u32::from(header) & 0x7F) << 8 | u32::from(low));
+    }
+
+    let data = if header & 0xE0 == 0xE0 {
+        bincode::deserialize_from(&mut *input)?
+    } else {
+        let data: [u8; 3] = bincode::deserialize_from(&mut *input)?;
+        [header & 0x3F, data[0], data[1], data[2]]
+    };
+    Ok(u32::from_be_bytes(data))
+}
+
+/// Reads 2 to 10 bytes.
+fn read_dq<I: Read>(input: &mut I) -> Result<u64> {
+    let lo = read_dd(&mut *input)?;
+    let hi = read_dd(&mut *input)?;
+    Ok((u64::from(hi) << 32) | u64::from(lo))
 }

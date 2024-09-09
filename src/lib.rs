@@ -7,9 +7,9 @@ use std::fmt::Debug;
 use std::io::{BufRead, Read, Seek, SeekFrom};
 use std::num::NonZeroU64;
 
+use id0::ID0Section;
 use serde::Deserialize;
 
-use crate::id0::ID0Entry;
 use crate::id1::ID1Section;
 use crate::nam::NamSection;
 use crate::til::section::TILSection;
@@ -55,13 +55,8 @@ impl<I: BufRead + Seek> IDBParser<I> {
         self.header.til_offset.map(TILOffset)
     }
 
-    pub fn read_id0_section(&mut self, id0: ID0Offset) -> Result<Vec<ID0Entry>> {
-        read_section(
-            &mut self.input,
-            &self.header,
-            id0.0.get(),
-            |input, _, compress| ID0Entry::read(input, compress),
-        )
+    pub fn read_id0_section(&mut self, id0: ID0Offset) -> Result<ID0Section> {
+        read_section(&mut self.input, &self.header, id0.0.get(), ID0Section::read)
     }
 
     pub fn read_id1_section(&mut self, id1: ID1Offset) -> Result<ID1Section> {
@@ -592,12 +587,26 @@ mod test {
             println!("{}", filename.to_str().unwrap());
             let file = BufReader::new(File::open(&filename).unwrap());
             let mut parser = IDBParser::new(file).unwrap();
-            if let Err(error) = parser.read_id0_section(parser.id0_section_offset().unwrap()) {
-                let mut output = BufWriter::new(File::create("/tmp/lasterror.id0").unwrap());
-                parser
-                    .decompress_section(parser.id0_section_offset().unwrap().0.get(), &mut output)
-                    .unwrap();
-                panic!("id0 {error:?}")
+            match parser.read_id0_section(parser.id0_section_offset().unwrap()) {
+                Err(error) => {
+                    let mut output = BufWriter::new(File::create("/tmp/lasterror.id0").unwrap());
+                    parser
+                        .decompress_section(
+                            parser.id0_section_offset().unwrap().0.get(),
+                            &mut output,
+                        )
+                        .unwrap();
+                    panic!("id0 {error:?}")
+                }
+                Ok(id0) => {
+                    let _segments: Vec<()> = id0
+                        .segments()
+                        .unwrap()
+                        .map(|x| {
+                            x.unwrap();
+                        })
+                        .collect();
+                }
             }
 
             if let Err(error) = parser.read_id1_section(parser.id1_section_offset().unwrap()) {
