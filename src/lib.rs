@@ -581,6 +581,12 @@ mod test {
     use std::path::{Path, PathBuf};
 
     #[test]
+    fn parse_idb_param() {
+        let param = b"IDA\xbc\x02\x06metapc#\x8a\x03\x03\x02\x00\x00\x00\x00\xff_\xff\xff\xf7\x03\x00\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x0d\x00\x0d \x0d\x10\xff\xff\x00\x00\x00\xc0\x80\x00\x00\x00\x02\x02\x01\x0f\x0f\x06\xce\xa3\xbeg\xc6@\x00\x07\x00\x07\x10(FP\x87t\x09\x03\x00\x01\x13\x0a\x00\x00\x01a\x00\x07\x00\x13\x04\x04\x04\x00\x02\x04\x08\x00\x00\x00";
+        let _parsed = id0::IDBParam::read(param, false).unwrap();
+    }
+
+    #[test]
     fn parse_idbs() {
         let files = find_all("resources/idbs".as_ref(), &["idb".as_ref(), "i64".as_ref()]).unwrap();
         for filename in files {
@@ -602,10 +608,18 @@ mod test {
                     let _segments: Vec<()> = id0
                         .segments()
                         .unwrap()
-                        .map(|x| {
-                            x.unwrap();
-                        })
+                        .map(Result::unwrap)
+                        .map(|_| ())
                         .collect();
+
+                    let _loader_names: Vec<()> = id0
+                        .loader_name()
+                        .unwrap()
+                        .map(Result::unwrap)
+                        .map(|_| ())
+                        .collect();
+
+                    let _idb_params = id0.idb_params().unwrap();
                 }
             }
 
