@@ -619,7 +619,7 @@ mod test {
                         .map(|_| ())
                         .collect();
 
-                    let _idb_params = id0.idb_params().unwrap();
+                    let _idb_params = id0.idb_info().unwrap();
                 }
             }
 

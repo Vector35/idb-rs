@@ -323,7 +323,7 @@ impl ID0Section {
             .map(|e| Ok(CStr::from_bytes_with_nul(&e.value)?.to_str()?)))
     }
 
-    pub fn idb_params<'a>(&'a self) -> Result<IDBParam> {
+    pub fn idb_info<'a>(&'a self) -> Result<IDBParam> {
         // TODO Root Node is always the last one?
         let entry = self
             .get("NRoot Node")
@@ -511,7 +511,7 @@ pub struct IDBParam2 {
     pub genflags: Inffl,
     pub lflags: Lflg,
     pub database_change_count: u32,
-    pub filetype: u16,
+    pub filetype: FileType,
     pub ostype: u16,
     pub apptype: u16,
     pub asmtype: u8,
@@ -560,7 +560,7 @@ pub struct IDBParam2 {
     pub strlit_pref: String,
     pub strlit_sernum: u64,
     pub datatypes: u64,
-    pub cc_id: u8,
+    pub cc_id: Compiler,
     pub cc_cm: u8,
     pub cc_size_i: u8,
     pub cc_size_b: u8,
@@ -803,7 +803,8 @@ impl IDBParam {
         let genflags = Inffl::new(parse_u16(&mut input)?)?;
         let lflags = Lflg::new(parse_u32(&mut input)?)?;
         let database_change_count = parse_u32(&mut input)?;
-        let filetype = parse_u16(&mut input)?;
+        let filetype = FileType::from_value(parse_u16(&mut input)?)
+            .ok_or_else(|| anyhow!("Invalid FileType value"))?;
         let ostype = parse_u16(&mut input)?;
         let apptype = parse_u16(&mut input)?;
         let asmtype = parse_u8(&mut input)?;
@@ -867,7 +868,8 @@ impl IDBParam {
 
         let strlit_sernum = parse_word(&mut input, is_64)?;
         let datatypes = parse_word(&mut input, is_64)?;
-        let cc_id = parse_u8(&mut input)?;
+        let cc_id = Compiler::from_value(parse_u8(&mut input)?)
+            .ok_or_else(|| anyhow!("invalid Compiler ID Value"))?;
         let cc_cm = parse_u8(&mut input)?;
         let cc_size_i = parse_u8(&mut input)?;
         let cc_size_b = parse_u8(&mut input)?;
@@ -1248,6 +1250,7 @@ pub enum NameType {
     Serial,
 }
 
+// InnerRef: 8e6e20
 impl NameType {
     fn new(value: u8) -> Option<Self> {
         Some(match value {
@@ -1267,6 +1270,7 @@ impl NameType {
     }
 }
 
+// InnerRef: 8e6de0
 #[derive(Debug, Clone, Copy)]
 pub enum DemNamesForm {
     /// display demangled names as comments
@@ -1544,6 +1548,96 @@ impl AbiOptions {
     /// This bit is not used by ida yet
     pub fn is_hugearg_align(&self) -> bool {
         self.0 & 0x200 != 0
+    }
+}
+
+// InnerRef: 8e6ee0
+#[derive(Debug, Clone)]
+pub enum FileType {
+    Raw,
+    MsdosDriver,
+    Ne,
+    IntelHex,
+    Mex,
+    Lx,
+    Le,
+    Nlm,
+    Coff,
+    Pe,
+    Omf,
+    RRecords,
+    Zip,
+    Omflib,
+    Ar,
+    LoaderSpecific,
+    Elf,
+    W32run,
+    Aout,
+    Palmpilot,
+    MsdosExe,
+    MsdosCom,
+    Aixar,
+    Macho,
+    Psxobj,
+}
+
+impl FileType {
+    fn from_value(value: u16) -> Option<Self> {
+        Some(match value {
+            0x2 => Self::Raw,
+            0x3 => Self::MsdosDriver,
+            0x4 => Self::Ne,
+            0x5 => Self::IntelHex,
+            0x6 => Self::Mex,
+            0x7 => Self::Lx,
+            0x8 => Self::Le,
+            0x9 => Self::Nlm,
+            0xA => Self::Coff,
+            0xB => Self::Pe,
+            0xC => Self::Omf,
+            0xD => Self::RRecords,
+            0xE => Self::Zip,
+            0xF => Self::Omflib,
+            0x10 => Self::Ar,
+            0x11 => Self::LoaderSpecific,
+            0x12 => Self::Elf,
+            0x13 => Self::W32run,
+            0x14 => Self::Aout,
+            0x15 => Self::Palmpilot,
+            0x16 => Self::MsdosExe,
+            0x17 => Self::MsdosCom,
+            0x18 => Self::Aixar,
+            0x19 => Self::Macho,
+            0x1A => Self::Psxobj,
+            _ => return None,
+        })
+    }
+}
+
+// InnerRef: 8e6cc0
+#[derive(Debug, Clone)]
+pub enum Compiler {
+    Unknown,
+    VisualStudio,
+    Borland,
+    Watcom,
+    Gnu,
+    VisualAge,
+    Delphi,
+}
+
+impl Compiler {
+    pub fn from_value(value: u8) -> Option<Self> {
+        Some(match value {
+            0x0 => Self::Unknown,
+            0x1 => Self::VisualStudio,
+            0x2 => Self::Borland,
+            0x3 => Self::Watcom,
+            0x6 => Self::Gnu,
+            0x7 => Self::VisualAge,
+            0x8 => Self::Delphi,
+            _ => return None,
+        })
     }
 }
 
