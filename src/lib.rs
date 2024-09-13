@@ -645,6 +645,13 @@ mod test {
                         .map(Result::unwrap)
                         .map(|_| ())
                         .collect();
+
+                    let _entry_points: Vec<()> = id0
+                        .entry_points()
+                        .unwrap()
+                        .map(Result::unwrap)
+                        .map(|_| ())
+                        .collect();
                 }
             }
 

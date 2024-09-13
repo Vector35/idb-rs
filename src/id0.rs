@@ -420,7 +420,7 @@ impl ID0Section {
 
     pub fn functions_and_comments<'a>(
         &'a self,
-    ) -> Result<impl Iterator<Item = Result<FunctionsAndComments>> + 'a> {
+    ) -> Result<impl Iterator<Item = Result<FunctionsAndComments<'a>>> + 'a> {
         let entry = self
             .get("N$ funcs")
             .ok_or_else(|| anyhow!("Unable to find functions"))?;
@@ -433,6 +433,27 @@ impl ID0Section {
         Ok(self.sub_values(key).map(move |e| {
             let key = &e.key[key_len..];
             FunctionsAndComments::read(key, &e.value, self.is_64)
+        }))
+    }
+
+    // TODO implement $ fixups
+    // TODO implement $ segsstrings
+    // TODO implement $ imports
+    // TODO implement $ scriptsnippets
+
+    pub fn entry_points<'a>(&'a self) -> Result<impl Iterator<Item = Result<EntryPoint<'a>>> + 'a> {
+        let entry = self
+            .get("N$ entry points")
+            .ok_or_else(|| anyhow!("Unable to find functions"))?;
+        let key: Vec<u8> = b"."
+            .iter()
+            .chain(entry.value.iter().rev())
+            .copied()
+            .collect();
+        let key_len = key.len();
+        Ok(self.sub_values(key).map(move |e| {
+            let key = &e.key[key_len..];
+            EntryPoint::read(key, &e.value, self.is_64)
         }))
     }
 }
@@ -2158,6 +2179,68 @@ impl IDBFunction {
         let owner = parse_word(&mut *input, is_64).ok()? as i64;
         let refqty = parse_u32(&mut *input).ok()?;
         Some(IDBFunctionExtra::Tail { owner, refqty })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum EntryPoint<'a> {
+    Name,
+    Function {
+        key: u64,
+        address: u64,
+    },
+    Ordinal {
+        key: u64,
+        ordinal: u64,
+    },
+    ForwardedSymbol {
+        key: u64,
+        symbol: &'a str,
+    },
+    FunctionName {
+        key: u64,
+        name: &'a str,
+    },
+    Unknown {
+        key_type: u8,
+        key: u64,
+        value: &'a [u8],
+    },
+}
+
+impl<'a> EntryPoint<'a> {
+    fn read(key: &'a [u8], value: &'a [u8], is_64: bool) -> Result<Self> {
+        let [key_type, sub_key @ ..] = key else {
+            return Err(anyhow!("invalid Funcs subkey"));
+        };
+        match *key_type {
+            b'N' => {
+                ensure!(parse_maybe_cstr(value) == Some("$ entry points"));
+                return Ok(Self::Name);
+            }
+            _ => {}
+        }
+        let key = read_word(sub_key, is_64)?;
+        match *key_type {
+            b'A' => read_word(value, is_64)
+                .map(|address| Self::Function { key, address })
+                .map_err(|_| anyhow!("Invalid Function address")),
+            b'I' => read_word(value, is_64)
+                .map(|ordinal| Self::Ordinal { key, ordinal })
+                .map_err(|_| anyhow!("Invalid Ordinal value")),
+            b'F' => parse_maybe_cstr(value)
+                .map(|symbol| Self::ForwardedSymbol { key, symbol })
+                .ok_or_else(|| anyhow!("Invalid Forwarded symbol name")),
+            b'S' => parse_maybe_cstr(value)
+                .map(|name| Self::FunctionName { key, name })
+                .ok_or_else(|| anyhow!("Invalid Function name")),
+            // TODO find the meaning of "$ funcs" b'V' entries
+            key_type => Ok(Self::Unknown {
+                key_type,
+                key,
+                value,
+            }),
+        }
     }
 }
 
