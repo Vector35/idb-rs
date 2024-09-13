@@ -261,56 +261,30 @@ impl ID0Section {
         self.binary_search(key).ok().map(|i| &self.entries[i])
     }
 
-    pub fn sub_value(&self, key: &[u8], number: u64) -> Result<Option<&ID0Entry>> {
-        let value = number.to_be_bytes();
-        let slice = if self.is_64 {
-            &value[..]
-        } else {
-            ensure!(number <= u32::MAX.into());
-            &value[4..]
-        };
-        let key: Vec<u8> = b"."
-            .iter()
-            .chain(key.iter().rev())
-            .chain(b"S")
-            .chain(slice)
-            .copied()
-            .collect();
-        Ok(self.get(&key))
-    }
-
-    pub fn sub_values(&self, value: &[u8]) -> Result<impl Iterator<Item = &ID0Entry>> {
-        let mut key: Vec<u8> = b"."
-            .iter()
-            .chain(value.iter().rev())
-            .chain(b"S")
-            .copied()
-            .collect();
+    pub fn sub_values<'a>(&'a self, key: Vec<u8>) -> impl Iterator<Item = &ID0Entry> + 'a {
         let start = self.binary_search(&key);
         let start = match start {
             Ok(pos) => pos,
             Err(start) => start,
         };
 
-        *key.last_mut().unwrap() = b'T';
-        let end = self.binary_search(&key);
-        let end = match end {
-            Ok(pos) => pos,
-            Err(end) => end,
-        };
-
-        ensure!(start <= end);
-        ensure!(end <= self.entries.len());
-
-        Ok(self.entries[start..end].iter())
+        self.entries[start..]
+            .iter()
+            .take_while(move |e| e.key.starts_with(&key))
     }
 
     pub fn segments<'a>(&'a self) -> Result<impl Iterator<Item = Result<Segment>> + 'a> {
         let entry = self
             .get("N$ segs")
             .ok_or_else(|| anyhow!("Unable to find entry segs"))?;
+        let key: Vec<u8> = b"."
+            .iter()
+            .chain(entry.value.iter().rev())
+            .chain(b"S")
+            .copied()
+            .collect();
         Ok(self
-            .sub_values(&entry.value)?
+            .sub_values(key)
             .map(|e| Segment::read(&e.value, self.is_64)))
     }
 
@@ -318,18 +292,109 @@ impl ID0Section {
         let entry = self
             .get("N$ loader name")
             .ok_or_else(|| anyhow!("Unable to find entry loader name"))?;
+        // TODO check that keys are 0 => plugin, or 1 => format
+        let key: Vec<u8> = b"."
+            .iter()
+            .chain(entry.value.iter().rev())
+            .chain(b"S")
+            .copied()
+            .collect();
         Ok(self
-            .sub_values(&entry.value)?
+            .sub_values(key)
             .map(|e| Ok(CStr::from_bytes_with_nul(&e.value)?.to_str()?)))
     }
 
-    pub fn idb_info<'a>(&'a self) -> Result<IDBParam> {
+    pub fn root_info<'a>(&'a self) -> Result<impl Iterator<Item = Result<IDBRootInfo<'a>>> + 'a> {
+        let entry = self
+            .get("NRoot Node")
+            .ok_or_else(|| anyhow!("Unable to find entry Root Node"))?;
+        let key: Vec<u8> = b"."
+            .iter()
+            .chain(entry.value.iter().rev())
+            .copied()
+            .collect();
+        Ok(self.sub_values(key).map(|entry| {
+            let sub_key = entry.key.strip_prefix(&entry.key[..]).unwrap();
+            let Some(sub_type) = sub_key.get(0).copied() else {
+                return Ok(IDBRootInfo::Unknown(entry));
+            };
+            match (sub_type, sub_key.len()) {
+                (b'N', 1) => {
+                    ensure!(
+                        entry.value.as_slice().eq(b"Root Node"),
+                        "Invalid Root Node Name"
+                    );
+                    return Ok(IDBRootInfo::RootNodeName);
+                }
+                (b'V', 1) => {
+                    return parse_maybe_cstr(&entry.value)
+                        .map(IDBRootInfo::InputFile)
+                        .ok_or_else(|| anyhow!("Unable to parse VersionString string"))
+                }
+                _ => {}
+            }
+            let Some(value) = parse_number(&sub_key[1..], true, self.is_64) else {
+                return Ok(IDBRootInfo::Unknown(entry));
+            };
+            match (sub_type, value as i64) {
+                (b'A', -6) => parse_number(&entry.value, false, self.is_64)
+                    .ok_or_else(|| anyhow!("Unable to parse imagebase value"))
+                    .map(IDBRootInfo::ImageBase),
+                (b'A', -5) => parse_number(&entry.value, false, self.is_64)
+                    .ok_or_else(|| anyhow!("Unable to parse crc value"))
+                    .map(IDBRootInfo::Crc),
+                (b'A', -4) => parse_number(&entry.value, false, self.is_64)
+                    .ok_or_else(|| anyhow!("Unable to parse open_count value"))
+                    .map(IDBRootInfo::OpenCount),
+                (b'A', -2) => parse_number(&entry.value, false, self.is_64)
+                    .ok_or_else(|| anyhow!("Unable to parse CreatedDate value"))
+                    .map(IDBRootInfo::CreatedDate),
+                (b'A', -1) => parse_number(&entry.value, false, self.is_64)
+                    .ok_or_else(|| anyhow!("Unable to parse Version value"))
+                    .map(IDBRootInfo::Version),
+                (b'S', 1302) => entry
+                    .value
+                    .as_slice()
+                    .try_into()
+                    .map(IDBRootInfo::Md5)
+                    .map_err(|_| anyhow!("Value Md5 with invalid len")),
+                (b'S', 1303) => parse_maybe_cstr(&entry.value)
+                    .map(IDBRootInfo::VersionString)
+                    .ok_or_else(|| anyhow!("Unable to parse VersionString string")),
+                (b'S', 1349) => entry
+                    .value
+                    .as_slice()
+                    .try_into()
+                    .map(IDBRootInfo::Sha256)
+                    .map_err(|_| anyhow!("Value Sha256 with invalid len")),
+                (b'S', 0x41b994) => {
+                    IDBParam::read(&entry.value, self.is_64).map(IDBRootInfo::IDAInfo)
+                }
+                _ => Ok(IDBRootInfo::Unknown(entry)),
+            }
+        }))
+    }
+
+    pub fn ida_info(&self) -> Result<IDBParam> {
         // TODO Root Node is always the last one?
         let entry = self
             .get("NRoot Node")
             .ok_or_else(|| anyhow!("Unable to find entry Root Node"))?;
+        let sub_key = if self.is_64 {
+            0x41B994u64.to_be_bytes().to_vec()
+        } else {
+            0x41B994u32.to_be_bytes().to_vec()
+        };
+        let key: Vec<u8> = b"."
+            .iter()
+            .chain(entry.value.iter().rev())
+            .chain(b"S")
+            .chain(sub_key.iter())
+            .copied()
+            .collect();
         let description = self
-            .sub_value(&entry.value, 0x41b994)?
+            .sub_values(key)
+            .next()
             .ok_or_else(|| anyhow!("Unable to find id_params inside Root Node"))?;
         IDBParam::read(&description.value, self.is_64)
     }
@@ -412,6 +477,23 @@ impl Segment {
             color,
         })
     }
+}
+
+#[derive(Clone, Debug)]
+pub enum IDBRootInfo<'a> {
+    /// it's just the "Root Node" String
+    RootNodeName,
+    InputFile(&'a str),
+    Crc(u64),
+    ImageBase(u64),
+    OpenCount(u64),
+    CreatedDate(u64),
+    Version(u64),
+    Md5(&'a [u8; 16]),
+    VersionString(&'a str),
+    Sha256(&'a [u8; 32]),
+    IDAInfo(IDBParam),
+    Unknown(&'a ID0Entry),
 }
 
 #[derive(Clone, Debug)]
@@ -1982,4 +2064,25 @@ fn parse_u64<I: Read>(input: &mut I) -> Result<u64> {
     let lo = parse_u32(&mut *input)?;
     let hi = parse_u32(&mut *input)?;
     Ok((u64::from(hi) << 32) | u64::from(lo))
+}
+
+fn parse_number(data: &[u8], big_endian: bool, is_64: bool) -> Option<u64> {
+    Some(match (data.len(), is_64, big_endian) {
+        (8, true, true) => u64::from_be_bytes(data.try_into().unwrap()),
+        (8, true, false) => u64::from_le_bytes(data.try_into().unwrap()),
+        (4, false, true) => u32::from_be_bytes(data.try_into().unwrap()).into(),
+        (4, false, false) => u32::from_le_bytes(data.try_into().unwrap()).into(),
+        _ => return None,
+    })
+}
+
+// parse a string that maybe is finilized with \x00
+fn parse_maybe_cstr(data: &[u8]) -> Option<&str> {
+    // find the end of the string
+    let end_pos = data.iter().position(|b| *b == 0).unwrap_or(data.len());
+    // make sure there is no data after the \x00
+    if data[end_pos..].iter().any(|b| *b != 0) {
+        return None;
+    }
+    core::str::from_utf8(&data[0..end_pos]).ok()
 }

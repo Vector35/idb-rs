@@ -619,7 +619,12 @@ mod test {
                         .map(|_| ())
                         .collect();
 
-                    let _idb_params = id0.idb_info().unwrap();
+                    let _ida_info: Vec<()> = id0
+                        .root_info()
+                        .unwrap()
+                        .map(Result::unwrap)
+                        .map(|_| ())
+                        .collect();
                 }
             }
 
