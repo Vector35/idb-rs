@@ -619,8 +619,21 @@ mod test {
                         .map(|_| ())
                         .collect();
 
-                    let _ida_info: Vec<()> = id0
+                    let _root_info: Vec<()> = id0
                         .root_info()
+                        .unwrap()
+                        .map(Result::unwrap)
+                        .map(|_| ())
+                        .collect();
+
+                    let _ida_info = id0.ida_info().unwrap();
+                    let version = match _ida_info {
+                        id0::IDBParam::V1(x) => x.version,
+                        id0::IDBParam::V2(x) => x.version,
+                    };
+
+                    let _file_regions: Vec<()> = id0
+                        .file_regions(version)
                         .unwrap()
                         .map(Result::unwrap)
                         .map(|_| ())

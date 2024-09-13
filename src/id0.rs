@@ -313,24 +313,22 @@ impl ID0Section {
             .chain(entry.value.iter().rev())
             .copied()
             .collect();
-        Ok(self.sub_values(key).map(|entry| {
-            let sub_key = entry.key.strip_prefix(&entry.key[..]).unwrap();
+        let key_len = key.len();
+        Ok(self.sub_values(key).map(move |entry| {
+            let sub_key = &entry.key[key_len..];
             let Some(sub_type) = sub_key.get(0).copied() else {
                 return Ok(IDBRootInfo::Unknown(entry));
             };
             match (sub_type, sub_key.len()) {
                 (b'N', 1) => {
                     ensure!(
-                        entry.value.as_slice().eq(b"Root Node"),
+                        parse_maybe_cstr(&entry.value) == Some("Root Node"),
                         "Invalid Root Node Name"
                     );
                     return Ok(IDBRootInfo::RootNodeName);
                 }
-                (b'V', 1) => {
-                    return parse_maybe_cstr(&entry.value)
-                        .map(IDBRootInfo::InputFile)
-                        .ok_or_else(|| anyhow!("Unable to parse VersionString string"))
-                }
+                // TODO filenames can be non-utf-8, but are they always CStr?
+                (b'V', 1) => return Ok(IDBRootInfo::InputFile(&entry.value)),
                 _ => {}
             }
             let Some(value) = parse_number(&sub_key[1..], true, self.is_64) else {
@@ -397,6 +395,27 @@ impl ID0Section {
             .next()
             .ok_or_else(|| anyhow!("Unable to find id_params inside Root Node"))?;
         IDBParam::read(&description.value, self.is_64)
+    }
+
+    pub fn file_regions<'a>(
+        &'a self,
+        version: u16,
+    ) -> Result<impl Iterator<Item = Result<IDBFileRegions>> + 'a> {
+        let entry = self
+            .get("N$ fileregions")
+            .ok_or_else(|| anyhow!("Unable to find fileregions"))?;
+        let key: Vec<u8> = b"."
+            .iter()
+            .chain(entry.value.iter().rev())
+            .chain(b"S")
+            .copied()
+            .collect();
+        let key_len = key.len();
+        // TODO find the meaning of "$ fileregions" b'V' entries
+        Ok(self.sub_values(key).map(move |e| {
+            let key = &e.key[key_len..];
+            IDBFileRegions::read(key, &e.value, version, self.is_64)
+        }))
     }
 }
 
@@ -483,7 +502,7 @@ impl Segment {
 pub enum IDBRootInfo<'a> {
     /// it's just the "Root Node" String
     RootNodeName,
-    InputFile(&'a str),
+    InputFile(&'a [u8]),
     Crc(u64),
     ImageBase(u64),
     OpenCount(u64),
@@ -504,6 +523,7 @@ pub enum IDBParam {
 
 #[derive(Clone, Debug)]
 pub struct IDBParam1 {
+    pub version: u16,
     pub cpu: String,
     pub lflags: u8,
     pub demnames: u8,
@@ -589,6 +609,7 @@ pub struct IDBParam1 {
 
 #[derive(Clone, Debug)]
 pub struct IDBParam2 {
+    pub version: u16,
     pub cpu: String,
     pub genflags: Inffl,
     pub lflags: Lflg,
@@ -691,8 +712,8 @@ impl IDBParam {
 
         // TODO tight those ranges up
         let param = match version {
-            ..700 => Self::read_v1(&mut input, is_64, cpu)?,
-            700.. => Self::read_v2(&mut input, is_64, magic_old, cpu)?,
+            ..700 => Self::read_v1(&mut input, is_64, version, cpu)?,
+            700.. => Self::read_v2(&mut input, is_64, magic_old, version, cpu)?,
         };
         match version {
             // TODO old version may contain extra data at the end with unknown purpose
@@ -706,7 +727,12 @@ impl IDBParam {
         Ok(param)
     }
 
-    pub(crate) fn read_v1<I: Read>(mut input: I, is_64: bool, cpu: String) -> Result<Self> {
+    pub(crate) fn read_v1<I: Read>(
+        mut input: I,
+        is_64: bool,
+        version: u16,
+        cpu: String,
+    ) -> Result<Self> {
         let lflags: u8 = bincode::deserialize_from(&mut input)?;
         let demnames: u8 = bincode::deserialize_from(&mut input)?;
         let filetype: u16 = bincode::deserialize_from(&mut input)?;
@@ -792,6 +818,7 @@ impl IDBParam {
         let refcmts: u8 = bincode::deserialize_from(&mut input)?;
 
         Ok(IDBParam::V1(IDBParam1 {
+            version,
             cpu,
             lflags,
             demnames,
@@ -879,6 +906,7 @@ impl IDBParam {
         mut input: I,
         is_64: bool,
         magic_old: bool,
+        version: u16,
         cpu: String,
     ) -> Result<Self> {
         // NOTE in this version parse_* functions are used
@@ -965,6 +993,7 @@ impl IDBParam {
         let appcall_options = parse_u32(&mut input)?;
 
         Ok(IDBParam::V2(IDBParam2 {
+            version,
             cpu,
             genflags,
             lflags,
@@ -1969,6 +1998,45 @@ impl ID0TreeEntrRaw {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct IDBFileRegions {
+    pub start: u64,
+    pub end: u64,
+    pub eva: u64,
+}
+
+impl IDBFileRegions {
+    fn read(key: &[u8], data: &[u8], version: u16, is_64: bool) -> Result<Self> {
+        let mut input = Cursor::new(data);
+        // TODO detect versions with more accuracy
+        let (start, end, eva) = match version {
+            ..700 => {
+                let start = read_word(&mut input, is_64)?;
+                let end = read_word(&mut input, is_64)?;
+                let rva: u32 = bincode::deserialize_from(&mut input)?;
+                (start, end, rva.into())
+            }
+            700.. => {
+                let start = parse_word(&mut input, is_64)?;
+                let end = start
+                    .checked_add(parse_word(&mut input, is_64)?)
+                    .ok_or_else(|| anyhow!("Overflow address in File Regions"))?;
+                let rva = parse_word(&mut input, is_64)?;
+                // TODO some may include an extra 0 byte at the end?
+                if let Ok(_unknown) = parse_word(&mut input, is_64) {
+                    ensure!(_unknown == 0);
+                }
+                (start, end, rva)
+            }
+        };
+        let key_offset = parse_number(key, true, is_64)
+            .ok_or_else(|| anyhow!("Invalid IDB FileRefion Key Offset"))?;
+        ensure!(key_offset == start);
+        ensure!(input.position() == u64::try_from(data.len()).unwrap());
+        Ok(Self { start, end, eva })
+    }
+}
+
 fn read_exact_or_nothing<R: std::io::Read + ?Sized>(
     this: &mut R,
     mut buf: &mut [u8],
@@ -2050,7 +2118,7 @@ fn parse_u32<I: Read>(input: &mut I) -> Result<u32> {
         0xC0.. => {
             let bytes: [u8; 3] = bincode::deserialize_from(&mut *input)?;
             Ok(u32::from_be_bytes([
-                b1 & 0x1F,
+                b1 & 0x3F,
                 bytes[0],
                 bytes[1],
                 bytes[2],
@@ -2084,5 +2152,5 @@ fn parse_maybe_cstr(data: &[u8]) -> Option<&str> {
     if data[end_pos..].iter().any(|b| *b != 0) {
         return None;
     }
-    core::str::from_utf8(&data[0..end_pos]).ok()
+    core::str::from_utf8(&data[..end_pos]).ok()
 }
