@@ -638,6 +638,13 @@ mod test {
                         .map(Result::unwrap)
                         .map(|_| ())
                         .collect();
+
+                    let _functions: Vec<()> = id0
+                        .functions_and_comments()
+                        .unwrap()
+                        .map(Result::unwrap)
+                        .map(|_| ())
+                        .collect();
                 }
             }
 

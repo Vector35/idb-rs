@@ -417,6 +417,24 @@ impl ID0Section {
             IDBFileRegions::read(key, &e.value, version, self.is_64)
         }))
     }
+
+    pub fn functions_and_comments<'a>(
+        &'a self,
+    ) -> Result<impl Iterator<Item = Result<FunctionsAndComments>> + 'a> {
+        let entry = self
+            .get("N$ funcs")
+            .ok_or_else(|| anyhow!("Unable to find functions"))?;
+        let key: Vec<u8> = b"."
+            .iter()
+            .chain(entry.value.iter().rev())
+            .copied()
+            .collect();
+        let key_len = key.len();
+        Ok(self.sub_values(key).map(move |e| {
+            let key = &e.key[key_len..];
+            FunctionsAndComments::read(key, &e.value, self.is_64)
+        }))
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -2034,6 +2052,112 @@ impl IDBFileRegions {
         ensure!(key_offset == start);
         ensure!(input.position() == u64::try_from(data.len()).unwrap());
         Ok(Self { start, end, eva })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum FunctionsAndComments<'a> {
+    // It's just the name "$ funcs"
+    Name,
+    Function(IDBFunction),
+    Comment(&'a str),
+    RepeatableComment(&'a str),
+    Unknown { key: &'a [u8], value: &'a [u8] },
+}
+
+impl<'a> FunctionsAndComments<'a> {
+    fn read(key: &'a [u8], value: &'a [u8], is_64: bool) -> Result<Self> {
+        let [key_type, sub_key @ ..] = key else {
+            return Err(anyhow!("invalid Funcs subkey"));
+        };
+        match *key_type {
+            b'N' => {
+                ensure!(parse_maybe_cstr(value) == Some("$ funcs"));
+                Ok(Self::Name)
+            }
+            b'S' => IDBFunction::read(sub_key, value, is_64).map(Self::Function),
+            b'C' => parse_maybe_cstr(value)
+                .map(Self::Comment)
+                .ok_or_else(|| anyhow!("Invalid Comment string")),
+            b'R' => parse_maybe_cstr(value)
+                .map(Self::RepeatableComment)
+                .ok_or_else(|| anyhow!("Invalid Repetable Comment string")),
+            // TODO find the meaning of "$ funcs" b'V' entries
+            _ => Ok(Self::Unknown { key, value }),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct IDBFunction {
+    pub start: u64,
+    pub end: u64,
+    pub flags: u16,
+    pub extra: Option<IDBFunctionExtra>,
+}
+
+#[derive(Clone, Debug)]
+pub enum IDBFunctionExtra {
+    NonTail {
+        frame: u64,
+        frsize: u64,
+        frregs: u16,
+        argsize: u64,
+    },
+    Tail {
+        /// offset of the function owner in relation to the function start
+        owner: i64,
+        refqty: u32,
+    },
+}
+
+impl IDBFunction {
+    fn read(key: &[u8], value: &[u8], is_64: bool) -> Result<Self> {
+        let key_address = parse_number(key, true, is_64)
+            .ok_or_else(|| anyhow!("Invalid IDB FileRefion Key Offset"))?;
+        let mut input = Cursor::new(value);
+        let start = parse_word(&mut input, is_64)?;
+        ensure!(key_address == start);
+        let end = start
+            .checked_add(parse_word(&mut input, is_64)?)
+            .ok_or_else(|| anyhow!("Function range overflows"))?;
+        let flags = parse_u16(&mut input)?;
+
+        // CONST migrate this to mod flags
+        const FUNC_TAIL: u16 = 0x8000;
+        let extra = if flags & FUNC_TAIL != 0 {
+            Self::read_extra_tail(&mut input, is_64)
+        } else {
+            Self::read_extra_regular(&mut input, is_64)
+        };
+        // TODO make sure all the data is parsed
+        //ensure!(input.position() == u64::try_from(data.len()).unwrap());
+        Ok(Self {
+            start,
+            end,
+            flags,
+            extra,
+        })
+    }
+
+    // TODO make sure all the data is parsed
+    fn read_extra_regular(input: &mut impl Read, is_64: bool) -> Option<IDBFunctionExtra> {
+        let frame = parse_word(&mut *input, is_64).ok()?;
+        let frsize = parse_word(&mut *input, is_64).ok()?;
+        let frregs = parse_u16(&mut *input).ok()?;
+        let argsize = parse_word(&mut *input, is_64).ok()?;
+        Some(IDBFunctionExtra::NonTail {
+            frame,
+            frsize,
+            frregs,
+            argsize,
+        })
+    }
+
+    fn read_extra_tail(input: &mut impl Read, is_64: bool) -> Option<IDBFunctionExtra> {
+        let owner = parse_word(&mut *input, is_64).ok()? as i64;
+        let refqty = parse_u32(&mut *input).ok()?;
+        Some(IDBFunctionExtra::Tail { owner, refqty })
     }
 }
 
