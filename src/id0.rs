@@ -2081,8 +2081,8 @@ pub enum FunctionsAndComments<'a> {
     // It's just the name "$ funcs"
     Name,
     Function(IDBFunction),
-    Comment(&'a str),
-    RepeatableComment(&'a str),
+    Comment { address: u64, value: &'a str },
+    RepeatableComment { address: u64, value: &'a str },
     Unknown { key: &'a [u8], value: &'a [u8] },
 }
 
@@ -2097,12 +2097,20 @@ impl<'a> FunctionsAndComments<'a> {
                 Ok(Self::Name)
             }
             b'S' => IDBFunction::read(sub_key, value, is_64).map(Self::Function),
-            b'C' => parse_maybe_cstr(value)
-                .map(Self::Comment)
-                .ok_or_else(|| anyhow!("Invalid Comment string")),
-            b'R' => parse_maybe_cstr(value)
-                .map(Self::RepeatableComment)
-                .ok_or_else(|| anyhow!("Invalid Repetable Comment string")),
+            b'C' => {
+                let address = parse_number(key, true, is_64)
+                    .ok_or_else(|| anyhow!("Invalid IDB FileRefion Key Offset"))?;
+                parse_maybe_cstr(value)
+                    .map(|value| Self::Comment { address, value })
+                    .ok_or_else(|| anyhow!("Invalid Comment string"))
+            }
+            b'R' => {
+                let address = parse_number(key, true, is_64)
+                    .ok_or_else(|| anyhow!("Invalid IDB FileRefion Key Offset"))?;
+                parse_maybe_cstr(value)
+                    .map(|value| Self::RepeatableComment { address, value })
+                    .ok_or_else(|| anyhow!("Invalid Repetable Comment string"))
+            }
             // TODO find the meaning of "$ funcs" b'V' entries
             _ => Ok(Self::Unknown { key, value }),
         }
