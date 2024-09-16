@@ -460,40 +460,40 @@ impl ID0Section {
 
 #[derive(Clone, Debug)]
 pub struct Segment {
-    startea: u64,
-    size: u64,
-    name_id: u64,
-    class_id: u64,
+    pub startea: u64,
+    pub size: u64,
+    pub name_id: u64,
+    pub class_id: u64,
     /// This field is IDP dependent.
     /// You may keep your information about the segment here
-    orgbase: u64,
+    pub orgbase: u64,
     /// See more at [flags](https://hex-rays.com//products/ida/support/sdkdoc/group___s_f_l__.html)
-    flags: u32,
+    pub flags: u32,
     /// [Segment alignment codes](https://hex-rays.com//products/ida/support/sdkdoc/group__sa__.html)
-    align: u32,
+    pub align: u32,
     /// [Segment combination codes](https://hex-rays.com//products/ida/support/sdkdoc/group__sc__.html)
-    comb: u32,
+    pub comb: u32,
     /// [Segment permissions](https://hex-rays.com//products/ida/support/sdkdoc/group___s_e_g_p_e_r_m__.html) (0 means no information)
-    perm: u32,
+    pub perm: u32,
     /// Number of bits in the segment addressing.
     /// 0: 16 bits
     /// 1: 32 bits
     /// 2: 64 bits
-    bitness: u32,
+    pub bitness: u32,
     /// Segment type (see [Segment types](https://hex-rays.com//products/ida/support/sdkdoc/group___s_e_g__.html)).
     /// The kernel treats different segment types differently. Segments marked with '*' contain no instructions or data and are not declared as 'segments' in the disassembly.
-    seg_type: u32,
+    pub seg_type: u32,
     /// Segment selector - should be unique.
     /// You can't change this field after creating the segment.
     /// Exception: 16bit OMF files may have several segments with the same selector,
     /// but this is not good (no way to denote a segment exactly) so it should be fixed in
     /// the future.
-    selector: u64,
+    pub selector: u64,
     /// Default segment register values.
     /// First element of this array keeps information about value of [processor_t::reg_first_sreg](https://hex-rays.com//products/ida/support/sdkdoc/structprocessor__t.html#a4206e35bf99d211c18d53bd1035eb2e3)
-    defsr: [u64; 16],
+    pub defsr: [u64; 16],
     ///	the segment color
-    color: u32,
+    pub color: u32,
 }
 
 impl Segment {
