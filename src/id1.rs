@@ -115,7 +115,6 @@ impl ID1Section {
         ensure!(buf[header_page.position().try_into().unwrap()..]
             .iter()
             .all(|b| *b == 0));
-        drop(header_page);
 
         // sort segments by address
         let mut overlay_check = match &seglist_raw {
@@ -251,7 +250,7 @@ fn split_flags_data<I: Read>(mut input: I, len: u64) -> Result<(Vec<u8>, Vec<u32
         .iter_mut()
         .map(|b| {
             let value = (*b & 0xFF) as u8;
-            *b = *b >> 8;
+            *b >>= 8;
             value
         })
         .collect();

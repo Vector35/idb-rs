@@ -27,7 +27,7 @@ impl NamSection {
         // review this value
         const MAX_HEADER_LEN: usize = 64;
         const DEFAULT_PAGE_SIZE: usize = 0x2000;
-        assert!(MAX_HEADER_LEN < DEFAULT_PAGE_SIZE);
+        //assert!(MAX_HEADER_LEN < DEFAULT_PAGE_SIZE);
 
         let mut buf = vec![0; MAX_HEADER_LEN];
         input.read_exact(&mut buf[..])?;

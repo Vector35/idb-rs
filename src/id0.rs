@@ -261,7 +261,7 @@ impl ID0Section {
         self.binary_search(key).ok().map(|i| &self.entries[i])
     }
 
-    pub fn sub_values<'a>(&'a self, key: Vec<u8>) -> impl Iterator<Item = &ID0Entry> + 'a {
+    pub fn sub_values(&self, key: Vec<u8>) -> impl Iterator<Item = &ID0Entry> {
         let start = self.binary_search(&key);
         let start = match start {
             Ok(pos) => pos,
@@ -273,7 +273,7 @@ impl ID0Section {
             .take_while(move |e| e.key.starts_with(&key))
     }
 
-    pub fn segments<'a>(&'a self) -> Result<impl Iterator<Item = Result<Segment>> + 'a> {
+    pub fn segments(&self) -> Result<impl Iterator<Item = Result<Segment>> + '_> {
         let entry = self
             .get("N$ segs")
             .ok_or_else(|| anyhow!("Unable to find entry segs"))?;
@@ -288,7 +288,7 @@ impl ID0Section {
             .map(|e| Segment::read(&e.value, self.is_64)))
     }
 
-    pub fn loader_name<'a>(&'a self) -> Result<impl Iterator<Item = Result<&'a str>> + 'a> {
+    pub fn loader_name(&self) -> Result<impl Iterator<Item = Result<&str>>> {
         let entry = self
             .get("N$ loader name")
             .ok_or_else(|| anyhow!("Unable to find entry loader name"))?;
@@ -304,7 +304,7 @@ impl ID0Section {
             .map(|e| Ok(CStr::from_bytes_with_nul(&e.value)?.to_str()?)))
     }
 
-    pub fn root_info<'a>(&'a self) -> Result<impl Iterator<Item = Result<IDBRootInfo<'a>>> + 'a> {
+    pub fn root_info(&self) -> Result<impl Iterator<Item = Result<IDBRootInfo>>> {
         let entry = self
             .get("NRoot Node")
             .ok_or_else(|| anyhow!("Unable to find entry Root Node"))?;
@@ -316,7 +316,7 @@ impl ID0Section {
         let key_len = key.len();
         Ok(self.sub_values(key).map(move |entry| {
             let sub_key = &entry.key[key_len..];
-            let Some(sub_type) = sub_key.get(0).copied() else {
+            let Some(sub_type) = sub_key.first().copied() else {
                 return Ok(IDBRootInfo::Unknown(entry));
             };
             match (sub_type, sub_key.len()) {
@@ -365,9 +365,9 @@ impl ID0Section {
                     .try_into()
                     .map(IDBRootInfo::Sha256)
                     .map_err(|_| anyhow!("Value Sha256 with invalid len")),
-                (b'S', 0x41b994) => {
-                    IDBParam::read(&entry.value, self.is_64).map(IDBRootInfo::IDAInfo)
-                }
+                (b'S', 0x41b994) => IDBParam::read(&entry.value, self.is_64)
+                    .map(Box::new)
+                    .map(IDBRootInfo::IDAInfo),
                 _ => Ok(IDBRootInfo::Unknown(entry)),
             }
         }))
@@ -397,10 +397,10 @@ impl ID0Section {
         IDBParam::read(&description.value, self.is_64)
     }
 
-    pub fn file_regions<'a>(
-        &'a self,
+    pub fn file_regions(
+        &self,
         version: u16,
-    ) -> Result<impl Iterator<Item = Result<IDBFileRegions>> + 'a> {
+    ) -> Result<impl Iterator<Item = Result<IDBFileRegions>> + '_> {
         let entry = self
             .get("N$ fileregions")
             .ok_or_else(|| anyhow!("Unable to find fileregions"))?;
@@ -418,9 +418,9 @@ impl ID0Section {
         }))
     }
 
-    pub fn functions_and_comments<'a>(
-        &'a self,
-    ) -> Result<impl Iterator<Item = Result<FunctionsAndComments<'a>>> + 'a> {
+    pub fn functions_and_comments(
+        &self,
+    ) -> Result<impl Iterator<Item = Result<FunctionsAndComments>>> {
         let entry = self
             .get("N$ funcs")
             .ok_or_else(|| anyhow!("Unable to find functions"))?;
@@ -441,7 +441,7 @@ impl ID0Section {
     // TODO implement $ imports
     // TODO implement $ scriptsnippets
 
-    pub fn entry_points<'a>(&'a self) -> Result<impl Iterator<Item = Result<EntryPoint<'a>>> + 'a> {
+    pub fn entry_points(&self) -> Result<impl Iterator<Item = Result<EntryPoint>>> {
         let entry = self
             .get("N$ entry points")
             .ok_or_else(|| anyhow!("Unable to find functions"))?;
@@ -492,7 +492,7 @@ pub struct Segment {
     /// Default segment register values.
     /// First element of this array keeps information about value of [processor_t::reg_first_sreg](https://hex-rays.com//products/ida/support/sdkdoc/structprocessor__t.html#a4206e35bf99d211c18d53bd1035eb2e3)
     pub defsr: [u64; 16],
-    ///	the segment color
+    /// the segment color
     pub color: u32,
 }
 
@@ -550,7 +550,7 @@ pub enum IDBRootInfo<'a> {
     Md5(&'a [u8; 16]),
     VersionString(&'a str),
     Sha256(&'a [u8; 32]),
-    IDAInfo(IDBParam),
+    IDAInfo(Box<IDBParam>),
     Unknown(&'a ID0Entry),
 }
 
@@ -736,7 +736,7 @@ impl IDBParam {
             (true, 700..) => 16,
             (false, 700..) => {
                 let cpu_len: u8 = bincode::deserialize_from(&mut input)?;
-                cpu_len.try_into().unwrap()
+                cpu_len.into()
             }
         };
         let mut cpu = vec![0; cpu_len];
@@ -1862,6 +1862,8 @@ impl ID0TreeEntrRaw {
         }
     }
 
+    #[allow(clippy::type_complexity)]
+    #[allow(clippy::too_many_arguments)]
     fn read_xx(
         page: &[u8],
         id0_header: &ID0Header,
@@ -2221,12 +2223,9 @@ impl<'a> EntryPoint<'a> {
         let [key_type, sub_key @ ..] = key else {
             return Err(anyhow!("invalid Funcs subkey"));
         };
-        match *key_type {
-            b'N' => {
-                ensure!(parse_maybe_cstr(value) == Some("$ entry points"));
-                return Ok(Self::Name);
-            }
-            _ => {}
+        if *key_type == b'N' {
+            ensure!(parse_maybe_cstr(value) == Some("$ entry points"));
+            return Ok(Self::Name);
         }
         let key = read_word(sub_key, is_64)?;
         match *key_type {
