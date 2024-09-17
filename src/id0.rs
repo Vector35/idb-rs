@@ -1,6 +1,7 @@
 use std::ffi::CStr;
 use std::io::{BufRead, Cursor, ErrorKind, Read, Seek, SeekFrom};
 use std::num::NonZeroU32;
+use std::ops::Range;
 
 use crate::{read_bytes_len_u16, read_c_string_raw, IDBHeader, IDBSectionCompression};
 
@@ -489,20 +490,20 @@ pub struct Segment {
 impl Segment {
     fn read(value: &[u8], is_64: bool) -> Result<Self> {
         let mut cursor = Cursor::new(value);
-        let startea = parse_word(&mut cursor, is_64)?;
-        let size = parse_word(&mut cursor, is_64)?;
-        let name_id = parse_word(&mut cursor, is_64)?;
-        let class_id = parse_word(&mut cursor, is_64)?;
-        let orgbase = parse_word(&mut cursor, is_64)?;
+        let startea = unpack_usize(&mut cursor, is_64)?;
+        let size = unpack_usize(&mut cursor, is_64)?;
+        let name_id = unpack_usize(&mut cursor, is_64)?;
+        let class_id = unpack_usize(&mut cursor, is_64)?;
+        let orgbase = unpack_usize(&mut cursor, is_64)?;
         let flags = unpack_dd(&mut cursor)?;
         let align = unpack_dd(&mut cursor)?;
         let comb = unpack_dd(&mut cursor)?;
         let perm = unpack_dd(&mut cursor)?;
         let bitness = unpack_dd(&mut cursor)?;
         let seg_type = unpack_dd(&mut cursor)?;
-        let selector = parse_word(&mut cursor, is_64)?;
+        let selector = unpack_usize(&mut cursor, is_64)?;
         let defsr: Vec<_> = (0..16)
-            .map(|_| parse_word(&mut cursor, is_64))
+            .map(|_| unpack_usize(&mut cursor, is_64))
             .collect::<Result<_, _>>()?;
         let color = unpack_dd(&mut cursor)?;
 
@@ -951,23 +952,23 @@ impl IDBParam {
         let af1 = unpack_dd(&mut input)?;
         let af2 = unpack_dd(&mut input)?;
         let af = Af::new(af1, af2)?;
-        let baseaddr = parse_word(&mut input, is_64)?;
-        let start_ss = parse_word(&mut input, is_64)?;
-        let start_cs = parse_word(&mut input, is_64)?;
-        let start_ip = parse_word(&mut input, is_64)?;
-        let start_ea = parse_word(&mut input, is_64)?;
-        let start_sp = parse_word(&mut input, is_64)?;
-        let main = parse_word(&mut input, is_64)?;
-        let min_ea = parse_word(&mut input, is_64)?;
-        let max_ea = parse_word(&mut input, is_64)?;
-        let omin_ea = parse_word(&mut input, is_64)?;
-        let omax_ea = parse_word(&mut input, is_64)?;
-        let lowoff = parse_word(&mut input, is_64)?;
-        let highoff = parse_word(&mut input, is_64)?;
-        let maxref = parse_word(&mut input, is_64)?;
-        let privrange_start_ea = parse_word(&mut input, is_64)?;
-        let privrange_end_ea = parse_word(&mut input, is_64)?;
-        let netdelta = parse_word(&mut input, is_64)?;
+        let baseaddr = unpack_usize(&mut input, is_64)?;
+        let start_ss = unpack_usize(&mut input, is_64)?;
+        let start_cs = unpack_usize(&mut input, is_64)?;
+        let start_ip = unpack_usize(&mut input, is_64)?;
+        let start_ea = unpack_usize(&mut input, is_64)?;
+        let start_sp = unpack_usize(&mut input, is_64)?;
+        let main = unpack_usize(&mut input, is_64)?;
+        let min_ea = unpack_usize(&mut input, is_64)?;
+        let max_ea = unpack_usize(&mut input, is_64)?;
+        let omin_ea = unpack_usize(&mut input, is_64)?;
+        let omax_ea = unpack_usize(&mut input, is_64)?;
+        let lowoff = unpack_usize(&mut input, is_64)?;
+        let highoff = unpack_usize(&mut input, is_64)?;
+        let maxref = unpack_usize(&mut input, is_64)?;
+        let privrange_start_ea = unpack_usize(&mut input, is_64)?;
+        let privrange_end_ea = unpack_usize(&mut input, is_64)?;
+        let netdelta = unpack_usize(&mut input, is_64)?;
         let xrefnum = parse_u8(&mut input)?;
         let type_xrefnum = parse_u8(&mut input)?;
         let refcmtnum = parse_u8(&mut input)?;
@@ -1005,8 +1006,8 @@ impl IDBParam {
         input.read_exact(&mut strlit_pref)?;
         let strlit_pref = String::from_utf8(strlit_pref)?;
 
-        let strlit_sernum = parse_word(&mut input, is_64)?;
-        let datatypes = parse_word(&mut input, is_64)?;
+        let strlit_sernum = unpack_usize(&mut input, is_64)?;
+        let datatypes = unpack_usize(&mut input, is_64)?;
         let cc_id = Compiler::from_value(parse_u8(&mut input)?)
             .ok_or_else(|| anyhow!("invalid Compiler ID Value"))?;
         let cc_cm = parse_u8(&mut input)?;
@@ -2043,13 +2044,13 @@ impl IDBFileRegions {
                 (start, end, rva.into())
             }
             700.. => {
-                let start = parse_word(&mut input, is_64)?;
+                let start = unpack_usize(&mut input, is_64)?;
                 let end = start
-                    .checked_add(parse_word(&mut input, is_64)?)
+                    .checked_add(unpack_usize(&mut input, is_64)?)
                     .ok_or_else(|| anyhow!("Overflow address in File Regions"))?;
-                let rva = parse_word(&mut input, is_64)?;
+                let rva = unpack_usize(&mut input, is_64)?;
                 // TODO some may include an extra 0 byte at the end?
-                if let Ok(_unknown) = parse_word(&mut input, is_64) {
+                if let Ok(_unknown) = unpack_usize(&mut input, is_64) {
                     ensure!(_unknown == 0);
                 }
                 (start, end, rva)
@@ -2106,8 +2107,7 @@ impl<'a> FunctionsAndComments<'a> {
 
 #[derive(Clone, Debug)]
 pub struct IDBFunction {
-    pub start: u64,
-    pub end: u64,
+    pub address: Range<u64>,
     pub flags: u16,
     pub extra: Option<IDBFunctionExtra>,
 }
@@ -2116,64 +2116,69 @@ pub struct IDBFunction {
 pub enum IDBFunctionExtra {
     NonTail {
         frame: u64,
-        frsize: u64,
-        frregs: u16,
-        argsize: u64,
     },
     Tail {
-        /// offset of the function owner in relation to the function start
-        owner: i64,
-        refqty: u32,
+        /// function owner of the function start
+        owner: u64,
+        refqty: u64,
     },
 }
 
 impl IDBFunction {
+    // InnerRef: 0x38f810
     fn read(key: &[u8], value: &[u8], is_64: bool) -> Result<Self> {
         let key_address = parse_number(key, true, is_64)
             .ok_or_else(|| anyhow!("Invalid IDB FileRefion Key Offset"))?;
         let mut input = Cursor::new(value);
-        let start = parse_word(&mut input, is_64)?;
-        ensure!(key_address == start);
-        let end = start
-            .checked_add(parse_word(&mut input, is_64)?)
-            .ok_or_else(|| anyhow!("Function range overflows"))?;
+        let address = unpack_address_range(&mut input, is_64)?;
+        ensure!(key_address == address.start);
         let flags = unpack_dw(&mut input)?;
 
         // CONST migrate this to mod flags
         const FUNC_TAIL: u16 = 0x8000;
         let extra = if flags & FUNC_TAIL != 0 {
-            Self::read_extra_tail(&mut input, is_64)
+            Self::read_extra_tail(&mut input, is_64, address.start).ok()
         } else {
-            Self::read_extra_regular(&mut input, is_64)
+            Self::read_extra_regular(&mut input, is_64).ok()
         };
+        // TODO Undertand the InnerRef 0x38f9d8 data
         // TODO make sure all the data is parsed
         //ensure!(input.position() == u64::try_from(data.len()).unwrap());
         Ok(Self {
-            start,
-            end,
+            address,
             flags,
             extra,
         })
     }
 
-    // TODO make sure all the data is parsed
-    fn read_extra_regular(input: &mut impl Read, is_64: bool) -> Option<IDBFunctionExtra> {
-        let frame = parse_word(&mut *input, is_64).ok()?;
-        let frsize = parse_word(&mut *input, is_64).ok()?;
-        let frregs = unpack_dw(&mut *input).ok()?;
-        let argsize = parse_word(&mut *input, is_64).ok()?;
-        Some(IDBFunctionExtra::NonTail {
-            frame,
-            frsize,
-            frregs,
-            argsize,
-        })
+    fn read_extra_regular(input: &mut impl Read, is_64: bool) -> Result<IDBFunctionExtra> {
+        // TODO Undertand the sub operation at InnerRef 0x38f98f
+        let frame = unpack_usize_ext_max(&mut *input, is_64)?;
+        let _unknown4 = unpack_dw(&mut *input)?;
+        if _unknown4 == 0 {
+            let _unknown5 = unpack_dd(&mut *input)?;
+        }
+        Ok(IDBFunctionExtra::NonTail { frame })
     }
 
-    fn read_extra_tail(input: &mut impl Read, is_64: bool) -> Option<IDBFunctionExtra> {
-        let owner = parse_word(&mut *input, is_64).ok()? as i64;
-        let refqty = unpack_dd(&mut *input).ok()?;
-        Some(IDBFunctionExtra::Tail { owner, refqty })
+    fn read_extra_tail(
+        input: &mut impl Read,
+        is_64: bool,
+        address_start: u64,
+    ) -> Result<IDBFunctionExtra> {
+        // offset of the function owner in relation to the function start
+        let owner_offset = unpack_usize(&mut *input, is_64)? as i64;
+        let owner = match address_start.checked_add_signed(owner_offset) {
+            Some(0xFFFF_FFFF) => u64::MAX,
+            Some(value) => value,
+            None => return Err(anyhow!("Owner Function offset is invalid")),
+        };
+        let refqty = unpack_usize_ext_max(&mut *input, is_64)?;
+        let _unknown1 = unpack_dw(&mut *input)?;
+        let _unknown2 = unpack_usize_ext_max(&mut *input, is_64)?;
+        // TODO make data depending on variables that I don't understant
+        // InnerRef: 0x38fa93
+        Ok(IDBFunctionExtra::Tail { owner, refqty })
     }
 }
 
@@ -2262,11 +2267,41 @@ fn read_word<I: Read>(input: I, is_64: bool) -> Result<u64> {
     }
 }
 
-fn parse_word<I: Read>(input: &mut I, is_64: bool) -> Result<u64> {
+fn unpack_usize<I: Read>(input: &mut I, is_64: bool) -> Result<u64> {
     if is_64 {
         unpack_dq(input)
     } else {
         unpack_dd(input).map(u64::from)
+    }
+}
+
+fn unpack_usize_ext_max<I: Read>(input: &mut I, is_64: bool) -> Result<u64> {
+    if is_64 {
+        unpack_dq(input)
+    } else {
+        unpack_dd_ext_max(input).map(u64::from)
+    }
+}
+
+// InnerRef: 0x38f8cc
+fn unpack_address_range<I: Read>(input: &mut I, is_64: bool) -> Result<Range<u64>> {
+    if is_64 {
+        let start = unpack_dq(&mut *input)?;
+        let len = unpack_dq(&mut *input)?;
+        let end = start
+            .checked_add(len)
+            .ok_or_else(|| anyhow!("Function range overflows"))?;
+        Ok(start..end)
+    } else {
+        let start = unpack_dd_ext_max(&mut *input)?;
+        let len = unpack_dd(&mut *input)?;
+        // NOTE may not look right, but that's how ida does it
+        let end = match start.checked_add(len.into()) {
+            Some(0xFFFF_FFFF) => u64::MAX,
+            Some(value) => value,
+            None => return Err(anyhow!("Function range overflows")),
+        };
+        Ok(start.into()..end)
     }
 }
 
@@ -2332,6 +2367,13 @@ fn unpack_dd<I: Read>(input: &mut I) -> Result<u32> {
             //ensure!(header != 0xE0 && header != 0xFF);
             Ok(u32::from_be_bytes(bincode::deserialize_from(&mut *input)?))
         }
+    }
+}
+
+fn unpack_dd_ext_max<I: Read>(input: &mut I) -> Result<u64> {
+    match unpack_dd(input)? {
+        u32::MAX => Ok(u64::MAX),
+        value => Ok(u64::from(value)),
     }
 }
 
