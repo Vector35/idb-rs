@@ -2346,6 +2346,7 @@ fn unpack_dq<I: Read>(input: &mut I) -> Result<u64> {
 
 // InnerRef: unpack_ds
 // NOTE: the original implementation never fails, if input hit EoF it a partial result or 0
+#[allow(unused)]
 fn unpack_ds<I: Read>(input: &mut I) -> Result<Vec<u8>> {
     let len = unpack_dd(&mut *input)?;
     let mut result = vec![0; len.try_into()?];
