@@ -504,17 +504,17 @@ impl Segment {
         let name_id = parse_word(&mut cursor, is_64)?;
         let class_id = parse_word(&mut cursor, is_64)?;
         let orgbase = parse_word(&mut cursor, is_64)?;
-        let flags = parse_u32(&mut cursor)?;
-        let align = parse_u32(&mut cursor)?;
-        let comb = parse_u32(&mut cursor)?;
-        let perm = parse_u32(&mut cursor)?;
-        let bitness = parse_u32(&mut cursor)?;
-        let seg_type = parse_u32(&mut cursor)?;
+        let flags = unpack_dd(&mut cursor)?;
+        let align = unpack_dd(&mut cursor)?;
+        let comb = unpack_dd(&mut cursor)?;
+        let perm = unpack_dd(&mut cursor)?;
+        let bitness = unpack_dd(&mut cursor)?;
+        let seg_type = unpack_dd(&mut cursor)?;
         let selector = parse_word(&mut cursor, is_64)?;
         let defsr: Vec<_> = (0..16)
             .map(|_| parse_word(&mut cursor, is_64))
             .collect::<Result<_, _>>()?;
-        let color = parse_u32(&mut cursor)?;
+        let color = unpack_dd(&mut cursor)?;
 
         // TODO maybe new versions include extra information and thid check fails
         ensure!(cursor.position() == value.len().try_into().unwrap());
@@ -949,17 +949,17 @@ impl IDBParam {
         cpu: String,
     ) -> Result<Self> {
         // NOTE in this version parse_* functions are used
-        let genflags = Inffl::new(parse_u16(&mut input)?)?;
-        let lflags = Lflg::new(parse_u32(&mut input)?)?;
-        let database_change_count = parse_u32(&mut input)?;
-        let filetype = FileType::from_value(parse_u16(&mut input)?)
+        let genflags = Inffl::new(unpack_dw(&mut input)?)?;
+        let lflags = Lflg::new(unpack_dd(&mut input)?)?;
+        let database_change_count = unpack_dd(&mut input)?;
+        let filetype = FileType::from_value(unpack_dw(&mut input)?)
             .ok_or_else(|| anyhow!("Invalid FileType value"))?;
-        let ostype = parse_u16(&mut input)?;
-        let apptype = parse_u16(&mut input)?;
+        let ostype = unpack_dw(&mut input)?;
+        let apptype = unpack_dw(&mut input)?;
         let asmtype = parse_u8(&mut input)?;
         let specsegs = parse_u8(&mut input)?;
-        let af1 = parse_u32(&mut input)?;
-        let af2 = parse_u32(&mut input)?;
+        let af1 = unpack_dd(&mut input)?;
+        let af2 = unpack_dd(&mut input)?;
         let af = Af::new(af1, af2)?;
         let baseaddr = parse_word(&mut input, is_64)?;
         let start_ss = parse_word(&mut input, is_64)?;
@@ -982,7 +982,7 @@ impl IDBParam {
         let type_xrefnum = parse_u8(&mut input)?;
         let refcmtnum = parse_u8(&mut input)?;
         let xrefflag = XRef::new(parse_u8(&mut input)?)?;
-        let max_autoname_len = parse_u16(&mut input)?;
+        let max_autoname_len = unpack_dw(&mut input)?;
 
         if magic_old {
             let _unknown: [u8; 17] = bincode::deserialize_from(&mut input)?;
@@ -990,23 +990,23 @@ impl IDBParam {
 
         let nametype = parse_u8(&mut input)?;
         let nametype = NameType::new(nametype).ok_or_else(|| anyhow!("Invalid NameType value"))?;
-        let short_demnames = parse_u32(&mut input)?;
-        let long_demnames = parse_u32(&mut input)?;
+        let short_demnames = unpack_dd(&mut input)?;
+        let long_demnames = unpack_dd(&mut input)?;
         let demnames = DemName::new(parse_u8(&mut input)?)?;
         let listnames = ListName::new(parse_u8(&mut input)?)?;
         let indent = parse_u8(&mut input)?;
         let cmt_ident = parse_u8(&mut input)?;
-        let margin = parse_u16(&mut input)?;
-        let lenxref = parse_u16(&mut input)?;
-        let outflags = OutputFlags::new(parse_u32(&mut input)?)?;
+        let margin = unpack_dw(&mut input)?;
+        let lenxref = unpack_dw(&mut input)?;
+        let outflags = OutputFlags::new(unpack_dd(&mut input)?)?;
         let cmtflg = CommentOptions::new(parse_u8(&mut input)?);
         let limiter = DelimiterOptions::new(parse_u8(&mut input)?)?;
-        let bin_prefix_size = parse_u16(&mut input)?;
+        let bin_prefix_size = unpack_dw(&mut input)?;
         let prefflag = LinePrefixOptions::new(parse_u8(&mut input)?)?;
         let strlit_flags = StrLiteralFlags::new(parse_u8(&mut input)?)?;
         let strlit_break = parse_u8(&mut input)?;
         let strlit_zeroes = parse_u8(&mut input)?;
-        let strtype = parse_u32(&mut input)?;
+        let strtype = unpack_dd(&mut input)?;
 
         // TODO read the len and the ignore it?
         let strlit_pref_len = parse_u8(&mut input)?;
@@ -1028,8 +1028,8 @@ impl IDBParam {
         let cc_size_l = parse_u8(&mut input)?;
         let cc_size_ll = parse_u8(&mut input)?;
         let cc_size_ldbl = parse_u8(&mut input)?;
-        let abibits = AbiOptions::new(parse_u32(&mut input)?)?;
-        let appcall_options = parse_u32(&mut input)?;
+        let abibits = AbiOptions::new(unpack_dd(&mut input)?)?;
+        let appcall_options = unpack_dd(&mut input)?;
 
         Ok(IDBParam::V2(IDBParam2 {
             version,
@@ -2070,8 +2070,8 @@ impl IDBFileRegions {
                 (start, end, rva)
             }
         };
-        let key_offset = parse_number(key, true, is_64)
-            .ok_or_else(|| anyhow!("Invalid IDB FileRefion Key Offset"))?;
+        let key_offset =
+            parse_number(key, true, is_64).ok_or_else(|| anyhow!("Invalid IDB File Key Offset"))?;
         ensure!(key_offset == start);
         ensure!(input.position() == u64::try_from(data.len()).unwrap());
         Ok(Self { start, end, eva })
@@ -2100,15 +2100,15 @@ impl<'a> FunctionsAndComments<'a> {
             }
             b'S' => IDBFunction::read(sub_key, value, is_64).map(Self::Function),
             b'C' => {
-                let address = parse_number(key, true, is_64)
-                    .ok_or_else(|| anyhow!("Invalid IDB FileRefion Key Offset"))?;
+                let address = parse_number(sub_key, true, is_64)
+                    .ok_or_else(|| anyhow!("Invalid Comment address"))?;
                 parse_maybe_cstr(value)
                     .map(|value| Self::Comment { address, value })
                     .ok_or_else(|| anyhow!("Invalid Comment string"))
             }
             b'R' => {
-                let address = parse_number(key, true, is_64)
-                    .ok_or_else(|| anyhow!("Invalid IDB FileRefion Key Offset"))?;
+                let address = parse_number(sub_key, true, is_64)
+                    .ok_or_else(|| anyhow!("Invalid Repetable Comment address"))?;
                 parse_maybe_cstr(value)
                     .map(|value| Self::RepeatableComment { address, value })
                     .ok_or_else(|| anyhow!("Invalid Repetable Comment string"))
@@ -2152,7 +2152,7 @@ impl IDBFunction {
         let end = start
             .checked_add(parse_word(&mut input, is_64)?)
             .ok_or_else(|| anyhow!("Function range overflows"))?;
-        let flags = parse_u16(&mut input)?;
+        let flags = unpack_dw(&mut input)?;
 
         // CONST migrate this to mod flags
         const FUNC_TAIL: u16 = 0x8000;
@@ -2175,7 +2175,7 @@ impl IDBFunction {
     fn read_extra_regular(input: &mut impl Read, is_64: bool) -> Option<IDBFunctionExtra> {
         let frame = parse_word(&mut *input, is_64).ok()?;
         let frsize = parse_word(&mut *input, is_64).ok()?;
-        let frregs = parse_u16(&mut *input).ok()?;
+        let frregs = unpack_dw(&mut *input).ok()?;
         let argsize = parse_word(&mut *input, is_64).ok()?;
         Some(IDBFunctionExtra::NonTail {
             frame,
@@ -2187,7 +2187,7 @@ impl IDBFunction {
 
     fn read_extra_tail(input: &mut impl Read, is_64: bool) -> Option<IDBFunctionExtra> {
         let owner = parse_word(&mut *input, is_64).ok()? as i64;
-        let refqty = parse_u32(&mut *input).ok()?;
+        let refqty = unpack_dd(&mut *input).ok()?;
         Some(IDBFunctionExtra::Tail { owner, refqty })
     }
 }
@@ -2279,9 +2279,9 @@ fn read_word<I: Read>(input: I, is_64: bool) -> Result<u64> {
 
 fn parse_word<I: Read>(input: &mut I, is_64: bool) -> Result<u64> {
     if is_64 {
-        parse_u64(input)
+        unpack_dq(input)
     } else {
-        parse_u32(input).map(u64::from)
+        unpack_dd(input).map(u64::from)
     }
 }
 
@@ -2289,38 +2289,40 @@ fn parse_u8<I: Read>(input: &mut I) -> Result<u8> {
     Ok(bincode::deserialize_from(&mut *input)?)
 }
 
+// InnerRef: unpack_dw
+// NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
 /// Reads 1 to 3 bytes.
-fn parse_u16<I: Read>(input: &mut I) -> Result<u16> {
+fn unpack_dw<I: Read>(input: &mut I) -> Result<u16> {
     let b1: u8 = bincode::deserialize_from(&mut *input)?;
     match b1 {
-        // 16 bits value
-        // [1111 1111] xxxx xxxx xxxx xxxx
-        0xFF => {
-            let value: [u8; 2] = bincode::deserialize_from(&mut *input)?;
-            Ok(u16::from_be_bytes(value))
-        }
         // 7 bit value
         // [0xxx xxxx]
-        ..0x80 => Ok(b1.into()),
+        0x00..0x80 => Ok(b1.into()),
         // 14 bits value
-        // [1xxx xxxx] xxxx xxxx
-        0x80.. => {
+        // [10xx xxxx] xxxx xxxx
+        0x80..0xC0 => {
             let lo: u8 = bincode::deserialize_from(&mut *input)?;
             Ok(u16::from_be_bytes([b1 & 0x3F, lo]))
+        }
+        // 16 bits value
+        // [11XX XXXX] xxxx xxxx xxxx xxxx
+        0xC0..=0xFF => {
+            // NOTE first byte 6 bits seems to be ignored
+            //ensure!(header != 0xC0 && header != 0xFF);
+            Ok(u16::from_be_bytes(bincode::deserialize_from(&mut *input)?))
         }
     }
 }
 
+// InnerRef: unpack_dd
+// NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
 /// Reads 1 to 5 bytes.
-fn parse_u32<I: Read>(input: &mut I) -> Result<u32> {
+fn unpack_dd<I: Read>(input: &mut I) -> Result<u32> {
     let b1: u8 = bincode::deserialize_from(&mut *input)?;
     match b1 {
-        // 32 bits value
-        // [1111 1111] xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
-        0xFF => Ok(u32::from_be_bytes(bincode::deserialize_from(&mut *input)?)),
         // 7 bit value
         // [0xxx xxxx]
-        ..0x80 => Ok(b1.into()),
+        0x00..0x80 => Ok(b1.into()),
         // 14 bits value
         // [10xx xxxx] xxxx xxxx
         0x80..0xC0 => {
@@ -2328,24 +2330,42 @@ fn parse_u32<I: Read>(input: &mut I) -> Result<u32> {
             Ok(u32::from_be_bytes([0, 0, b1 & 0x3F, lo]))
         }
         // 29 bit value:
-        // [11xx xxxx] xxxx xxxx xxxx xxxx xxxx xxxx
-        0xC0.. => {
+        // [110x xxxx] xxxx xxxx xxxx xxxx xxxx xxxx
+        0xC0..0xE0 => {
             let bytes: [u8; 3] = bincode::deserialize_from(&mut *input)?;
             Ok(u32::from_be_bytes([
-                b1 & 0x3F,
+                b1 & 0x1F,
                 bytes[0],
                 bytes[1],
                 bytes[2],
             ]))
         }
+        // 32 bits value
+        // [111X XXXX] xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
+        0xE0..=0xFF => {
+            // NOTE first byte 5 bits seems to be ignored
+            //ensure!(header != 0xE0 && header != 0xFF);
+            Ok(u32::from_be_bytes(bincode::deserialize_from(&mut *input)?))
+        }
     }
 }
 
+// InnerRef: unpack_dq
+// NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
 /// Reads 2 to 10 bytes.
-fn parse_u64<I: Read>(input: &mut I) -> Result<u64> {
-    let lo = parse_u32(&mut *input)?;
-    let hi = parse_u32(&mut *input)?;
+fn unpack_dq<I: Read>(input: &mut I) -> Result<u64> {
+    let lo = unpack_dd(&mut *input)?;
+    let hi = unpack_dd(&mut *input)?;
     Ok((u64::from(hi) << 32) | u64::from(lo))
+}
+
+// InnerRef: unpack_ds
+// NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
+fn unpack_ds<I: Read>(input: &mut I) -> Result<Vec<u8>> {
+    let len = unpack_dd(&mut *input)?;
+    let mut result = vec![0; len.try_into().unwrap()];
+    input.read_exact(&mut result)?;
+    Ok(result)
 }
 
 fn parse_number(data: &[u8], big_endian: bool, is_64: bool) -> Option<u64> {
