@@ -722,7 +722,7 @@ impl IDBParam {
         let version: u16 = bincode::deserialize_from(&mut input)?;
 
         let cpu_len = match (magic_old, version) {
-            (_, ..700) => 8,
+            (_, ..=699) => 8,
             (true, 700..) => 16,
             (false, 700..) => {
                 let cpu_len: u8 = bincode::deserialize_from(&mut input)?;
@@ -741,12 +741,12 @@ impl IDBParam {
 
         // TODO tight those ranges up
         let param = match version {
-            ..700 => Self::read_v1(&mut input, is_64, version, cpu)?,
+            ..=699 => Self::read_v1(&mut input, is_64, version, cpu)?,
             700.. => Self::read_v2(&mut input, is_64, magic_old, version, cpu)?,
         };
         match version {
             // TODO old version may contain extra data at the end with unknown purpose
-            ..700 => {}
+            ..=699 => {}
             700.. => ensure!(
                 input.position() == data.len().try_into()?,
                 "Data left after the IDBParam: {}",
@@ -2036,7 +2036,7 @@ impl IDBFileRegions {
         let mut input = Cursor::new(data);
         // TODO detect versions with more accuracy
         let (start, end, eva) = match version {
-            ..700 => {
+            ..=699 => {
                 let start = read_word(&mut input, is_64)?;
                 let end = read_word(&mut input, is_64)?;
                 let rva: u32 = bincode::deserialize_from(&mut input)?;
@@ -2282,10 +2282,10 @@ fn unpack_dw<I: Read>(input: &mut I) -> Result<u16> {
     match b1 {
         // 7 bit value
         // [0xxx xxxx]
-        0x00..0x80 => Ok(b1.into()),
+        0x00..=0x7F => Ok(b1.into()),
         // 14 bits value
         // [10xx xxxx] xxxx xxxx
-        0x80..0xC0 => {
+        0x80..=0xBF => {
             let lo: u8 = bincode::deserialize_from(&mut *input)?;
             Ok(u16::from_be_bytes([b1 & 0x3F, lo]))
         }
@@ -2307,16 +2307,16 @@ fn unpack_dd<I: Read>(input: &mut I) -> Result<u32> {
     match b1 {
         // 7 bit value
         // [0xxx xxxx]
-        0x00..0x80 => Ok(b1.into()),
+        0x00..=0x7F => Ok(b1.into()),
         // 14 bits value
         // [10xx xxxx] xxxx xxxx
-        0x80..0xC0 => {
+        0x80..=0xBF => {
             let lo: u8 = bincode::deserialize_from(&mut *input)?;
             Ok(u32::from_be_bytes([0, 0, b1 & 0x3F, lo]))
         }
         // 29 bit value:
         // [110x xxxx] xxxx xxxx xxxx xxxx xxxx xxxx
-        0xC0..0xE0 => {
+        0xC0..=0xDF => {
             let bytes: [u8; 3] = bincode::deserialize_from(&mut *input)?;
             Ok(u32::from_be_bytes([
                 b1 & 0x1F,
