@@ -671,7 +671,6 @@ mod test {
                 panic!("nam {error:?}")
             }
 
-            // if success, parse next file
             if let Err(error) = parser.read_til_section(parser.til_section_offset().unwrap()) {
                 let mut output = BufWriter::new(File::create("/tmp/lasterror.til").unwrap());
                 parser
