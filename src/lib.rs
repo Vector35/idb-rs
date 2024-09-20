@@ -581,6 +581,19 @@ mod test {
     use std::path::{Path, PathBuf};
 
     #[test]
+    fn parse_id0_til() {
+        let function = [
+            0x0c, // Function Type
+            0xaf, 0x81, 0x42, 0x01, 0x53, // TODO
+            0x01, // void ret
+            0x03, //n args
+            0x3d, 0x08, 0x48, 0x4d, 0x4f, 0x44, 0x55, 0x4c, 0x45, 0x3d, 0x06, 0x44, 0x57, 0x4f,
+            0x52, 0x44, 0x00,
+        ];
+        let _til = til::Type::new_from_id0(&function).unwrap();
+    }
+
+    #[test]
     fn parse_idb_param() {
         let param = b"IDA\xbc\x02\x06metapc#\x8a\x03\x03\x02\x00\x00\x00\x00\xff_\xff\xff\xf7\x03\x00\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x0d\x00\x0d \x0d\x10\xff\xff\x00\x00\x00\xc0\x80\x00\x00\x00\x02\x02\x01\x0f\x0f\x06\xce\xa3\xbeg\xc6@\x00\x07\x00\x07\x10(FP\x87t\x09\x03\x00\x01\x13\x0a\x00\x00\x01a\x00\x07\x00\x13\x04\x04\x04\x00\x02\x04\x08\x00\x00\x00";
         let _parsed = id0::IDBParam::read(param, false).unwrap();
@@ -605,26 +618,12 @@ mod test {
                     panic!("id0 {error:?}")
                 }
                 Ok(id0) => {
-                    let _segments: Vec<()> = id0
-                        .segments()
-                        .unwrap()
-                        .map(Result::unwrap)
-                        .map(|_| ())
-                        .collect();
+                    let _segments: Vec<_> = id0.segments().unwrap().map(Result::unwrap).collect();
 
-                    let _loader_names: Vec<()> = id0
-                        .loader_name()
-                        .unwrap()
-                        .map(Result::unwrap)
-                        .map(|_| ())
-                        .collect();
+                    let _loader_names: Vec<_> =
+                        id0.loader_name().unwrap().map(Result::unwrap).collect();
 
-                    let _root_info: Vec<()> = id0
-                        .root_info()
-                        .unwrap()
-                        .map(Result::unwrap)
-                        .map(|_| ())
-                        .collect();
+                    let _root_info: Vec<_> = id0.root_info().unwrap().map(Result::unwrap).collect();
 
                     let _ida_info = id0.ida_info().unwrap();
                     let version = match _ida_info {
@@ -632,26 +631,19 @@ mod test {
                         id0::IDBParam::V2(x) => x.version,
                     };
 
-                    let _file_regions: Vec<()> = id0
+                    let _file_regions: Vec<_> = id0
                         .file_regions(version)
                         .unwrap()
                         .map(Result::unwrap)
-                        .map(|_| ())
                         .collect();
 
-                    let _functions: Vec<()> = id0
+                    let _functions: Vec<_> = id0
                         .functions_and_comments()
                         .unwrap()
                         .map(Result::unwrap)
-                        .map(|_| ())
                         .collect();
 
-                    let _entry_points: Vec<()> = id0
-                        .entry_points()
-                        .unwrap()
-                        .map(Result::unwrap)
-                        .map(|_| ())
-                        .collect();
+                    let _entry_points = id0.entry_points().unwrap();
                 }
             }
 

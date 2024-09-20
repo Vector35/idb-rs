@@ -488,7 +488,7 @@ impl ID0Section {
     // TODO implement $ imports
     // TODO implement $ scriptsnippets
 
-    pub fn entry_points(&self) -> Result<impl Iterator<Item = Result<EntryPoint>>> {
+    fn entry_points_raw(&self) -> Result<impl Iterator<Item = Result<EntryPointRaw>>> {
         let entry = self
             .get("N$ entry points")
             .ok_or_else(|| anyhow!("Unable to find functions"))?;
@@ -500,83 +500,94 @@ impl ID0Section {
         let key_len = key.len();
         Ok(self.sub_values(key).map(move |e| {
             let key = &e.key[key_len..];
-            EntryPoint::read(key, &e.value, self.is_64)
+            EntryPointRaw::read(key, &e.value, self.is_64)
         }))
     }
 
-    pub fn entry_functions(&self) -> Result<Vec<EntryFunction>> {
-        let mut functions: HashMap<u64, (Option<u64>, Option<&str>, Option<&str>)> = HashMap::new();
-        for entry_point in self.entry_points()? {
+    pub fn entry_points(&self) -> Result<Vec<EntryPoint>> {
+        type RawEntryPoint<'a> = HashMap<u64, (Option<u64>, Option<&'a str>, Option<&'a str>)>;
+        let mut entry_points: RawEntryPoint = HashMap::new();
+        for entry_point in self.entry_points_raw()? {
             match entry_point? {
-                EntryPoint::Unknown { .. } | EntryPoint::Name | EntryPoint::Ordinal { .. } => {}
-                EntryPoint::Function { key, address } => {
-                    if let Some(_old) = functions.entry(key).or_default().0.replace(address) {
+                EntryPointRaw::Unknown { .. }
+                | EntryPointRaw::Name
+                | EntryPointRaw::Ordinal { .. } => {}
+                EntryPointRaw::Address { key, address } => {
+                    if let Some(_old) = entry_points.entry(key).or_default().0.replace(address) {
                         return Err(anyhow!("Duplicated function address for {key}"));
                     }
                 }
-                EntryPoint::ForwardedSymbol { key, symbol } => {
-                    if let Some(_old) = functions.entry(key).or_default().1.replace(symbol) {
+                EntryPointRaw::ForwardedSymbol { key, symbol } => {
+                    if let Some(_old) = entry_points.entry(key).or_default().1.replace(symbol) {
                         return Err(anyhow!("Duplicated function symbol for {key}"));
                     }
                 }
-                EntryPoint::FunctionName { key, name } => {
-                    if let Some(_old) = functions.entry(key).or_default().2.replace(name) {
+                EntryPointRaw::FunctionName { key, name } => {
+                    if let Some(_old) = entry_points.entry(key).or_default().2.replace(name) {
                         return Err(anyhow!("Duplicated function name for {key}"));
                     }
                 }
             }
         }
-        functions
+        let mut result: Vec<_> = entry_points
             .into_iter()
             .filter_map(
                 |(key, (address, symbol, name))| match (address, symbol, name) {
                     // Function without name or address is possible, this is
-                    // probably some function that got deleted
+                    // probably some label that got deleted
                     (Some(_), _, None) | (None, _, Some(_)) | (None, _, None) => None,
-                    (Some(address), Some(forward), Some(name)) => Some(Ok(EntryFunction {
-                        name: name.to_owned(),
-                        entry_point: address,
-                        entry: EntryFunctionType::Forwarded(forward.to_owned()),
-                    })),
-                    (Some(address), None, Some(name)) => {
-                        let entry = match self.find_function_type(key) {
+                    (Some(address), forwarded, Some(name)) => {
+                        let entry = match self.find_entry_point_type(key, address) {
                             Ok(entry) => entry,
                             Err(error) => return Some(Err(error)),
                         };
-                        Some(Ok(EntryFunction {
+                        Some(Ok(EntryPoint {
                             name: name.to_owned(),
                             entry_point: address,
-                            entry: EntryFunctionType::Local(entry),
+                            forwarded: forwarded.map(str::to_string),
+                            entry_type: entry,
                         }))
                     }
                 },
             )
-            .collect()
+            .collect::<Result<_, _>>()?;
+        result.sort_by_key(|entry| entry.entry_point);
+        Ok(result)
     }
 
-    fn find_function_type(&self, key: u64) -> Result<Option<til::function::Function>> {
+    fn find_entry_point_type(&self, key: u64, address: u64) -> Result<Option<til::Type>> {
+        if let Some(key_entry) = self.find_entry_point_type_value(key, 0x3000)? {
+            return Ok(Some(key_entry));
+        }
+        // TODO some times it uses the address as key, it's based on the version?
+        if let Some(key_entry) = self.find_entry_point_type_value(address, 0x3000)? {
+            return Ok(Some(key_entry));
+        }
+        Ok(None)
+    }
+
+    fn find_entry_point_type_value(&self, value: u64, key_find: u64) -> Result<Option<til::Type>> {
         let key: Vec<u8> = b"."
             .iter()
             .copied()
             .chain(if self.is_64 {
-                key.to_be_bytes().to_vec()
+                value.to_be_bytes().to_vec()
             } else {
-                u32::try_from(key).unwrap().to_be_bytes().to_vec()
+                u32::try_from(value).unwrap().to_be_bytes().to_vec()
             })
-            .chain(b"S".iter().copied())
+            .chain([b'S'])
             .collect();
         let key_len = key.len();
         for entry in self.sub_values(key) {
             let key = &entry.key[key_len..];
             let key = parse_number(key, true, self.is_64).unwrap();
-            if key == 12288 {
-                let til = til::Type::new_from_id0(&entry.value)?;
-                match til {
-                    til::Type::Function(function) => return Ok(Some(function)),
-                    // TODO Don't know how to handle that yet
-                    til::Type::Pointer(_) => return Ok(None),
-                    _ => return Err(anyhow!("Invalid type for function")),
-                }
+            // TODO handle other values for the key
+            if key == key_find {
+                return til::Type::new_from_id0(&entry.value)
+                    .map(Option::Some)
+                    .map_err(|e| {
+                        todo!("Error parsing {:#04x?}: {e:?}", &entry.value);
+                    });
             }
         }
         Ok(None)
@@ -2621,16 +2632,16 @@ impl IDBFunction {
 }
 
 #[derive(Clone, Debug)]
-pub enum EntryPoint<'a> {
+pub enum EntryPointRaw<'a> {
     Name,
-    Function { key: u64, address: u64 },
+    Address { key: u64, address: u64 },
     Ordinal { key: u64, ordinal: u64 },
     ForwardedSymbol { key: u64, symbol: &'a str },
     FunctionName { key: u64, name: &'a str },
     Unknown { key: &'a [u8], value: &'a [u8] },
 }
 
-impl<'a> EntryPoint<'a> {
+impl<'a> EntryPointRaw<'a> {
     fn read(key: &'a [u8], value: &'a [u8], is_64: bool) -> Result<Self> {
         let [key_type, sub_key @ ..] = key else {
             return Err(anyhow!("invalid Funcs subkey"));
@@ -2643,10 +2654,11 @@ impl<'a> EntryPoint<'a> {
             return Ok(Self::Unknown { key, value });
         };
         match *key_type {
+            // TODO for some reason the address is one byte extra
             b'A' => read_word(value, is_64)
-                .map(|address| Self::Function {
+                .map(|address| Self::Address {
                     key: sub_key,
-                    address,
+                    address: address - 1,
                 })
                 .map_err(|_| anyhow!("Invalid Function address")),
             b'I' => read_word(value, is_64)
@@ -2671,16 +2683,11 @@ impl<'a> EntryPoint<'a> {
 }
 
 #[derive(Clone, Debug)]
-pub enum EntryFunctionType {
-    Forwarded(String),
-    Local(Option<til::function::Function>),
-}
-
-#[derive(Clone, Debug)]
-pub struct EntryFunction {
+pub struct EntryPoint {
     pub name: String,
     pub entry_point: u64,
-    pub entry: EntryFunctionType,
+    pub forwarded: Option<String>,
+    pub entry_type: Option<til::Type>,
 }
 
 fn read_exact_or_nothing<R: std::io::Read + ?Sized>(
