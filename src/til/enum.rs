@@ -98,8 +98,9 @@ impl EnumRaw {
         let bytesize: u32 = match emsize {
             0 if header.size_enum != 0 => header.size_enum.into(),
             0 => return Err(anyhow!("BTE emsize is 0 without header")),
+            1..5 => 1u32 << (emsize - 1),
             5..=7 => return Err(anyhow!("BTE emsize with reserved values")),
-            _ => 1u32 << (emsize - 1),
+            _ => unreachable!(),
         };
 
         let mask: u64 = if bytesize >= 16 {
