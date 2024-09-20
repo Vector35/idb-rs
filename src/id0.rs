@@ -553,7 +553,7 @@ impl ID0Section {
                         };
                         Some(Ok(EntryPoint {
                             name: name.to_owned(),
-                            entry_point: address,
+                            address,
                             forwarded: forwarded.map(str::to_string),
                             entry_type: entry,
                         }))
@@ -561,7 +561,7 @@ impl ID0Section {
                 },
             )
             .collect::<Result<_, _>>()?;
-        result.sort_by_key(|entry| entry.entry_point);
+        result.sort_by_key(|entry| entry.address);
         Ok(result)
     }
 
@@ -2700,7 +2700,7 @@ impl<'a> EntryPointRaw<'a> {
 #[derive(Clone, Debug)]
 pub struct EntryPoint {
     pub name: String,
-    pub entry_point: u64,
+    pub address: u64,
     pub forwarded: Option<String>,
     pub entry_type: Option<til::Type>,
 }
