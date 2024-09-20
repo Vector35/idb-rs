@@ -4,7 +4,7 @@ use std::io::{BufRead, Cursor, ErrorKind, Read, Seek, SeekFrom};
 use std::num::{NonZeroU32, NonZeroU8};
 use std::ops::Range;
 
-use crate::{read_bytes_len_u16, read_c_string_raw, IDBHeader, IDBSectionCompression};
+use crate::{read_bytes_len_u16, read_c_string_raw, til, IDBHeader, IDBSectionCompression};
 
 use anyhow::{anyhow, ensure, Result};
 
@@ -502,6 +502,84 @@ impl ID0Section {
             let key = &e.key[key_len..];
             EntryPoint::read(key, &e.value, self.is_64)
         }))
+    }
+
+    pub fn entry_functions(&self) -> Result<Vec<EntryFunction>> {
+        let mut functions: HashMap<u64, (Option<u64>, Option<&str>, Option<&str>)> = HashMap::new();
+        for entry_point in self.entry_points()? {
+            match entry_point? {
+                EntryPoint::Unknown { .. } | EntryPoint::Name | EntryPoint::Ordinal { .. } => {}
+                EntryPoint::Function { key, address } => {
+                    if let Some(_old) = functions.entry(key).or_default().0.replace(address) {
+                        return Err(anyhow!("Duplicated function address for {key}"));
+                    }
+                }
+                EntryPoint::ForwardedSymbol { key, symbol } => {
+                    if let Some(_old) = functions.entry(key).or_default().1.replace(symbol) {
+                        return Err(anyhow!("Duplicated function symbol for {key}"));
+                    }
+                }
+                EntryPoint::FunctionName { key, name } => {
+                    if let Some(_old) = functions.entry(key).or_default().2.replace(name) {
+                        return Err(anyhow!("Duplicated function name for {key}"));
+                    }
+                }
+            }
+        }
+        functions
+            .into_iter()
+            .filter_map(
+                |(key, (address, symbol, name))| match (address, symbol, name) {
+                    // Function without name or address is possible, this is
+                    // probably some function that got deleted
+                    (Some(_), _, None) | (None, _, Some(_)) | (None, _, None) => None,
+                    (Some(address), Some(forward), Some(name)) => Some(Ok(EntryFunction {
+                        name: name.to_owned(),
+                        entry_point: address,
+                        entry: EntryFunctionType::Forwarded(forward.to_owned()),
+                    })),
+                    (Some(address), None, Some(name)) => {
+                        let entry = match self.find_function_type(key) {
+                            Ok(entry) => entry,
+                            Err(error) => return Some(Err(error)),
+                        };
+                        Some(Ok(EntryFunction {
+                            name: name.to_owned(),
+                            entry_point: address,
+                            entry: EntryFunctionType::Local(entry),
+                        }))
+                    }
+                },
+            )
+            .collect()
+    }
+
+    fn find_function_type(&self, key: u64) -> Result<Option<til::function::Function>> {
+        let key: Vec<u8> = b"."
+            .iter()
+            .copied()
+            .chain(if self.is_64 {
+                key.to_be_bytes().to_vec()
+            } else {
+                u32::try_from(key).unwrap().to_be_bytes().to_vec()
+            })
+            .chain(b"S".iter().copied())
+            .collect();
+        let key_len = key.len();
+        for entry in self.sub_values(key) {
+            let key = &entry.key[key_len..];
+            let key = parse_number(key, true, self.is_64).unwrap();
+            if key == 12288 {
+                let til = til::Type::new_from_id0(&entry.value)?;
+                match til {
+                    til::Type::Function(function) => return Ok(Some(function)),
+                    // TODO Don't know how to handle that yet
+                    til::Type::Pointer(_) => return Ok(None),
+                    _ => return Err(anyhow!("Invalid type for function")),
+                }
+            }
+        }
+        Ok(None)
     }
 }
 
@@ -2561,7 +2639,7 @@ impl<'a> EntryPoint<'a> {
             ensure!(parse_maybe_cstr(value) == Some("$ entry points"));
             return Ok(Self::Name);
         }
-        let Some(sub_key) = parse_number(sub_key, is_64, true) else {
+        let Some(sub_key) = parse_number(sub_key, true, is_64) else {
             return Ok(Self::Unknown { key, value });
         };
         match *key_type {
@@ -2590,6 +2668,19 @@ impl<'a> EntryPoint<'a> {
             _ => Ok(Self::Unknown { key, value }),
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub enum EntryFunctionType {
+    Forwarded(String),
+    Local(Option<til::function::Function>),
+}
+
+#[derive(Clone, Debug)]
+pub struct EntryFunction {
+    pub name: String,
+    pub entry_point: u64,
+    pub entry: EntryFunctionType,
 }
 
 fn read_exact_or_nothing<R: std::io::Read + ?Sized>(
@@ -2652,7 +2743,7 @@ fn unpack_address_range<I: Read>(input: &mut I, is_64: bool) -> Result<Range<u64
             Some(value) => value,
             None => return Err(anyhow!("Function range overflows")),
         };
-        Ok(start.into()..end)
+        Ok(start..end)
     }
 }
 
