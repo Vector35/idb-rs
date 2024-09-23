@@ -122,6 +122,7 @@ impl FunctionRaw {
         })
     }
 
+    /// [BT_FUNC](https://hex-rays.com/products/ida/support/sdkdoc/group__tf__func.html#ga7b7fee21f21237beb6d91e854410e0fa)
     fn read_cc<I: BufRead>(input: &mut I, flags: &mut u8) -> anyhow::Result<TypeMetadata> {
         let mut cm = TypeMetadata::read(&mut *input)?;
         if !cm.get_calling_convention().is_spoiled() {
@@ -131,10 +132,15 @@ impl FunctionRaw {
         let mut _spoiled = vec![];
         loop {
             // TODO create flags::CM_CC_MASK
-            let nspoiled = cm.0 & !0xf0;
+            let nspoiled = cm.0 & 0xf;
             if nspoiled == 0xF {
-                let b: u8 = bincode::deserialize_from(&mut *input)?;
-                *flags |= (b & 0x1F) << 1;
+                let bfa_byte: u8 = bincode::deserialize_from(&mut *input)?;
+                if bfa_byte & 0x80 != 0 {
+                    // TODO what is this? Do this repeat `bfa_byte & 0xF` number of times?
+                    let _fti_bits: u16 = bincode::deserialize_from(&mut *input)?;
+                } else {
+                    *flags |= (bfa_byte & 0x1F) << 1;
+                }
             } else {
                 for _ in 0..nspoiled {
                     let b: u8 = bincode::deserialize_from(&mut *input)?;
@@ -143,7 +149,7 @@ impl FunctionRaw {
                         let reg = b & 0x7F;
                         (size, reg)
                     } else {
-                        ensure!(b > 1, "Unable to solve register from a spoiled function");
+                        ensure!(b > 0, "Unable to solve register from a spoiled function");
                         let size = (b >> 4) + 1;
                         let reg = (b & 0xF) - 1;
                         (size, reg)

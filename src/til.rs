@@ -120,6 +120,41 @@ impl Type {
             TypeRaw::Enum(x) => Enum::new(til, x, fields).map(Type::Enum),
         }
     }
+    // TODO find the best way to handle type parsing from id0
+    pub(crate) fn new_from_id0(data: &[u8]) -> Result<Self> {
+        // TODO it's unclear what header information id0 types use to parse tils
+        // maybe it just use the til sector header, or more likelly it's from
+        // IDBParam  in the `Root Node`
+        let header = section::TILSectionHeader {
+            format: 700,
+            flags: section::TILSectionFlag(0),
+            title: String::new(),
+            description: String::new(),
+            id: 0,
+            cm: 0,
+            size_enum: 0,
+            size_i: 4.try_into().unwrap(),
+            size_b: 1.try_into().unwrap(),
+            def_align: 0,
+            size_s_l_ll: None,
+            size_long_double: None,
+        };
+        let mut reader = data;
+        let type_raw = TypeRaw::read(&mut reader, &header)?;
+        match reader {
+            //
+            &[] => {}
+            // for some reason there is an \x00 at the end???
+            &[b'\x00'] => {}
+            rest => {
+                return Err(anyhow!(
+                    "Extra {} bytes after reading TIL from ID0",
+                    rest.len()
+                ))
+            }
+        }
+        Self::new(&header, type_raw, None)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -184,46 +219,6 @@ impl TypeRaw {
             }
             _ => todo!(),
         }
-        //if metadata.get_base_type_flag().is_typeid_last()
-        //    || metadata.get_base_type_flag().is_reserved()
-        //{
-        //    return Ok(TypeRaw::Basic(metadata));
-        //} else if metadata.get_base_type_flag().is_pointer() {
-        //    Ok(TypeRaw::Pointer(
-        //        PointerRaw::read(input, metadata, header).context("Type::Pointer")?,
-        //    ))
-        //} else if metadata.get_base_type_flag().is_function() {
-        //    Ok(TypeRaw::Function(
-        //        FunctionRaw::read(input, &metadata, header).context("Type::Function")?,
-        //    ))
-        //} else if metadata.get_base_type_flag().is_array() {
-        //    Ok(TypeRaw::Array(
-        //        ArrayRaw::read(input, metadata, header).context("Type::Array")?,
-        //    ))
-        //} else if metadata.get_full_type_flag().is_typedef() {
-        //    Ok(TypeRaw::Typedef(
-        //        Typedef::read(input).context("Type::Typedef")?,
-        //    ))
-        //} else if metadata.get_full_type_flag().is_union() {
-        //    Ok(TypeRaw::Union(
-        //        UnionRaw::read(input, header).context("Type::Union")?,
-        //    ))
-        //} else if metadata.get_full_type_flag().is_struct() {
-        //    Ok(TypeRaw::Struct(
-        //        StructRaw::read(input, header).context("Type::Struct")?,
-        //    ))
-        //} else if metadata.get_full_type_flag().is_enum() {
-        //    Ok(TypeRaw::Enum(
-        //        EnumRaw::read(input, header).context("Type::Enum")?,
-        //    ))
-        //} else if metadata.get_base_type_flag().is_bitfield() {
-        //    Ok(TypeRaw::Bitfield(
-        //        Bitfield::read(input, metadata).context("Type::Bitfield")?,
-        //    ))
-        //} else {
-        //    todo!();
-        //    //Ok(Type::Unknown(read_c_string_raw(input)?))
-        //}
     }
 
     pub fn read_ref<I: BufRead>(input: &mut I, header: &TILSectionHeader) -> Result<Self> {

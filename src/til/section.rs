@@ -266,8 +266,9 @@ impl TILSection {
     }
 }
 
+// TODO remove deserialize and implement a verification if the value is correct
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct TILSectionFlag(u32);
+pub struct TILSectionFlag(pub(crate) u32);
 impl TILSectionFlag {
     pub fn is_zip(&self) -> bool {
         self.0 & flag::TIL_ZIP != 0
