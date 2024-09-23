@@ -22,7 +22,7 @@ use std::io::{BufRead, Read};
 use std::num::NonZeroU8;
 
 use anyhow::{anyhow, ensure, Context, Result};
-
+use serde::Serialize;
 use crate::til::array::{Array, ArrayRaw};
 use crate::til::bitfield::Bitfield;
 use crate::til::function::{Function, FunctionRaw};
@@ -33,7 +33,7 @@ use crate::til::section::TILSectionHeader;
 use crate::til::union::{Union, UnionRaw};
 use crate::{read_c_string, read_c_string_vec};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TILTypeInfo {
     _flags: u32,
     pub name: String,
@@ -75,7 +75,7 @@ impl TILTypeInfo {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum Type {
     Basic(Basic),
     Pointer(Pointer),
@@ -243,7 +243,7 @@ impl TypeRaw {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub enum Basic {
     Void,
     // NOTE Unknown with 0 bytes is NOT the same as Void
@@ -357,7 +357,7 @@ impl Basic {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Typedef {
     Ordinal(u32),
     Name(String),
@@ -370,7 +370,7 @@ impl Typedef {
             [b'#', data @ ..] => {
                 let mut tmp = std::io::Cursor::new(data);
                 let de = read_de(&mut tmp)?;
-                if tmp.position() != data.len().try_into()? {
+                if tmp.position() != data.len() as u64 {
                     return Err(anyhow!("Typedef Ordinal with more data then expected"));
                 }
                 Ok(Typedef::Ordinal(de))
@@ -380,7 +380,7 @@ impl Typedef {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TILMacro {
     pub name: String,
     pub value: String,
@@ -418,7 +418,7 @@ pub struct TypeFlag(pub u8);
 #[derive(Clone, Copy, Debug)]
 pub struct CallingConventionFlag(pub u8);
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub struct TypeAttribute(pub u16);
 impl TypeAttribute {
     fn read<I: BufRead>(input: &mut I) -> Result<Self> {
@@ -455,7 +455,7 @@ impl TypeAttribute {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub struct TAH(pub TypeAttribute);
 impl TAH {
     fn read<I: BufRead>(input: &mut I) -> Result<Self> {
@@ -473,7 +473,7 @@ impl TAH {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub struct SDACL(pub TypeAttribute);
 impl SDACL {
     fn read<I: BufRead>(input: &mut I) -> Result<Self> {

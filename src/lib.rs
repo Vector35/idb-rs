@@ -577,7 +577,7 @@ mod test {
     use crate::*;
     use std::ffi::OsStr;
     use std::fs::File;
-    use std::io::{BufReader, BufWriter};
+    use std::io::{BufReader, BufWriter, Write};
     use std::path::{Path, PathBuf};
 
     #[test]
@@ -710,13 +710,23 @@ mod test {
         let mut input = BufReader::new(File::open(file)?);
         // TODO make a SmartReader
         match TILSection::read(&mut input, IDBSectionCompression::None) {
-            Ok(_til) => {
+            Ok(til) => {
                 let current = input.seek(SeekFrom::Current(0))?;
                 let end = input.seek(SeekFrom::End(0))?;
+
                 ensure!(
                     current == end,
                     "unable to consume the entire TIL file, {current} != {end}"
                 );
+                let mut output = BufWriter::new(File::create(format!("/Users/emesare/Documents/temp/{}.json", file.file_name().unwrap().to_str().unwrap())).unwrap());
+                serde_json::to_writer_pretty(output, &til.types).unwrap();
+                let mut output = BufWriter::new(File::create(format!("/Users/emesare/Documents/temp/symbols_{}.json", file.file_name().unwrap().to_str().unwrap())).unwrap());
+                serde_json::to_writer_pretty(output, &til.symbols).unwrap();
+                if let Some(macros) = til.macros {
+                    let mut output = BufWriter::new(File::create(format!("/Users/emesare/Documents/temp/macros_{}.json", file.file_name().unwrap().to_str().unwrap())).unwrap());
+                    serde_json::to_writer_pretty(output, &macros).unwrap();
+                }
+
                 Ok(())
             }
             Err(e) => Err(e),

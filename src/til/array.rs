@@ -2,8 +2,9 @@ use crate::til::section::TILSectionHeader;
 use crate::til::{read_da, read_dt, Type, TypeRaw, TAH};
 use anyhow::anyhow;
 use std::io::BufRead;
+use serde::Serialize;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Array {
     pub base: u8,
     pub nelem: u16,

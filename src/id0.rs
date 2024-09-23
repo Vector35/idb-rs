@@ -133,7 +133,7 @@ impl ID0Section {
                 // no more data, hit eof
                 break;
             }
-            if read != header.page_size.into() {
+            if read != header.page_size as usize {
                 // only read part of the page
                 return Err(anyhow!("Found EoF in the middle of the page"));
             }
@@ -151,7 +151,7 @@ impl ID0Section {
             .map(Option::as_ref)
             .filter(Option::is_none)
             .count();
-        ensure!(in_tree_pages == header.page_count.try_into().unwrap());
+        ensure!(in_tree_pages == header.page_count as usize);
 
         // make sure only empty pages are left out-of-the-tree
         for page in pages.into_iter().flatten() {
@@ -188,7 +188,7 @@ impl ID0Section {
         }));
 
         // make sure the right number of entries are in the final vector
-        ensure!(entries.len() == header.record_count.try_into().unwrap());
+        ensure!(entries.len() == header.record_count as usize);
 
         Ok(ID0Section {
             is_64: idb_header.magic_version.is_64(),
@@ -507,7 +507,7 @@ impl Segment {
         let color = unpack_dd(&mut cursor)?;
 
         // TODO maybe new versions include extra information and thid check fails
-        ensure!(cursor.position() == value.len().try_into().unwrap());
+        ensure!(cursor.position() == value.len() as u64);
         Ok(Segment {
             startea,
             size,
@@ -748,7 +748,7 @@ impl IDBParam {
             // TODO old version may contain extra data at the end with unknown purpose
             ..=699 => {}
             700.. => ensure!(
-                input.position() == data.len().try_into()?,
+                input.position() == data.len() as u64,
                 "Data left after the IDBParam: {}",
                 u64::try_from(data.len())? - input.position()
             ),

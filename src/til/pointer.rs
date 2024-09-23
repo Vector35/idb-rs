@@ -1,8 +1,9 @@
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, TAH};
 use std::io::BufRead;
+use serde::Serialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Pointer {
     pub closure: Option<Closure>,
     pub tah: TAH,
@@ -23,7 +24,7 @@ impl Pointer {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum Closure {
     Closure(Box<Type>),
     PointerBased(u8),

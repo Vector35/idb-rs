@@ -4,8 +4,9 @@ use crate::til::{
 };
 use anyhow::{ensure, Context};
 use std::io::BufRead;
+use serde::Serialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Function {
     pub ret: Box<Type>,
     pub args: Vec<(Option<String>, Type, Option<ArgLoc>)>,
@@ -36,7 +37,7 @@ pub(crate) struct FunctionRaw {
     pub retloc: Option<ArgLoc>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum ArgLoc {
     // TODO add those to flags
     // ::ALOC_STACK
@@ -64,7 +65,7 @@ pub enum ArgLoc {
     // TODO is possible to know the custom impl len?
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ArgLocDist {
     pub info: u16,
     pub off: u16,

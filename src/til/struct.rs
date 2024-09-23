@@ -2,8 +2,9 @@ use crate::til::section::TILSectionHeader;
 use crate::til::{associate_field_name_and_member, read_dt_de, Type, TypeRaw, SDACL};
 use anyhow::{anyhow, Context};
 use std::io::BufRead;
+use serde::Serialize;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Struct {
     Ref {
         ref_type: Box<Type>,
@@ -93,7 +94,7 @@ impl StructRaw {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct StructMember {
     pub name: Option<String>,
     pub member_type: Type,

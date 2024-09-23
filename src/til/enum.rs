@@ -5,8 +5,9 @@ use crate::til::{
 };
 use anyhow::{anyhow, Context};
 use std::io::BufRead;
+use serde::Serialize;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Enum {
     Ref {
         ref_type: Box<Type>,

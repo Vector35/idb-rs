@@ -1,7 +1,8 @@
 use crate::til::{read_dt, TAH};
 use std::io::BufRead;
+use serde::Serialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Bitfield {
     pub unsigned: bool,
     pub width: u16,
