@@ -125,7 +125,7 @@ impl ID0Section {
         let mut buf = Vec::with_capacity(0x2000);
         let header = ID0Header::read(&mut *input, &mut buf)?;
         buf.resize(header.page_size.into(), 0);
-        // NOTE sometimes deleted pages are included here, seems to happen specially if a
+        // NOTE sometimes deleted pages are included here, seems to happen especially if an
         // index is deleted with all it's leafs, leaving the now-empty index and the
         // now-disconnected children
         let mut pages = Vec::with_capacity(header.page_count.try_into().unwrap());
@@ -160,13 +160,10 @@ impl ID0Section {
             match page {
                 ID0TreeEntrRaw::Leaf(leaf) if leaf.is_empty() => {}
                 ID0TreeEntrRaw::Index { entries, .. } if entries.is_empty() => {}
-                ID0TreeEntrRaw::Index {
-                    preceeding,
-                    entries,
-                } => {
+                ID0TreeEntrRaw::Index { preceding, entries } => {
                     return Err(anyhow!(
-                        "Extra Index preceeding {}, with {} entries",
-                        preceeding.get(),
+                        "Extra Index preceding {}, with {} entries",
+                        preceding.get(),
                         entries.len()
                     ))
                 }
@@ -214,14 +211,11 @@ impl ID0Section {
             .get_mut(index)
             .ok_or_else(|| anyhow!("invalid page index: {index}"))?
             .take()
-            .ok_or_else(|| anyhow!("page index {index} is referenciated multiple times"))?;
+            .ok_or_else(|| anyhow!("page index {index} is referenced multiple times"))?;
         match entry {
             ID0TreeEntrRaw::Leaf(leaf) => Ok(ID0TreeEntry::Leaf(leaf)),
-            ID0TreeEntrRaw::Index {
-                preceeding,
-                entries,
-            } => {
-                let preceeding = Self::create_tree(Some(preceeding), &mut *pages)?;
+            ID0TreeEntrRaw::Index { preceding, entries } => {
+                let preceding = Self::create_tree(Some(preceding), &mut *pages)?;
                 let index = entries
                     .into_iter()
                     .map(|e| {
@@ -234,7 +228,7 @@ impl ID0Section {
                     })
                     .collect::<Result<_>>()?;
                 Ok(ID0TreeEntry::Index {
-                    preceeding: Box::new(preceeding),
+                    preceding: Box::new(preceding),
                     index,
                 })
             }
@@ -243,8 +237,8 @@ impl ID0Section {
 
     fn tree_to_vec(entry: ID0TreeEntry, output: &mut Vec<ID0Entry>) {
         match entry {
-            ID0TreeEntry::Index { preceeding, index } => {
-                Self::tree_to_vec(*preceeding, &mut *output);
+            ID0TreeEntry::Index { preceding, index } => {
+                Self::tree_to_vec(*preceding, &mut *output);
                 for ID0TreeIndex { page, key, value } in index {
                     output.push(ID0Entry { key, value });
                     Self::tree_to_vec(*page, &mut *output);
@@ -264,11 +258,7 @@ impl ID0Section {
     }
 
     pub fn sub_values(&self, key: Vec<u8>) -> impl Iterator<Item = &ID0Entry> {
-        let start = self.binary_search(&key);
-        let start = match start {
-            Ok(pos) => pos,
-            Err(start) => start,
-        };
+        let start = self.binary_search(&key).unwrap_or_else(|start| start);
 
         self.entries[start..]
             .iter()
@@ -1174,7 +1164,7 @@ impl IDBParam {
         let version: u16 = bincode::deserialize_from(&mut input)?;
 
         let cpu_len = match (magic_old, version) {
-            (_, ..700) => 8,
+            (_, ..=699) => 8,
             (true, 700..) => 16,
             (false, 700..) => {
                 let cpu_len: u8 = bincode::deserialize_from(&mut input)?;
@@ -1193,16 +1183,16 @@ impl IDBParam {
 
         // TODO tight those ranges up
         let param = match version {
-            ..700 => Self::read_v1(&mut input, is_64, version, cpu)?,
+            ..=699 => Self::read_v1(&mut input, is_64, version, cpu)?,
             700.. => Self::read_v2(&mut input, is_64, magic_old, version, cpu)?,
         };
         match version {
             // TODO old version may contain extra data at the end with unknown purpose
-            ..700 => {}
+            ..=699 => {}
             700.. => ensure!(
-                input.position() == data.len().try_into().unwrap(),
+                input.position() == data.len().try_into()?,
                 "Data left after the IDBParam: {}",
-                u64::try_from(data.len()).unwrap() - input.position()
+                u64::try_from(data.len())? - input.position()
             ),
         }
         Ok(param)
@@ -1829,10 +1819,6 @@ impl XRef {
     pub fn is_xrfval(&self) -> bool {
         self.0 & 0x08 != 0
     }
-    // TODO What is this field?
-    //pub fn is_XXXXX(&self) -> bool {
-    //    self.0 & 0x10 != 0
-    //}
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -2244,7 +2230,7 @@ impl Compiler {
 #[derive(Debug, Clone)]
 enum ID0TreeEntry {
     Index {
-        preceeding: Box<ID0TreeEntry>,
+        preceding: Box<ID0TreeEntry>,
         index: Vec<ID0TreeIndex>,
     },
     Leaf(Vec<ID0Entry>),
@@ -2260,7 +2246,7 @@ struct ID0TreeIndex {
 #[derive(Debug, Clone)]
 enum ID0TreeEntrRaw {
     Index {
-        preceeding: NonZeroU32,
+        preceding: NonZeroU32,
         entries: Vec<ID0TreeIndexRaw>,
     },
     Leaf(Vec<ID0Entry>),
@@ -2326,7 +2312,7 @@ impl ID0TreeEntrRaw {
         freeptr: fn(&mut Cursor<&[u8]>) -> Result<u16>,
     ) -> Result<Self> {
         let mut input = Cursor::new(page);
-        let (preceeding, count) = header(&mut input)?;
+        let (preceding, count) = header(&mut input)?;
         let min_data_pos = entry_len
             .checked_mul(count + 2)
             .ok_or_else(|| anyhow!("Invalid number of entries"))?;
@@ -2334,7 +2320,7 @@ impl ID0TreeEntrRaw {
 
         let mut data_offsets = (entry_len..).step_by(entry_len.into());
         let entry_offsets = (&mut data_offsets).take(count.into());
-        let entry = if let Some(preceeding) = preceeding {
+        let entry = if let Some(preceding) = preceding {
             // index
             let entries = entry_offsets
                 .map(|offset| {
@@ -2350,10 +2336,7 @@ impl ID0TreeEntrRaw {
                     Ok(ID0TreeIndexRaw { page, key, value })
                 })
                 .collect::<Result<Vec<_>, _>>()?;
-            ID0TreeEntrRaw::Index {
-                preceeding,
-                entries,
-            }
+            ID0TreeEntrRaw::Index { preceding, entries }
         } else {
             // leaf
             // keys are usually very similar to one another, so it reuses the last key
@@ -2404,15 +2387,15 @@ impl ID0TreeEntrRaw {
     }
 
     fn header_4(input: &mut Cursor<&[u8]>) -> Result<(Option<NonZeroU32>, u16)> {
-        let preceeding: u16 = bincode::deserialize_from(&mut *input)?;
+        let preceding: u16 = bincode::deserialize_from(&mut *input)?;
         let count: u16 = bincode::deserialize_from(input)?;
-        Ok((NonZeroU32::new(preceeding.into()), count))
+        Ok((NonZeroU32::new(preceding.into()), count))
     }
 
     fn header_6(input: &mut Cursor<&[u8]>) -> Result<(Option<NonZeroU32>, u16)> {
-        let preceeding: u32 = bincode::deserialize_from(&mut *input)?;
+        let preceding: u32 = bincode::deserialize_from(&mut *input)?;
         let count: u16 = bincode::deserialize_from(input)?;
-        Ok((NonZeroU32::new(preceeding), count))
+        Ok((NonZeroU32::new(preceding), count))
     }
 
     fn index_header_4(input: &mut Cursor<&[u8]>) -> Result<(Option<NonZeroU32>, u16)> {
@@ -2501,7 +2484,7 @@ impl IDBFileRegions {
         let mut input = Cursor::new(data);
         // TODO detect versions with more accuracy
         let (start, end, eva) = match version {
-            ..700 => {
+            ..=699 => {
                 let start = read_word(&mut input, is_64)?;
                 let end = read_word(&mut input, is_64)?;
                 let rva: u32 = bincode::deserialize_from(&mut input)?;
@@ -2774,17 +2757,17 @@ fn parse_u8<I: Read>(input: &mut I) -> Result<u8> {
 }
 
 // InnerRef: unpack_dw
-// NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
+// NOTE: the original implementation never fails, if input hit EoF it a partial result or 0
 /// Reads 1 to 3 bytes.
 fn unpack_dw<I: Read>(input: &mut I) -> Result<u16> {
     let b1: u8 = bincode::deserialize_from(&mut *input)?;
     match b1 {
         // 7 bit value
         // [0xxx xxxx]
-        0x00..0x80 => Ok(b1.into()),
+        0x00..=0x7F => Ok(b1.into()),
         // 14 bits value
         // [10xx xxxx] xxxx xxxx
-        0x80..0xC0 => {
+        0x80..=0xBF => {
             let lo: u8 = bincode::deserialize_from(&mut *input)?;
             Ok(u16::from_be_bytes([b1 & 0x3F, lo]))
         }
@@ -2806,16 +2789,16 @@ fn unpack_dd<I: Read>(input: &mut I) -> Result<u32> {
     match b1 {
         // 7 bit value
         // [0xxx xxxx]
-        0x00..0x80 => Ok(b1.into()),
+        0x00..=0x7F => Ok(b1.into()),
         // 14 bits value
         // [10xx xxxx] xxxx xxxx
-        0x80..0xC0 => {
+        0x80..=0xBF => {
             let lo: u8 = bincode::deserialize_from(&mut *input)?;
             Ok(u32::from_be_bytes([0, 0, b1 & 0x3F, lo]))
         }
         // 29 bit value:
         // [110x xxxx] xxxx xxxx xxxx xxxx xxxx xxxx
-        0xC0..0xE0 => {
+        0xC0..=0xDF => {
             let bytes: [u8; 3] = bincode::deserialize_from(&mut *input)?;
             Ok(u32::from_be_bytes([
                 b1 & 0x1F,
@@ -2851,7 +2834,7 @@ fn unpack_dq<I: Read>(input: &mut I) -> Result<u64> {
 }
 
 // InnerRef: unpack_ds
-// NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
+// NOTE: the original implementation never fails, if input hit EoF it a partial result or 0
 fn unpack_ds<I: Read>(input: &mut I) -> Result<Vec<u8>> {
     let len = unpack_dd(&mut *input)?;
     let mut result = vec![0; len.try_into().unwrap()];
@@ -2869,7 +2852,7 @@ fn parse_number(data: &[u8], big_endian: bool, is_64: bool) -> Option<u64> {
     })
 }
 
-// parse a string that maybe is finilized with \x00
+// parse a string that maybe is finalized with \x00
 fn parse_maybe_cstr(data: &[u8]) -> Option<&str> {
     // find the end of the string
     let end_pos = data.iter().position(|b| *b == 0).unwrap_or(data.len());
