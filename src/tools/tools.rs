@@ -1,0 +1,114 @@
+mod dump_til;
+use dump_til::dump_til;
+//mod dump_id0;
+//use dump_id0::dump_id0;
+//mod split_idb;
+//use split_idb::split_idb;
+//mod decompress_til;
+//use decompress_til::decompress_til;
+mod dump_functions;
+use dump_functions::dump_functions;
+mod dump_segments;
+use dump_segments::dump_segments;
+mod dump_loader_name;
+use dump_loader_name::dump_loader_name;
+mod dump_root_info;
+use dump_root_info::dump_root_info;
+mod dump_file_regions;
+use dump_file_regions::dump_file_regions;
+
+use std::path::PathBuf;
+
+use anyhow::Result;
+use clap::{Parser, Subcommand, ValueEnum};
+
+/// Parse IDA files and output it's data
+#[derive(Clone, Debug, Parser)]
+struct Args {
+    /// input filename to parse
+    #[arg(short, long)]
+    input: PathBuf,
+    /// parse the filename using this format, if not specified use the input file ext, otherwise default to idb 32bits
+    #[arg(short, long, value_enum)]
+    force_type: Option<FileType>,
+    // operation to execute
+    #[command(subcommand)]
+    operation: Operation,
+}
+
+/// File type to parse
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum FileType {
+    /// IDB file
+    IDB,
+    // TODO verify if is necessary to parse standalone id0 files
+    ///// ID0 database file
+    //ID0,
+    /// TIL lib types file
+    TIL,
+}
+
+/// File type to parse
+#[derive(Clone, Debug, Subcommand)]
+enum Operation {
+    DumpTil,
+    //DumpID0,
+    //SplitIDB(SplitIDBArgs),
+    //DecompressTil(DecompressTilArgs),
+    DumpFunctions,
+    DumpSegments,
+    DumpLoaderNames,
+    DumpRootInfo,
+    DumpFileRegions,
+}
+
+///// Split the IDB file into it's decompressed sectors. Allow IDB and I64 files.
+//#[derive(Clone, Debug, Parser)]
+//struct SplitIDBArgs {
+//    /// output path, defaults to the input file path
+//    output_path: Option<PathBuf>,
+//    /// output filename, defatuls to the input filename (without the extension)
+//    output_filename: Option<OsString>,
+//}
+
+///// Decompress the TIL into a uncompressed version of the TIL. Allow IDB, I64 and TIL files.
+//#[derive(Clone, Debug, Parser)]
+//struct DecompressTilArgs {
+//    /// output filename
+//    output: PathBuf,
+//}
+
+impl Args {
+    pub fn input_type(&self) -> FileType {
+        if let Some(input_type) = self.force_type {
+            return input_type;
+        }
+        match self
+            .input
+            .extension()
+            .map(std::ffi::OsStr::to_str)
+            .flatten()
+        {
+            Some("idb") | Some("i64") => FileType::IDB,
+            Some("til") => FileType::TIL,
+            //Some("id0") => FileType::ID0,
+            _ => FileType::IDB,
+        }
+    }
+}
+
+fn main() -> Result<()> {
+    let args = Args::parse();
+
+    match &args.operation {
+        Operation::DumpTil => dump_til(&args),
+        //Operation::DumpID0 => dump_id0(&args),
+        //Operation::SplitIDB(split_idbargs) => split_idb(&args, split_idbargs),
+        //Operation::DecompressTil(decompress_til_args) => decompress_til(&args, decompress_til_args),
+        Operation::DumpFunctions => dump_functions(&args),
+        Operation::DumpSegments => dump_segments(&args),
+        Operation::DumpLoaderNames => dump_loader_name(&args),
+        Operation::DumpRootInfo => dump_root_info(&args),
+        Operation::DumpFileRegions => dump_file_regions(&args),
+    }
+}
