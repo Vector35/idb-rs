@@ -249,16 +249,39 @@ impl ID0Section {
         self.entries.binary_search_by_key(&key, |b| &b.key[..])
     }
 
+    fn binary_search_end(&self, key: impl AsRef<[u8]>) -> Result<usize, usize> {
+        let key = key.as_ref();
+        self.entries.binary_search_by(|b| {
+            if b.key.starts_with(key) {
+                std::cmp::Ordering::Less
+            } else {
+                b.key.as_slice().cmp(key)
+            }
+        })
+    }
+
     pub fn get(&self, key: impl AsRef<[u8]>) -> Option<&ID0Entry> {
         self.binary_search(key).ok().map(|i| &self.entries[i])
     }
 
-    pub fn sub_values(&self, key: Vec<u8>) -> impl Iterator<Item = &ID0Entry> {
-        let start = self.binary_search(&key).unwrap_or_else(|start| start);
+    /// search for entries in this inclusive range
+    pub fn get_inclusive_range(
+        &self,
+        start: impl AsRef<[u8]>,
+        end: impl AsRef<[u8]>,
+    ) -> impl Iterator<Item = &ID0Entry> {
+        let start = self.binary_search(start).unwrap_or_else(|start| start);
+        let end = self.binary_search_end(end).unwrap_or_else(|end| end);
 
-        self.entries[start..]
-            .iter()
-            .take_while(move |e| e.key.starts_with(&key))
+        self.entries[start..end].iter()
+    }
+
+    pub fn sub_values(&self, key: impl AsRef<[u8]>) -> impl Iterator<Item = &ID0Entry> {
+        let key = key.as_ref();
+        let start = self.binary_search(key).unwrap_or_else(|start| start);
+        let end = self.binary_search_end(key).unwrap_or_else(|end| end);
+
+        self.entries[start..end].iter()
     }
 
     pub fn segments(&self) -> Result<impl Iterator<Item = Result<Segment>> + '_> {
@@ -588,6 +611,52 @@ impl ID0Section {
         }
         Ok(None)
     }
+
+    pub fn address_info(
+        &self,
+        version: u16,
+    ) -> Result<impl Iterator<Item = Result<(u64, AddressInfo)>>> {
+        let regions = self.file_regions(version)?;
+        // TODO remove the Vec/for-loop here if you want to use `itertools::flatten_ok` or implement it yourself
+        let mut info = vec![];
+        for region in regions {
+            let region = region?;
+            let start_key = key_from_address(region.start, self.is_64);
+            let end_key = key_from_address(region.end, self.is_64);
+            let start = self.binary_search(&start_key).unwrap_or_else(|start| start);
+            let end = self.binary_search(&end_key).unwrap_or_else(|end| end);
+
+            let entries = &self.entries[start..end];
+            info.extend(entries.iter().map(|entry| {
+                let key = &entry.key[start_key.len()..];
+                // 1.. because it starts with '.'
+                let address =
+                    parse_number(&entry.key[1..start_key.len()], true, self.is_64).unwrap();
+                let info = address_info::AddressInfo::parse(key, &entry.value, self.is_64)?;
+                Ok((address, info))
+            }));
+        }
+        Ok(info.into_iter())
+    }
+
+    pub fn address_info_at(
+        &self,
+        address: u64,
+    ) -> Result<impl Iterator<Item = Result<(u64, AddressInfo)>>> {
+        let key = key_from_address(address, self.is_64);
+        let start = self.binary_search(&key).unwrap_or_else(|start| start);
+        let end = self.binary_search_end(&key).unwrap_or_else(|end| end);
+
+        let entries = &self.entries[start..end];
+        let key_len = key.len();
+        Ok(entries.iter().map(move |entry| {
+            let key = &entry.key[key_len..];
+            // 1.. because it starts with '.'
+            let address = parse_number(&entry.key[1..key.len()], true, self.is_64).unwrap();
+            let info = address_info::AddressInfo::parse(key, &entry.value, self.is_64)?;
+            Ok((address, info))
+        }))
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -833,4 +902,15 @@ impl ID0TreeEntrRaw {
         let freeptr: u16 = bincode::deserialize_from(input)?;
         Ok(freeptr)
     }
+}
+
+fn key_from_address(address: u64, is_64: bool) -> Vec<u8> {
+    b".".iter()
+        .copied()
+        .chain(if is_64 {
+            address.to_be_bytes().to_vec()
+        } else {
+            u32::try_from(address).unwrap().to_be_bytes().to_vec()
+        })
+        .collect()
 }

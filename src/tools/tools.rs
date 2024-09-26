@@ -14,8 +14,8 @@ mod dump_loader_name;
 use dump_loader_name::dump_loader_name;
 mod dump_root_info;
 use dump_root_info::dump_root_info;
-mod dump_file_regions;
-use dump_file_regions::dump_file_regions;
+mod dump_addr_info;
+use dump_addr_info::dump_addr_info;
 
 use std::path::PathBuf;
 
@@ -51,15 +51,22 @@ enum FileType {
 /// File type to parse
 #[derive(Clone, Debug, Subcommand)]
 enum Operation {
+    /// Dump all the TIL type
     DumpTil,
+    // TODO implement as needed
     //DumpID0,
     //SplitIDB(SplitIDBArgs),
     //DecompressTil(DecompressTilArgs),
+    /// Dump all the function information
     DumpFunctions,
+    /// Dump all the segments
     DumpSegments,
+    /// Dump the loader names
     DumpLoaderNames,
+    /// Dump the RootInfo
     DumpRootInfo,
-    DumpFileRegions,
+    /// Dump all the address info
+    DumpAddressInfo,
 }
 
 ///// Split the IDB file into it's decompressed sectors. Allow IDB and I64 files.
@@ -109,6 +116,6 @@ fn main() -> Result<()> {
         Operation::DumpSegments => dump_segments(&args),
         Operation::DumpLoaderNames => dump_loader_name(&args),
         Operation::DumpRootInfo => dump_root_info(&args),
-        Operation::DumpFileRegions => dump_file_regions(&args),
+        Operation::DumpAddressInfo => dump_addr_info(&args),
     }
 }
