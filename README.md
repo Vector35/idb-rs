@@ -10,6 +10,10 @@ Special thanks to [Willi Ballenthin] and [willem] for IDB format research:
 
 TODO
 
+## Documentation
+
+IDB file format documentation: [fileformat.md](doc/fileformat.md).
+
 ## License
 
 This plugin is released under the Apache-2.0 license.
