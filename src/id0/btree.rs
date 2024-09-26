@@ -244,6 +244,10 @@ impl ID0Section {
         }
     }
 
+    pub fn all_entries(&self) -> impl Iterator<Item = &ID0Entry> {
+        self.entries.iter()
+    }
+
     fn binary_search(&self, key: impl AsRef<[u8]>) -> Result<usize, usize> {
         let key = key.as_ref();
         self.entries.binary_search_by_key(&key, |b| &b.key[..])

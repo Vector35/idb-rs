@@ -1,7 +1,7 @@
 mod dump_til;
 use dump_til::dump_til;
-//mod dump_id0;
-//use dump_id0::dump_id0;
+mod dump_id0;
+use dump_id0::dump_id0;
 //mod split_idb;
 //use split_idb::split_idb;
 //mod decompress_til;
@@ -53,8 +53,8 @@ enum FileType {
 enum Operation {
     /// Dump all the TIL type
     DumpTil,
-    // TODO implement as needed
-    //DumpID0,
+    /// Dump all entries of the ID0 database
+    DumpID0,
     //SplitIDB(SplitIDBArgs),
     //DecompressTil(DecompressTilArgs),
     /// Dump all the function information
@@ -109,7 +109,7 @@ fn main() -> Result<()> {
 
     match &args.operation {
         Operation::DumpTil => dump_til(&args),
-        //Operation::DumpID0 => dump_id0(&args),
+        Operation::DumpID0 => dump_id0(&args),
         //Operation::SplitIDB(split_idbargs) => split_idb(&args, split_idbargs),
         //Operation::DecompressTil(decompress_til_args) => decompress_til(&args, decompress_til_args),
         Operation::DumpFunctions => dump_functions(&args),
