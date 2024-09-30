@@ -16,6 +16,16 @@ mod dump_root_info;
 use dump_root_info::dump_root_info;
 mod dump_addr_info;
 use dump_addr_info::dump_addr_info;
+mod dump_dirtree_types;
+use dump_dirtree_types::dump_dirtree_types;
+mod dump_dirtree_structs;
+use dump_dirtree_structs::dump_dirtree_structs;
+mod dump_dirtree_enums;
+use dump_dirtree_enums::dump_dirtree_enums;
+mod dump_dirtree_funcs;
+use dump_dirtree_funcs::dump_dirtree_funcs;
+mod dump_dirtree_names;
+use dump_dirtree_names::dump_dirtree_names;
 
 use std::path::PathBuf;
 
@@ -67,6 +77,12 @@ enum Operation {
     DumpRootInfo,
     /// Dump all the address info
     DumpAddressInfo,
+    /// Dump all the type from the diretory tree
+    DumpDirtreeTypes,
+    DumpDirtreeStructs,
+    DumpDirtreeEnums,
+    DumpDirtreeFuncs,
+    DumpDirtreeNames,
 }
 
 ///// Split the IDB file into it's decompressed sectors. Allow IDB and I64 files.
@@ -117,5 +133,10 @@ fn main() -> Result<()> {
         Operation::DumpLoaderNames => dump_loader_name(&args),
         Operation::DumpRootInfo => dump_root_info(&args),
         Operation::DumpAddressInfo => dump_addr_info(&args),
+        Operation::DumpDirtreeTypes => dump_dirtree_types(&args),
+        Operation::DumpDirtreeStructs => dump_dirtree_structs(&args),
+        Operation::DumpDirtreeEnums => dump_dirtree_enums(&args),
+        Operation::DumpDirtreeFuncs => dump_dirtree_funcs(&args),
+        Operation::DumpDirtreeNames => dump_dirtree_names(&args),
     }
 }

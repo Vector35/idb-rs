@@ -16,6 +16,8 @@ mod btree;
 pub use btree::*;
 mod address_info;
 pub use address_info::*;
+mod dirtree;
+pub use dirtree::*;
 
 #[derive(Clone, Debug)]
 pub struct IDBFileRegions {
