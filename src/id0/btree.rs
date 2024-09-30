@@ -510,6 +510,11 @@ impl ID0Section {
     // TODO implement $ fixups
     // TODO implement $ imports
     // TODO implement $ scriptsnippets
+    // TODO implement $ enums
+    // TODO implement $ structs
+
+    // TODO implement $ hidden_ranges
+    // TODO the address_info for 0xff00_00XX (or 0xff00_0000__0000_00XX for 64bits) seesm to be reserved, what happens if there is data at that page?
 
     fn entry_points_raw(&self) -> Result<impl Iterator<Item = Result<EntryPointRaw>>> {
         let entry = self
@@ -661,6 +666,67 @@ impl ID0Section {
             Ok((address, info))
         }))
     }
+
+    pub(crate) fn dirtree_from_name<T: FromDirTreeNumber>(
+        &self,
+        name: impl AsRef<[u8]>,
+    ) -> Result<DirTreeEntry<T>> {
+        let index = self
+            .binary_search(name)
+            .map_err(|_| anyhow!("Unable to find dirtree"))?;
+        let key: Vec<u8> = b"."
+            .iter()
+            .chain(self.entries[index].value.iter().rev())
+            .chain(b"S")
+            .copied()
+            .collect();
+        let key_len = key.len();
+        let mut sub_values = self.sub_values(key).map(|entry| {
+            let raw_idx = parse_number(&entry.key[key_len..], true, self.is_64)
+                .ok_or_else(|| anyhow!("invalid dirtree entry key"))?;
+            ensure!(
+                raw_idx & 0xFFFF == 0,
+                "Invalid lower byte for dirtree entry key"
+            );
+            Ok((raw_idx >> 16, &entry.value[..]))
+        });
+        let dirs = dirtree::parse_dirtree(&mut sub_values, self.is_64)?;
+        ensure!(sub_values.next().is_none(), "unparsed diretree entries");
+        Ok(dirs)
+    }
+
+    // https://hex-rays.com/products/ida/support/idapython_docs/ida_dirtree.html
+
+    // TODO remove the u64 and make it a TILOrdIndex type
+    pub fn dirtree_tinfos(&self) -> Result<DirTreeEntry<u64>> {
+        self.dirtree_from_name("N$ dirtree/tinfos")
+    }
+
+    // TODO remove the u64 and make it a TILOrdIndex type
+    pub fn dirtree_structs(&self) -> Result<DirTreeEntry<u64>> {
+        self.dirtree_from_name("N$ dirtree/structs")
+    }
+
+    // TODO remove the u64 and make it a TILOrdIndex type
+    pub fn dirtree_enums(&self) -> Result<DirTreeEntry<u64>> {
+        self.dirtree_from_name("N$ dirtree/enums")
+    }
+
+    // TODO remove the u64 and make it a FuncAddress type
+    pub fn dirtree_funcs(&self) -> Result<DirTreeEntry<u64>> {
+        self.dirtree_from_name("N$ dirtree/funcs")
+    }
+
+    // TODO remove the u64 and make it a NameAddress type
+    pub fn dirtree_names(&self) -> Result<DirTreeEntry<u64>> {
+        self.dirtree_from_name("N$ dirtree/names")
+    }
+
+    // TODO implement $ dirtree/imports
+    // TODO implement $ dirtree/bpts
+    // TODO implement $ dirtree/bookmarks_idaplace_t
+    // TODO implement $ dirtree/bookmarks_structplace_t
+    // TODO implement $ dirtree/bookmarks_tiplace_t
 }
 
 #[derive(Debug, Clone)]
