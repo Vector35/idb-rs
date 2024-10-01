@@ -691,9 +691,10 @@ impl ID0Section {
         name: impl AsRef<[u8]>,
         builder: T,
     ) -> Result<DirTreeRoot<T::Output>> {
-        let index = self
-            .binary_search(name)
-            .map_err(|_| anyhow!("Unable to find dirtree"))?;
+        let Ok(index) = self.binary_search(name) else {
+            // if the entry is missin, it's probably just don't have entries
+            return Ok(DirTreeRoot { entries: vec![] });
+        };
         let key: Vec<u8> = b"."
             .iter()
             .chain(self.entries[index].value.iter().rev())
@@ -739,15 +740,29 @@ impl ID0Section {
         self.dirtree_from_name("N$ dirtree/funcs", U64FromDirTree)
     }
 
-    pub fn dirtree_names(&self) -> Result<DirTreeRoot<&str>> {
+    pub fn dirtree_names(&self) -> Result<DirTreeRoot<(u64, &str)>> {
         self.dirtree_from_name("N$ dirtree/names", LabelFromDirTree { id0: self })
     }
 
-    // TODO implement $ dirtree/imports
-    // TODO implement $ dirtree/bpts
-    // TODO implement $ dirtree/bookmarks_idaplace_t
-    // TODO implement $ dirtree/bookmarks_structplace_t
-    // TODO implement $ dirtree/bookmarks_tiplace_t
+    pub fn dirtree_imports(&self) -> Result<DirTreeRoot<u64>> {
+        self.dirtree_from_name("N$ dirtree/imports", U64FromDirTree)
+    }
+
+    pub fn dirtree_bpts(&self) -> Result<DirTreeRoot<u64>> {
+        self.dirtree_from_name("N$ dirtree/bpts", U64FromDirTree)
+    }
+
+    pub fn dirtree_bookmarks_idaplace(&self) -> Result<DirTreeRoot<u64>> {
+        self.dirtree_from_name("N$ dirtree/bookmarks_idaplace_t", U64FromDirTree)
+    }
+
+    pub fn dirtree_bookmarks_structplace(&self) -> Result<DirTreeRoot<u64>> {
+        self.dirtree_from_name("N$ dirtree/bookmarks_structplace_t", U64FromDirTree)
+    }
+
+    pub fn dirtree_bookmarks_tiplace(&self) -> Result<DirTreeRoot<u64>> {
+        self.dirtree_from_name("N$ dirtree/bookmarks_tiplace_t", U64FromDirTree)
+    }
 }
 
 #[derive(Debug, Clone)]

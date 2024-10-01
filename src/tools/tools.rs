@@ -26,6 +26,16 @@ mod dump_dirtree_funcs;
 use dump_dirtree_funcs::dump_dirtree_funcs;
 mod dump_dirtree_names;
 use dump_dirtree_names::dump_dirtree_names;
+mod dump_dirtree_imports;
+use dump_dirtree_imports::dump_dirtree_imports;
+mod dump_dirtree_bpts;
+use dump_dirtree_bpts::dump_dirtree_bpts;
+mod dump_dirtree_bookmarks_idaplace;
+use dump_dirtree_bookmarks_idaplace::dump_dirtree_bookmarks_idaplace;
+mod dump_dirtree_bookmarks_structplace;
+use dump_dirtree_bookmarks_structplace::dump_dirtree_bookmarks_structplace;
+mod dump_dirtree_bookmarks_tiplace;
+use dump_dirtree_bookmarks_tiplace::dump_dirtree_bookmarks_tiplace;
 
 use std::path::PathBuf;
 
@@ -81,8 +91,15 @@ enum Operation {
     DumpDirtreeTypes,
     DumpDirtreeStructs,
     DumpDirtreeEnums,
+    /// Dump all the functions from the diretory tree
     DumpDirtreeFuncs,
+    /// Dump all the Names from the diretory tree
     DumpDirtreeNames,
+    DumpDirtreeImports,
+    DumpDirtreeBpts,
+    DumpDirtreeBookmarksIdaplace,
+    DumpDirtreeBookmarksStructplace,
+    DumpDirtreeBookmarksTiplace,
 }
 
 ///// Split the IDB file into it's decompressed sectors. Allow IDB and I64 files.
@@ -133,5 +150,10 @@ fn main() -> Result<()> {
         Operation::DumpDirtreeEnums => dump_dirtree_enums(&args),
         Operation::DumpDirtreeFuncs => dump_dirtree_funcs(&args),
         Operation::DumpDirtreeNames => dump_dirtree_names(&args),
+        Operation::DumpDirtreeImports => dump_dirtree_imports(&args),
+        Operation::DumpDirtreeBpts => dump_dirtree_bpts(&args),
+        Operation::DumpDirtreeBookmarksIdaplace => dump_dirtree_bookmarks_idaplace(&args),
+        Operation::DumpDirtreeBookmarksStructplace => dump_dirtree_bookmarks_structplace(&args),
+        Operation::DumpDirtreeBookmarksTiplace => dump_dirtree_bookmarks_tiplace(&args),
     }
 }
