@@ -41,12 +41,13 @@ pub(crate) struct LabelFromDirTree<'a> {
     pub(crate) id0: &'a ID0Section,
 }
 impl<'a> FromDirTreeNumber for LabelFromDirTree<'a> {
-    type Output = &'a str;
+    type Output = (u64, &'a str);
     #[inline]
-    fn build(&mut self, value: u64) -> Result<Self::Output> {
-        self.id0.label_at(value).and_then(|label| {
-            label.ok_or_else(|| anyhow!("Missing label entry on ID0 for address {value:#x}"))
-        })
+    fn build(&mut self, address: u64) -> Result<Self::Output> {
+        let name = self.id0.label_at(address).and_then(|label| {
+            label.ok_or_else(|| anyhow!("Missing label entry on ID0 for address {address:#x}"))
+        })?;
+        Ok((address, name))
     }
 }
 
