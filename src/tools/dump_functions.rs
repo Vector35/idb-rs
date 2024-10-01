@@ -1,4 +1,4 @@
-use crate::{get_id0_section, Args};
+use crate::{dump_dirtree_funcs::print_function, get_id0_section, Args};
 
 use anyhow::Result;
 use idb_rs::id0::EntryPoint;
@@ -45,5 +45,21 @@ pub fn dump_functions(args: &Args) -> Result<()> {
         }
         println!();
     }
+
+    println!();
+    println!("dirtree functions, AKA `$ dirtree/funcs`");
+    let dirtree = id0.dirtree_function_address()?;
+    let mut buffer = dirtree.entries;
+    while !buffer.is_empty() {
+        let entry = buffer.pop().unwrap();
+        match entry {
+            idb_rs::id0::DirTreeEntry::Leaf(address) => {
+                print!("  {address:#x}:");
+                print_function(&id0, address)?
+            }
+            idb_rs::id0::DirTreeEntry::Directory { name: _, entries } => buffer.extend(entries),
+        }
+    }
+
     Ok(())
 }
