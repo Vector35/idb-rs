@@ -169,6 +169,10 @@ impl DirTreeEntryRaw {
             .map(|_| {
                 let value = unpack_usize(&mut data, is_64)?;
                 last_value = last_value.wrapping_add(value as i64);
+                if !is_64 {
+                    // NOTE that in 32bits it wrapps using the u32 limit
+                    last_value = last_value & u32::MAX as i64;
+                }
                 Ok(DirTreeEntryChildRaw {
                     number: last_value as u64,
                     is_value: false,
