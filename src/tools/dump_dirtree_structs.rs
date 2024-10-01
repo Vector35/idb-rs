@@ -9,8 +9,8 @@ use idb_rs::IDBParser;
 pub fn dump_dirtree_structs(args: &Args) -> Result<()> {
     // parse the id0 sector/file
     let id0 = match args.input_type() {
-        FileType::TIL => return Err(anyhow!("TIL don't contains any ID0 data")),
-        FileType::IDB => {
+        FileType::Til => return Err(anyhow!("TIL don't contains any ID0 data")),
+        FileType::Idb => {
             let input = BufReader::new(File::open(&args.input)?);
             let mut parser = IDBParser::new(input)?;
             let id0_offset = parser

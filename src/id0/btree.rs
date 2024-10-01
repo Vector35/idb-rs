@@ -1,4 +1,5 @@
 use anyhow::Result;
+use til::{section::TILSection, TILTypeInfo};
 
 use std::io::Cursor;
 
@@ -630,8 +631,8 @@ impl ID0Section {
         let mut info = vec![];
         for region in regions {
             let region = region?;
-            let start_key = key_from_address(region.start, self.is_64);
-            let end_key = key_from_address(region.end, self.is_64);
+            let start_key: Vec<u8> = key_from_address(region.start, self.is_64).collect();
+            let end_key: Vec<u8> = key_from_address(region.end, self.is_64).collect();
             let start = self.binary_search(&start_key).unwrap_or_else(|start| start);
             let end = self.binary_search(&end_key).unwrap_or_else(|end| end);
 
@@ -651,8 +652,8 @@ impl ID0Section {
     pub fn address_info_at(
         &self,
         address: u64,
-    ) -> Result<impl Iterator<Item = Result<(u64, AddressInfo)>>> {
-        let key = key_from_address(address, self.is_64);
+    ) -> Result<impl Iterator<Item = Result<AddressInfo>>> {
+        let key: Vec<u8> = key_from_address(address, self.is_64).collect();
         let start = self.binary_search(&key).unwrap_or_else(|start| start);
         let end = self.binary_search_end(&key).unwrap_or_else(|end| end);
 
@@ -661,16 +662,35 @@ impl ID0Section {
         Ok(entries.iter().map(move |entry| {
             let key = &entry.key[key_len..];
             // 1.. because it starts with '.'
-            let address = parse_number(&entry.key[1..key.len()], true, self.is_64).unwrap();
+            let key_address = parse_number(&entry.key[1..key_len], true, self.is_64).unwrap();
+            assert_eq!(key_address, address);
             let info = address_info::AddressInfo::parse(key, &entry.value, self.is_64)?;
-            Ok((address, info))
+            Ok(info)
         }))
+    }
+
+    pub fn label_at(&self, address: u64) -> Result<Option<&str>> {
+        let key: Vec<u8> = key_from_address(address, self.is_64)
+            .chain(Some(b'N'))
+            .collect();
+        let Ok(start) = self.binary_search(&key) else {
+            return Ok(None);
+        };
+
+        let entry = &self.entries[start];
+        let key_len = key.len();
+        let key = &entry.key[key_len..];
+        ensure!(key.is_empty(), "Label ID0 entry with key");
+        let label =
+            parse_maybe_cstr(&entry.value).ok_or_else(|| anyhow!("Label is not valid UTF-8"))?;
+        Ok(Some(label))
     }
 
     pub(crate) fn dirtree_from_name<T: FromDirTreeNumber>(
         &self,
         name: impl AsRef<[u8]>,
-    ) -> Result<DirTreeEntry<T>> {
+        builder: T,
+    ) -> Result<DirTreeRoot<T::Output>> {
         let index = self
             .binary_search(name)
             .map_err(|_| anyhow!("Unable to find dirtree"))?;
@@ -690,36 +710,37 @@ impl ID0Section {
             );
             Ok((raw_idx >> 16, &entry.value[..]))
         });
-        let dirs = dirtree::parse_dirtree(&mut sub_values, self.is_64)?;
+        let dirs = dirtree::parse_dirtree(&mut sub_values, builder, self.is_64)?;
         ensure!(sub_values.next().is_none(), "unparsed diretree entries");
         Ok(dirs)
     }
 
     // https://hex-rays.com/products/ida/support/idapython_docs/ida_dirtree.html
 
-    // TODO remove the u64 and make it a TILOrdIndex type
-    pub fn dirtree_tinfos(&self) -> Result<DirTreeEntry<u64>> {
-        self.dirtree_from_name("N$ dirtree/tinfos")
+    pub fn dirtree_tinfos<'a>(
+        &'a self,
+        til: &'a TILSection,
+    ) -> Result<DirTreeRoot<&'a TILTypeInfo>> {
+        self.dirtree_from_name("N$ dirtree/tinfos", TilFromDirTree { til })
     }
 
     // TODO remove the u64 and make it a TILOrdIndex type
-    pub fn dirtree_structs(&self) -> Result<DirTreeEntry<u64>> {
-        self.dirtree_from_name("N$ dirtree/structs")
+    pub fn dirtree_structs(&self) -> Result<DirTreeRoot<u64>> {
+        self.dirtree_from_name("N$ dirtree/structs", U64FromDirTree)
     }
 
     // TODO remove the u64 and make it a TILOrdIndex type
-    pub fn dirtree_enums(&self) -> Result<DirTreeEntry<u64>> {
-        self.dirtree_from_name("N$ dirtree/enums")
+    pub fn dirtree_enums(&self) -> Result<DirTreeRoot<u64>> {
+        self.dirtree_from_name("N$ dirtree/enums", U64FromDirTree)
     }
 
     // TODO remove the u64 and make it a FuncAddress type
-    pub fn dirtree_funcs(&self) -> Result<DirTreeEntry<u64>> {
-        self.dirtree_from_name("N$ dirtree/funcs")
+    pub fn dirtree_function_address(&self) -> Result<DirTreeRoot<u64>> {
+        self.dirtree_from_name("N$ dirtree/funcs", U64FromDirTree)
     }
 
-    // TODO remove the u64 and make it a NameAddress type
-    pub fn dirtree_names(&self) -> Result<DirTreeEntry<u64>> {
-        self.dirtree_from_name("N$ dirtree/names")
+    pub fn dirtree_names(&self) -> Result<DirTreeRoot<&str>> {
+        self.dirtree_from_name("N$ dirtree/names", LabelFromDirTree { id0: self })
     }
 
     // TODO implement $ dirtree/imports
@@ -974,13 +995,10 @@ impl ID0TreeEntrRaw {
     }
 }
 
-fn key_from_address(address: u64, is_64: bool) -> Vec<u8> {
-    b".".iter()
-        .copied()
-        .chain(if is_64 {
-            address.to_be_bytes().to_vec()
-        } else {
-            u32::try_from(address).unwrap().to_be_bytes().to_vec()
-        })
-        .collect()
+fn key_from_address(address: u64, is_64: bool) -> impl Iterator<Item = u8> {
+    b".".iter().copied().chain(if is_64 {
+        address.to_be_bytes().to_vec()
+    } else {
+        u32::try_from(address).unwrap().to_be_bytes().to_vec()
+    })
 }

@@ -4,31 +4,72 @@ use anyhow::{anyhow, ensure, Result};
 
 use crate::id0::{unpack_dd, unpack_usize};
 use crate::read_c_string;
+use crate::til::section::TILSection;
+use crate::til::TILTypeInfo;
+
+use super::ID0Section;
+
+#[derive(Clone, Debug)]
+pub struct DirTreeRoot<T> {
+    pub entries: Vec<DirTreeEntry<T>>,
+}
 
 #[derive(Clone, Debug)]
 pub enum DirTreeEntry<T> {
     Leaf(T),
     Directory {
         name: String,
-        sub_dirs: Vec<DirTreeEntry<T>>,
+        entries: Vec<DirTreeEntry<T>>,
     },
 }
 
 pub(crate) trait FromDirTreeNumber {
-    fn from_number(value: u64) -> Self;
+    type Output;
+    fn build(&mut self, value: u64) -> Result<Self::Output>;
 }
 
-impl FromDirTreeNumber for u64 {
+pub(crate) struct U64FromDirTree;
+impl FromDirTreeNumber for U64FromDirTree {
+    type Output = u64;
     #[inline]
-    fn from_number(value: u64) -> Self {
-        value
+    fn build(&mut self, value: u64) -> Result<Self::Output> {
+        Ok(value)
+    }
+}
+
+pub(crate) struct LabelFromDirTree<'a> {
+    pub(crate) id0: &'a ID0Section,
+}
+impl<'a> FromDirTreeNumber for LabelFromDirTree<'a> {
+    type Output = &'a str;
+    #[inline]
+    fn build(&mut self, value: u64) -> Result<Self::Output> {
+        self.id0.label_at(value).and_then(|label| {
+            label.ok_or_else(|| anyhow!("Missing label entry on ID0 for address {value:#x}"))
+        })
+    }
+}
+
+pub(crate) struct TilFromDirTree<'a> {
+    pub(crate) til: &'a TILSection,
+}
+impl<'a> FromDirTreeNumber for TilFromDirTree<'a> {
+    type Output = &'a TILTypeInfo;
+    #[inline]
+    fn build(&mut self, value: u64) -> Result<Self::Output> {
+        self.til
+            .types
+            .iter()
+            .find(|ty| ty.ordinal == value)
+            .ok_or_else(|| anyhow!("Could not find a TIL type with ordinal {value}"))
     }
 }
 
 pub(crate) fn parse_dirtree<'a, T: FromDirTreeNumber>(
     mut sub_values: impl Iterator<Item = Result<(u64, &'a [u8])>>,
+    mut builder: T,
     is_64: bool,
-) -> Result<DirTreeEntry<T>> {
+) -> Result<DirTreeRoot<T::Output>> {
     // parse all the raw entries
     let mut expected_entries = 1;
     // TODO is root always 0 or just the first?
@@ -59,37 +100,41 @@ pub(crate) fn parse_dirtree<'a, T: FromDirTreeNumber>(
     let name = root.name;
     ensure!(name.is_empty(), "DirTree With a named root");
     ensure!(root.parent == 0, "Dirtree Root with parent");
-    let sub_dirs = dirtree_directory_from_raw(&mut entries, 0, root.entries)?;
+    let dirs = dirtree_directory_from_raw(&mut entries, &mut builder, 0, root.entries)?;
 
-    Ok(DirTreeEntry::Directory { name, sub_dirs })
+    Ok(DirTreeRoot { entries: dirs })
 }
 
 fn dirtree_directory_from_raw<T: FromDirTreeNumber>(
     raw: &mut HashMap<u64, Option<DirTreeEntryRaw>>,
+    builder: &mut T,
     parent_idx: u64,
     entries: Vec<DirTreeEntryChildRaw>,
-) -> Result<Vec<DirTreeEntry<T>>> {
+) -> Result<Vec<DirTreeEntry<T::Output>>> {
     let sub_dirs = entries
         .into_iter()
         .map(|DirTreeEntryChildRaw { number, is_value }| {
             if is_value {
                 // simple value, just make a leaf
-                return Ok(DirTreeEntry::Leaf(T::from_number(number)));
+                return Ok(DirTreeEntry::Leaf(builder.build(number)?));
             }
             // otherwise create the dirtree for the entry at "number"
-            let sub_entry = raw
+            let raw_entry = raw
                 .get_mut(&number)
                 .ok_or_else(|| anyhow!("Invalid dirtree subfolder index"))?
                 .take()
                 .ok_or_else(|| anyhow!("Same entry in dirtree is owned by multiple parents"))?;
+            let DirTreeEntryRaw {
+                name,
+                parent,
+                entries,
+            } = raw_entry;
             ensure!(
-                sub_entry.parent == parent_idx,
+                parent == parent_idx,
                 "Invalid parent idx for entry in dirtree"
             );
-            Ok(DirTreeEntry::Directory {
-                name: sub_entry.name,
-                sub_dirs: dirtree_directory_from_raw(raw, number, sub_entry.entries)?,
-            })
+            let entries = dirtree_directory_from_raw(raw, &mut *builder, number, entries)?;
+            Ok(DirTreeEntry::Directory { name, entries })
         })
         .collect::<Result<_>>()?;
     Ok(sub_dirs)
@@ -144,9 +189,9 @@ impl DirTreeEntryRaw {
                 "Invalid number of entry of type in dirtree"
             );
             if is_value {
-                for i in 0..num {
-                    current_entry[i].is_value = true;
-                }
+                current_entry[0..num]
+                    .iter_mut()
+                    .for_each(|entry| entry.is_value = true);
             } else {
                 // NOTE there is no need to write false to the entry because it's false by default
 

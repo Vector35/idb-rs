@@ -9,8 +9,8 @@ use idb_rs::IDBParser;
 pub fn dump_id0(args: &Args) -> Result<()> {
     // parse the id0 sector/file
     let id0 = match args.input_type() {
-        FileType::TIL => return Err(anyhow!("TIL don't contains any ID0 data")),
-        FileType::IDB => {
+        FileType::Til => return Err(anyhow!("TIL don't contains any ID0 data")),
+        FileType::Idb => {
             let input = BufReader::new(File::open(&args.input)?);
             let mut parser = IDBParser::new(input)?;
             let id0_offset = parser
@@ -35,7 +35,7 @@ fn id0_to_str(input: &[u8]) -> Cow<str> {
     if is_string {
         let result = String::from_utf8_lossy(striped);
         // we will print this around `"`, so scape that
-        result.replace("\\", "\\\\").replace("\"", "\\\"").into()
+        result.replace('\\', "\\\\").replace('"', "\\\"").into()
     } else {
         use std::fmt::Write;
         let mut output = String::with_capacity(input.len() * 4);
