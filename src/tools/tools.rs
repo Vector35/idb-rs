@@ -37,9 +37,13 @@ use dump_dirtree_bookmarks_structplace::dump_dirtree_bookmarks_structplace;
 mod dump_dirtree_bookmarks_tiplace;
 use dump_dirtree_bookmarks_tiplace::dump_dirtree_bookmarks_tiplace;
 
+use idb_rs::{id0::ID0Section, IDBParser};
+
+use std::fs::File;
+use std::io::BufReader;
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::{Parser, Subcommand, ValueEnum};
 
 /// Parse IDA files and output it's data
@@ -128,6 +132,20 @@ impl Args {
             Some("til") => FileType::Til,
             //Some("id0") => FileType::ID0,
             _ => FileType::Idb,
+        }
+    }
+}
+
+fn get_id0_section(args: &Args) -> Result<ID0Section> {
+    match args.input_type() {
+        FileType::Til => return Err(anyhow!("TIL don't contains any ID0 data")),
+        FileType::Idb => {
+            let input = BufReader::new(File::open(&args.input)?);
+            let mut parser = IDBParser::new(input)?;
+            let id0_offset = parser
+                .id0_section_offset()
+                .ok_or_else(|| anyhow!("IDB file don't contains a TIL sector"))?;
+            parser.read_id0_section(id0_offset)
         }
     }
 }
