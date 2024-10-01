@@ -11,7 +11,7 @@ use crate::{Args, FileType};
 pub fn dump_til(args: &Args) -> Result<()> {
     // parse the til sector/file
     let til = match args.input_type() {
-        FileType::IDB => {
+        FileType::Idb => {
             let input = BufReader::new(File::open(&args.input)?);
             let mut parser = IDBParser::new(input)?;
             let til_offset = parser
@@ -19,7 +19,7 @@ pub fn dump_til(args: &Args) -> Result<()> {
                 .ok_or_else(|| anyhow!("IDB file don't contains a TIL sector"))?;
             parser.read_til_section(til_offset)?
         }
-        FileType::TIL => {
+        FileType::Til => {
             let input = BufReader::new(File::open(&args.input)?);
             idb_rs::til::section::TILSection::parse(input)?
         }

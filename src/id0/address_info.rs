@@ -25,6 +25,7 @@ impl<'a> AddressInfo<'a> {
                 .map(u32::from_be_bytes)
                 .map(u64::from)
         };
+        #[allow(clippy::wildcard_in_or_patterns)]
         match (sub_type, id_value) {
             // Comments
             // NOTE

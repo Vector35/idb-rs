@@ -50,12 +50,12 @@ struct Args {
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum FileType {
     /// IDB file
-    IDB,
+    Idb,
     // TODO verify if is necessary to parse standalone id0 files
     ///// ID0 database file
     //ID0,
     /// TIL lib types file
-    TIL,
+    Til,
 }
 
 /// File type to parse
@@ -106,16 +106,11 @@ impl Args {
         if let Some(input_type) = self.force_type {
             return input_type;
         }
-        match self
-            .input
-            .extension()
-            .map(std::ffi::OsStr::to_str)
-            .flatten()
-        {
-            Some("idb") | Some("i64") => FileType::IDB,
-            Some("til") => FileType::TIL,
+        match self.input.extension().and_then(std::ffi::OsStr::to_str) {
+            Some("idb") | Some("i64") => FileType::Idb,
+            Some("til") => FileType::Til,
             //Some("id0") => FileType::ID0,
-            _ => FileType::IDB,
+            _ => FileType::Idb,
         }
     }
 }
