@@ -76,7 +76,7 @@ impl<I: BufRead + Seek> IDBParser<I> {
         )
     }
 
-    #[cfg(test)]
+    #[allow(dead_code)]
     pub(crate) fn decompress_section(
         &mut self,
         offset: u64,
@@ -98,7 +98,7 @@ impl<I: BufRead + Seek> IDBParser<I> {
         Ok(())
     }
 
-    #[cfg(test)]
+    #[allow(dead_code)]
     pub(crate) fn decompress_til_section(
         &mut self,
         til: TILOffset,
@@ -518,7 +518,7 @@ fn read_string_len_u8<I: Read>(input: I) -> Result<String> {
     Ok(String::from_utf8(bytes)?)
 }
 
-#[cfg(test)]
+#[allow(dead_code)]
 fn write_string_len_u8<O: std::io::Write>(mut output: O, value: &str) -> Result<()> {
     output.write_all(&[u8::try_from(value.len()).unwrap()])?;
     Ok(output.write_all(value.as_bytes())?)
