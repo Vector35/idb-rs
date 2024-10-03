@@ -289,6 +289,7 @@ impl ID0Section {
         self.entries[start..end].iter()
     }
 
+    /// read the `$ segs` entries of the database
     pub fn segments(&self) -> Result<impl Iterator<Item = Result<Segment>> + '_> {
         let entry = self
             .get("N$ segs")
@@ -305,6 +306,7 @@ impl ID0Section {
             .map(move |e| Segment::read(&e.value, self.is_64, names.as_ref(), self)))
     }
 
+    /// read the `$ segstrings` entries of the database
     fn segment_strings(&self) -> Result<Option<HashMap<NonZeroU32, String>>> {
         let Some(entry) = self.get("N$ segstrings") else {
             // no entry means no strings
@@ -360,6 +362,7 @@ impl ID0Section {
         parse_maybe_cstr(&name.value).ok_or_else(|| anyhow!("Invalid segment name {idx}"))
     }
 
+    /// read the `$ loader name` entries of the database
     pub fn loader_name(&self) -> Result<impl Iterator<Item = Result<&str>>> {
         let entry = self
             .get("N$ loader name")
@@ -376,6 +379,7 @@ impl ID0Section {
             .map(|e| Ok(CStr::from_bytes_with_nul(&e.value)?.to_str()?)))
     }
 
+    /// read the `Root Node` entries of the database
     pub fn root_info(&self) -> Result<impl Iterator<Item = Result<IDBRootInfo>>> {
         let entry = self
             .get("NRoot Node")
@@ -445,6 +449,7 @@ impl ID0Section {
         }))
     }
 
+    /// read the `Root Node` ida_info entry of the database
     pub fn ida_info(&self) -> Result<IDBParam> {
         // TODO Root Node is always the last one?
         let entry = self
@@ -469,6 +474,7 @@ impl ID0Section {
         IDBParam::read(&description.value, self.is_64)
     }
 
+    /// read the `$ fileregions` entries of the database
     pub fn file_regions(
         &self,
         version: u16,
@@ -490,6 +496,7 @@ impl ID0Section {
         }))
     }
 
+    /// read the `$ funcs` entries of the database
     pub fn functions_and_comments(
         &self,
     ) -> Result<impl Iterator<Item = Result<FunctionsAndComments>>> {
@@ -533,6 +540,7 @@ impl ID0Section {
         }))
     }
 
+    /// read the `$ entry points` entries of the database
     pub fn entry_points(&self) -> Result<Vec<EntryPoint>> {
         type RawEntryPoint<'a> = HashMap<u64, (Option<u64>, Option<&'a str>, Option<&'a str>)>;
         let mut entry_points: RawEntryPoint = HashMap::new();
@@ -622,6 +630,7 @@ impl ID0Section {
         Ok(None)
     }
 
+    /// read the address information for all addresses from `$ fileregions`
     pub fn address_info(
         &self,
         version: u16,
@@ -649,6 +658,7 @@ impl ID0Section {
         Ok(info.into_iter())
     }
 
+    /// read the address information for the address
     pub fn address_info_at(
         &self,
         address: u64,
@@ -669,6 +679,7 @@ impl ID0Section {
         }))
     }
 
+    /// read the label set at address, if any
     pub fn label_at(&self, address: u64) -> Result<Option<&str>> {
         let key: Vec<u8> = key_from_address(address, self.is_64)
             .chain(Some(b'N'))
@@ -718,6 +729,7 @@ impl ID0Section {
 
     // https://hex-rays.com/products/ida/support/idapython_docs/ida_dirtree.html
 
+    /// read the `$ dirtree/tinfos` entries of the database
     pub fn dirtree_tinfos<'a>(
         &'a self,
         til: &'a TILSection,
@@ -726,40 +738,54 @@ impl ID0Section {
     }
 
     // TODO remove the u64 and make it a TILOrdIndex type
+    /// read the `$ dirtree/structs` entries of the database
     pub fn dirtree_structs(&self) -> Result<DirTreeRoot<u64>> {
         self.dirtree_from_name("N$ dirtree/structs", U64FromDirTree)
     }
 
     // TODO remove the u64 and make it a TILOrdIndex type
+    /// read the `$ dirtree/enums` entries of the database
     pub fn dirtree_enums(&self) -> Result<DirTreeRoot<u64>> {
         self.dirtree_from_name("N$ dirtree/enums", U64FromDirTree)
     }
 
     // TODO remove the u64 and make it a FuncAddress type
+    /// read the `$ dirtree/funcs` entries of the database
     pub fn dirtree_function_address(&self) -> Result<DirTreeRoot<u64>> {
         self.dirtree_from_name("N$ dirtree/funcs", U64FromDirTree)
     }
 
+    /// read the `$ dirtree/names` entries of the database
     pub fn dirtree_names(&self) -> Result<DirTreeRoot<(u64, &str)>> {
         self.dirtree_from_name("N$ dirtree/names", LabelFromDirTree { id0: self })
     }
 
+    // TODO remove the u64 and make it a ImportIDX type
+    /// read the `$ dirtree/imports` entries of the database
     pub fn dirtree_imports(&self) -> Result<DirTreeRoot<u64>> {
         self.dirtree_from_name("N$ dirtree/imports", U64FromDirTree)
     }
 
+    // TODO remove the u64 and make it a BptsIDX type
+    /// read the `$ dirtree/bpts` entries of the database
     pub fn dirtree_bpts(&self) -> Result<DirTreeRoot<u64>> {
         self.dirtree_from_name("N$ dirtree/bpts", U64FromDirTree)
     }
 
+    // TODO remove the u64 and make it a &str type
+    /// read the `$ dirtree/bookmarks_idaplace_t` entries of the database
     pub fn dirtree_bookmarks_idaplace(&self) -> Result<DirTreeRoot<u64>> {
         self.dirtree_from_name("N$ dirtree/bookmarks_idaplace_t", U64FromDirTree)
     }
 
+    // TODO remove the u64 and make it a &str type
+    /// read the `$ dirtree/bookmarks_structplace_t` entries of the database
     pub fn dirtree_bookmarks_structplace(&self) -> Result<DirTreeRoot<u64>> {
         self.dirtree_from_name("N$ dirtree/bookmarks_structplace_t", U64FromDirTree)
     }
 
+    // TODO remove the u64 and make it a &str type
+    /// read the `$ dirtree/bookmarks_tiplace_t` entries of the database
     pub fn dirtree_bookmarks_tiplace(&self) -> Result<DirTreeRoot<u64>> {
         self.dirtree_from_name("N$ dirtree/bookmarks_tiplace_t", U64FromDirTree)
     }
