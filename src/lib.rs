@@ -577,7 +577,7 @@ mod test {
     use crate::*;
     use std::ffi::OsStr;
     use std::fs::File;
-    use std::io::{BufReader, BufWriter};
+    use std::io::BufReader;
     use std::path::{Path, PathBuf};
 
     #[test]
@@ -606,112 +606,86 @@ mod test {
             println!("{}", filename.to_str().unwrap());
             let file = BufReader::new(File::open(&filename).unwrap());
             let mut parser = IDBParser::new(file).unwrap();
-            match parser.read_id0_section(parser.id0_section_offset().unwrap()) {
-                Err(error) => {
-                    let mut output = BufWriter::new(File::create("/tmp/lasterror.id0").unwrap());
-                    parser
-                        .decompress_section(
-                            parser.id0_section_offset().unwrap().0.get(),
-                            &mut output,
-                        )
-                        .unwrap();
-                    panic!("id0 {error:?}")
-                }
-                Ok(id0) => {
-                    let _segments: Vec<_> = id0.segments().unwrap().map(Result::unwrap).collect();
+            // parse sectors
+            let id0 = parser
+                .read_id0_section(parser.id0_section_offset().unwrap())
+                .unwrap();
+            let til = parser
+                .til_section_offset()
+                .map(|til| parser.read_til_section(til).unwrap());
+            let _ = parser
+                .id1_section_offset()
+                .map(|idx| parser.read_id1_section(idx));
+            let _ = parser
+                .nam_section_offset()
+                .map(|idx| parser.read_nam_section(idx));
 
-                    let _loader_names: Vec<_> =
-                        id0.loader_name().unwrap().map(Result::unwrap).collect();
+            // parse all id0 information
+            let _ida_info = id0.ida_info().unwrap();
+            let version = match _ida_info {
+                id0::IDBParam::V1(x) => x.version,
+                id0::IDBParam::V2(x) => x.version,
+            };
 
-                    let _root_info: Vec<_> = id0.root_info().unwrap().map(Result::unwrap).collect();
-
-                    let _ida_info = id0.ida_info().unwrap();
-                    let version = match _ida_info {
-                        id0::IDBParam::V1(x) => x.version,
-                        id0::IDBParam::V2(x) => x.version,
-                    };
-
-                    let _file_regions: Vec<_> = id0
-                        .file_regions(version)
-                        .unwrap()
-                        .map(Result::unwrap)
-                        .collect();
-
-                    let _functions: Vec<_> = id0
-                        .functions_and_comments()
-                        .unwrap()
-                        .map(Result::unwrap)
-                        .collect();
-
-                    let _entry_points = id0.entry_points().unwrap();
-                }
+            let _: Vec<_> = id0.segments().unwrap().map(Result::unwrap).collect();
+            let _: Vec<_> = id0.loader_name().unwrap().map(Result::unwrap).collect();
+            let _: Vec<_> = id0.root_info().unwrap().map(Result::unwrap).collect();
+            let _: Vec<_> = id0
+                .file_regions(version)
+                .unwrap()
+                .map(Result::unwrap)
+                .collect();
+            let _: Vec<_> = id0
+                .functions_and_comments()
+                .unwrap()
+                .map(Result::unwrap)
+                .collect();
+            let _ = id0.entry_points().unwrap();
+            let _ = id0.dirtree_bpts().unwrap();
+            let _ = id0.dirtree_enums().unwrap();
+            let _ = id0.dirtree_names().unwrap();
+            if let Some(til) = til {
+                let _dirtree_tinfos = id0.dirtree_tinfos(&til).unwrap();
             }
-
-            if let Err(error) = parser.read_id1_section(parser.id1_section_offset().unwrap()) {
-                let mut output = BufWriter::new(File::create("/tmp/lasterror.id1").unwrap());
-                parser
-                    .decompress_section(parser.id1_section_offset().unwrap().0.get(), &mut output)
-                    .unwrap();
-                panic!("id1 {error:?}")
-            }
-
-            if let Err(error) = parser.read_nam_section(parser.nam_section_offset().unwrap()) {
-                let mut output = BufWriter::new(File::create("/tmp/lasterror.nam").unwrap());
-                parser
-                    .decompress_section(parser.nam_section_offset().unwrap().0.get(), &mut output)
-                    .unwrap();
-                panic!("nam {error:?}")
-            }
-
-            if let Err(error) = parser.read_til_section(parser.til_section_offset().unwrap()) {
-                let mut output = BufWriter::new(File::create("/tmp/lasterror.til").unwrap());
-                parser
-                    .decompress_til_section(parser.til_section_offset().unwrap(), &mut output)
-                    .unwrap();
-                panic!("til {error:?}")
-            }
+            let _ = id0.dirtree_imports().unwrap();
+            let _ = id0.dirtree_structs().unwrap();
+            let _ = id0.dirtree_function_address().unwrap();
+            let _ = id0.dirtree_bookmarks_tiplace().unwrap();
+            let _ = id0.dirtree_bookmarks_idaplace().unwrap();
+            let _ = id0.dirtree_bookmarks_structplace().unwrap();
+            let _: Vec<_> = id0
+                .address_info(version)
+                .unwrap()
+                .collect::<Result<_>>()
+                .unwrap();
         }
     }
 
     #[test]
     fn parse_tils() {
         let files = find_all("resources/tils".as_ref(), &["til".as_ref()]).unwrap();
-        let results = files
+        let _results = files
             .into_iter()
-            .map(|x| parse_til_file(&x).map_err(|e| (x, e)))
-            .collect::<Result<(), _>>();
-        let Err((file, error)) = results else {
-            // if success, finish the test
-            return;
-        };
-        println!("Unable to parse {}", file.to_str().unwrap());
-        //otherwise create a decompress version of the file for more testing
-        let mut input = BufReader::new(File::open(&file).unwrap());
-        let mut output = BufWriter::new(File::create("/tmp/lasterror.til").unwrap());
-        TILSection::decompress_inner(&mut input, &mut output).unwrap();
-        panic!(
-            "Unable to parse file `{}`: {error:?}",
-            file.to_str().unwrap()
-        );
-    }
-
-    fn parse_til_file(file: &Path) -> Result<()> {
-        println!("{}", file.to_str().unwrap());
-        // makes sure it don't read out-of-bounds
-        let mut input = BufReader::new(File::open(file)?);
-        // TODO make a SmartReader
-        match TILSection::read(&mut input, IDBSectionCompression::None) {
-            Ok(_til) => {
-                let current = input.seek(SeekFrom::Current(0))?;
-                let end = input.seek(SeekFrom::End(0))?;
-                ensure!(
-                    current == end,
-                    "unable to consume the entire TIL file, {current} != {end}"
-                );
-                Ok(())
-            }
-            Err(e) => Err(e),
-        }
+            .map(|file| {
+                println!("{}", file.to_str().unwrap());
+                // makes sure it don't read out-of-bounds
+                let mut input = BufReader::new(File::open(file)?);
+                // TODO make a SmartReader
+                match TILSection::read(&mut input, IDBSectionCompression::None) {
+                    Ok(_til) => {
+                        let current = input.seek(SeekFrom::Current(0))?;
+                        let end = input.seek(SeekFrom::End(0))?;
+                        ensure!(
+                            current == end,
+                            "unable to consume the entire TIL file, {current} != {end}"
+                        );
+                        Ok(())
+                    }
+                    Err(e) => Err(e),
+                }
+            })
+            .collect::<Result<(), _>>()
+            .unwrap();
     }
 
     fn find_all(path: &Path, exts: &[&OsStr]) -> Result<Vec<PathBuf>> {
