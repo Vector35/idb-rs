@@ -80,3 +80,14 @@ pub enum Comments<'a> {
     PreComment(&'a str),
     PostComment(&'a str),
 }
+
+impl<'a> Comments<'a> {
+    pub fn message(&self) -> &'a str {
+        match self {
+            Comments::Comment(x)
+            | Comments::RepeatableComment(x)
+            | Comments::PreComment(x)
+            | Comments::PostComment(x) => x,
+        }
+    }
+}

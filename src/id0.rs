@@ -63,8 +63,7 @@ pub enum FunctionsAndComments<'a> {
     // It's just the name "$ funcs"
     Name,
     Function(IDBFunction),
-    Comment { address: u64, value: &'a str },
-    RepeatableComment { address: u64, value: &'a str },
+    Comment { address: u64, comment: Comments<'a> },
     Unknown { key: &'a [u8], value: &'a [u8] },
 }
 
@@ -83,14 +82,20 @@ impl<'a> FunctionsAndComments<'a> {
                 let address = parse_number(sub_key, true, is_64)
                     .ok_or_else(|| anyhow!("Invalid Comment address"))?;
                 parse_maybe_cstr(value)
-                    .map(|value| Self::Comment { address, value })
+                    .map(|value| Self::Comment {
+                        address,
+                        comment: Comments::Comment(value),
+                    })
                     .ok_or_else(|| anyhow!("Invalid Comment string"))
             }
             b'R' => {
                 let address = parse_number(sub_key, true, is_64)
                     .ok_or_else(|| anyhow!("Invalid Repetable Comment address"))?;
                 parse_maybe_cstr(value)
-                    .map(|value| Self::RepeatableComment { address, value })
+                    .map(|value| Self::Comment {
+                        address,
+                        comment: Comments::RepeatableComment(value),
+                    })
                     .ok_or_else(|| anyhow!("Invalid Repetable Comment string"))
             }
             // TODO find the meaning of "$ funcs" b'V' entries
