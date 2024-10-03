@@ -22,7 +22,7 @@ pub mod tf_mask {
 }
 
 /// Basic type: unknown & void
-///  [BT_UNK] and [BT_VOID] with non-zero type flags can be used in function
+///  [tf_unk::BT_UNK] and [tf_unk::BT_VOID] with non-zero type flags can be used in function
 ///  (and struct) declarations to describe the function arguments or structure
 ///  fields if only their size is known. They may be used in ida to describe
 ///  the user input.
@@ -132,11 +132,10 @@ pub mod tf_ptr {
     /// - if ptr to [super::tf_func::BT_FUNC] - __closure.
     ///   in this case next byte MUST be
     ///   [super::RESERVED_BYTE], and after it [super::tf_func::BT_FUNC]
-    /// - else the next byte contains size_of::<ptr>()
-    ///   allowed values are 1 - `\varmem{ph,processor_t,max_ptr_size}`
-    /// - if value is bigger than `\varmem{ph,processor_t,max_ptr_size}`,
-    ///   based_ptr_name_and_size() is called to
-    ///   find out the typeinfo
+    /// - else the next byte contains `size_of::<ptr>()`
+    ///   allowed values are 1 - `ph,processor_t,max_ptr_size`
+    /// - if value is bigger than `ph,processor_t,max_ptr_size`,
+    ///   `based_ptr_name_and_size()` is called to find out the typeinfo
     pub const BTMT_CLOSURE: TypeT = 0x30;
 }
 
@@ -148,7 +147,7 @@ pub mod tf_array {
     pub const BT_ARRAY: TypeT = 0x0B;
 
     /// code
-    /// ```custom,{class=text}
+    /// ```custom,text
     /// if set
     ///    array base==0
     ///    format: dt num_elem; [tah-typeattrs]; type_t...
@@ -169,9 +168,9 @@ pub mod tf_array {
 pub mod tf_func {
     use super::TypeT;
     /// function.
-    /// format: <pre>
+    /// format:
     ///  optional:
-    /// ```custom,{class=text}
+    /// ```custom,text
     ///   ::CM_CC_SPOILED | num_of_spoiled_regs
     ///   if num_of_spoiled_reg == BFA_FUNC_MARKER:
     ///     ::bfa_byte
@@ -187,7 +186,7 @@ pub mod tf_func {
     ///  [tah-typeattrs];
     ///  ::type_t ... return type;
     ///  [serialized argloc_t of returned value (if ::CM_CC_SPECIAL{PE} && !return void);
-    /// ```custom,{class=text}
+    /// ```custom,text
     ///  if !::CM_CC_VOIDARG:
     ///    dt N (N=number of parameters)
     ///    if ( N == 0 )
@@ -218,8 +217,8 @@ pub mod tf_func {
 pub mod tf_complex {
     use super::TypeT;
     /// struct/union/enum/typedef.
-    /// format: <pre>:
-    /// ```custom,{class=text}
+    /// format:
+    /// ```custom,text
     ///   [dt N (N=field count) if !::BTMT_TYPEDEF]
     ///   if N == 0:
     ///     p_string name (unnamed types have names "anon_...")
@@ -249,7 +248,7 @@ pub mod tf_complex {
     /// `MCNT records: type_t...`
     pub const BTMT_UNION: TypeT = 0x10;
     /// enum
-    /// ```custom,{class=text}
+    /// ```custom,text
     ///   next byte bte_t (see below)
     ///   N records: de delta(s)
     ///              OR
@@ -260,7 +259,7 @@ pub mod tf_complex {
     /// `always p_string name`
     pub const BTMT_TYPEDEF: TypeT = 0x30;
     /// bitfield (only in struct)
-    /// ```custom,{class=text}
+    /// ```custom,text
     /// ['bitmasked' enum see below]
     /// next byte is dt
     ///  ((size in bits << 1) | (unsigned ? 1 : 0))
