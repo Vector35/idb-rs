@@ -1,7 +1,7 @@
 use crate::{dump_dirtree_funcs::print_function, get_id0_section, Args};
 
 use anyhow::Result;
-use idb_rs::id0::EntryPoint;
+use idb_rs::id0::{Comments, EntryPoint};
 
 pub fn dump_functions(args: &Args) -> Result<()> {
     // parse the id0 sector/file
@@ -17,11 +17,24 @@ pub fn dump_functions(args: &Args) -> Result<()> {
                     idbfunction.address.start, idbfunction.address.end
                 );
             }
-            idb_rs::id0::FunctionsAndComments::Comment { address, value } => {
-                println!("  Comment at {address:#x}: `{value}`",);
+            idb_rs::id0::FunctionsAndComments::Comment {
+                address,
+                comment: Comments::Comment(value),
+            } => {
+                println!("  Comment at {address:#x}: `{value}`");
             }
-            idb_rs::id0::FunctionsAndComments::RepeatableComment { address, value } => {
+            idb_rs::id0::FunctionsAndComments::Comment {
+                address,
+                comment: Comments::RepeatableComment(value),
+            } => {
                 println!("  RepeatableComment at {address:#x}: `{value}`",);
+            }
+            // There is no Pre/Post comments on funcs
+            idb_rs::id0::FunctionsAndComments::Comment {
+                address: _,
+                comment: Comments::PreComment(_) | Comments::PostComment(_),
+            } => {
+                unreachable!()
             }
             idb_rs::id0::FunctionsAndComments::Unknown { .. } => {}
         }

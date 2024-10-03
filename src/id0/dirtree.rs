@@ -66,33 +66,35 @@ impl<'a> FromDirTreeNumber for TilFromDirTree<'a> {
     }
 }
 
-pub(crate) fn parse_dirtree<'a, T: FromDirTreeNumber>(
-    mut sub_values: impl Iterator<Item = Result<(u64, &'a [u8])>>,
+/// Dirtree example:
+/// "\x2e\xff\x00\x00\x31\x53\x00\x00\x00\x00":"\x01\x00\x00\x00\x05\x90\x80\xff\xff\xff\xef\x81\x8f\xff\xff\xff\xff\xf0\x02\x94\xea\x00\x01\x01\x01\x01\x01"
+/// "\x2e\xff\x00\x00\x31\x53\x00\x01\x00\x00":"\x01\x61\x00\x00\x00\x0c\xc0\x00\x40\x20\x04\x04\x04\x04\x04\x04\xff\xff\xff\xcf\xf8\x10\x10\x10\x10\x00\x0c"
+/// "\x2e\xff\x00\x00\x31\x53\x00\x02\x00\x00":"\x01\x62\x00\x00\x00\x0d\x90\x20\x80\x88\x08\x10\x80\xe9\x04\x80\xe7\x82\x36\x06\xff\xff\xff\xfc\xd0\xff\xff\xff\xff\x60\x50\x83\x0a\x00\x0d"
+/// ...
+/// "N$ dirtree/funcs":"\x31\x00\x00\xff"
+pub(crate) fn parse_dirtree<'a, T, I>(
+    sub_values: I,
     mut builder: T,
     is_64: bool,
-) -> Result<DirTreeRoot<T::Output>> {
+) -> Result<DirTreeRoot<T::Output>>
+where
+    T: FromDirTreeNumber,
+    I: IntoIterator<Item = Result<(u64, &'a [u8])>>,
+{
     // parse all the raw entries
-    let mut expected_entries = 1;
-    // TODO is root always 0 or just the first?
-    let mut root_idx = None;
+    let sub_values = sub_values.into_iter();
     let mut entries = HashMap::with_capacity(sub_values.size_hint().0);
-    loop {
-        let Some(entry) = sub_values.next() else {
-            return Err(anyhow!("Missing entries for dirtree"));
-        };
-        // TODO map error?
+    // TODO is root always 0 or just the first?
+    // This is assuming the first entry is the root, because this is more general
+    let mut root_idx = None;
+    for entry in sub_values {
         let (entry_idx, entry_value) = entry?;
-        if root_idx.is_none() {
-            root_idx = Some(entry_idx);
-        }
-        let entry = DirTreeEntryRaw::from_raw(entry_value, &mut expected_entries, is_64)?;
+        root_idx.get_or_insert(entry_idx);
+
+        let entry = DirTreeEntryRaw::from_raw(entry_value, is_64)?;
         if let Some(_old) = entries.insert(entry_idx, Some(entry)) {
-            return Err(anyhow!("Duplicated index dirtree entry"));
+            return Err(anyhow!("Duplicated dirtree index entry"));
         };
-        expected_entries -= 1;
-        if expected_entries == 0 {
-            break;
-        }
     }
 
     // assemble the raw_entries into a tree
@@ -149,8 +151,9 @@ struct DirTreeEntryRaw {
 }
 
 impl DirTreeEntryRaw {
-    fn from_raw(data: &[u8], extra_entries: &mut usize, is_64: bool) -> Result<Self> {
+    fn from_raw(data: &[u8], is_64: bool) -> Result<Self> {
         let mut data = data;
+        // part 1: header
         let _unknown_always_1: u8 = bincode::deserialize_from(&mut data)?;
         ensure!(_unknown_always_1 == 1);
         let name = read_c_string(&mut data)?;
@@ -163,31 +166,46 @@ impl DirTreeEntryRaw {
         // TODO unpack_dw/u8?
         let entries_len = unpack_dd(&mut data)?;
 
-        // populate the value part of the entries
-        let mut last_value = 0i64;
+        // part 2: populate the value part of the entries
+        let mut last_value: Option<u64> = None;
         let mut entries: Vec<_> = (0..entries_len)
             .map(|_| {
-                let value = unpack_usize(&mut data, is_64)?;
-                last_value = last_value.wrapping_add(value as i64);
-                if !is_64 {
-                    // NOTE that in 32bits it wrapps using the u32 limit
-                    last_value = last_value & u32::MAX as i64;
-                }
+                let rel_value = unpack_usize(&mut data, is_64)?;
+                let value = match last_value {
+                    // first value is absolute
+                    None => rel_value,
+                    // other are relative from the previous
+                    Some(last_value_old) => {
+                        let mut value = last_value_old.wrapping_add_signed(rel_value as i64);
+                        // NOTE that in 32bits it wrapps using the u32 limit
+                        if !is_64 {
+                            value = value & (u32::MAX as u64);
+                        }
+                        value
+                    }
+                };
+                last_value = Some(value);
                 Ok(DirTreeEntryChildRaw {
-                    number: last_value as u64,
+                    number: value,
                     is_value: false,
                 })
             })
             .collect::<Result<_>>()?;
 
+        // part 3: Classification for entries
         let mut current_entry = &mut entries[..];
-        let mut read_entries = 0;
-        // read the number of folders followed by the number of files, until all entries are
-        // read and no extra data is left
+        // classify the entries on this folder as `sub_folder` or `leaf` (value), the data is in the format:
+        // [`number of folders` `number of leafs`..], that repeats until all the entries are classified as
+        // one or the other.
+        // NOTE in case the folder have 0 elements, there will be a 0 value, but don't take that for granted
         for is_value in core::iter::successors(Some(false), |x| Some(!(*x))) {
             // TODO unpack_dw/u8?
-            let num = unpack_dd(&mut data)?;
-            read_entries += num;
+            let num = match unpack_dd(&mut data) {
+                Ok(num) => num,
+                // this is an empty folder, so the last value is optional
+                Err(_) if entries_len == 0 => break,
+                Err(e) => return Err(e),
+            };
             let num = usize::try_from(num).map_err(|_| anyhow!("Invalid number of entries"))?;
             ensure!(
                 current_entry.len() >= num,
@@ -199,21 +217,11 @@ impl DirTreeEntryRaw {
                     .for_each(|entry| entry.is_value = true);
             } else {
                 // NOTE there is no need to write false to the entry because it's false by default
-
-                // there will be at least this number of entries after this one, one for each folder
-                *extra_entries += num;
             }
             current_entry = &mut current_entry[num..];
-            match read_entries.cmp(&entries_len) {
-                // continue because there is more entries
-                std::cmp::Ordering::Less => {}
+            if current_entry.is_empty() {
                 // read all the entries, finish reading
-                std::cmp::Ordering::Equal => break,
-                std::cmp::Ordering::Greater => {
-                    return Err(anyhow!(
-                        "More listed dirtree entries that the number of elements"
-                    ))
-                }
+                break;
             }
         }
 
