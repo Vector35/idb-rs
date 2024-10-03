@@ -66,7 +66,16 @@ impl<'a> FromDirTreeNumber for TilFromDirTree<'a> {
     }
 }
 
-/// Dirtree example:
+/// Each id0 entry is folder, the first entry is always the root, it's unclear if its always 0,
+/// but that seems to be the rule.
+///
+/// The id0 entry key contains the index, it's always shitfted 16 bits to
+/// the right (in 32 and 64 bits), the meaning for the value in the lower 16 bits of the key
+/// is unknown.
+///
+/// The value of the entry is described by [DirTreeEntryRaw::from_raw].
+///
+/// ### Example
 /// "\x2e\xff\x00\x00\x31\x53\x00\x00\x00\x00":"\x01\x00\x00\x00\x05\x90\x80\xff\xff\xff\xef\x81\x8f\xff\xff\xff\xff\xf0\x02\x94\xea\x00\x01\x01\x01\x01\x01"
 /// "\x2e\xff\x00\x00\x31\x53\x00\x01\x00\x00":"\x01\x61\x00\x00\x00\x0c\xc0\x00\x40\x20\x04\x04\x04\x04\x04\x04\xff\xff\xff\xcf\xf8\x10\x10\x10\x10\x00\x0c"
 /// "\x2e\xff\x00\x00\x31\x53\x00\x02\x00\x00":"\x01\x62\x00\x00\x00\x0d\x90\x20\x80\x88\x08\x10\x80\xe9\x04\x80\xe7\x82\x36\x06\xff\xff\xff\xfc\xd0\xff\xff\xff\xff\x60\x50\x83\x0a\x00\x0d"
@@ -151,6 +160,45 @@ struct DirTreeEntryRaw {
 }
 
 impl DirTreeEntryRaw {
+    /// ## example for raw value in 32bits:
+    /// Folder named `a` in the root dir containing just entries, no sub_folders
+    /// `\x01\x61\x00\x00\x00\x0c\xc0\x00\x40\x20\x04\x04\x04\x04\x04\x04\xff\xff\xff\xcf\xf8\x10\x10\x10\x10\x00\x0c`
+    ///
+    /// ### Part 1: Header
+    ///
+    /// | data type         | value      | comment |
+    /// |-------------------|------------|---------|
+    /// | _unknown_always_1 | \x01       |         |
+    /// | name              | \x61\x00   | "a"     |
+    /// | parent            | \x00       | root    |
+    /// | _unknown          | \x00       |         |
+    /// | entries_len       | \x0c       | 12      |
+    ///
+    /// ### Part 2: Entries in the folder
+    ///
+    /// NOTE that values are relative to the prvious one, except the first that is absolute
+    ///
+    /// | entry number       | value                   | comment                      |
+    /// |--------------------|-------------------------|------------------------------|
+    /// | entry_0            | \xc0\x00\x40\x20        | 16416                        |
+    /// | entry_1            | \x04                    | last_entry + 4 = 16420       |
+    /// | entry_2            | \x04                    | last_entry + 4 = 16424       |
+    /// | entry_3            | \x04                    | last_entry + 4 = 16428       |
+    /// | entry_4            | \x04                    | last_entry + 4 = 16432       |
+    /// | entry_5            | \x04                    | last_entry + 4 = 16436       |
+    /// | entry_6            | \x04                    | last_entry + 4 = 16440       |
+    /// | entry_7            | \xff\xff\xff\xcf\xf8    | last_entry + (-12296) = 4144 |
+    /// | entry_8            | \x10                    | last_entry + 16 = 4160       |
+    /// | entry_9            | \x10                    | last_entry + 16 = 4176       |
+    /// | entry_10           | \x10                    | last_entry + 16 = 4192       |
+    /// | entry_11           | \x10                    | last_entry + 16 = 4208       |
+    ///
+    /// ### Part 3: Classification for entries
+    /// | entry range type   | value  | comment                         |
+    /// | -------------------|--------|---------------------------------|
+    /// | entries folder     | \x00   | 0..0 are folders                |
+    /// | entries values     | \x0c   | from 0..12 are values           |
+    ///
     fn from_raw(data: &[u8], is_64: bool) -> Result<Self> {
         let mut data = data;
         // part 1: header

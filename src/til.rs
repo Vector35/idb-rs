@@ -2,15 +2,6 @@ pub mod array;
 pub mod bitfield;
 pub mod r#enum;
 /// The u8 values used to describes the type information records in IDA.
-///
-/// The recommended way of using type info is to use the [tinfo_t] class.
-/// The type information is internally kept as an array of bytes terminated by 0.
-///
-/// Items in brackets [] are optional and sometimes are omitted.
-/// ::type_t... means a sequence of ::type_t bytes which defines a type.
-///
-/// NOTE: to work with the types of instructions or data in the database,
-/// use `get_tinfo()`/`set_tinfo()` and similar functions.
 pub mod flag;
 pub mod function;
 pub mod pointer;
