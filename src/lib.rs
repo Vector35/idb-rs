@@ -662,6 +662,65 @@ mod test {
     }
 
     #[test]
+    fn parse_idb_kernel32() {
+        let filename = "resources/idbs/v7.6/x32/kernel32.idb";
+        let file = BufReader::new(File::open(&filename).unwrap());
+        let mut parser = IDBParser::new(file).unwrap();
+        // parse sectors
+        let id0 = parser
+            .read_id0_section(parser.id0_section_offset().unwrap())
+            .unwrap();
+        let til = parser
+            .til_section_offset()
+            .map(|til| parser.read_til_section(til).unwrap());
+        let _ = parser
+            .id1_section_offset()
+            .map(|idx| parser.read_id1_section(idx));
+        let _ = parser
+            .nam_section_offset()
+            .map(|idx| parser.read_nam_section(idx));
+
+        // parse all id0 information
+        let _ida_info = id0.ida_info().unwrap();
+        let version = match _ida_info {
+            id0::IDBParam::V1(x) => x.version,
+            id0::IDBParam::V2(x) => x.version,
+        };
+
+        let _: Vec<_> = id0.segments().unwrap().map(Result::unwrap).collect();
+        let _: Vec<_> = id0.loader_name().unwrap().map(Result::unwrap).collect();
+        let _: Vec<_> = id0.root_info().unwrap().map(Result::unwrap).collect();
+        let _: Vec<_> = id0
+            .file_regions(version)
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        let _: Vec<_> = id0
+            .functions_and_comments()
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        let _ = id0.entry_points().unwrap();
+        let _ = id0.dirtree_bpts().unwrap();
+        let _ = id0.dirtree_enums().unwrap();
+        let _ = id0.dirtree_names().unwrap();
+        if let Some(til) = til {
+            let _dirtree_tinfos = id0.dirtree_tinfos(&til).unwrap();
+        }
+        let _ = id0.dirtree_imports().unwrap();
+        let _ = id0.dirtree_structs().unwrap();
+        let _ = id0.dirtree_function_address().unwrap();
+        let _ = id0.dirtree_bookmarks_tiplace().unwrap();
+        let _ = id0.dirtree_bookmarks_idaplace().unwrap();
+        let _ = id0.dirtree_bookmarks_structplace().unwrap();
+        let _: Vec<_> = id0
+            .address_info(version)
+            .unwrap()
+            .collect::<Result<_>>()
+            .unwrap();
+    }
+
+    #[test]
     fn parse_tils() {
         let files = find_all("resources/tils".as_ref(), &["til".as_ref()]).unwrap();
         let _results = files
