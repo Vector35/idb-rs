@@ -25,6 +25,8 @@ impl<'a> AddressInfo<'a> {
                 .map(u32::from_be_bytes)
                 .map(u64::from)
         };
+        // Non UTF-8 comment: "C:\\Documents and Settings\\Administrator\\\xb9\xd9\xc5\xc1 \xc8\xad\xb8\xe9\ls"
+        // \xb9\xd9\xc5\xc1 \xc8\xad\xb8\xe9 = "바탕 화면" = "Desktop" in Korean encoded using Extended Unix Code
         #[allow(clippy::wildcard_in_or_patterns)]
         match (sub_type, id_value) {
             // Comments
@@ -51,7 +53,11 @@ impl<'a> AddressInfo<'a> {
             // TODO followed by (b'S', Some(0x3001)) data with unknown meaning
 
             // Name, aka a label to this memory address
-            (b'N', None) => Ok(Self::Label(parse_maybe_cstr(value).ok_or_else(|| anyhow!("Label is not valid UTF-8"))?)),
+            (b'N', None) => {
+                let label_raw = parse_maybe_cstr(value).ok_or_else(|| anyhow!("Label is not a valid CStr"))?;
+                let label = core::str::from_utf8(label_raw).map_err(|_| anyhow!("Label is not valid UTF-8"))?;
+                Ok(Self::Label(label))
+            },
 
             // Seems related to datatype, maybe cstr, align and stuff like that
             (b'A', Some(_)) |
@@ -75,14 +81,15 @@ impl<'a> AddressInfo<'a> {
 
 #[derive(Clone, Debug)]
 pub enum Comments<'a> {
-    Comment(&'a str),
-    RepeatableComment(&'a str),
-    PreComment(&'a str),
-    PostComment(&'a str),
+    Comment(&'a [u8]),
+    RepeatableComment(&'a [u8]),
+    PreComment(&'a [u8]),
+    PostComment(&'a [u8]),
 }
 
 impl<'a> Comments<'a> {
-    pub fn message(&self) -> &'a str {
+    /// The message on the comment, NOTE that IDA don't have a default character encoding
+    pub fn message(&self) -> &'a [u8] {
         match self {
             Comments::Comment(x)
             | Comments::RepeatableComment(x)

@@ -74,7 +74,7 @@ impl<'a> FunctionsAndComments<'a> {
         };
         match *key_type {
             b'N' => {
-                ensure!(parse_maybe_cstr(value) == Some("$ funcs"));
+                ensure!(parse_maybe_cstr(value) == Some(&b"$ funcs"[..]));
                 Ok(Self::Name)
             }
             b'S' => IDBFunction::read(sub_key, value, is_64).map(Self::Function),
@@ -197,7 +197,7 @@ impl<'a> EntryPointRaw<'a> {
             return Err(anyhow!("invalid Funcs subkey"));
         };
         if *key_type == b'N' {
-            ensure!(parse_maybe_cstr(value) == Some("$ entry points"));
+            ensure!(parse_maybe_cstr(value) == Some(&b"$ entry points"[..]));
             return Ok(Self::Name);
         }
         let Some(sub_key) = parse_number(sub_key, true, is_64) else {
@@ -218,13 +218,20 @@ impl<'a> EntryPointRaw<'a> {
                 })
                 .map_err(|_| anyhow!("Invalid Ordinal value")),
             b'F' => parse_maybe_cstr(value)
-                .map(|symbol| Self::ForwardedSymbol {
-                    key: sub_key,
-                    symbol,
+                .and_then(|symbol| {
+                    Some(Self::ForwardedSymbol {
+                        key: sub_key,
+                        symbol: std::str::from_utf8(symbol).ok()?,
+                    })
                 })
                 .ok_or_else(|| anyhow!("Invalid Forwarded symbol name")),
             b'S' => parse_maybe_cstr(value)
-                .map(|name| Self::FunctionName { key: sub_key, name })
+                .and_then(|name| {
+                    Some(Self::FunctionName {
+                        key: sub_key,
+                        name: std::str::from_utf8(name).ok()?,
+                    })
+                })
                 .ok_or_else(|| anyhow!("Invalid Function name")),
             // TODO find the meaning of "$ funcs" b'V' entry
             _ => Ok(Self::Unknown { key, value }),
@@ -406,12 +413,12 @@ fn parse_number(data: &[u8], big_endian: bool, is_64: bool) -> Option<u64> {
 }
 
 // parse a string that maybe is finalized with \x00
-fn parse_maybe_cstr(data: &[u8]) -> Option<&str> {
+fn parse_maybe_cstr(data: &[u8]) -> Option<&[u8]> {
     // find the end of the string
     let end_pos = data.iter().position(|b| *b == 0).unwrap_or(data.len());
     // make sure there is no data after the \x00
     if data[end_pos..].iter().any(|b| *b != 0) {
         return None;
     }
-    core::str::from_utf8(&data[..end_pos]).ok()
+    Some(&data[..end_pos])
 }
