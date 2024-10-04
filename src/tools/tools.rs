@@ -138,7 +138,7 @@ impl Args {
 
 fn get_id0_section(args: &Args) -> Result<ID0Section> {
     match args.input_type() {
-        FileType::Til => return Err(anyhow!("TIL don't contains any ID0 data")),
+        FileType::Til => Err(anyhow!("TIL don't contains any ID0 data")),
         FileType::Idb => {
             let input = BufReader::new(File::open(&args.input)?);
             let mut parser = IDBParser::new(input)?;

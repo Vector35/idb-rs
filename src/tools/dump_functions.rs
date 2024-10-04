@@ -69,8 +69,7 @@ pub fn dump_functions(args: &Args) -> Result<()> {
     println!("dirtree functions, AKA `$ dirtree/funcs`");
     let dirtree = id0.dirtree_function_address()?;
     let mut buffer = dirtree.entries;
-    while !buffer.is_empty() {
-        let entry = buffer.pop().unwrap();
+    while let Some(entry) = buffer.pop() {
         match entry {
             idb_rs::id0::DirTreeEntry::Leaf(address) => {
                 print!("  {address:#x}:");
