@@ -70,10 +70,11 @@ impl<'a> FromDirTreeNumber for TilFromDirTree<'a> {
 /// but that seems to be the rule.
 ///
 /// The id0 entry key contains the index, it's always shitfted 16 bits to
-/// the right (in 32 and 64 bits), the meaning for the value in the lower 16 bits of the key
-/// is unknown.
+/// the left (both in 32/64 bits), the meaning for the value in the lower 16 bits of the key
+/// is is the sub-index in case the folder need to be split into multiple entries.
 ///
-/// The value of the entry is described by [DirTreeEntryRaw::from_raw].
+/// The value of the entry is described by [DirTreeEntryRaw::from_raw]. Each entry is one folder
+/// or the continuation of a previous folder, if it's too big.
 ///
 /// ### Example
 /// "\x2e\xff\x00\x00\x31\x53\x00\x00\x00\x00":"\x01\x00\x00\x00\x05\x90\x80\xff\xff\xff\xef\x81\x8f\xff\xff\xff\xff\xf0\x02\x94\xea\x00\x01\x01\x01\x01\x01"
@@ -82,37 +83,49 @@ impl<'a> FromDirTreeNumber for TilFromDirTree<'a> {
 /// ...
 /// "N$ dirtree/funcs":"\x31\x00\x00\xff"
 pub(crate) fn parse_dirtree<'a, T, I>(
-    sub_values: I,
+    entries_iter: I,
     mut builder: T,
     is_64: bool,
 ) -> Result<DirTreeRoot<T::Output>>
 where
     T: FromDirTreeNumber,
-    I: IntoIterator<Item = Result<(u64, &'a [u8])>>,
+    I: IntoIterator<Item = Result<(u64, u16, &'a [u8])>>,
 {
+    let mut entries_iter = entries_iter.into_iter();
     // parse all the raw entries
-    let sub_values = sub_values.into_iter();
-    let mut entries = HashMap::with_capacity(sub_values.size_hint().0);
-    // TODO is root always 0 or just the first?
-    // This is assuming the first entry is the root, because this is more general
+    let mut entries_raw = HashMap::new();
+    // This is assuming the first entry is the root, because this is more general that assume it's always 0
     let mut root_idx = None;
-    for entry in sub_values {
-        let (entry_idx, entry_value) = entry?;
-        root_idx.get_or_insert(entry_idx);
-
-        let entry = DirTreeEntryRaw::from_raw(entry_value, is_64)?;
-        if let Some(_old) = entries.insert(entry_idx, Some(entry)) {
+    loop {
+        let Some(entry) = entries_iter.next() else {
+            break;
+        };
+        let (idx, sub_idx, entry_value) = entry?;
+        ensure!(sub_idx == 0, "Non zero sub_idx for dirtree folder entry");
+        let reader = DirtreeEntryRead {
+            entry_value,
+            idx,
+            last_sub_idx: 0,
+            iter: &mut entries_iter,
+        };
+        let entry = DirTreeEntryRaw::from_raw(reader, is_64)?;
+        root_idx.get_or_insert(idx);
+        if let Some(_old) = entries_raw.insert(idx, Some(entry)) {
             return Err(anyhow!("Duplicated dirtree index entry"));
         };
     }
 
     // assemble the raw_entries into a tree
     // first entry is always the root
-    let root = entries.get_mut(&root_idx.unwrap()).unwrap().take().unwrap();
+    let root = entries_raw
+        .get_mut(&root_idx.unwrap())
+        .unwrap()
+        .take()
+        .unwrap();
     let name = root.name;
     ensure!(name.is_empty(), "DirTree With a named root");
     ensure!(root.parent == 0, "Dirtree Root with parent");
-    let dirs = dirtree_directory_from_raw(&mut entries, &mut builder, 0, root.entries)?;
+    let dirs = dirtree_directory_from_raw(&mut entries_raw, &mut builder, 0, root.entries)?;
 
     Ok(DirTreeRoot { entries: dirs })
 }
@@ -199,8 +212,10 @@ impl DirTreeEntryRaw {
     /// | entries folder     | \x00   | 0..0 are folders                |
     /// | entries values     | \x0c   | from 0..12 are values           |
     ///
-    fn from_raw(data: &[u8], is_64: bool) -> Result<Self> {
-        let mut data = data;
+    fn from_raw<'a, I>(mut data: DirtreeEntryRead<'a, I>, is_64: bool) -> Result<Self>
+    where
+        I: Iterator<Item = Result<(u64, u16, &'a [u8])>>,
+    {
         // part 1: header
         let _unknown_always_1: u8 = bincode::deserialize_from(&mut data)?;
         ensure!(_unknown_always_1 == 1);
@@ -273,7 +288,10 @@ impl DirTreeEntryRaw {
             }
         }
 
-        ensure!(data.is_empty(), "Entra data after dirtree Entry");
+        ensure!(
+            data.entry_value.is_empty(),
+            "Entra data after dirtree Entry"
+        );
         Ok(Self {
             name,
             parent,
@@ -286,4 +304,87 @@ impl DirTreeEntryRaw {
 struct DirTreeEntryChildRaw {
     number: u64,
     is_value: bool,
+}
+
+struct DirtreeEntryRead<'a, I> {
+    entry_value: &'a [u8],
+    idx: u64,
+    last_sub_idx: u16,
+    iter: I,
+}
+impl<'a, I> DirtreeEntryRead<'a, I>
+where
+    I: Iterator<Item = Result<(u64, u16, &'a [u8])>>,
+{
+    // get the next entry on the database
+    fn next_entry(&mut self) -> std::io::Result<()> {
+        loop {
+            let Some(next_entry) = self.iter.next() else {
+                return Ok(());
+            };
+            let (idx, sub_idx, entry) = next_entry.map_err(|_| {
+                std::io::Error::new(
+                    std::io::ErrorKind::UnexpectedEof,
+                    "Missing part of dirtree entry",
+                )
+            })?;
+            if idx != self.idx {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Invalid index for dirtree",
+                ));
+            }
+            if self.last_sub_idx == u16::MAX {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Too many sub-entries for dirtree entry",
+                ));
+            }
+            if self.last_sub_idx + 1 != sub_idx {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "Invalid sub-index for dirtree entry",
+                ));
+            }
+            self.last_sub_idx = sub_idx;
+            self.entry_value = entry;
+            // that's probably never will happen, but I will allow the code to skip empty
+            // sub-entries
+            if !self.entry_value.is_empty() {
+                break;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<'a, I> std::io::Read for DirtreeEntryRead<'a, I>
+where
+    I: Iterator<Item = Result<(u64, u16, &'a [u8])>>,
+{
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        if self.entry_value.is_empty() {
+            self.next_entry()?;
+        }
+        let copy_len = buf.len().min(self.entry_value.len());
+        buf[..copy_len].copy_from_slice(&self.entry_value[..copy_len]);
+        self.entry_value = &self.entry_value[copy_len..];
+        Ok(copy_len)
+    }
+}
+
+impl<'a, I> std::io::BufRead for DirtreeEntryRead<'a, I>
+where
+    I: Iterator<Item = Result<(u64, u16, &'a [u8])>>,
+{
+    fn fill_buf(&mut self) -> std::io::Result<&[u8]> {
+        if self.entry_value.is_empty() {
+            self.next_entry()?;
+        }
+        Ok(self.entry_value)
+    }
+
+    fn consume(&mut self, amt: usize) {
+        self.entry_value = &self.entry_value[amt..];
+    }
 }
