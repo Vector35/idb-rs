@@ -359,7 +359,9 @@ impl ID0Section {
         let name = self
             .get(key)
             .ok_or_else(|| anyhow!("Not found name for segment {idx}"))?;
-        parse_maybe_cstr(&name.value).ok_or_else(|| anyhow!("Invalid segment name {idx}"))
+        parse_maybe_cstr(&name.value)
+            .and_then(|value| core::str::from_utf8(value).ok())
+            .ok_or_else(|| anyhow!("Invalid segment name {idx}"))
     }
 
     /// read the `$ loader name` entries of the database
@@ -398,7 +400,7 @@ impl ID0Section {
             match (sub_type, sub_key.len()) {
                 (b'N', 1) => {
                     ensure!(
-                        parse_maybe_cstr(&entry.value) == Some("Root Node"),
+                        parse_maybe_cstr(&entry.value) == Some(&b"Root Node"[..]),
                         "Invalid Root Node Name"
                     );
                     return Ok(IDBRootInfo::RootNodeName);
@@ -433,8 +435,9 @@ impl ID0Section {
                     .map(IDBRootInfo::Md5)
                     .map_err(|_| anyhow!("Value Md5 with invalid len")),
                 (b'S', 1303) => parse_maybe_cstr(&entry.value)
-                    .map(IDBRootInfo::VersionString)
-                    .ok_or_else(|| anyhow!("Unable to parse VersionString string")),
+                    .and_then(|version| core::str::from_utf8(version).ok())
+                    .ok_or_else(|| anyhow!("Unable to parse VersionString string"))
+                    .map(IDBRootInfo::VersionString),
                 (b'S', 1349) => entry
                     .value
                     .as_slice()
@@ -692,8 +695,10 @@ impl ID0Section {
         let key_len = key.len();
         let key = &entry.key[key_len..];
         ensure!(key.is_empty(), "Label ID0 entry with key");
+        let label_raw =
+            parse_maybe_cstr(&entry.value).ok_or_else(|| anyhow!("Label is not valid CStr"))?;
         let label =
-            parse_maybe_cstr(&entry.value).ok_or_else(|| anyhow!("Label is not valid UTF-8"))?;
+            core::str::from_utf8(label_raw).map_err(|_| anyhow!("Label is not valid UTF-8"))?;
         Ok(Some(label))
     }
 

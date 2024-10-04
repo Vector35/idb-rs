@@ -21,13 +21,19 @@ pub fn dump_functions(args: &Args) -> Result<()> {
                 address,
                 comment: Comments::Comment(value),
             } => {
-                println!("  Comment at {address:#x}: `{value}`");
+                println!(
+                    "  Comment at {address:#x}: `{}`",
+                    String::from_utf8_lossy(value)
+                );
             }
             idb_rs::id0::FunctionsAndComments::Comment {
                 address,
                 comment: Comments::RepeatableComment(value),
             } => {
-                println!("  RepeatableComment at {address:#x}: `{value}`",);
+                println!(
+                    "  RepeatableComment at {address:#x}: `{}`",
+                    String::from_utf8_lossy(value)
+                );
             }
             // There is no Pre/Post comments on funcs
             idb_rs::id0::FunctionsAndComments::Comment {
