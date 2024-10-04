@@ -721,7 +721,7 @@ impl ID0Section {
         let mut sub_values = self.sub_values(key).map(|entry| {
             let raw_idx = parse_number(&entry.key[key_len..], true, self.is_64)
                 .ok_or_else(|| anyhow!("invalid dirtree entry key"))?;
-            let idx = raw_idx >> 16 as u16;
+            let idx = raw_idx >> 16;
             let sub_idx = (raw_idx & 0xFFFF) as u16;
             Ok((idx, sub_idx, &entry.value[..]))
         });
