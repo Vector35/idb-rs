@@ -484,8 +484,7 @@ impl IDBParam {
 
         let strlit_sernum = unpack_usize(&mut input, is_64)?;
         let datatypes = unpack_usize(&mut input, is_64)?;
-        let cc_id = Compiler::from_value(parse_u8(&mut input)?)
-            .ok_or_else(|| anyhow!("invalid Compiler ID Value"))?;
+        let cc_id = Compiler::from_value(parse_u8(&mut input)?);
         let cc_cm = parse_u8(&mut input)?;
         let cc_size_i = parse_u8(&mut input)?;
         let cc_size_b = parse_u8(&mut input)?;
@@ -1245,11 +1244,14 @@ pub enum Compiler {
     Gnu,
     VisualAge,
     Delphi,
+
+    // IDA LIB pring compiler_name allow any value here, printing it as "?"
+    Other,
 }
 
 impl Compiler {
-    pub fn from_value(value: u8) -> Option<Self> {
-        Some(match value {
+    pub fn from_value(value: u8) -> Self {
+        match value {
             0x0 => Self::Unknown,
             0x1 => Self::VisualStudio,
             0x2 => Self::Borland,
@@ -1257,7 +1259,7 @@ impl Compiler {
             0x6 => Self::Gnu,
             0x7 => Self::VisualAge,
             0x8 => Self::Delphi,
-            _ => return None,
-        })
+            _ => Self::Other,
+        }
     }
 }
