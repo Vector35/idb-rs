@@ -176,8 +176,7 @@ impl TILSection {
         })
     }
 
-    #[allow(dead_code)]
-    pub(crate) fn decompress<I: BufRead, O: std::io::Write>(
+    pub fn decompress<I: BufRead, O: std::io::Write>(
         input: &mut I,
         output: &mut O,
         compress: IDBSectionCompression,
@@ -191,8 +190,7 @@ impl TILSection {
         }
     }
 
-    #[allow(dead_code)]
-    pub(crate) fn decompress_inner<I: BufRead, O: std::io::Write>(
+    fn decompress_inner<I: BufRead, O: std::io::Write>(
         input: &mut I,
         output: &mut O,
     ) -> anyhow::Result<()> {

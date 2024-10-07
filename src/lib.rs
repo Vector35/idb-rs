@@ -21,17 +21,38 @@ pub struct IDBParser<I: BufRead + Seek> {
     header: IDBHeader,
 }
 
+trait Sealed {}
+#[allow(private_bounds)]
+pub trait IDBOffset: Sealed {
+    fn idb_offset(&self) -> u64;
+}
+
+macro_rules! impl_idb_offset {
+    ($name:ident) => {
+        impl Sealed for $name {}
+        impl IDBOffset for $name {
+            fn idb_offset(&self) -> u64 {
+                self.0.get()
+            }
+        }
+    };
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ID0Offset(NonZeroU64);
+impl_idb_offset!(ID0Offset);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ID1Offset(NonZeroU64);
+impl_idb_offset!(ID1Offset);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NamOffset(NonZeroU64);
+impl_idb_offset!(NamOffset);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TILOffset(NonZeroU64);
+impl_idb_offset!(TILOffset);
 
 impl<I: BufRead + Seek> IDBParser<I> {
     pub fn new(mut input: I) -> Result<Self> {
@@ -76,13 +97,12 @@ impl<I: BufRead + Seek> IDBParser<I> {
         )
     }
 
-    #[allow(dead_code)]
-    pub(crate) fn decompress_section(
+    pub fn decompress_section(
         &mut self,
-        offset: u64,
+        offset: impl IDBOffset,
         output: &mut impl std::io::Write,
     ) -> Result<()> {
-        self.input.seek(SeekFrom::Start(offset))?;
+        self.input.seek(SeekFrom::Start(offset.idb_offset()))?;
         let section_header = IDBSectionHeader::read(&self.header, &mut self.input)?;
         // makes sure the reader doesn't go out-of-bounds
         let mut input = Read::take(&mut self.input, section_header.len);
@@ -98,8 +118,7 @@ impl<I: BufRead + Seek> IDBParser<I> {
         Ok(())
     }
 
-    #[allow(dead_code)]
-    pub(crate) fn decompress_til_section(
+    pub fn decompress_til_section(
         &mut self,
         til: TILOffset,
         output: &mut impl std::io::Write,
@@ -220,7 +239,7 @@ struct IDBSectionHeader {
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
-enum IDBSectionCompression {
+pub enum IDBSectionCompression {
     None = 0,
     Zlib = 2,
 }
