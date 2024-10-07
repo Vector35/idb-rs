@@ -54,7 +54,7 @@ pub fn dump_til(args: &Args) -> Result<()> {
     println!("size_b: {size_b}");
     println!("is_universal: {is_universal}");
     if let Some(type_ordinal_numbers) = type_ordinal_numbers {
-        println!("type_ordinal_numbers: {type_ordinal_numbers}");
+        println!("type_ordinal_numbers: {type_ordinal_numbers:?}");
     }
     if let Some(size_long_double) = size_long_double {
         println!("size_long_double: {size_long_double}");
