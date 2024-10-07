@@ -20,7 +20,7 @@ pub struct TILSection {
     pub cm: u8,
     pub def_align: u8,
     pub symbols: Vec<TILTypeInfo>,
-    pub type_ordinal_numbers: Option<u32>,
+    pub type_ordinal_numbers: Option<Vec<u32>>,
     pub types: Vec<TILTypeInfo>,
     pub size_i: NonZeroU8,
     pub size_b: NonZeroU8,
@@ -94,7 +94,7 @@ impl TILSection {
         let type_ordinal_numbers = header
             .flags
             .has_ordinal()
-            .then(|| bincode::deserialize_from(&mut *input))
+            .then(|| Self::read_ordinals(&mut *input, &header))
             .transpose()?;
         let types = Self::read_bucket(&mut *input, &header)?;
         let macros = header
@@ -127,6 +127,27 @@ impl TILSection {
             types,
             macros,
         })
+    }
+
+    fn read_ordinals<I: BufRead>(
+        input: &mut I,
+        header: &TILSectionHeader,
+    ) -> anyhow::Result<Vec<u32>> {
+        let ord_total = bincode::deserialize_from::<_, u32>(&mut *input)?;
+        let mut ordinals = vec![ord_total];
+        if !header.flags.has_type_aliases() {
+            return Ok(ordinals);
+        }
+
+        loop {
+            let value = bincode::deserialize_from::<_, u32>(&mut *input)?;
+            if value == u32::MAX {
+                break;
+            }
+
+            ordinals.push(value)
+        }
+        Ok(ordinals)
     }
 
     fn read_header<I: BufRead>(input: &mut I) -> anyhow::Result<TILSectionHeader> {
