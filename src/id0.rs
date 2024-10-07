@@ -79,7 +79,7 @@ impl<'a> FunctionsAndComments<'a> {
             }
             b'S' => IDBFunction::read(sub_key, value, is_64).map(Self::Function),
             // some kind of style setting, maybe setting font and background color
-            b'R' | b'C' if value.starts_with(&[4, 3, 2, 1, 0]) => Ok(Self::Unknown { key, value }),
+            b'R' | b'C' if value.starts_with(&[4, 3, 2, 1]) => Ok(Self::Unknown { key, value }),
             b'C' => {
                 let address = parse_number(sub_key, true, is_64)
                     .ok_or_else(|| anyhow!("Invalid Comment address"))?;
