@@ -4,8 +4,8 @@ mod dump_id0;
 use dump_id0::dump_id0;
 //mod split_idb;
 //use split_idb::split_idb;
-//mod decompress_til;
-//use decompress_til::decompress_til;
+mod decompress_til;
+use decompress_til::decompress_til;
 mod dump_functions;
 use dump_functions::dump_functions;
 mod dump_segments;
@@ -80,7 +80,8 @@ enum Operation {
     /// Dump all entries of the ID0 database
     DumpID0,
     //SplitIDB(SplitIDBArgs),
-    //DecompressTil(DecompressTilArgs),
+    /// Decompress the TIL Section and buckets
+    DecompressTil(DecompressTilArgs),
     /// Dump all the function information
     DumpFunctions,
     /// Dump all the segments
@@ -115,12 +116,12 @@ enum Operation {
 //    output_filename: Option<OsString>,
 //}
 
-///// Decompress the TIL into a uncompressed version of the TIL. Allow IDB, I64 and TIL files.
-//#[derive(Clone, Debug, Parser)]
-//struct DecompressTilArgs {
-//    /// output filename
-//    output: PathBuf,
-//}
+/// Decompress the TIL into a uncompressed version of the TIL. Allow IDB, I64 and TIL files.
+#[derive(Clone, Debug, Parser)]
+struct DecompressTilArgs {
+    /// output filename
+    output: PathBuf,
+}
 
 impl Args {
     pub fn input_type(&self) -> FileType {
@@ -157,7 +158,7 @@ fn main() -> Result<()> {
         Operation::DumpTil => dump_til(&args),
         Operation::DumpID0 => dump_id0(&args),
         //Operation::SplitIDB(split_idbargs) => split_idb(&args, split_idbargs),
-        //Operation::DecompressTil(decompress_til_args) => decompress_til(&args, decompress_til_args),
+        Operation::DecompressTil(decompress_til_args) => decompress_til(&args, decompress_til_args),
         Operation::DumpFunctions => dump_functions(&args),
         Operation::DumpSegments => dump_segments(&args),
         Operation::DumpLoaderNames => dump_loader_name(&args),
