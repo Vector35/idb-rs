@@ -59,6 +59,25 @@ impl<'a> FromDirTreeNumber for TilFromDirTree<'a> {
     type Output = &'a TILTypeInfo;
     #[inline]
     fn build(&mut self, value: u64) -> Result<Self::Output> {
+        // first search the ordinal alias
+        if let Some(ord_alias) = &self.til.type_ordinal_numbers {
+            // it's unclear what is the first value
+            let mut ords = ord_alias.iter().skip(1);
+            loop {
+                let Some(ord) = ords.next().copied().map(u64::from) else {
+                    break;
+                };
+                let result = ords
+                    .next()
+                    .copied()
+                    .map(u64::from)
+                    .ok_or_else(|| anyhow!("Invalid number of aliases"))?;
+
+                if ord == value {
+                    return self.build(result);
+                }
+            }
+        }
         self.til
             .types
             .iter()
