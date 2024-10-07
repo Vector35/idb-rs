@@ -188,13 +188,9 @@ impl DirTreeEntryRaw {
     fn from_raw_v0(mut data: impl BufRead, is_64: bool) -> Result<Self> {
         // part 1: header
         let name = read_c_string(&mut data)?;
-        if is_64 {
-            let _unknown: [u8; 3] = bincode::deserialize_from(&mut data)?;
-            ensure!(_unknown == [0; 3]);
-        } else {
-            let _unknown: [u8; 2] = bincode::deserialize_from(&mut data)?;
-            ensure!(_unknown == [0; 2]);
-        }
+        // TODO maybe just a unpack_dd followed by \x00
+        let parent = unpack_usize(&mut data, is_64)?;
+        let _unknown: u8 = bincode::deserialize_from(&mut data)?;
 
         // part 2: populate the value part of the entries
         let mut entries = vec![];
@@ -209,7 +205,7 @@ impl DirTreeEntryRaw {
 
         Ok(Self {
             name,
-            parent: 0,
+            parent,
             entries,
         })
     }
