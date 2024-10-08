@@ -1,5 +1,5 @@
-use crate::til::{read_dt, TAH};
-use std::io::BufRead;
+use crate::ida_reader::IdaGenericBufUnpack;
+use crate::til::TAH;
 
 #[derive(Debug, Clone)]
 pub struct Bitfield {
@@ -9,9 +9,9 @@ pub struct Bitfield {
 }
 
 impl Bitfield {
-    pub(crate) fn read<I: BufRead>(input: &mut I, metadata: u8) -> anyhow::Result<Self> {
+    pub(crate) fn read(input: &mut impl IdaGenericBufUnpack, metadata: u8) -> anyhow::Result<Self> {
         let nbytes = 1 << (metadata >> 4);
-        let dt = read_dt(&mut *input)?;
+        let dt = input.read_dt()?;
         let width = dt >> 1;
         let unsigned = (dt & 1) > 0;
         let _tag = TAH::read(&mut *input)?;

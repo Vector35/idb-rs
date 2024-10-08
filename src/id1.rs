@@ -1,8 +1,8 @@
 use anyhow::{anyhow, ensure, Result};
 
-use std::io::{Cursor, Read};
 use std::ops::Range;
 
+use crate::ida_reader::IdaGenericUnpack;
 use crate::{IDBHeader, IDBSectionCompression, VaVersion};
 
 #[derive(Clone, Debug)]
@@ -19,8 +19,8 @@ pub struct SegInfo {
 }
 
 impl ID1Section {
-    pub(crate) fn read<I: Read>(
-        input: &mut I,
+    pub(crate) fn read(
+        input: &mut impl IdaGenericUnpack,
         header: &IDBHeader,
         compress: IDBSectionCompression,
     ) -> Result<Self> {
@@ -33,12 +33,12 @@ impl ID1Section {
         }
     }
 
-    fn read_inner<I: Read>(input: &mut I, header: &IDBHeader) -> Result<Self> {
+    fn read_inner(input: &mut impl IdaGenericUnpack, header: &IDBHeader) -> Result<Self> {
         // TODO pages are always 0x2000?
         const PAGE_SIZE: usize = 0x2000;
         let mut buf = vec![0; PAGE_SIZE];
         input.read_exact(&mut buf[..])?;
-        let mut header_page = Cursor::new(&buf);
+        let mut header_page = &buf[..];
         let version = VaVersion::read(&mut header_page)?;
         let (npages, seglist_raw) = match version {
             VaVersion::Va0 | VaVersion::Va1 | VaVersion::Va2 | VaVersion::Va3 | VaVersion::Va4 => {
@@ -112,9 +112,7 @@ impl ID1Section {
             }
         };
         // make sure the unused values a all zero
-        ensure!(buf[header_page.position().try_into().unwrap()..]
-            .iter()
-            .all(|b| *b == 0));
+        ensure!(header_page.iter().all(|b| *b == 0));
 
         // sort segments by address
         let mut overlay_check = match &seglist_raw {
@@ -152,7 +150,7 @@ impl ID1Section {
                                 // TODO can be any deleted sector contains randon data?
                                 // skip intermidiate bytes, also ensuring they are all zeros
                                 ensure_all_bytes_are_zero(
-                                    input.take(seg.offset - current_offset),
+                                    std::io::Read::take(&mut *input, seg.offset - current_offset),
                                     &mut buf,
                                 )?;
                                 current_offset = seg.offset;
@@ -208,7 +206,7 @@ struct SegInfoVaNRaw {
     offset: u64,
 }
 
-fn ensure_all_bytes_are_zero<I: Read>(mut input: I, buf: &mut [u8]) -> Result<()> {
+fn ensure_all_bytes_are_zero(mut input: impl IdaGenericUnpack, buf: &mut [u8]) -> Result<()> {
     loop {
         match input.read(buf) {
             // found EoF
@@ -223,7 +221,7 @@ fn ensure_all_bytes_are_zero<I: Read>(mut input: I, buf: &mut [u8]) -> Result<()
     Ok(())
 }
 
-fn ignore_bytes<I: Read>(mut input: I, buf: &mut [u8]) -> Result<()> {
+fn ignore_bytes(mut input: impl IdaGenericUnpack, buf: &mut [u8]) -> Result<()> {
     loop {
         match input.read(buf) {
             // found EoF
@@ -238,7 +236,7 @@ fn ignore_bytes<I: Read>(mut input: I, buf: &mut [u8]) -> Result<()> {
     Ok(())
 }
 
-fn split_flags_data<I: Read>(mut input: I, len: u64) -> Result<(Vec<u8>, Vec<u32>)> {
+fn split_flags_data(mut input: impl IdaGenericUnpack, len: u64) -> Result<(Vec<u8>, Vec<u32>)> {
     let len = usize::try_from(len).unwrap();
     let mut flags = vec![0u32; len];
     // SAFETY: don't worry &mut[u32] is compatible with &mut[u8] with len * 4

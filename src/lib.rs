@@ -1,13 +1,16 @@
 pub mod id0;
 pub mod id1;
+pub(crate) mod ida_reader;
 pub mod nam;
 pub mod til;
 
 use std::fmt::Debug;
-use std::io::{BufRead, Read, Seek, SeekFrom};
+use std::io::SeekFrom;
 use std::num::NonZeroU64;
 
 use id0::ID0Section;
+use ida_reader::IdaGenericUnpack;
+use ida_reader::IdbReader;
 use serde::Deserialize;
 
 use crate::id1::ID1Section;
@@ -16,7 +19,7 @@ use crate::til::section::TILSection;
 use anyhow::{anyhow, ensure, Result};
 
 #[derive(Debug, Clone, Copy)]
-pub struct IDBParser<I: BufRead + Seek> {
+pub struct IDBParser<I> {
     input: I,
     header: IDBHeader,
 }
@@ -54,7 +57,7 @@ impl_idb_offset!(NamOffset);
 pub struct TILOffset(NonZeroU64);
 impl_idb_offset!(TILOffset);
 
-impl<I: BufRead + Seek> IDBParser<I> {
+impl<I: IdbReader> IDBParser<I> {
     pub fn new(mut input: I) -> Result<Self> {
         let header = IDBHeader::read(&mut input)?;
         Ok(Self { input, header })
@@ -105,7 +108,7 @@ impl<I: BufRead + Seek> IDBParser<I> {
         self.input.seek(SeekFrom::Start(offset.idb_offset()))?;
         let section_header = IDBSectionHeader::read(&self.header, &mut self.input)?;
         // makes sure the reader doesn't go out-of-bounds
-        let mut input = Read::take(&mut self.input, section_header.len);
+        let mut input = std::io::Read::take(&mut self.input, section_header.len);
         match section_header.compress {
             IDBSectionCompression::Zlib => {
                 let mut input = flate2::read::ZlibDecoder::new(input);
@@ -126,7 +129,7 @@ impl<I: BufRead + Seek> IDBParser<I> {
         self.input.seek(SeekFrom::Start(til.0.get()))?;
         let section_header = IDBSectionHeader::read(&self.header, &mut self.input)?;
         // makes sure the reader doesn't go out-of-bounds
-        let mut input = Read::take(&mut self.input, section_header.len);
+        let mut input = std::io::Read::take(&mut self.input, section_header.len);
         TILSection::decompress(&mut input, output, section_header.compress)
     }
 }
@@ -138,13 +141,13 @@ fn read_section<'a, I, T, F>(
     mut process: F,
 ) -> Result<T>
 where
-    I: BufRead + Seek,
+    I: IdbReader,
     F: FnMut(&mut std::io::Take<&'a mut I>, &IDBHeader, IDBSectionCompression) -> Result<T>,
 {
     input.seek(SeekFrom::Start(offset))?;
     let section_header = IDBSectionHeader::read(header, &mut *input)?;
     // makes sure the reader doesn't go out-of-bounds
-    let mut input = Read::take(input, section_header.len);
+    let mut input = std::io::Read::take(input, section_header.len);
     let result = process(&mut input, header, section_header.compress)?;
 
     // TODO seems its normal to have a few extra bytes at the end of the sector, maybe
@@ -267,8 +270,8 @@ struct IDBHeaderRaw {
 }
 
 impl IDBHeader {
-    pub fn read<I: BufRead + Seek>(input: &mut I) -> Result<Self> {
-        let header_raw: IDBHeaderRaw = bincode::deserialize_from(&mut *input)?;
+    pub fn read(mut input: impl IdaGenericUnpack) -> Result<Self> {
+        let header_raw: IDBHeaderRaw = bincode::deserialize_from(&mut input)?;
         let magic = IDBMagic::try_from(header_raw.magic)?;
         ensure!(
             header_raw.signature == 0xAABB_CCDD,
@@ -285,10 +288,10 @@ impl IDBHeader {
         }
     }
 
-    fn read_v1<I: Read + Seek>(
+    fn read_v1(
         header_raw: &IDBHeaderRaw,
         magic: IDBMagic,
-        input: I,
+        input: impl IdaGenericUnpack,
     ) -> Result<Self> {
         #[derive(Debug, Deserialize)]
         struct V1Raw {
@@ -319,10 +322,10 @@ impl IDBHeader {
         })
     }
 
-    fn read_v4<I: Read + Seek>(
+    fn read_v4(
         header_raw: &IDBHeaderRaw,
         magic: IDBMagic,
-        input: I,
+        input: impl IdaGenericUnpack,
     ) -> Result<Self> {
         #[derive(Debug, Deserialize)]
         struct V4Raw {
@@ -361,7 +364,11 @@ impl IDBHeader {
         })
     }
 
-    fn read_v5(header_raw: &IDBHeaderRaw, magic: IDBMagic, input: impl Read) -> Result<Self> {
+    fn read_v5(
+        header_raw: &IDBHeaderRaw,
+        magic: IDBMagic,
+        input: impl IdaGenericUnpack,
+    ) -> Result<Self> {
         #[derive(Debug, Deserialize)]
         struct V5Raw {
             nam_offset: u64,
@@ -408,7 +415,11 @@ impl IDBHeader {
         })
     }
 
-    fn read_v6(header_raw: &IDBHeaderRaw, magic: IDBMagic, input: impl Read) -> Result<Self> {
+    fn read_v6(
+        header_raw: &IDBHeaderRaw,
+        magic: IDBMagic,
+        input: impl IdaGenericUnpack,
+    ) -> Result<Self> {
         #[derive(Debug, Deserialize)]
         struct V6Raw {
             nam_offset: u64,
@@ -455,7 +466,7 @@ impl IDBHeader {
 }
 
 impl IDBSectionHeader {
-    pub fn read<I: BufRead>(header: &IDBHeader, input: I) -> Result<Self> {
+    pub fn read(header: &IDBHeader, input: impl IdaGenericUnpack) -> Result<Self> {
         match header.version {
             IDBVersion::V1 | IDBVersion::V4 => {
                 #[derive(Debug, Deserialize)]
@@ -502,7 +513,7 @@ enum VaVersion {
 }
 
 impl VaVersion {
-    fn read<I: Read>(input: &mut I) -> Result<Self> {
+    fn read(mut input: impl IdaGenericUnpack) -> Result<Self> {
         let mut magic: [u8; 4] = [0; 4];
         input.read_exact(&mut magic)?;
         match &magic[..] {
@@ -516,78 +527,10 @@ impl VaVersion {
         }
     }
 }
-fn read_bytes_len_u16<I: Read>(mut input: I) -> Result<Vec<u8>> {
-    let mut len = [0, 0];
-    input.read_exact(&mut len)?;
-    let mut bytes = vec![0u8; u16::from_le_bytes(len).into()];
-    input.read_exact(&mut bytes)?;
-    Ok(bytes)
-}
 
-fn read_bytes_len_u8<I: Read>(mut input: I) -> Result<Vec<u8>> {
-    let mut len = [0];
-    input.read_exact(&mut len)?;
-    let mut bytes = vec![0u8; len[0].into()];
-    input.read_exact(&mut bytes)?;
-    Ok(bytes)
-}
-
-fn read_string_len_u8<I: Read>(input: I) -> Result<String> {
-    let bytes = read_bytes_len_u8(input)?;
-    Ok(String::from_utf8(bytes)?)
-}
-
-#[allow(dead_code)]
-fn write_string_len_u8<O: std::io::Write>(mut output: O, value: &str) -> Result<()> {
+fn write_string_len_u8<O: std::io::Write>(mut output: O, value: &[u8]) -> Result<()> {
     output.write_all(&[u8::try_from(value.len()).unwrap()])?;
-    Ok(output.write_all(value.as_bytes())?)
-}
-
-fn read_c_string_raw<I: BufRead>(mut input: I) -> std::io::Result<Vec<u8>> {
-    let mut buf = vec![];
-    input.read_until(b'\x00', &mut buf)?;
-    // last char need to be \x00 or we found a EoF
-    if buf.pop() != Some(b'\x00') {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::UnexpectedEof,
-            "Unexpected EoF on CStr",
-        ));
-    }
-    Ok(buf)
-}
-
-fn read_c_string<I: BufRead>(input: &mut I) -> std::io::Result<String> {
-    let buf = read_c_string_raw(input)?;
-    Ok(String::from_utf8_lossy(&buf).to_string())
-}
-
-fn read_c_string_vec<I: BufRead>(input: &mut I) -> std::io::Result<Vec<String>> {
-    let buf = read_c_string_raw(input)?;
-    if buf.is_empty() {
-        return Ok(vec![]);
-    }
-
-    let mut result = vec![];
-    // NOTE never 0 because this came from a CStr
-    let mut len = buf[0] - 1;
-    // NOTE zero len (buf[0] == 1) string is allowed
-    let mut current = &buf[1..];
-    loop {
-        if usize::from(len) > current.len() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "Invalid len on Vec of CStr",
-            ));
-        }
-        let (value, rest) = current.split_at(len.into());
-        result.push(String::from_utf8_lossy(value).to_string());
-        if rest.is_empty() {
-            break;
-        }
-        len = rest[0] - 1;
-        current = &rest[1..];
-    }
-    Ok(result)
+    Ok(output.write_all(value)?)
 }
 
 #[cfg(test)]
@@ -596,7 +539,7 @@ mod test {
     use crate::*;
     use std::ffi::OsStr;
     use std::fs::File;
-    use std::io::BufReader;
+    use std::io::{BufReader, Seek};
     use std::path::{Path, PathBuf};
 
     #[test]

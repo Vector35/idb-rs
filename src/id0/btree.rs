@@ -1,7 +1,9 @@
+use std::ffi::CStr;
+
 use anyhow::Result;
 use til::{section::TILSection, TILTypeInfo};
 
-use std::io::Cursor;
+use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 
 use super::*;
 
@@ -13,8 +15,8 @@ enum ID0Version {
 }
 
 impl ID0Version {
-    pub(crate) fn read<I: BufRead>(input: &mut I) -> Result<Self> {
-        let value = read_c_string_raw(input)?;
+    pub(crate) fn read(input: &mut impl IdaGenericBufUnpack) -> Result<Self> {
+        let value = input.read_c_string_raw()?;
         match &value[..] {
             b"B-tree v 1.5 (C) Pol 1990" => Ok(Self::V15),
             b"B-tree v 1.6 (C) Pol 1990" => Ok(Self::V16),
@@ -41,7 +43,7 @@ struct ID0Header {
 }
 
 impl ID0Header {
-    pub(crate) fn read<I: Read>(input: &mut I, buf: &mut Vec<u8>) -> Result<Self> {
+    pub(crate) fn read(input: &mut impl IdaGenericUnpack, buf: &mut Vec<u8>) -> Result<Self> {
         buf.resize(64, 0);
         input.read_exact(buf)?;
         // TODO handle the 15 version of the header:
@@ -55,14 +57,14 @@ impl ID0Header {
         //    let version = ID0Version::read(input)?;
         // }
 
-        let mut cursor = Cursor::new(&buf);
-        let next_free_offset: u32 = bincode::deserialize_from(&mut cursor)?;
-        let page_size: u16 = bincode::deserialize_from(&mut cursor)?;
-        let root_page: u32 = bincode::deserialize_from(&mut cursor)?;
-        let record_count: u32 = bincode::deserialize_from(&mut cursor)?;
-        let page_count: u32 = bincode::deserialize_from(&mut cursor)?;
-        let _unk12: u8 = bincode::deserialize_from(&mut cursor)?;
-        let version = ID0Version::read(&mut cursor)?;
+        let mut buf_current = &buf[..];
+        let next_free_offset: u32 = bincode::deserialize_from(&mut buf_current)?;
+        let page_size: u16 = bincode::deserialize_from(&mut buf_current)?;
+        let root_page: u32 = bincode::deserialize_from(&mut buf_current)?;
+        let record_count: u32 = bincode::deserialize_from(&mut buf_current)?;
+        let page_count: u32 = bincode::deserialize_from(&mut buf_current)?;
+        let _unk12: u8 = bincode::deserialize_from(&mut buf_current)?;
+        let version = ID0Version::read(&mut buf_current)?;
         // TODO move this code out of here and use seek instead
         // read the rest of the page
         ensure!(page_size >= 64);
@@ -97,8 +99,8 @@ pub struct ID0Entry {
 }
 
 impl ID0Section {
-    pub(crate) fn read<I: Read>(
-        input: &mut I,
+    pub(crate) fn read(
+        input: &mut impl IdaGenericUnpack,
         header: &IDBHeader,
         compress: IDBSectionCompression,
     ) -> Result<Self> {
@@ -117,7 +119,7 @@ impl ID0Section {
     // TODO This is probably much more efficient if written with <I: BufRead + Seek>, this
     // way it's not necessary to read and cache the unused/deleted pages, if you are sure this
     // implementation is correct, you could rewrite this function to do that.
-    fn read_inner<I: Read>(input: &mut I, idb_header: &IDBHeader) -> Result<Self> {
+    fn read_inner(input: &mut impl IdaGenericUnpack, idb_header: &IDBHeader) -> Result<Self> {
         // pages size are usually around that size
         let mut buf = Vec::with_capacity(0x2000);
         let header = ID0Header::read(&mut *input, &mut buf)?;
@@ -127,7 +129,7 @@ impl ID0Section {
         // now-disconnected children
         let mut pages = Vec::with_capacity(header.page_count.try_into().unwrap());
         loop {
-            let read = read_exact_or_nothing(&mut *input, &mut buf)?;
+            let read = input.read_exact_or_nothing(&mut buf)?;
             if read == 0 {
                 // no more data, hit eof
                 break;
@@ -307,7 +309,7 @@ impl ID0Section {
     }
 
     /// read the `$ segstrings` entries of the database
-    fn segment_strings(&self) -> Result<Option<HashMap<NonZeroU32, String>>> {
+    fn segment_strings(&self) -> Result<Option<HashMap<NonZeroU32, Vec<u8>>>> {
         let Some(entry) = self.get("N$ segstrings") else {
             // no entry means no strings
             return Ok(None);
@@ -320,29 +322,28 @@ impl ID0Section {
             .collect();
         let mut entries = HashMap::new();
         for entry in self.sub_values(key) {
-            let mut value = Cursor::new(&entry.value);
-            let start = unpack_dd(&mut value)?;
-            let end = unpack_dd(&mut value)?;
+            let mut value_current = &entry.value[..];
+            let start = value_current.unpack_dd()?;
+            let end = value_current.unpack_dd()?;
             ensure!(start > 0);
             ensure!(start <= end);
             for i in start..end {
-                let name = unpack_ds(&mut value)?;
-                if let Some(_old) = entries.insert(i.try_into().unwrap(), String::from_utf8(name)?)
-                {
+                let name = value_current.unpack_ds()?;
+                if let Some(_old) = entries.insert(i.try_into().unwrap(), name) {
                     return Err(anyhow!("Duplicated id in segstrings {start}"));
                 }
             }
             // TODO always end with '\x0a'?
             ensure!(
-                usize::try_from(value.position()).unwrap() == entry.value.len(),
+                value_current.is_empty(),
                 "Unparsed data in SegsString: {}",
-                entry.value.len() - usize::try_from(value.position()).unwrap()
+                value_current.len()
             );
         }
         Ok(Some(entries))
     }
 
-    pub(crate) fn name_by_index(&self, idx: u64) -> Result<&str> {
+    pub(crate) fn name_by_index(&self, idx: u64) -> Result<&[u8]> {
         // if there is no names, AKA `$ segstrings`, search for the key directly
         let key: Vec<u8> = b"."
             .iter()
@@ -359,9 +360,7 @@ impl ID0Section {
         let name = self
             .get(key)
             .ok_or_else(|| anyhow!("Not found name for segment {idx}"))?;
-        parse_maybe_cstr(&name.value)
-            .and_then(|value| core::str::from_utf8(value).ok())
-            .ok_or_else(|| anyhow!("Invalid segment name {idx}"))
+        parse_maybe_cstr(&name.value).ok_or_else(|| anyhow!("Invalid segment name {idx}"))
     }
 
     /// read the `$ loader name` entries of the database
@@ -868,17 +867,17 @@ impl ID0TreeEntrRaw {
     #[allow(clippy::type_complexity)]
     #[allow(clippy::too_many_arguments)]
     fn read_xx(
-        page: &[u8],
+        page_buf: &[u8],
         id0_header: &ID0Header,
         entry_len: u16,
-        header: fn(&mut Cursor<&[u8]>) -> Result<(Option<NonZeroU32>, u16)>,
-        index_header: fn(&mut Cursor<&[u8]>) -> Result<(Option<NonZeroU32>, u16)>,
-        leaf_header: fn(&mut Cursor<&[u8]>) -> Result<(u16, u16)>,
-        index_value: fn(&mut Cursor<&[u8]>) -> Result<(Vec<u8>, Vec<u8>)>,
-        leaf_value: fn(&mut Cursor<&[u8]>) -> Result<(Vec<u8>, Vec<u8>)>,
-        freeptr: fn(&mut Cursor<&[u8]>) -> Result<u16>,
+        header: fn(&mut &[u8]) -> Result<(Option<NonZeroU32>, u16)>,
+        index_header: fn(&mut &[u8]) -> Result<(Option<NonZeroU32>, u16)>,
+        leaf_header: fn(&mut &[u8]) -> Result<(u16, u16)>,
+        index_value: fn(&mut &[u8]) -> Result<(Vec<u8>, Vec<u8>)>,
+        leaf_value: fn(&mut &[u8]) -> Result<(Vec<u8>, Vec<u8>)>,
+        freeptr: fn(&mut &[u8]) -> Result<u16>,
     ) -> Result<Self> {
-        let mut input = Cursor::new(page);
+        let mut input = page_buf;
         let (preceding, count) = header(&mut input)?;
         let min_data_pos = entry_len
             .checked_mul(count + 2)
@@ -891,14 +890,14 @@ impl ID0TreeEntrRaw {
             // index
             let entries = entry_offsets
                 .map(|offset| {
-                    input.seek(SeekFrom::Start(offset.into())).unwrap();
+                    input = &page_buf[offset.into()..];
                     let (page, recofs) = index_header(&mut input)?;
                     ensure!(
                         recofs >= min_data_pos,
                         "Invalid recofs value {recofs} >= {min_data_pos}"
                     );
                     ensure!(recofs < id0_header.page_size);
-                    input.seek(SeekFrom::Start(recofs.into())).unwrap();
+                    input = &page_buf[recofs.into()..];
                     let (key, value) = index_value(&mut input)?;
                     Ok(ID0TreeIndexRaw { page, key, value })
                 })
@@ -911,7 +910,7 @@ impl ID0TreeEntrRaw {
             let mut last_key = Vec::new();
             let entry = entry_offsets
                 .map(|offset| {
-                    input.seek(SeekFrom::Start(offset.into())).unwrap();
+                    input = &page_buf[offset.into()..];
                     let (indent, recofs) = leaf_header(&mut input)?;
                     if recofs == 0 {
                         // TODO this only happen in deleted entries?
@@ -926,7 +925,7 @@ impl ID0TreeEntrRaw {
                         "Invalid recofs value {recofs} >= {min_data_pos}"
                     );
                     ensure!(recofs < id0_header.page_size);
-                    input.seek(SeekFrom::Start(recofs.into())).unwrap();
+                    input = &page_buf[recofs.into()..];
                     let (ext_key, value) = leaf_value(&mut input)?;
 
                     // keys may reutilize the start of the last key
@@ -945,46 +944,44 @@ impl ID0TreeEntrRaw {
             ID0TreeEntrRaw::Leaf(entry)
         };
 
-        input
-            .seek(SeekFrom::Start(data_offsets.next().unwrap().into()))
-            .unwrap();
+        input = &page_buf[data_offsets.next().unwrap().into()..];
         // TODO what is the freeptr?
         let _freeptr = freeptr(&mut input)?;
         Ok(entry)
     }
 
-    fn header_4(input: &mut Cursor<&[u8]>) -> Result<(Option<NonZeroU32>, u16)> {
+    fn header_4(input: &mut &[u8]) -> Result<(Option<NonZeroU32>, u16)> {
         let preceding: u16 = bincode::deserialize_from(&mut *input)?;
         let count: u16 = bincode::deserialize_from(input)?;
         Ok((NonZeroU32::new(preceding.into()), count))
     }
 
-    fn header_6(input: &mut Cursor<&[u8]>) -> Result<(Option<NonZeroU32>, u16)> {
+    fn header_6(input: &mut &[u8]) -> Result<(Option<NonZeroU32>, u16)> {
         let preceding: u32 = bincode::deserialize_from(&mut *input)?;
         let count: u16 = bincode::deserialize_from(input)?;
         Ok((NonZeroU32::new(preceding), count))
     }
 
-    fn index_header_4(input: &mut Cursor<&[u8]>) -> Result<(Option<NonZeroU32>, u16)> {
+    fn index_header_4(input: &mut &[u8]) -> Result<(Option<NonZeroU32>, u16)> {
         let page: u16 = bincode::deserialize_from(&mut *input)?;
         let recofs: u16 = bincode::deserialize_from(input)?;
         Ok((NonZeroU32::new(page.into()), recofs))
     }
 
-    fn index_header_6(input: &mut Cursor<&[u8]>) -> Result<(Option<NonZeroU32>, u16)> {
+    fn index_header_6(input: &mut &[u8]) -> Result<(Option<NonZeroU32>, u16)> {
         let page: u32 = bincode::deserialize_from(&mut *input)?;
         let recofs: u16 = bincode::deserialize_from(input)?;
         Ok((NonZeroU32::new(page), recofs))
     }
 
-    fn leaf_header_v15(input: &mut Cursor<&[u8]>) -> Result<(u16, u16)> {
+    fn leaf_header_v15(input: &mut &[u8]) -> Result<(u16, u16)> {
         let indent: u8 = bincode::deserialize_from(&mut *input)?;
         let _unknown1: u8 = bincode::deserialize_from(&mut *input)?;
         let recofs: u16 = bincode::deserialize_from(input)?;
         Ok((indent.into(), recofs))
     }
 
-    fn leaf_header_v16(input: &mut Cursor<&[u8]>) -> Result<(u16, u16)> {
+    fn leaf_header_v16(input: &mut &[u8]) -> Result<(u16, u16)> {
         let indent: u8 = bincode::deserialize_from(&mut *input)?;
         // TODO is this _unknown1 just part of indent (u16)?
         let _unknown1: u8 = bincode::deserialize_from(&mut *input)?;
@@ -993,46 +990,46 @@ impl ID0TreeEntrRaw {
         Ok((indent.into(), recofs))
     }
 
-    fn leaf_header_v20(input: &mut Cursor<&[u8]>) -> Result<(u16, u16)> {
+    fn leaf_header_v20(input: &mut &[u8]) -> Result<(u16, u16)> {
         let indent: u16 = bincode::deserialize_from(&mut *input)?;
         let _unknown1: u16 = bincode::deserialize_from(&mut *input)?;
         let recofs: u16 = bincode::deserialize_from(input)?;
         Ok((indent, recofs))
     }
 
-    fn index_value_v1x(input: &mut Cursor<&[u8]>) -> Result<(Vec<u8>, Vec<u8>)> {
-        let _unknown: u8 = bincode::deserialize_from(&mut *input)?;
-        let key = read_bytes_len_u16(&mut *input)?;
-        let value = read_bytes_len_u16(input)?;
+    fn index_value_v1x(input: &mut &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
+        let _unknown: u8 = input.read_u8()?;
+        let key = input.read_bytes_len_u16()?;
+        let value = input.read_bytes_len_u16()?;
         Ok((key, value))
     }
 
-    fn index_value_v20(input: &mut Cursor<&[u8]>) -> Result<(Vec<u8>, Vec<u8>)> {
-        let key = read_bytes_len_u16(&mut *input)?;
-        let value = read_bytes_len_u16(input)?;
+    fn index_value_v20(input: &mut &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
+        let key = input.read_bytes_len_u16()?;
+        let value = input.read_bytes_len_u16()?;
         Ok((key, value))
     }
 
-    fn leaf_value_v1x(input: &mut Cursor<&[u8]>) -> Result<(Vec<u8>, Vec<u8>)> {
-        let _unknown: u8 = bincode::deserialize_from(&mut *input)?;
-        let key = read_bytes_len_u16(&mut *input)?;
-        let value = read_bytes_len_u16(input)?;
+    fn leaf_value_v1x(input: &mut &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
+        let _unknown = input.read_u8()?;
+        let key = input.read_bytes_len_u16()?;
+        let value = input.read_bytes_len_u16()?;
         Ok((key, value))
     }
 
-    fn leaf_value_v20(input: &mut Cursor<&[u8]>) -> Result<(Vec<u8>, Vec<u8>)> {
-        let key = read_bytes_len_u16(&mut *input)?;
-        let value = read_bytes_len_u16(input)?;
+    fn leaf_value_v20(input: &mut &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
+        let key = input.read_bytes_len_u16()?;
+        let value = input.read_bytes_len_u16()?;
         Ok((key, value))
     }
 
-    fn freeptr_v1x(input: &mut Cursor<&[u8]>) -> Result<u16> {
-        let _unknown: u16 = bincode::deserialize_from(&mut *input)?;
-        let freeptr: u16 = bincode::deserialize_from(input)?;
+    fn freeptr_v1x(input: &mut &[u8]) -> Result<u16> {
+        let _unknown = input.read_u16()?;
+        let freeptr = input.read_u16()?;
         Ok(freeptr)
     }
 
-    fn freeptr_v20(input: &mut Cursor<&[u8]>) -> Result<u16> {
+    fn freeptr_v20(input: &mut &[u8]) -> Result<u16> {
         let _unknown: u32 = bincode::deserialize_from(&mut *input)?;
         let freeptr: u16 = bincode::deserialize_from(input)?;
         Ok(freeptr)

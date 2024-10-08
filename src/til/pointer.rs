@@ -1,6 +1,6 @@
+use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, TAH};
-use std::io::BufRead;
 
 #[derive(Debug, Clone)]
 pub struct Pointer {
@@ -13,7 +13,7 @@ impl Pointer {
     pub(crate) fn new(
         til: &TILSectionHeader,
         raw: PointerRaw,
-        fields: Option<Vec<String>>,
+        fields: Option<Vec<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             closure: raw.closure.map(|x| Closure::new(til, x)).transpose()?,
@@ -46,8 +46,8 @@ pub(crate) struct PointerRaw {
 }
 
 impl PointerRaw {
-    pub(crate) fn read<I: BufRead>(
-        input: &mut I,
+    pub(crate) fn read(
+        input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
         metadata: u8,
     ) -> anyhow::Result<Self> {
@@ -77,13 +77,16 @@ pub(crate) enum ClosureRaw {
 }
 
 impl ClosureRaw {
-    fn read<I: BufRead>(input: &mut I, header: &TILSectionHeader) -> anyhow::Result<Self> {
-        let closure_type: u8 = bincode::deserialize_from(&mut *input)?;
+    fn read(
+        input: &mut impl IdaGenericBufUnpack,
+        header: &TILSectionHeader,
+    ) -> anyhow::Result<Self> {
+        let closure_type = input.read_u8()?;
         if closure_type == 0xFF {
             let closure = TypeRaw::read(&mut *input, header)?;
             Ok(Self::Closure(Box::new(closure)))
         } else {
-            let closure_ptr = bincode::deserialize_from(&mut *input)?;
+            let closure_ptr = input.read_u8()?;
             Ok(Self::PointerBased(closure_ptr))
         }
     }

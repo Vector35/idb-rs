@@ -1,21 +1,19 @@
+use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::section::TILSectionHeader;
-use crate::til::{
-    associate_field_name_and_member, read_de, read_dt, Basic, Type, TypeMetadata, TypeRaw, TAH,
-};
+use crate::til::{associate_field_name_and_member, Basic, Type, TypeMetadata, TypeRaw, TAH};
 use anyhow::{ensure, Context};
-use std::io::BufRead;
 
 #[derive(Debug, Clone)]
 pub struct Function {
     pub ret: Box<Type>,
-    pub args: Vec<(Option<String>, Type, Option<ArgLoc>)>,
+    pub args: Vec<(Option<Vec<u8>>, Type, Option<ArgLoc>)>,
     pub retloc: Option<ArgLoc>,
 }
 impl Function {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: FunctionRaw,
-        fields: Option<Vec<String>>,
+        fields: Option<Vec<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         let args = associate_field_name_and_member(fields, value.args)
             .context("Function")?
@@ -72,11 +70,14 @@ pub struct ArgLocDist {
 }
 
 impl FunctionRaw {
-    pub(crate) fn read<I: BufRead>(
-        input: &mut I,
+    pub(crate) fn read(
+        input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
         metadata: u8,
     ) -> anyhow::Result<Self> {
+        // TODO failing to parse `void __fastcall stringstream__basic_ios__sub_180007CF0_Destructor(basic_ios *__shifted(stringstream,0x94) a1);`
+        // from https://github.com/Vector35/idb-rs/issues/8
+
         // TODO what is that?
         let mut flags = metadata << 2;
 
@@ -96,7 +97,7 @@ impl FunctionRaw {
             });
         }
 
-        let n = read_dt(&mut *input)?;
+        let n = input.read_dt()?;
         let is_special_pe = cc.get_calling_convention().is_special_pe();
         let args = (0..n)
             .map(|_| -> anyhow::Result<_> {
@@ -104,7 +105,7 @@ impl FunctionRaw {
                 if tmp == Some(0xFF) {
                     // TODO what is this?
                     let _tmp: u8 = bincode::deserialize_from(&mut *input)?;
-                    let _flags = read_de(&mut *input)?;
+                    let _flags = input.read_de()?;
                 }
                 let tinfo = TypeRaw::read(&mut *input, header)?;
                 let argloc = is_special_pe
@@ -123,7 +124,10 @@ impl FunctionRaw {
     }
 
     /// [BT_FUNC](https://hex-rays.com/products/ida/support/sdkdoc/group__tf__func.html#ga7b7fee21f21237beb6d91e854410e0fa)
-    fn read_cc<I: BufRead>(input: &mut I, flags: &mut u8) -> anyhow::Result<TypeMetadata> {
+    fn read_cc(
+        input: &mut impl IdaGenericBufUnpack,
+        flags: &mut u8,
+    ) -> anyhow::Result<TypeMetadata> {
         let mut cm = TypeMetadata::read(&mut *input)?;
         if !cm.get_calling_convention().is_spoiled() {
             return Ok(cm);
@@ -168,8 +172,8 @@ impl FunctionRaw {
 }
 
 impl ArgLoc {
-    fn read<I: BufRead>(input: &mut I) -> anyhow::Result<Self> {
-        let t: u8 = bincode::deserialize_from(&mut *input)?;
+    fn read(input: &mut impl IdaGenericUnpack) -> anyhow::Result<Self> {
+        let t: u8 = input.read_u8()?;
         if t != 0xFF {
             let b = t & 0x7F;
             match (t, b) {
@@ -185,42 +189,42 @@ impl ArgLoc {
                 }
             }
         } else {
-            let typ = read_dt(&mut *input)?;
+            let typ = input.read_dt()?;
             match typ & 0xF {
                 0 => Ok(Self::None),
                 1 => {
-                    let sval = read_de(&mut *input)?;
+                    let sval = input.read_de()?;
                     Ok(Self::Stack(sval))
                 }
                 2 => {
                     let n = (typ >> 5) & 0x7;
                     let dist: Vec<_> = (0..n)
                         .map(|_| {
-                            let info = read_dt(&mut *input)?;
-                            let off = read_dt(&mut *input)?;
-                            let size = read_dt(&mut *input)?;
+                            let info = input.read_dt()?;
+                            let off = input.read_dt()?;
+                            let size = input.read_dt()?;
                             Ok(ArgLocDist { info, off, size })
                         })
-                        .collect::<anyhow::Result<_, std::io::Error>>()?;
+                        .collect::<anyhow::Result<_>>()?;
                     Ok(Self::Dist(dist))
                 }
                 3 => {
-                    let reg_info = read_dt(&mut *input)?;
+                    let reg_info = input.read_dt()?;
                     // TODO read other dt?
                     Ok(Self::Reg1(reg_info.into()))
                 }
                 4 => {
-                    let reg_info = read_dt(&mut *input)?;
+                    let reg_info = input.read_dt()?;
                     // TODO read other dt?
                     Ok(Self::Reg2(reg_info.into()))
                 }
                 5 => {
-                    let reg = read_dt(&mut *input)?;
-                    let off = read_de(&mut *input)?;
+                    let reg = input.read_dt()?;
+                    let off = input.read_de()?;
                     Ok(Self::RRel { reg, off })
                 }
                 6 => {
-                    let sval = read_de(&mut *input)?;
+                    let sval = input.read_de()?;
                     Ok(Self::Static(sval))
                 }
                 0x7..=0xF => todo!("Custom implementation for ArgLoc"),

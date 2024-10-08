@@ -1,7 +1,7 @@
+use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{read_da, read_dt, Type, TypeRaw, TAH};
+use crate::til::{Type, TypeRaw, TAH};
 use anyhow::anyhow;
-use std::io::BufRead;
 
 #[derive(Clone, Debug)]
 pub struct Array {
@@ -14,7 +14,7 @@ impl Array {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: ArrayRaw,
-        fields: Option<Vec<String>>,
+        fields: Option<Vec<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         if matches!(&fields, Some(f) if !f.is_empty()) {
             return Err(anyhow!("fields in a Array"));
@@ -37,8 +37,8 @@ pub(crate) struct ArrayRaw {
 }
 
 impl ArrayRaw {
-    pub(crate) fn read<I: BufRead>(
-        input: &mut I,
+    pub(crate) fn read(
+        input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
         metadata: u8,
     ) -> anyhow::Result<Self> {
@@ -46,12 +46,12 @@ impl ArrayRaw {
         let (base, nelem) = match metadata {
             BTMT_NONBASED => {
                 // TODO if num_elem==0 then the array size is unknown
-                let nelem = read_dt(&mut *input)?;
+                let nelem = input.read_dt()?;
                 (0, nelem)
             }
             // I think is only for zero, but documentation says anything other than BTMT_NONBASED
             _ => {
-                let (base, nelem) = read_da(&mut *input)?;
+                let (base, nelem) = input.read_da()?;
                 (base, nelem.into())
             }
         };

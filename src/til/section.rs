@@ -1,8 +1,9 @@
+use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::{flag, TILMacro, TILTypeInfo};
-use crate::{read_string_len_u8, IDBSectionCompression};
+use crate::IDBSectionCompression;
 use anyhow::ensure;
 use serde::{Deserialize, Serialize};
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufReader, Read, Write};
 use std::num::NonZeroU8;
 
 // TODO migrate this to flags
@@ -12,14 +13,15 @@ pub const TIL_SECTION_MAGIC: &[u8; 6] = b"IDATIL";
 pub struct TILSection {
     pub format: u32,
     /// short file name (without path and extension)
-    pub title: String,
+    pub title: Vec<u8>,
     /// human readable til description
-    pub description: String,
+    pub description: Vec<u8>,
     pub id: u8,
     /// information about the target compiler
     pub cm: u8,
     pub def_align: u8,
     pub symbols: Vec<TILTypeInfo>,
+    // TODO create a struct for ordinal aliases
     pub type_ordinal_numbers: Option<Vec<u32>>,
     pub types: Vec<TILTypeInfo>,
     pub size_i: NonZeroU8,
@@ -41,8 +43,8 @@ pub struct TILSizes {
 pub struct TILSectionHeader {
     pub format: u32,
     pub flags: TILSectionFlag,
-    pub title: String,
-    pub description: String,
+    pub title: Vec<u8>,
+    pub description: Vec<u8>,
     pub id: u8,
     pub cm: u8,
     pub size_enum: u8,
@@ -71,12 +73,12 @@ pub struct TILSectionHeader2 {
 }
 
 impl TILSection {
-    pub fn parse<I: BufRead>(mut input: I) -> anyhow::Result<Self> {
+    pub fn parse(mut input: impl IdaGenericBufUnpack) -> anyhow::Result<Self> {
         Self::read_inner(&mut input)
     }
 
-    pub(crate) fn read<I: BufRead>(
-        input: &mut I,
+    pub(crate) fn read(
+        input: &mut impl IdaGenericBufUnpack,
         compress: IDBSectionCompression,
     ) -> anyhow::Result<Self> {
         match compress {
@@ -88,7 +90,7 @@ impl TILSection {
         }
     }
 
-    fn read_inner<I: BufRead>(input: &mut I) -> anyhow::Result<Self> {
+    fn read_inner(input: &mut impl IdaGenericBufUnpack) -> anyhow::Result<Self> {
         let header = Self::read_header(&mut *input)?;
         let symbols = Self::read_bucket(&mut *input, &header)?;
         let type_ordinal_numbers = header
@@ -129,8 +131,8 @@ impl TILSection {
         })
     }
 
-    fn read_ordinals<I: BufRead>(
-        input: &mut I,
+    fn read_ordinals(
+        input: &mut impl IdaGenericUnpack,
         header: &TILSectionHeader,
     ) -> anyhow::Result<Vec<u32>> {
         let ord_total = bincode::deserialize_from::<_, u32>(&mut *input)?;
@@ -150,15 +152,15 @@ impl TILSection {
         Ok(ordinals)
     }
 
-    fn read_header<I: BufRead>(input: &mut I) -> anyhow::Result<TILSectionHeader> {
+    fn read_header(input: &mut impl IdaGenericUnpack) -> anyhow::Result<TILSectionHeader> {
         let header1: TILSectionHeader1 = bincode::deserialize_from(&mut *input)?;
         ensure!(
             header1.signature == *TIL_SECTION_MAGIC,
             "Invalid TIL Signature"
         );
 
-        let title = read_string_len_u8(&mut *input)?;
-        let description = read_string_len_u8(&mut *input)?;
+        let title = input.read_bytes_len_u8()?;
+        let description = input.read_bytes_len_u8()?;
 
         let header2: TILSectionHeader2 = bincode::deserialize_from(&mut *input)?;
         let size_s_l_ll = header1
@@ -197,23 +199,23 @@ impl TILSection {
         })
     }
 
-    pub fn decompress<I: BufRead, O: std::io::Write>(
-        input: &mut I,
-        output: &mut O,
+    pub fn decompress(
+        input: &mut impl IdaGenericUnpack,
+        output: &mut impl Write,
         compress: IDBSectionCompression,
     ) -> anyhow::Result<()> {
         match compress {
             IDBSectionCompression::Zlib => {
-                let mut input = BufReader::new(flate2::read::ZlibDecoder::new(input));
+                let mut input = flate2::read::ZlibDecoder::new(input);
                 Self::decompress_inner(&mut input, output)
             }
             IDBSectionCompression::None => Self::decompress_inner(input, output),
         }
     }
 
-    fn decompress_inner<I: BufRead, O: std::io::Write>(
-        input: &mut I,
-        output: &mut O,
+    fn decompress_inner(
+        input: &mut impl IdaGenericUnpack,
+        output: &mut impl Write,
     ) -> anyhow::Result<()> {
         let mut header = Self::read_header(&mut *input)?;
         let og_flags = header.flags;
@@ -339,20 +341,22 @@ pub(crate) struct TILBucketRaw {
 }
 
 impl TILSection {
-    fn read_bucket_header<I: BufRead>(input: &mut I) -> anyhow::Result<(u32, u32)> {
+    fn read_bucket_header(input: &mut impl IdaGenericUnpack) -> anyhow::Result<(u32, u32)> {
         let ndefs = bincode::deserialize_from(&mut *input)?;
         let len = bincode::deserialize_from(&mut *input)?;
         Ok((ndefs, len))
     }
 
-    fn read_bucket_zip_header<I: BufRead>(input: &mut I) -> anyhow::Result<(u32, u32, u32)> {
+    fn read_bucket_zip_header(
+        input: &mut impl IdaGenericUnpack,
+    ) -> anyhow::Result<(u32, u32, u32)> {
         let (ndefs, len) = Self::read_bucket_header(&mut *input)?;
         let compressed_len = bincode::deserialize_from(&mut *input)?;
         Ok((ndefs, len, compressed_len))
     }
 
-    fn read_bucket<I: BufRead>(
-        input: &mut I,
+    fn read_bucket(
+        input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
     ) -> anyhow::Result<Vec<TILTypeInfo>> {
         if header.flags.is_zip() {
@@ -362,8 +366,8 @@ impl TILSection {
         }
     }
 
-    fn read_bucket_normal<I: BufRead>(
-        input: &mut I,
+    fn read_bucket_normal(
+        input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
     ) -> anyhow::Result<Vec<TILTypeInfo>> {
         let (ndefs, len) = Self::read_bucket_header(&mut *input)?;
@@ -378,8 +382,8 @@ impl TILSection {
         Ok(type_info)
     }
 
-    fn read_bucket_zip<I: BufRead>(
-        input: &mut I,
+    fn read_bucket_zip(
+        input: &mut impl IdaGenericUnpack,
         header: &TILSectionHeader,
     ) -> anyhow::Result<Vec<TILTypeInfo>> {
         let (ndefs, len, compressed_len) = Self::read_bucket_zip_header(&mut *input)?;
@@ -403,8 +407,8 @@ impl TILSection {
         Ok(type_info)
     }
 
-    fn read_macros<I: BufRead>(
-        input: &mut I,
+    fn read_macros(
+        input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
     ) -> anyhow::Result<Vec<TILMacro>> {
         if header.flags.is_zip() {
@@ -414,7 +418,7 @@ impl TILSection {
         }
     }
 
-    fn read_macros_normal<I: BufRead>(input: &mut I) -> anyhow::Result<Vec<TILMacro>> {
+    fn read_macros_normal(input: &mut impl IdaGenericBufUnpack) -> anyhow::Result<Vec<TILMacro>> {
         let (ndefs, len) = Self::read_bucket_header(&mut *input)?;
         let mut input = input.take(len.into());
         let type_info = (0..ndefs)
@@ -427,7 +431,7 @@ impl TILSection {
         Ok(type_info)
     }
 
-    fn read_macros_zip<I: BufRead>(input: &mut I) -> anyhow::Result<Vec<TILMacro>> {
+    fn read_macros_zip(input: &mut impl IdaGenericUnpack) -> anyhow::Result<Vec<TILMacro>> {
         let (ndefs, len, compressed_len) = Self::read_bucket_zip_header(&mut *input)?;
         // make sure the decompressor don't read out-of-bounds
         let mut compressed_input = input.take(compressed_len.into());
@@ -450,9 +454,9 @@ impl TILSection {
     }
 
     #[allow(dead_code)]
-    fn decompress_bucket<I: BufRead, O: std::io::Write>(
-        input: &mut I,
-        output: &mut O,
+    fn decompress_bucket(
+        input: &mut impl IdaGenericUnpack,
+        output: &mut impl std::io::Write,
     ) -> anyhow::Result<()> {
         let (ndefs, len, compressed_len) = Self::read_bucket_zip_header(&mut *input)?;
         bincode::serialize_into(&mut *output, &TILBucketRaw { len, ndefs })?;

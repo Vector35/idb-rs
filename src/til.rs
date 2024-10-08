@@ -9,11 +9,11 @@ pub mod section;
 pub mod r#struct;
 pub mod union;
 
-use std::io::{BufRead, Read};
 use std::num::NonZeroU8;
 
 use anyhow::{anyhow, ensure, Context, Result};
 
+use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::array::{Array, ArrayRaw};
 use crate::til::bitfield::Bitfield;
 use crate::til::function::{Function, FunctionRaw};
@@ -22,23 +22,25 @@ use crate::til::r#enum::{Enum, EnumRaw};
 use crate::til::r#struct::{Struct, StructRaw};
 use crate::til::section::TILSectionHeader;
 use crate::til::union::{Union, UnionRaw};
-use crate::{read_c_string, read_c_string_vec};
 
 #[derive(Debug, Clone)]
 pub struct TILTypeInfo {
     _flags: u32,
-    pub name: String,
+    pub name: Vec<u8>,
     pub ordinal: u64,
     pub tinfo: Type,
-    _cmt: String,
-    _fieldcmts: String,
+    _cmt: Vec<u8>,
+    _fieldcmts: Vec<u8>,
     _sclass: u8,
 }
 
 impl TILTypeInfo {
-    pub(crate) fn read<I: BufRead>(input: &mut I, til: &TILSectionHeader) -> Result<Self> {
+    pub(crate) fn read(
+        input: &mut impl IdaGenericBufUnpack,
+        til: &TILSectionHeader,
+    ) -> Result<Self> {
         let flags: u32 = bincode::deserialize_from(&mut *input)?;
-        let name = read_c_string(&mut *input)?;
+        let name = input.read_c_string_raw()?;
         let is_u64 = (flags >> 31) != 0;
         let ordinal = match (til.format, is_u64) {
             // formats below 0x12 doesn't have 64 bits ord
@@ -46,11 +48,11 @@ impl TILTypeInfo {
             (_, true) => bincode::deserialize_from(&mut *input)?,
         };
         let tinfo_raw = TypeRaw::read(&mut *input, til).context("parsing `TILTypeInfo::tiinfo`")?;
-        let _info = read_c_string(&mut *input)?;
-        let cmt = read_c_string(&mut *input)?;
-        let fields = read_c_string_vec(&mut *input)?;
-        let fieldcmts = read_c_string(&mut *input)?;
-        let sclass: u8 = bincode::deserialize_from(&mut *input)?;
+        let _info = input.read_c_string_raw()?;
+        let cmt = input.read_c_string_raw()?;
+        let fields = input.read_c_string_vec()?;
+        let fieldcmts = input.read_c_string_raw()?;
+        let sclass: u8 = input.read_u8()?;
 
         let tinfo = Type::new(til, tinfo_raw, Some(fields))?;
 
@@ -82,7 +84,7 @@ impl Type {
     pub(crate) fn new(
         til: &TILSectionHeader,
         tinfo_raw: TypeRaw,
-        fields: Option<Vec<String>>,
+        fields: Option<Vec<Vec<u8>>>,
     ) -> Result<Self> {
         match tinfo_raw {
             TypeRaw::Basic(x) => {
@@ -119,8 +121,8 @@ impl Type {
         let header = section::TILSectionHeader {
             format: 700,
             flags: section::TILSectionFlag(0),
-            title: String::new(),
-            description: String::new(),
+            title: Vec::new(),
+            description: Vec::new(),
             id: 0,
             cm: 0,
             size_enum: 0,
@@ -162,7 +164,7 @@ pub(crate) enum TypeRaw {
 }
 
 impl TypeRaw {
-    pub fn read<I: BufRead>(input: &mut I, til: &TILSectionHeader) -> Result<Self> {
+    pub fn read(input: &mut impl IdaGenericBufUnpack, til: &TILSectionHeader) -> Result<Self> {
         let metadata: u8 = bincode::deserialize_from(&mut *input)?;
         let type_base = metadata & flag::tf_mask::TYPE_BASE_MASK;
         let type_flags = metadata & flag::tf_mask::TYPE_FLAGS_MASK;
@@ -212,8 +214,8 @@ impl TypeRaw {
         }
     }
 
-    pub fn read_ref<I: BufRead>(input: &mut I, header: &TILSectionHeader) -> Result<Self> {
-        let mut bytes = read_dt_bytes(&mut *input)?;
+    pub fn read_ref(input: &mut impl IdaGenericUnpack, header: &TILSectionHeader) -> Result<Self> {
+        let mut bytes = input.read_dt_bytes()?;
 
         if !bytes.starts_with(b"=") {
             let dt = serialize_dt(bytes.len().try_into().unwrap())?;
@@ -346,38 +348,38 @@ impl Basic {
 #[derive(Clone, Debug)]
 pub enum Typedef {
     Ordinal(u32),
-    Name(String),
+    Name(Vec<u8>),
 }
 
 impl Typedef {
-    fn read<I: BufRead>(input: &mut I) -> Result<Self> {
-        let buf = read_dt_bytes(&mut *input)?;
+    fn read(input: &mut impl IdaGenericUnpack) -> Result<Self> {
+        let buf = input.read_dt_bytes()?;
         match &buf[..] {
             [b'#', data @ ..] => {
-                let mut tmp = std::io::Cursor::new(data);
-                let de = read_de(&mut tmp)?;
-                if tmp.position() != data.len().try_into()? {
+                let mut tmp = data;
+                let de = tmp.read_de()?;
+                if !tmp.is_empty() {
                     return Err(anyhow!("Typedef Ordinal with more data then expected"));
                 }
                 Ok(Typedef::Ordinal(de))
             }
-            _ => Ok(Typedef::Name(String::from_utf8(buf)?)),
+            _ => Ok(Typedef::Name(buf)),
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct TILMacro {
-    pub name: String,
-    pub value: String,
+    pub name: Vec<u8>,
+    pub value: Vec<u8>,
 }
 
 impl TILMacro {
-    fn read<I: BufRead>(input: &mut I) -> Result<Self> {
-        let name = read_c_string(&mut *input)?;
+    fn read(input: &mut impl IdaGenericBufUnpack) -> Result<Self> {
+        let name = input.read_c_string_raw()?;
         // TODO find what this is
-        let _flag: u16 = bincode::deserialize_from(&mut *input)?;
-        let value = read_c_string(&mut *input)?;
+        let _flag: u16 = input.read_u16()?;
+        let value = input.read_c_string_raw()?;
         Ok(Self { name, value })
     }
 }
@@ -389,8 +391,8 @@ impl TypeMetadata {
         // TODO check for invalid values
         Self(value)
     }
-    fn read<I: Read>(input: I) -> Result<Self> {
-        Ok(Self::new(bincode::deserialize_from(input)?))
+    fn read(input: &mut impl IdaGenericUnpack) -> Result<Self> {
+        Ok(Self::new(input.read_u8()?))
     }
 }
 
@@ -407,7 +409,7 @@ pub struct CallingConventionFlag(pub u8);
 #[derive(Clone, Copy, Debug)]
 pub struct TypeAttribute(pub u16);
 impl TypeAttribute {
-    fn read<I: BufRead>(input: &mut I) -> Result<Self> {
+    fn read(input: &mut impl IdaGenericUnpack) -> Result<Self> {
         let mut val: u16 = 0;
         let tah: u8 = bincode::deserialize_from(&mut *input)?;
         let tmp = ((tah & 1) | ((tah >> 3) & 6)) + 1;
@@ -429,10 +431,10 @@ impl TypeAttribute {
             }
         }
         if (val & 0x0010) > 0 {
-            val = read_dt(&mut *input)?;
+            val = input.read_dt()?;
             for _ in 0..val {
-                let _string = read_dt_string(&mut *input)?;
-                let another_de = read_dt(&mut *input)?;
+                let _string = input.read_dt_bytes()?;
+                let another_de = input.read_dt()?;
                 let mut other_string = vec![0; another_de.into()];
                 input.read_exact(&mut other_string)?;
             }
@@ -444,7 +446,7 @@ impl TypeAttribute {
 #[derive(Clone, Copy, Debug)]
 pub struct TAH(pub TypeAttribute);
 impl TAH {
-    fn read<I: BufRead>(input: &mut I) -> Result<Self> {
+    fn read(input: &mut impl IdaGenericBufUnpack) -> Result<Self> {
         let Some(tah) = input.fill_buf()?.first().copied() else {
             return Err(anyhow!(std::io::Error::new(
                 std::io::ErrorKind::UnexpectedEof,
@@ -462,7 +464,7 @@ impl TAH {
 #[derive(Clone, Copy, Debug)]
 pub struct SDACL(pub TypeAttribute);
 impl SDACL {
-    fn read<I: BufRead>(input: &mut I) -> Result<Self> {
+    fn read(input: &mut impl IdaGenericBufUnpack) -> Result<Self> {
         let Some(sdacl) = input.fill_buf()?.first().copied() else {
             return Err(anyhow!(std::io::Error::new(
                 std::io::ErrorKind::UnexpectedEof,
@@ -509,73 +511,6 @@ impl TypeMetadata {
     }
 }
 
-fn read_dt_bytes<I: BufRead>(input: &mut I) -> Result<Vec<u8>> {
-    let buf_len = read_dt(&mut *input)?;
-    let mut buf = vec![0; buf_len.into()];
-    input.read_exact(&mut buf)?;
-    Ok(buf)
-}
-
-fn read_dt_string<I: BufRead>(input: &mut I) -> Result<String> {
-    let buf = read_dt_bytes(input)?;
-    Ok(String::from_utf8(buf)?)
-}
-
-/// Reads 1 to 5 bytes
-/// Value Range: 0-0xFFFFFFFF
-/// Usage: Enum Deltas
-fn read_de<I: Read>(input: &mut I) -> std::io::Result<u32> {
-    let mut val: u32 = 0;
-    for _ in 0..5 {
-        let mut hi = val << 6;
-        let mut b = [0; 1];
-        input.read_exact(&mut b)?;
-        let b: u32 = b[0].into();
-        let sign = b & 0x80;
-        if sign == 0 {
-            let lo = b & 0x3F;
-            val = lo | hi;
-            return Ok(val);
-        } else {
-            let lo = 2 * hi;
-            hi = b & 0x7F;
-            val = lo | hi;
-        }
-    }
-    Err(std::io::Error::new(
-        std::io::ErrorKind::InvalidData,
-        "Can't find the end of DE",
-    ))
-}
-
-/// Reads 1 or 2 bytes.
-/// Value Range: 0-0xFFFE
-/// Usage: 16bit numbers
-fn read_dt<I: Read>(input: &mut I) -> std::io::Result<u16> {
-    let mut value = [0u8; 1];
-    input.read_exact(&mut value)?;
-    let value = value[0].into();
-
-    let value = match value {
-        0 => {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "DT can't have 0 value",
-            ))
-        }
-        //SEG = 2
-        value if value & 0x80 != 0 => {
-            let mut iter = [0u8; 1];
-            input.read_exact(&mut iter)?;
-            let inter: u16 = iter[0].into();
-            value & 0x7F | inter << 7
-        }
-        //SEG = 1
-        _ => value,
-    };
-    Ok(value - 1)
-}
-
 fn serialize_dt(value: u16) -> Result<Vec<u8>> {
     if value > 0x7FFE {
         return Err(anyhow!("Invalid value for DT"));
@@ -591,73 +526,10 @@ fn serialize_dt(value: u16) -> Result<Vec<u8>> {
     Ok(result)
 }
 
-/// Reads 1 to 9 bytes.
-/// ValueRange: 0-0x7FFFFFFF, 0-0xFFFFFFFF
-/// Usage: Arrays
-fn read_da<I: BufRead>(input: &mut I) -> Result<(u8, u8)> {
-    let mut a = 0;
-    let mut b = 0;
-    let mut da = 0;
-    let mut base = 0;
-    let mut nelem = 0;
-    // TODO check no more then 9 bytes are read
-    loop {
-        let Some(typ) = input.fill_buf()?.first().copied() else {
-            return Err(anyhow!(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "Unexpected EoF on DA"
-            )));
-        };
-        if typ & 0x80 == 0 {
-            break;
-        }
-        input.consume(1);
-
-        da = (da << 7) | typ & 0x7F;
-        b += 1;
-        if b >= 4 {
-            let z: u8 = bincode::deserialize_from(&mut *input)?;
-            if z != 0 {
-                base = (da << 4) | z & 0xF
-            }
-            nelem = (z >> 4) & 7;
-            loop {
-                let Some(y) = input.fill_buf()?.first().copied() else {
-                    return Err(anyhow!(std::io::Error::new(
-                        std::io::ErrorKind::UnexpectedEof,
-                        "Unexpected EoF on DA"
-                    )));
-                };
-                if (y & 0x80) == 0 {
-                    break;
-                }
-                input.consume(1);
-                nelem = (nelem << 7) | y & 0x7F;
-                a += 1;
-                if a >= 4 {
-                    return Ok((nelem, base));
-                }
-            }
-        }
-    }
-    Ok((nelem, base))
-}
-
-/// Reads 2 to 7 bytes.
-/// Value Range: Nothing or 0-0xFFFF_FFFF
-/// Usage: some kind of size
-fn read_dt_de<I: Read>(input: &mut I) -> std::io::Result<Option<u32>> {
-    match read_dt(&mut *input)? {
-        0 => Ok(None),
-        0x7FFE => read_de(&mut *input).map(Some),
-        n => Ok(Some(n.into())),
-    }
-}
-
 fn associate_field_name_and_member<T>(
-    fields: Option<Vec<String>>,
+    fields: Option<Vec<Vec<u8>>>,
     members: Vec<T>,
-) -> Result<impl Iterator<Item = (Option<String>, T)>> {
+) -> Result<impl Iterator<Item = (Option<Vec<u8>>, T)>> {
     let fields_len: usize = fields.iter().filter(|t| !t.is_empty()).count();
     ensure!(fields_len <= members.len(), "More fields then members");
     // allow to have fewer fields then members, first fields will have names, others not

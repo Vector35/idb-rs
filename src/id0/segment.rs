@@ -1,7 +1,6 @@
 use anyhow::Result;
 
 use std::collections::HashMap;
-use std::io::Cursor;
 use std::num::{NonZeroU32, NonZeroU8};
 use std::ops::Range;
 
@@ -10,7 +9,7 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct Segment {
     pub address: Range<u64>,
-    pub name: Option<String>,
+    pub name: Option<Vec<u8>>,
     // TODO class String
     _class_id: u64,
     /// This field is IDP dependent.
@@ -46,14 +45,14 @@ impl Segment {
     pub(crate) fn read(
         value: &[u8],
         is_64: bool,
-        names: Option<&HashMap<NonZeroU32, String>>,
+        names: Option<&HashMap<NonZeroU32, Vec<u8>>>,
         id0: &ID0Section,
     ) -> Result<Self> {
-        let mut cursor = Cursor::new(value);
+        let mut cursor = IdaUnpacker::new(value, is_64);
         // InnerRef: 0x430684
-        let startea = unpack_usize(&mut cursor, is_64)?;
-        let size = unpack_usize(&mut cursor, is_64)?;
-        let name_id = unpack_usize(&mut cursor, is_64)?;
+        let startea = cursor.unpack_usize()?;
+        let size = cursor.unpack_usize()?;
+        let name_id = cursor.unpack_usize()?;
         let name_id = NonZeroU32::new(u32::try_from(name_id).unwrap());
         // TODO: I'm assuming name_id == 0 means no name, but maybe I'm wrong
         let name = name_id
@@ -62,41 +61,41 @@ impl Segment {
                 if let Some(names) = names {
                     names
                         .get(&name_id)
-                        .map(String::to_owned)
+                        .map(Vec::to_owned)
                         .ok_or_else(|| anyhow!("Not found name for segment {name_id}"))
                 } else {
                     // if there is no names, AKA `$ segstrings`, search for the key directly
-                    id0.name_by_index(name_id.get().into()).map(str::to_string)
+                    id0.name_by_index(name_id.get().into()).map(<[u8]>::to_vec)
                 }
             })
             .transpose();
         let name = name?;
         // TODO AKA [sclass](https://hex-rays.com//products/ida/support/sdkdoc/classsegment__t.html)
         // I don't know what is this value or what it represents
-        let _class_id = unpack_usize(&mut cursor, is_64)?;
-        let orgbase = unpack_usize(&mut cursor, is_64)?;
-        let flags = SegmentFlag::from_raw(unpack_dd(&mut cursor)?)
+        let _class_id = cursor.unpack_usize()?;
+        let orgbase = cursor.unpack_usize()?;
+        let flags = SegmentFlag::from_raw(cursor.unpack_dd()?)
             .ok_or_else(|| anyhow!("Invalid Segment Flag value"))?;
-        let align = SegmentAlignment::from_raw(unpack_dd(&mut cursor)?)
+        let align = SegmentAlignment::from_raw(cursor.unpack_dd()?)
             .ok_or_else(|| anyhow!("Invalid Segment Alignment value"))?;
-        let comb = SegmentCombination::from_raw(unpack_dd(&mut cursor)?)
+        let comb = SegmentCombination::from_raw(cursor.unpack_dd()?)
             .ok_or_else(|| anyhow!("Invalid Segment Combination value"))?;
-        let perm = SegmentPermission::from_raw(unpack_dd(&mut cursor)?)
+        let perm = SegmentPermission::from_raw(cursor.unpack_dd()?)
             .ok_or_else(|| anyhow!("Invalid Segment Permission value"))?;
-        let bitness = SegmentBitness::from_raw(unpack_dd(&mut cursor)?)
+        let bitness = SegmentBitness::from_raw(cursor.unpack_dd()?)
             .ok_or_else(|| anyhow!("Invalid Segment Bitness value"))?;
-        let seg_type = SegmentType::from_raw(unpack_dd(&mut cursor)?)
+        let seg_type = SegmentType::from_raw(cursor.unpack_dd()?)
             .ok_or_else(|| anyhow!("Invalid Segment Type value"))?;
-        let selector = unpack_usize(&mut cursor, is_64)?;
+        let selector = cursor.unpack_usize()?;
         let defsr: [_; 16] = (0..16)
-            .map(|_| unpack_usize(&mut cursor, is_64))
+            .map(|_| cursor.unpack_usize())
             .collect::<Result<Vec<_>, _>>()?
             .try_into()
             .unwrap();
-        let color = unpack_dd(&mut cursor)?;
+        let color = cursor.unpack_dd()?;
 
         // TODO maybe new versions include extra information and thid check fails
-        ensure!(cursor.position() == value.len().try_into().unwrap());
+        ensure!(cursor.inner().is_empty());
         Ok(Segment {
             address: startea..startea + size,
             name,

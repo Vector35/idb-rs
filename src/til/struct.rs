@@ -1,7 +1,7 @@
+use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, read_dt_de, Type, TypeRaw, SDACL};
+use crate::til::{associate_field_name_and_member, Type, TypeRaw, SDACL};
 use anyhow::{anyhow, Context};
-use std::io::BufRead;
 
 #[derive(Clone, Debug)]
 pub enum Struct {
@@ -19,7 +19,7 @@ impl Struct {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: StructRaw,
-        fields: Option<Vec<String>>,
+        fields: Option<Vec<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         match value {
             StructRaw::Ref {
@@ -67,8 +67,11 @@ pub(crate) enum StructRaw {
 }
 
 impl StructRaw {
-    pub fn read<I: BufRead>(input: &mut I, header: &TILSectionHeader) -> anyhow::Result<Self> {
-        let Some(n) = read_dt_de(&mut *input)? else {
+    pub fn read(
+        input: &mut impl IdaGenericBufUnpack,
+        header: &TILSectionHeader,
+    ) -> anyhow::Result<Self> {
+        let Some(n) = input.read_dt_de()? else {
             // simple reference
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
             let taudt_bits = SDACL::read(&mut *input)?;
@@ -95,7 +98,7 @@ impl StructRaw {
 
 #[derive(Clone, Debug)]
 pub struct StructMember {
-    pub name: Option<String>,
+    pub name: Option<Vec<u8>>,
     pub member_type: Type,
     pub sdacl: SDACL,
 }
@@ -103,7 +106,7 @@ pub struct StructMember {
 impl StructMember {
     fn new(
         til: &TILSectionHeader,
-        name: Option<String>,
+        name: Option<Vec<u8>>,
         m: StructMemberRaw,
     ) -> anyhow::Result<Self> {
         Ok(Self {
@@ -117,7 +120,10 @@ impl StructMember {
 pub(crate) struct StructMemberRaw(pub TypeRaw, pub SDACL);
 
 impl StructMemberRaw {
-    fn read<I: BufRead>(input: &mut I, header: &TILSectionHeader) -> anyhow::Result<Self> {
+    fn read(
+        input: &mut impl IdaGenericBufUnpack,
+        header: &TILSectionHeader,
+    ) -> anyhow::Result<Self> {
         let member_type = TypeRaw::read(&mut *input, header)?;
         let sdacl = SDACL::read(&mut *input)?;
         Ok(Self(member_type, sdacl))
