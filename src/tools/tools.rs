@@ -1,3 +1,4 @@
+mod dump_dirtree;
 mod dump_til;
 use dump_til::dump_til;
 mod dump_id0;

@@ -605,9 +605,16 @@ mod test {
             let _ = id0.entry_points().unwrap();
             let _ = id0.dirtree_bpts().unwrap();
             let _ = id0.dirtree_enums().unwrap();
-            let _ = id0.dirtree_names().unwrap();
+            let _dirtree_names = id0.dirtree_names().unwrap();
+            _dirtree_names.visit_leafs(|addr| {
+                // NOTE it's know that some label are missing in some databases
+                let _name = id0.label_at(*addr).unwrap();
+            });
+            let _dirtree_tinfos = id0.dirtree_tinfos().unwrap();
             if let Some(til) = til {
-                let _dirtree_tinfos = id0.dirtree_tinfos(&til).unwrap();
+                _dirtree_tinfos.visit_leafs(|ord| {
+                    let _til = til.get_ord(*ord).unwrap();
+                });
             }
             let _ = id0.dirtree_imports().unwrap();
             let _ = id0.dirtree_structs().unwrap();

@@ -3,14 +3,29 @@ use std::collections::HashMap;
 use anyhow::{anyhow, ensure, Result};
 
 use crate::ida_reader::{IdaGenericBufUnpack, IdaUnpack, IdaUnpacker};
-use crate::til::section::TILSection;
-use crate::til::TILTypeInfo;
 
-use super::ID0Section;
+use super::Id0AddressKey;
 
 #[derive(Clone, Debug)]
 pub struct DirTreeRoot<T> {
     pub entries: Vec<DirTreeEntry<T>>,
+}
+
+impl<T> DirTreeRoot<T> {
+    pub fn visit_leafs(&self, mut handle: impl FnMut(&T)) {
+        Self::inner_visit_leafs(&mut handle, &self.entries);
+    }
+
+    fn inner_visit_leafs(handle: &mut impl FnMut(&T), entries: &[DirTreeEntry<T>]) {
+        for entry in entries {
+            match entry {
+                DirTreeEntry::Leaf(entry) => handle(entry),
+                DirTreeEntry::Directory { name: _, entries } => {
+                    Self::inner_visit_leafs(&mut *handle, entries)
+                }
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -23,64 +38,40 @@ pub enum DirTreeEntry<T> {
 }
 
 pub(crate) trait FromDirTreeNumber {
-    type Output;
-    fn build(&mut self, value: u64) -> Result<Self::Output>;
+    fn new(value: u64) -> Self;
 }
 
-pub(crate) struct U64FromDirTree;
-impl FromDirTreeNumber for U64FromDirTree {
-    type Output = u64;
+impl FromDirTreeNumber for u64 {
     #[inline]
-    fn build(&mut self, value: u64) -> Result<Self::Output> {
-        Ok(value)
+    fn new(value: u64) -> u64 {
+        value
     }
 }
 
-pub(crate) struct LabelFromDirTree<'a> {
-    pub(crate) id0: &'a ID0Section,
+#[derive(Clone, Copy, Debug)]
+pub struct Id0Address {
+    address: u64,
 }
-impl<'a> FromDirTreeNumber for LabelFromDirTree<'a> {
-    type Output = (u64, &'a str);
+impl FromDirTreeNumber for Id0Address {
     #[inline]
-    fn build(&mut self, address: u64) -> Result<Self::Output> {
-        let name = self.id0.label_at(address).and_then(|label| {
-            label.ok_or_else(|| anyhow!("Missing label entry on ID0 for address {address:#x}"))
-        })?;
-        Ok((address, name))
+    fn new(address: u64) -> Self {
+        Self { address }
+    }
+}
+impl Id0AddressKey for Id0Address {
+    fn as_u64(&self) -> u64 {
+        self.address
     }
 }
 
-pub(crate) struct TilFromDirTree<'a> {
-    pub(crate) til: &'a TILSection,
+#[derive(Clone, Copy, Debug)]
+pub struct Id0TilOrd {
+    pub(crate) ord: u64,
 }
-impl<'a> FromDirTreeNumber for TilFromDirTree<'a> {
-    type Output = &'a TILTypeInfo;
+impl FromDirTreeNumber for Id0TilOrd {
     #[inline]
-    fn build(&mut self, value: u64) -> Result<Self::Output> {
-        // first search the ordinal alias
-        if let Some(ord_alias) = &self.til.type_ordinal_numbers {
-            // it's unclear what is the first value
-            let mut ords = ord_alias.iter().skip(1);
-            loop {
-                let Some(ord) = ords.next().copied().map(u64::from) else {
-                    break;
-                };
-                let result = ords
-                    .next()
-                    .copied()
-                    .map(u64::from)
-                    .ok_or_else(|| anyhow!("Invalid number of aliases"))?;
-
-                if ord == value {
-                    return self.build(result);
-                }
-            }
-        }
-        self.til
-            .types
-            .iter()
-            .find(|ty| ty.ordinal == value)
-            .ok_or_else(|| anyhow!("Could not find a TIL type with ordinal {value}"))
+    fn new(ord: u64) -> Self {
+        Self { ord }
     }
 }
 
@@ -100,11 +91,7 @@ impl<'a> FromDirTreeNumber for TilFromDirTree<'a> {
 /// "\x2e\xff\x00\x00\x31\x53\x00\x02\x00\x00":"\x01\x62\x00\x00\x00\x0d\x90\x20\x80\x88\x08\x10\x80\xe9\x04\x80\xe7\x82\x36\x06\xff\xff\xff\xfc\xd0\xff\xff\xff\xff\x60\x50\x83\x0a\x00\x0d"
 /// ...
 /// "N$ dirtree/funcs":"\x31\x00\x00\xff"
-pub(crate) fn parse_dirtree<'a, T, I>(
-    entries_iter: I,
-    mut builder: T,
-    is_64: bool,
-) -> Result<DirTreeRoot<T::Output>>
+pub(crate) fn parse_dirtree<'a, T, I>(entries_iter: I, is_64: bool) -> Result<DirTreeRoot<T>>
 where
     T: FromDirTreeNumber,
     I: IntoIterator<Item = Result<(u64, u16, &'a [u8])>>,
@@ -148,23 +135,22 @@ where
     let name = root.name;
     ensure!(name.is_empty(), "DirTree With a named root");
     ensure!(root.parent == 0, "Dirtree Root with parent");
-    let dirs = dirtree_directory_from_raw(&mut entries_raw, &mut builder, 0, root.entries)?;
+    let dirs = dirtree_directory_from_raw(&mut entries_raw, 0, root.entries)?;
 
     Ok(DirTreeRoot { entries: dirs })
 }
 
 fn dirtree_directory_from_raw<T: FromDirTreeNumber>(
     raw: &mut HashMap<u64, Option<DirTreeEntryRaw>>,
-    builder: &mut T,
     parent_idx: u64,
     entries: Vec<DirTreeEntryChildRaw>,
-) -> Result<Vec<DirTreeEntry<T::Output>>> {
+) -> Result<Vec<DirTreeEntry<T>>> {
     let sub_dirs = entries
         .into_iter()
         .map(|DirTreeEntryChildRaw { number, is_value }| {
             if is_value {
                 // simple value, just make a leaf
-                return Ok(DirTreeEntry::Leaf(builder.build(number)?));
+                return Ok(DirTreeEntry::Leaf(T::new(number)));
             }
             // otherwise create the dirtree for the entry at "number"
             let raw_entry = raw
@@ -181,7 +167,7 @@ fn dirtree_directory_from_raw<T: FromDirTreeNumber>(
                 parent == parent_idx,
                 "Invalid parent idx for entry in dirtree"
             );
-            let entries = dirtree_directory_from_raw(raw, &mut *builder, number, entries)?;
+            let entries = dirtree_directory_from_raw(raw, number, entries)?;
             Ok(DirTreeEntry::Directory { name, entries })
         })
         .collect::<Result<_>>()?;
