@@ -1,7 +1,7 @@
+use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, read_dt_de, Type, TypeRaw, SDACL};
+use crate::til::{associate_field_name_and_member, Type, TypeRaw, SDACL};
 use anyhow::{anyhow, Context};
-use std::io::BufRead;
 
 #[derive(Clone, Debug)]
 pub enum Union {
@@ -12,14 +12,14 @@ pub enum Union {
     NonRef {
         taudt_bits: SDACL,
         effective_alignment: u16,
-        members: Vec<(Option<String>, Type)>,
+        members: Vec<(Option<Vec<u8>>, Type)>,
     },
 }
 impl Union {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: UnionRaw,
-        fields: Option<Vec<String>>,
+        fields: Option<Vec<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         match value {
             UnionRaw::Ref {
@@ -69,8 +69,11 @@ pub(crate) enum UnionRaw {
 }
 
 impl UnionRaw {
-    pub fn read<I: BufRead>(input: &mut I, header: &TILSectionHeader) -> anyhow::Result<Self> {
-        let Some(n) = read_dt_de(&mut *input)? else {
+    pub fn read(
+        input: &mut impl IdaGenericBufUnpack,
+        header: &TILSectionHeader,
+    ) -> anyhow::Result<Self> {
+        let Some(n) = input.read_dt_de()? else {
             // is ref
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
             let taudt_bits = SDACL::read(&mut *input)?;

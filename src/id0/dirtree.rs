@@ -1,10 +1,8 @@
 use std::collections::HashMap;
-use std::io::{BufRead, Read};
 
 use anyhow::{anyhow, ensure, Result};
 
-use crate::id0::{unpack_dd, unpack_usize};
-use crate::read_c_string;
+use crate::ida_reader::{IdaGenericBufUnpack, IdaUnpack, IdaUnpacker};
 use crate::til::section::TILSection;
 use crate::til::TILTypeInfo;
 
@@ -19,7 +17,7 @@ pub struct DirTreeRoot<T> {
 pub enum DirTreeEntry<T> {
     Leaf(T),
     Directory {
-        name: String,
+        name: Vec<u8>,
         entries: Vec<DirTreeEntry<T>>,
     },
 }
@@ -128,9 +126,13 @@ where
         let Some(idx) = reader.next_entry()? else {
             break;
         };
+        let mut reader = IdaUnpacker::new(&mut reader, is_64);
         root_idx.get_or_insert(idx);
-        let entry = DirTreeEntryRaw::from_raw(&mut reader, is_64)?;
-        ensure!(!reader.have_data_left(), "Entry have data after dirtree");
+        let entry = DirTreeEntryRaw::from_raw(&mut reader)?;
+        ensure!(
+            !reader.inner().have_data_left(),
+            "Entry have data after dirtree"
+        );
         if let Some(_old) = entries_raw.insert(idx, Some(entry)) {
             return Err(anyhow!("Duplicated dirtree index entry"));
         };
@@ -188,38 +190,37 @@ fn dirtree_directory_from_raw<T: FromDirTreeNumber>(
 
 #[derive(Clone, Debug)]
 struct DirTreeEntryRaw {
-    name: String,
+    name: Vec<u8>,
     parent: u64,
     entries: Vec<DirTreeEntryChildRaw>,
 }
 
 impl DirTreeEntryRaw {
-    fn from_raw(mut data: impl BufRead, is_64: bool) -> Result<Self> {
+    fn from_raw<I: IdaUnpack + IdaGenericBufUnpack>(data: &mut I) -> Result<Self> {
         // TODO It's unclear if this value is a version, it seems so
-        let version_maybe: u8 = bincode::deserialize_from(&mut data)?;
-        match version_maybe {
-            0 => Self::from_raw_v0(data, is_64),
-            1 => Self::from_raw_v1(data, is_64),
+        match data.read_u8()? {
+            0 => Self::from_raw_v0(data),
+            1 => Self::from_raw_v1(data),
             v => Err(anyhow!("dirtree invalid version {v}")),
         }
     }
 
-    fn from_raw_v0(mut data: impl BufRead, is_64: bool) -> Result<Self> {
+    fn from_raw_v0<I: IdaUnpack + IdaGenericBufUnpack>(data: &mut I) -> Result<Self> {
         // part 1: header
-        let name = read_c_string(&mut data)?;
+        let name = data.read_c_string_raw()?;
         // TODO maybe just a unpack_dd followed by \x00
-        let parent = unpack_usize(&mut data, is_64)?;
-        let _unknown: u8 = bincode::deserialize_from(&mut data)?;
+        let parent = data.unpack_usize()?;
+        let _unknown: u8 = bincode::deserialize_from(&mut *data)?;
 
         // part 2: populate the value part of the entries
         let mut entries = vec![];
         for is_value in core::iter::successors(Some(false), |x| Some(!(*x))) {
             // TODO unpack_dw/u8?
             // TODO diferenciate an error from EoF
-            let Ok(entries_len) = unpack_dd(&mut data) else {
+            let Ok(entries_len) = data.unpack_dd() else {
                 break;
             };
-            parse_entries(&mut data, &mut entries, entries_len, is_64, is_value)?;
+            parse_entries(&mut *data, &mut entries, entries_len, is_value)?;
         }
 
         Ok(Self {
@@ -268,21 +269,21 @@ impl DirTreeEntryRaw {
     /// | entries folder     | \x00   | 0..0 are folders                |
     /// | entries values     | \x0c   | from 0..12 are values           |
     ///
-    fn from_raw_v1(mut data: impl BufRead, is_64: bool) -> Result<Self> {
+    fn from_raw_v1<I: IdaGenericBufUnpack + IdaUnpack>(data: &mut I) -> Result<Self> {
         // part 1: header
-        let name = read_c_string(&mut data)?;
+        let name = data.read_c_string_raw()?;
         // TODO maybe just a unpack_dd followed by \x00
-        let parent = unpack_usize(&mut data, is_64)?;
+        let parent = data.unpack_usize()?;
         // this value had known values of 0 and 4, as long it's smaller then 0x80 there no
         // much of a problem, otherwise this could be a unpack_dw/unpack_dd
-        let _unknown: u8 = bincode::deserialize_from(&mut data)?;
+        let _unknown: u8 = bincode::deserialize_from(&mut *data)?;
         ensure!(_unknown < 0x80);
         // TODO unpack_dw/u8?
-        let entries_len = unpack_dd(&mut data)?;
+        let entries_len = data.unpack_dd()?;
 
         // part 2: populate the value part of the entries
         let mut entries = Vec::with_capacity(entries_len.try_into().unwrap());
-        parse_entries(&mut data, &mut entries, entries_len, is_64, false)?;
+        parse_entries(&mut *data, &mut entries, entries_len, false)?;
 
         // part 3: Classification for entries
         let mut current_entry = &mut entries[..];
@@ -292,7 +293,7 @@ impl DirTreeEntryRaw {
         // NOTE in case the folder have 0 elements, there will be a 0 value, but don't take that for granted
         for is_value in core::iter::successors(Some(false), |x| Some(!(*x))) {
             // TODO unpack_dw/u8?
-            let num = match unpack_dd(&mut data) {
+            let num = match data.unpack_dd() {
                 Ok(num) => num,
                 // this is an empty folder, so the last value is optional
                 Err(_) if entries_len == 0 => break,
@@ -495,16 +496,15 @@ where
     }
 }
 
-fn parse_entries(
-    mut data: impl Read,
+fn parse_entries<I: IdaUnpack>(
+    data: &mut I,
     entries: &mut Vec<DirTreeEntryChildRaw>,
     entries_len: u32,
-    is_64: bool,
     default_is_value: bool,
 ) -> Result<()> {
     let mut last_value: Option<u64> = None;
     for _ in 0..entries_len {
-        let rel_value = unpack_usize(&mut data, is_64)?;
+        let rel_value = data.unpack_usize()?;
         let value = match last_value {
             // first value is absolute
             None => rel_value,
@@ -512,7 +512,7 @@ fn parse_entries(
             Some(last_value_old) => {
                 let mut value = last_value_old.wrapping_add_signed(rel_value as i64);
                 // NOTE that in 32bits it wrapps using the u32 limit
-                if !is_64 {
+                if !data.is_64() {
                     value &= u32::MAX as u64;
                 }
                 value

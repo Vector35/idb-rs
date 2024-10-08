@@ -1,10 +1,7 @@
+use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{
-    associate_field_name_and_member, flag, read_de, read_dt, read_dt_de, Type, TypeAttribute,
-    TypeRaw, SDACL, TAH,
-};
+use crate::til::{associate_field_name_and_member, flag, Type, TypeAttribute, TypeRaw, SDACL, TAH};
 use anyhow::{anyhow, Context};
-use std::io::BufRead;
 
 #[derive(Clone, Debug)]
 pub enum Enum {
@@ -16,7 +13,7 @@ pub enum Enum {
         group_sizes: Vec<u16>,
         taenum_bits: TypeAttribute,
         bte: u8,
-        members: Vec<(Option<String>, u64)>,
+        members: Vec<(Option<Vec<u8>>, u64)>,
         bytesize: u64,
     },
 }
@@ -24,7 +21,7 @@ impl Enum {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: EnumRaw,
-        fields: Option<Vec<String>>,
+        fields: Option<Vec<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         match value {
             EnumRaw::Ref {
@@ -77,11 +74,11 @@ pub(crate) enum EnumRaw {
 }
 
 impl EnumRaw {
-    pub(crate) fn read<I: BufRead>(
-        input: &mut I,
+    pub(crate) fn read(
+        input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
     ) -> anyhow::Result<Self> {
-        let Some(n) = read_dt_de(&mut *input)? else {
+        let Some(n) = input.read_dt_de()? else {
             // is ref
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
             let taenum_bits = SDACL::read(&mut *input)?.0;
@@ -114,10 +111,10 @@ impl EnumRaw {
         let mut group_sizes = vec![];
         let mut members = vec![];
         for _ in 0..n {
-            let lo: u64 = read_de(&mut *input)?.into();
+            let lo: u64 = input.read_de()?.into();
             let is_64 = (taenum_bits.0 & 0x0020) != 0;
             let step = if is_64 {
-                let hi: u64 = read_de(&mut *input)?.into();
+                let hi: u64 = input.read_de()?.into();
                 (lo | (hi << 32)) & mask
             } else {
                 lo & mask
@@ -125,7 +122,7 @@ impl EnumRaw {
             // TODO: subarrays
             // https://www.hex-rays.com/products/ida/support/sdkdoc/group__tf__enum.html#ga9ae7aa54dbc597ec17cbb17555306a02
             if (bte & flag::tf_enum::BTE_BITFIELD) != 0 {
-                let group_size = read_dt(&mut *input)?;
+                let group_size = input.read_dt()?;
                 group_sizes.push(group_size);
             }
             // TODO check is this is wrapping by default

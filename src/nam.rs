@@ -1,6 +1,6 @@
 use anyhow::{ensure, Result};
-use std::io::{Cursor, Read};
 
+use crate::ida_reader::IdaGenericUnpack;
 use crate::{IDBHeader, IDBSectionCompression, VaVersion};
 
 #[derive(Debug, Clone)]
@@ -9,8 +9,8 @@ pub struct NamSection {
 }
 
 impl NamSection {
-    pub(crate) fn read<I: Read>(
-        input: &mut I,
+    pub(crate) fn read(
+        input: &mut impl IdaGenericUnpack,
         header: &IDBHeader,
         compress: IDBSectionCompression,
     ) -> Result<Self> {
@@ -22,7 +22,10 @@ impl NamSection {
             }
         }
     }
-    pub(crate) fn read_inner<I: Read>(input: &mut I, header: &IDBHeader) -> Result<Self> {
+    pub(crate) fn read_inner(
+        input: &mut impl IdaGenericUnpack,
+        header: &IDBHeader,
+    ) -> Result<Self> {
         // NOTE 64 should be enougth for all version, if a new version is implemented
         // review this value
         const MAX_HEADER_LEN: usize = 64;
@@ -31,7 +34,7 @@ impl NamSection {
 
         let mut buf = vec![0; MAX_HEADER_LEN];
         input.read_exact(&mut buf[..])?;
-        let mut header_page = Cursor::new(&buf);
+        let mut header_page = &buf[..];
         let version = VaVersion::read(&mut header_page)?;
 
         let (npages, nnames, pagesize) = match version {
@@ -104,7 +107,7 @@ impl NamSection {
         let mut current_nnames = nnames;
         for _page in 1..npages {
             input.read_exact(&mut buf)?;
-            let mut input = Cursor::new(&buf[..]);
+            let mut input = &buf[..];
             loop {
                 if current_nnames == 0 {
                     break;
@@ -121,7 +124,7 @@ impl NamSection {
                 current_nnames -= 1;
             }
             // if anything is left, make sure it's all zeros
-            ensure!(input.bytes().all(|b| b.unwrap() == 0));
+            ensure!(input.iter().all(|b| *b == 0));
         }
 
         assert!(current_nnames == 0);

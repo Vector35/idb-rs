@@ -1,6 +1,8 @@
+use std::io::Read;
+
 use anyhow::Result;
 
-use std::io::Cursor;
+use crate::ida_reader::IdaUnpack;
 
 use super::*;
 
@@ -30,7 +32,7 @@ pub enum IDBParam {
 #[derive(Clone, Debug)]
 pub struct IDBParam1 {
     pub version: u16,
-    pub cpu: String,
+    pub cpu: Vec<u8>,
     pub lflags: u8,
     pub demnames: u8,
     pub filetype: u16,
@@ -116,7 +118,7 @@ pub struct IDBParam1 {
 #[derive(Clone, Debug)]
 pub struct IDBParam2 {
     pub version: u16,
-    pub cpu: String,
+    pub cpu: Vec<u8>,
     pub genflags: Inffl,
     pub lflags: Lflg,
     pub database_change_count: u32,
@@ -185,11 +187,11 @@ pub struct IDBParam2 {
 
 impl IDBParam {
     pub(crate) fn read(data: &[u8], is_64: bool) -> Result<Self> {
-        let mut input = Cursor::new(data);
+        let mut input = IdaUnpacker::new(data, is_64);
         let magic: [u8; 3] = bincode::deserialize_from(&mut input)?;
         let magic_old = match &magic[..] {
             b"ida" => {
-                let zero: u8 = bincode::deserialize_from(&mut input)?;
+                let zero: u8 = input.read_u8()?;
                 ensure!(zero == 0);
                 true
             }
@@ -209,54 +211,46 @@ impl IDBParam {
         let mut cpu = vec![0; cpu_len];
         input.read_exact(&mut cpu)?;
         // remove any \x00 that marks the end of the str
-        if let Some(end_cpu_str) = cpu.iter().position(|b| *b == 0) {
-            // make sure there is no data after the \x00 in the string
-            ensure!(cpu[end_cpu_str..].iter().all(|b| *b == 0));
-            cpu.truncate(end_cpu_str);
-        }
-        let cpu = String::from_utf8(cpu)?;
+        let cpu_str_part =
+            parse_maybe_cstr(&cpu[..]).ok_or_else(|| anyhow!("Invalid RootInfo CStr cpu name"))?;
+        cpu.truncate(cpu_str_part.len());
 
         // TODO tight those ranges up
         let param = match version {
-            ..=699 => Self::read_v1(&mut input, is_64, version, cpu)?,
-            700.. => Self::read_v2(&mut input, is_64, magic_old, version, cpu)?,
+            ..=699 => Self::read_v1(&mut input, version, cpu)?,
+            700.. => Self::read_v2(&mut input, magic_old, version, cpu)?,
         };
         match version {
             // TODO old version may contain extra data at the end with unknown purpose
             ..=699 => {}
-            700.. => ensure!(
-                input.position() == data.len().try_into()?,
-                "Data left after the IDBParam: {}",
-                u64::try_from(data.len())? - input.position()
-            ),
+            700.. => ensure!(input.inner().is_empty(), "Data left after the IDBParam",),
         }
         Ok(param)
     }
 
-    pub(crate) fn read_v1<I: Read>(
-        mut input: I,
-        is_64: bool,
+    pub(crate) fn read_v1(
+        mut input: &mut impl IdaUnpack,
         version: u16,
-        cpu: String,
+        cpu: Vec<u8>,
     ) -> Result<Self> {
         let lflags: u8 = bincode::deserialize_from(&mut input)?;
         let demnames: u8 = bincode::deserialize_from(&mut input)?;
         let filetype: u16 = bincode::deserialize_from(&mut input)?;
-        let fcoresize: u64 = read_word(&mut input, is_64)?;
-        let corestart: u64 = read_word(&mut input, is_64)?;
+        let fcoresize: u64 = input.read_word()?;
+        let corestart: u64 = input.read_word()?;
         let ostype: u16 = bincode::deserialize_from(&mut input)?;
         let apptype: u16 = bincode::deserialize_from(&mut input)?;
-        let startsp: u64 = read_word(&mut input, is_64)?;
+        let startsp: u64 = input.read_word()?;
         let af: u16 = bincode::deserialize_from(&mut input)?;
-        let startip: u64 = read_word(&mut input, is_64)?;
-        let startea: u64 = read_word(&mut input, is_64)?;
-        let minea: u64 = read_word(&mut input, is_64)?;
-        let maxea: u64 = read_word(&mut input, is_64)?;
-        let ominea: u64 = read_word(&mut input, is_64)?;
-        let omaxea: u64 = read_word(&mut input, is_64)?;
-        let lowoff: u64 = read_word(&mut input, is_64)?;
-        let highoff: u64 = read_word(&mut input, is_64)?;
-        let maxref: u64 = read_word(&mut input, is_64)?;
+        let startip: u64 = input.read_word()?;
+        let startea: u64 = input.read_word()?;
+        let minea: u64 = input.read_word()?;
+        let maxea: u64 = input.read_word()?;
+        let ominea: u64 = input.read_word()?;
+        let omaxea: u64 = input.read_word()?;
+        let lowoff: u64 = input.read_word()?;
+        let highoff: u64 = input.read_word()?;
+        let maxref: u64 = input.read_word()?;
         let ascii_break: u8 = bincode::deserialize_from(&mut input)?;
         let wide_high_byte_first: u8 = bincode::deserialize_from(&mut input)?;
         let indent: u8 = bincode::deserialize_from(&mut input)?;
@@ -274,7 +268,7 @@ impl IDBParam {
         let showpref: u8 = bincode::deserialize_from(&mut input)?;
         let prefseg: u8 = bincode::deserialize_from(&mut input)?;
         let asmtype: u8 = bincode::deserialize_from(&mut input)?;
-        let baseaddr: u64 = read_word(&mut input, is_64)?;
+        let baseaddr: u64 = input.read_word()?;
         let xrefs: u8 = bincode::deserialize_from(&mut input)?;
         let binpref: u16 = bincode::deserialize_from(&mut input)?;
         let cmtflag: u8 = bincode::deserialize_from(&mut input)?;
@@ -285,7 +279,7 @@ impl IDBParam {
         let asciiflags: u8 = bincode::deserialize_from(&mut input)?;
         let listnames: u8 = bincode::deserialize_from(&mut input)?;
         let asciiprefs: [u8; 16] = bincode::deserialize_from(&mut input)?;
-        let asciisernum: u64 = read_word(&mut input, is_64)?;
+        let asciisernum: u64 = input.read_word()?;
         let asciizeroes: u8 = bincode::deserialize_from(&mut input)?;
         let _unknown2: u16 = bincode::deserialize_from(&mut input)?;
         let tribyte_order: u8 = bincode::deserialize_from(&mut input)?;
@@ -294,13 +288,13 @@ impl IDBParam {
         let assume: u8 = bincode::deserialize_from(&mut input)?;
         let checkarg: u8 = bincode::deserialize_from(&mut input)?;
         // offset 131
-        let start_ss: u64 = read_word(&mut input, is_64)?;
-        let start_cs: u64 = read_word(&mut input, is_64)?;
-        let main: u64 = read_word(&mut input, is_64)?;
-        let short_dn: u64 = read_word(&mut input, is_64)?;
-        let long_dn: u64 = read_word(&mut input, is_64)?;
-        let datatypes: u64 = read_word(&mut input, is_64)?;
-        let strtype: u64 = read_word(&mut input, is_64)?;
+        let start_ss: u64 = input.read_word()?;
+        let start_cs: u64 = input.read_word()?;
+        let main: u64 = input.read_word()?;
+        let short_dn: u64 = input.read_word()?;
+        let long_dn: u64 = input.read_word()?;
+        let datatypes: u64 = input.read_word()?;
+        let strtype: u64 = input.read_word()?;
         let af2: u16 = bincode::deserialize_from(&mut input)?;
         let namelen: u16 = bincode::deserialize_from(&mut input)?;
         let margin: u16 = bincode::deserialize_from(&mut input)?;
@@ -408,94 +402,93 @@ impl IDBParam {
         }))
     }
 
-    pub(crate) fn read_v2<I: Read>(
-        mut input: I,
-        is_64: bool,
+    pub(crate) fn read_v2(
+        mut input: &mut impl IdaUnpack,
         magic_old: bool,
         version: u16,
-        cpu: String,
+        cpu: Vec<u8>,
     ) -> Result<Self> {
         // NOTE in this version parse_* functions are used
-        let genflags = Inffl::new(unpack_dw(&mut input)?)?;
-        let lflags = Lflg::new(unpack_dd(&mut input)?)?;
-        let database_change_count = unpack_dd(&mut input)?;
-        let filetype = FileType::from_value(unpack_dw(&mut input)?)
+        let genflags = Inffl::new(input.unpack_dw()?)?;
+        let lflags = Lflg::new(input.unpack_dd()?)?;
+        let database_change_count = input.unpack_dd()?;
+        let filetype = FileType::from_value(input.unpack_dw()?)
             .ok_or_else(|| anyhow!("Invalid FileType value"))?;
-        let ostype = unpack_dw(&mut input)?;
-        let apptype = unpack_dw(&mut input)?;
-        let asmtype = parse_u8(&mut input)?;
-        let specsegs = parse_u8(&mut input)?;
-        let af1 = unpack_dd(&mut input)?;
-        let af2 = unpack_dd(&mut input)?;
+        let ostype = input.unpack_dw()?;
+        let apptype = input.unpack_dw()?;
+        let asmtype = input.read_u8()?;
+        let specsegs = input.read_u8()?;
+        let af1 = input.unpack_dd()?;
+        let af2 = input.unpack_dd()?;
         let af = Af::new(af1, af2)?;
-        let baseaddr = unpack_usize(&mut input, is_64)?;
-        let start_ss = unpack_usize(&mut input, is_64)?;
-        let start_cs = unpack_usize(&mut input, is_64)?;
-        let start_ip = unpack_usize(&mut input, is_64)?;
-        let start_ea = unpack_usize(&mut input, is_64)?;
-        let start_sp = unpack_usize(&mut input, is_64)?;
-        let main = unpack_usize(&mut input, is_64)?;
-        let min_ea = unpack_usize(&mut input, is_64)?;
-        let max_ea = unpack_usize(&mut input, is_64)?;
-        let omin_ea = unpack_usize(&mut input, is_64)?;
-        let omax_ea = unpack_usize(&mut input, is_64)?;
-        let lowoff = unpack_usize(&mut input, is_64)?;
-        let highoff = unpack_usize(&mut input, is_64)?;
-        let maxref = unpack_usize(&mut input, is_64)?;
-        let privrange_start_ea = unpack_usize(&mut input, is_64)?;
-        let privrange_end_ea = unpack_usize(&mut input, is_64)?;
-        let netdelta = unpack_usize(&mut input, is_64)?;
-        let xrefnum = parse_u8(&mut input)?;
-        let type_xrefnum = parse_u8(&mut input)?;
-        let refcmtnum = parse_u8(&mut input)?;
-        let xrefflag = XRef::new(parse_u8(&mut input)?)?;
-        let max_autoname_len = unpack_dw(&mut input)?;
+        let baseaddr = input.unpack_usize()?;
+        let start_ss = input.unpack_usize()?;
+        let start_cs = input.unpack_usize()?;
+        let start_ip = input.unpack_usize()?;
+        let start_ea = input.unpack_usize()?;
+        let start_sp = input.unpack_usize()?;
+        let main = input.unpack_usize()?;
+        let min_ea = input.unpack_usize()?;
+        let max_ea = input.unpack_usize()?;
+        let omin_ea = input.unpack_usize()?;
+        let omax_ea = input.unpack_usize()?;
+        let lowoff = input.unpack_usize()?;
+        let highoff = input.unpack_usize()?;
+        let maxref = input.unpack_usize()?;
+        let privrange_start_ea = input.unpack_usize()?;
+        let privrange_end_ea = input.unpack_usize()?;
+        let netdelta = input.unpack_usize()?;
+        let xrefnum = input.read_u8()?;
+        let type_xrefnum = input.read_u8()?;
+        let refcmtnum = input.read_u8()?;
+        let xrefflag = XRef::new(input.read_u8()?)?;
+        let max_autoname_len = input.unpack_dw()?;
 
         if magic_old {
             let _unknown: [u8; 17] = bincode::deserialize_from(&mut input)?;
         }
 
-        let nametype = parse_u8(&mut input)?;
+        let nametype = input.read_u8()?;
         let nametype = NameType::new(nametype).ok_or_else(|| anyhow!("Invalid NameType value"))?;
-        let short_demnames = unpack_dd(&mut input)?;
-        let long_demnames = unpack_dd(&mut input)?;
-        let demnames = DemName::new(parse_u8(&mut input)?)?;
-        let listnames = ListName::new(parse_u8(&mut input)?)?;
-        let indent = parse_u8(&mut input)?;
-        let cmt_ident = parse_u8(&mut input)?;
-        let margin = unpack_dw(&mut input)?;
-        let lenxref = unpack_dw(&mut input)?;
-        let outflags = OutputFlags::new(unpack_dd(&mut input)?)?;
-        let cmtflg = CommentOptions::new(parse_u8(&mut input)?);
-        let limiter = DelimiterOptions::new(parse_u8(&mut input)?)?;
-        let bin_prefix_size = unpack_dw(&mut input)?;
-        let prefflag = LinePrefixOptions::new(parse_u8(&mut input)?)?;
-        let strlit_flags = StrLiteralFlags::new(parse_u8(&mut input)?)?;
-        let strlit_break = parse_u8(&mut input)?;
-        let strlit_zeroes = parse_u8(&mut input)?;
-        let strtype = unpack_dd(&mut input)?;
+        let short_demnames = input.unpack_dd()?;
+        let long_demnames = input.unpack_dd()?;
+        let demnames = DemName::new(input.read_u8()?)?;
+        let listnames = ListName::new(input.read_u8()?)?;
+        let indent = input.read_u8()?;
+        let cmt_ident = input.read_u8()?;
+        let margin = input.unpack_dw()?;
+        let lenxref = input.unpack_dw()?;
+        let outflags = OutputFlags::new(input.unpack_dd()?)?;
+        let cmtflg = CommentOptions::new(input.read_u8()?);
+        let limiter = DelimiterOptions::new(input.read_u8()?)?;
+        let bin_prefix_size = input.unpack_dw()?;
+        let prefflag = LinePrefixOptions::new(input.read_u8()?)?;
+        let strlit_flags = StrLiteralFlags::new(input.read_u8()?)?;
+        let strlit_break = input.read_u8()?;
+        let strlit_zeroes = input.read_u8()?;
+        let strtype = input.unpack_dd()?;
 
         // TODO read the len and the ignore it?
-        let strlit_pref_len = parse_u8(&mut input)?;
+        let strlit_pref_len = input.read_u8()?;
         let strlit_pref_len = if magic_old { 16 } else { strlit_pref_len };
         let mut strlit_pref = vec![0; strlit_pref_len.into()];
         input.read_exact(&mut strlit_pref)?;
         let strlit_pref = String::from_utf8(strlit_pref)?;
 
-        let strlit_sernum = unpack_usize(&mut input, is_64)?;
-        let datatypes = unpack_usize(&mut input, is_64)?;
-        let cc_id = Compiler::from_value(parse_u8(&mut input)?);
-        let cc_cm = parse_u8(&mut input)?;
-        let cc_size_i = parse_u8(&mut input)?;
-        let cc_size_b = parse_u8(&mut input)?;
-        let cc_size_e = parse_u8(&mut input)?;
-        let cc_defalign = parse_u8(&mut input)?;
-        let cc_size_s = parse_u8(&mut input)?;
-        let cc_size_l = parse_u8(&mut input)?;
-        let cc_size_ll = parse_u8(&mut input)?;
-        let cc_size_ldbl = parse_u8(&mut input)?;
-        let abibits = AbiOptions::new(unpack_dd(&mut input)?)?;
-        let appcall_options = unpack_dd(&mut input)?;
+        let strlit_sernum = input.unpack_usize()?;
+        let datatypes = input.unpack_usize()?;
+        let cc_id = Compiler::from_value(input.read_u8()?);
+        let cc_cm = input.read_u8()?;
+        let cc_size_i = input.read_u8()?;
+        let cc_size_b = input.read_u8()?;
+        let cc_size_e = input.read_u8()?;
+        let cc_defalign = input.read_u8()?;
+        let cc_size_s = input.read_u8()?;
+        let cc_size_l = input.read_u8()?;
+        let cc_size_ll = input.read_u8()?;
+        let cc_size_ldbl = input.read_u8()?;
+        let abibits = AbiOptions::new(input.unpack_dd()?)?;
+        let appcall_options = input.unpack_dd()?;
 
         Ok(IDBParam::V2(IDBParam2 {
             version,

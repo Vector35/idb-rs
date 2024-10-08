@@ -19,7 +19,7 @@ fn print_folder(id0: &ID0Section, identation: usize, dirs: &[DirTreeEntry<u64>])
         match dir {
             DirTreeEntry::Leaf(fun_addr) => print_function(id0, *fun_addr)?,
             DirTreeEntry::Directory { name, entries } => {
-                println!("{name}:");
+                println!("{}:", String::from_utf8_lossy(name));
                 print_folder(id0, identation + 1, entries)?;
             }
         }

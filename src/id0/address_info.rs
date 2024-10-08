@@ -36,17 +36,17 @@ impl<'a> AddressInfo<'a> {
             // if you create more then a 1000 pre/post comments ida start acting strange, BUG?
             (b'S', Some(1000..=1999)) => Ok(Self::Comment(Comments::PreComment(parse_maybe_cstr(
                 value,
-            ).ok_or_else(|| anyhow!("Pre-Comment is not valid UTF-8"))?))),
+            ).ok_or_else(|| anyhow!("Pre-Comment is not valid CStr"))?))),
             (b'S', Some(2000..=2999)) => Ok(Self::Comment(Comments::PostComment(parse_maybe_cstr(
                 value,
-            ).ok_or_else(|| anyhow!("Post-Comment is not valid UTF-8"))?))),
+            ).ok_or_else(|| anyhow!("Post-Comment is not valid CStr"))?))),
             (b'S', Some(0x0)) => Ok(Self::Comment(Comments::Comment(parse_maybe_cstr(
                 value,
-            ).ok_or_else(|| anyhow!("Comment is not valid UTF-8"))?))),
+            ).ok_or_else(|| anyhow!("Comment is not valid CStr"))?))),
             // Repeatable comment
             (b'S', Some(0x1)) => Ok(Self::Comment(Comments::RepeatableComment(parse_maybe_cstr(
                 value,
-            ).ok_or_else(|| anyhow!("Repeatable Comment is not valid UTF-8"))?))),
+            ).ok_or_else(|| anyhow!("Repeatable Comment is not valid CStr"))?))),
 
             // Type at this address
             (b'S', Some(0x3000)) => Ok(Self::TilType(til::Type::new_from_id0(value)?)),

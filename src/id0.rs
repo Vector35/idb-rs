@@ -1,10 +1,9 @@
 use std::collections::HashMap;
-use std::ffi::CStr;
-use std::io::{BufRead, Cursor, ErrorKind, Read, Seek, SeekFrom};
 use std::num::NonZeroU32;
 use std::ops::Range;
 
-use crate::{read_bytes_len_u16, read_c_string_raw, til, IDBHeader, IDBSectionCompression};
+use crate::ida_reader::{IdaGenericUnpack, IdaUnpack, IdaUnpacker};
+use crate::{til, IDBHeader, IDBSectionCompression};
 
 use anyhow::{anyhow, ensure, Result};
 
@@ -28,23 +27,23 @@ pub struct IDBFileRegions {
 
 impl IDBFileRegions {
     fn read(key: &[u8], data: &[u8], version: u16, is_64: bool) -> Result<Self> {
-        let mut input = Cursor::new(data);
+        let mut input = IdaUnpacker::new(data, is_64);
         // TODO detect versions with more accuracy
         let (start, end, eva) = match version {
             ..=699 => {
-                let start = read_word(&mut input, is_64)?;
-                let end = read_word(&mut input, is_64)?;
+                let start = input.read_word()?;
+                let end = input.read_word()?;
                 let rva: u32 = bincode::deserialize_from(&mut input)?;
                 (start, end, rva.into())
             }
             700.. => {
-                let start = unpack_usize(&mut input, is_64)?;
+                let start = input.unpack_usize()?;
                 let end = start
-                    .checked_add(unpack_usize(&mut input, is_64)?)
+                    .checked_add(input.unpack_usize()?)
                     .ok_or_else(|| anyhow!("Overflow address in File Regions"))?;
-                let rva = unpack_usize(&mut input, is_64)?;
+                let rva = input.unpack_usize()?;
                 // TODO some may include an extra 0 byte at the end?
-                if let Ok(_unknown) = unpack_usize(&mut input, is_64) {
+                if let Ok(_unknown) = input.unpack_usize() {
                     ensure!(_unknown == 0);
                 }
                 (start, end, rva)
@@ -53,7 +52,7 @@ impl IDBFileRegions {
         let key_offset =
             parse_number(key, true, is_64).ok_or_else(|| anyhow!("Invalid IDB File Key Offset"))?;
         ensure!(key_offset == start);
-        ensure!(input.position() == u64::try_from(data.len()).unwrap());
+        ensure!(input.inner().is_empty());
         Ok(Self { start, end, eva })
     }
 }
@@ -130,17 +129,17 @@ impl IDBFunction {
     fn read(key: &[u8], value: &[u8], is_64: bool) -> Result<Self> {
         let key_address = parse_number(key, true, is_64)
             .ok_or_else(|| anyhow!("Invalid IDB FileRefion Key Offset"))?;
-        let mut input = Cursor::new(value);
-        let address = unpack_address_range(&mut input, is_64)?;
+        let mut input = IdaUnpacker::new(value, is_64);
+        let address = input.unpack_address_range()?;
         ensure!(key_address == address.start);
-        let flags = unpack_dw(&mut input)?;
+        let flags = input.unpack_dw()?;
 
         // CONST migrate this to mod flags
         const FUNC_TAIL: u16 = 0x8000;
         let extra = if flags & FUNC_TAIL != 0 {
-            Self::read_extra_tail(&mut input, is_64, address.start).ok()
+            Self::read_extra_tail(input, address.start).ok()
         } else {
-            Self::read_extra_regular(&mut input, is_64).ok()
+            Self::read_extra_regular(input).ok()
         };
         // TODO Undertand the InnerRef 0x38f9d8 data
         // TODO make sure all the data is parsed
@@ -152,31 +151,27 @@ impl IDBFunction {
         })
     }
 
-    fn read_extra_regular(input: &mut impl Read, is_64: bool) -> Result<IDBFunctionExtra> {
+    fn read_extra_regular(mut input: impl IdaUnpack) -> Result<IDBFunctionExtra> {
         // TODO Undertand the sub operation at InnerRef 0x38f98f
-        let frame = unpack_usize_ext_max(&mut *input, is_64)?;
-        let _unknown4 = unpack_dw(&mut *input)?;
+        let frame = input.unpack_usize_ext_max()?;
+        let _unknown4 = input.unpack_dw()?;
         if _unknown4 == 0 {
-            let _unknown5 = unpack_dd(&mut *input)?;
+            let _unknown5 = input.unpack_dd()?;
         }
         Ok(IDBFunctionExtra::NonTail { frame })
     }
 
-    fn read_extra_tail(
-        input: &mut impl Read,
-        is_64: bool,
-        address_start: u64,
-    ) -> Result<IDBFunctionExtra> {
+    fn read_extra_tail(mut input: impl IdaUnpack, address_start: u64) -> Result<IDBFunctionExtra> {
         // offset of the function owner in relation to the function start
-        let owner_offset = unpack_usize(&mut *input, is_64)? as i64;
+        let owner_offset = input.unpack_usize()? as i64;
         let owner = match address_start.checked_add_signed(owner_offset) {
             Some(0xFFFF_FFFF) => u64::MAX,
             Some(value) => value,
             None => return Err(anyhow!("Owner Function offset is invalid")),
         };
-        let refqty = unpack_usize_ext_max(&mut *input, is_64)?;
-        let _unknown1 = unpack_dw(&mut *input)?;
-        let _unknown2 = unpack_usize_ext_max(&mut *input, is_64)?;
+        let refqty = input.unpack_usize_ext_max()?;
+        let _unknown1 = input.unpack_dw()?;
+        let _unknown2 = input.unpack_usize_ext_max()?;
         // TODO make data depending on variables that I don't understant
         // InnerRef: 0x38fa93
         Ok(IDBFunctionExtra::Tail { owner, refqty })
@@ -207,13 +202,15 @@ impl<'a> EntryPointRaw<'a> {
         };
         match *key_type {
             // TODO for some reason the address is one byte extra
-            b'A' => read_word(value, is_64)
+            b'A' => IdaUnpacker::new(value, is_64)
+                .read_word()
                 .map(|address| Self::Address {
                     key: sub_key,
                     address: address - 1,
                 })
                 .map_err(|_| anyhow!("Invalid Function address")),
-            b'I' => read_word(value, is_64)
+            b'I' => IdaUnpacker::new(value, is_64)
+                .read_word()
                 .map(|ordinal| Self::Ordinal {
                     key: sub_key,
                     ordinal,
@@ -247,161 +244,6 @@ pub struct EntryPoint {
     pub address: u64,
     pub forwarded: Option<String>,
     pub entry_type: Option<til::Type>,
-}
-
-fn read_exact_or_nothing<R: std::io::Read + ?Sized>(
-    this: &mut R,
-    mut buf: &mut [u8],
-) -> std::io::Result<usize> {
-    let len = buf.len();
-    while !buf.is_empty() {
-        match this.read(buf) {
-            Ok(0) => break,
-            Ok(n) => {
-                buf = &mut buf[n..];
-            }
-            Err(ref e) if e.kind() == ErrorKind::Interrupted => {}
-            Err(e) => return Err(e),
-        }
-    }
-    Ok(len - buf.len())
-}
-
-fn read_word<I: Read>(input: I, is_64: bool) -> Result<u64> {
-    if is_64 {
-        Ok(bincode::deserialize_from(input)?)
-    } else {
-        Ok(bincode::deserialize_from::<_, u32>(input).map(u64::from)?)
-    }
-}
-
-fn unpack_usize<I: Read>(input: &mut I, is_64: bool) -> Result<u64> {
-    if is_64 {
-        unpack_dq(input)
-    } else {
-        unpack_dd(input).map(u64::from)
-    }
-}
-
-fn unpack_usize_ext_max<I: Read>(input: &mut I, is_64: bool) -> Result<u64> {
-    if is_64 {
-        unpack_dq(input)
-    } else {
-        unpack_dd_ext_max(input).map(u64::from)
-    }
-}
-
-// InnerRef: 0x38f8cc
-fn unpack_address_range<I: Read>(input: &mut I, is_64: bool) -> Result<Range<u64>> {
-    if is_64 {
-        let start = unpack_dq(&mut *input)?;
-        let len = unpack_dq(&mut *input)?;
-        let end = start
-            .checked_add(len)
-            .ok_or_else(|| anyhow!("Function range overflows"))?;
-        Ok(start..end)
-    } else {
-        let start = unpack_dd_ext_max(&mut *input)?;
-        let len = unpack_dd(&mut *input)?;
-        // NOTE may not look right, but that's how ida does it
-        let end = match start.checked_add(len.into()) {
-            Some(0xFFFF_FFFF) => u64::MAX,
-            Some(value) => value,
-            None => return Err(anyhow!("Function range overflows")),
-        };
-        Ok(start..end)
-    }
-}
-
-fn parse_u8<I: Read>(input: &mut I) -> Result<u8> {
-    Ok(bincode::deserialize_from(&mut *input)?)
-}
-
-// InnerRef: unpack_dw
-// NOTE: the original implementation never fails, if input hit EoF it a partial result or 0
-/// Reads 1 to 3 bytes.
-fn unpack_dw<I: Read>(input: &mut I) -> Result<u16> {
-    let b1: u8 = bincode::deserialize_from(&mut *input)?;
-    match b1 {
-        // 7 bit value
-        // [0xxx xxxx]
-        0x00..=0x7F => Ok(b1.into()),
-        // 14 bits value
-        // [10xx xxxx] xxxx xxxx
-        0x80..=0xBF => {
-            let lo: u8 = bincode::deserialize_from(&mut *input)?;
-            Ok(u16::from_be_bytes([b1 & 0x3F, lo]))
-        }
-        // 16 bits value
-        // [11XX XXXX] xxxx xxxx xxxx xxxx
-        0xC0..=0xFF => {
-            // NOTE first byte 6 bits seems to be ignored
-            //ensure!(header != 0xC0 && header != 0xFF);
-            Ok(u16::from_be_bytes(bincode::deserialize_from(&mut *input)?))
-        }
-    }
-}
-
-// InnerRef: unpack_dd
-// NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
-/// Reads 1 to 5 bytes.
-fn unpack_dd<I: Read>(input: &mut I) -> Result<u32> {
-    let b1: u8 = bincode::deserialize_from(&mut *input)?;
-    match b1 {
-        // 7 bit value
-        // [0xxx xxxx]
-        0x00..=0x7F => Ok(b1.into()),
-        // 14 bits value
-        // [10xx xxxx] xxxx xxxx
-        0x80..=0xBF => {
-            let lo: u8 = bincode::deserialize_from(&mut *input)?;
-            Ok(u32::from_be_bytes([0, 0, b1 & 0x3F, lo]))
-        }
-        // 29 bit value:
-        // [110x xxxx] xxxx xxxx xxxx xxxx xxxx xxxx
-        0xC0..=0xDF => {
-            let bytes: [u8; 3] = bincode::deserialize_from(&mut *input)?;
-            Ok(u32::from_be_bytes([
-                b1 & 0x1F,
-                bytes[0],
-                bytes[1],
-                bytes[2],
-            ]))
-        }
-        // 32 bits value
-        // [111X XXXX] xxxx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
-        0xE0..=0xFF => {
-            // NOTE first byte 5 bits seems to be ignored
-            //ensure!(header != 0xE0 && header != 0xFF);
-            Ok(u32::from_be_bytes(bincode::deserialize_from(&mut *input)?))
-        }
-    }
-}
-
-fn unpack_dd_ext_max<I: Read>(input: &mut I) -> Result<u64> {
-    match unpack_dd(input)? {
-        u32::MAX => Ok(u64::MAX),
-        value => Ok(u64::from(value)),
-    }
-}
-
-// InnerRef: unpack_dq
-// NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
-/// Reads 2 to 10 bytes.
-fn unpack_dq<I: Read>(input: &mut I) -> Result<u64> {
-    let lo = unpack_dd(&mut *input)?;
-    let hi = unpack_dd(&mut *input)?;
-    Ok((u64::from(hi) << 32) | u64::from(lo))
-}
-
-// InnerRef: unpack_ds
-// NOTE: the original implementation never fails, if input hit EoF it a partial result or 0
-#[allow(unused)]
-fn unpack_ds<I: Read>(input: &mut I) -> Result<Vec<u8>> {
-    let len = unpack_dd(&mut *input)?;
-    let mut result = vec![0; len.try_into()?];
-    input.read_exact(&mut result)?;
-    Ok(result)
 }
 
 fn parse_number(data: &[u8], big_endian: bool, is_64: bool) -> Option<u64> {
