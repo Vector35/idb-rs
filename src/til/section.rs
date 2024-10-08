@@ -1,3 +1,4 @@
+use crate::id0::Id0TilOrd;
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::{flag, TILMacro, TILTypeInfo};
 use crate::IDBSectionCompression;
@@ -135,6 +136,9 @@ impl TILSection {
         input: &mut impl IdaGenericUnpack,
         header: &TILSectionHeader,
     ) -> anyhow::Result<Vec<u32>> {
+        // TODO separate first ord
+        // TODO verify that no alias cycle exists
+        // TODO create and Map for Ord -> Type
         let ord_total = bincode::deserialize_from::<_, u32>(&mut *input)?;
         let mut ordinals = vec![ord_total];
         if !header.flags.has_type_aliases() {
@@ -284,6 +288,27 @@ impl TILSection {
             .transpose()?;
 
         Ok(())
+    }
+
+    pub fn get_ord(&self, id0_ord: Id0TilOrd) -> Option<&TILTypeInfo> {
+        // first search the ordinal alias
+        if let Some(ord_alias) = &self.type_ordinal_numbers {
+            // it's unclear what is the first value
+            let mut ords = ord_alias.iter().skip(1);
+            loop {
+                let Some(ord) = ords.next().copied().map(u64::from) else {
+                    break;
+                };
+                // TODO remove this unwrap
+                let result = ords.next().copied().unwrap();
+
+                if ord == id0_ord.ord {
+                    return self.get_ord(Id0TilOrd { ord: result.into() });
+                }
+            }
+        }
+        // if not and alias, search for the type directly
+        self.types.iter().find(|ty| ty.ordinal == id0_ord.ord)
     }
 }
 

@@ -1,7 +1,7 @@
 use crate::{dump_dirtree_funcs::print_function, get_id0_section, Args};
 
 use anyhow::Result;
-use idb_rs::id0::{Comments, EntryPoint};
+use idb_rs::id0::{Comments, EntryPoint, Id0AddressKey};
 
 pub fn dump_functions(args: &Args) -> Result<()> {
     // parse the id0 sector/file
@@ -72,7 +72,7 @@ pub fn dump_functions(args: &Args) -> Result<()> {
     while let Some(entry) = buffer.pop() {
         match entry {
             idb_rs::id0::DirTreeEntry::Leaf(address) => {
-                print!("  {address:#x}:");
+                print!("  {:#x}:", address.as_u64());
                 print_function(&id0, address)?
             }
             idb_rs::id0::DirTreeEntry::Directory { name: _, entries } => buffer.extend(entries),

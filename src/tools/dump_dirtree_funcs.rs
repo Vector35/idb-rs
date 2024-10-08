@@ -1,33 +1,19 @@
-use crate::{get_id0_section, Args};
+use crate::{dump_dirtree::print_dirtree, get_id0_section, Args};
 
 use anyhow::{ensure, Result};
-use idb_rs::id0::{DirTreeEntry, ID0Section};
+use idb_rs::id0::{ID0Section, Id0Address, Id0AddressKey};
 
 pub fn dump_dirtree_funcs(args: &Args) -> Result<()> {
     // parse the id0 sector/file
     let id0 = get_id0_section(args)?;
 
     let dirtree = id0.dirtree_function_address()?;
-    print_folder(&id0, 0, &dirtree.entries)?;
+    print_dirtree(|entry| print_function(&id0, *entry).unwrap(), &dirtree);
 
     Ok(())
 }
 
-fn print_folder(id0: &ID0Section, identation: usize, dirs: &[DirTreeEntry<u64>]) -> Result<()> {
-    for dir in dirs {
-        print_indent(identation);
-        match dir {
-            DirTreeEntry::Leaf(fun_addr) => print_function(id0, *fun_addr)?,
-            DirTreeEntry::Directory { name, entries } => {
-                println!("{}:", String::from_utf8_lossy(name));
-                print_folder(id0, identation + 1, entries)?;
-            }
-        }
-    }
-    Ok(())
-}
-
-pub fn print_function(id0: &ID0Section, address: u64) -> Result<()> {
+pub fn print_function(id0: &ID0Section, address: Id0Address) -> Result<()> {
     let infos = id0.address_info_at(address)?;
     let mut name = None;
     let mut ty = None;
@@ -50,16 +36,12 @@ pub fn print_function(id0: &ID0Section, address: u64) -> Result<()> {
             }
         }
     }
+    print!("{:#x}:", address.as_u64());
     match (name, ty) {
-        (Some(name), Some(ty)) => println!("\"{name}\":{ty:?}"),
-        (None, None) => println!("NO_INFO"),
-        (None, Some(ty)) => println!("UNAMED:{ty:?}"),
-        (Some(name), None) => println!("\"{name}\""),
+        (Some(name), Some(ty)) => print!("\"{name}\":{ty:?}"),
+        (None, None) => print!("NO_INFO"),
+        (None, Some(ty)) => print!("UNAMED:{ty:?}"),
+        (Some(name), None) => print!("\"{name}\""),
     }
     Ok(())
-}
-
-fn print_indent(indent: usize) {
-    let data = vec![b' '; indent];
-    print!("{}", String::from_utf8(data).unwrap());
 }

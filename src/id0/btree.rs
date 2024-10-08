@@ -1,7 +1,6 @@
 use std::ffi::CStr;
 
 use anyhow::Result;
-use til::{section::TILSection, TILTypeInfo};
 
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 
@@ -663,8 +662,9 @@ impl ID0Section {
     /// read the address information for the address
     pub fn address_info_at(
         &self,
-        address: u64,
+        address: impl Id0AddressKey,
     ) -> Result<impl Iterator<Item = Result<AddressInfo>>> {
+        let address = address.as_u64();
         let key: Vec<u8> = key_from_address(address, self.is_64).collect();
         let start = self.binary_search(&key).unwrap_or_else(|start| start);
         let end = self.binary_search_end(&key).unwrap_or_else(|end| end);
@@ -682,8 +682,8 @@ impl ID0Section {
     }
 
     /// read the label set at address, if any
-    pub fn label_at(&self, address: u64) -> Result<Option<&str>> {
-        let key: Vec<u8> = key_from_address(address, self.is_64)
+    pub fn label_at(&self, id0_addr: impl Id0AddressKey) -> Result<Option<&[u8]>> {
+        let key: Vec<u8> = key_from_address(id0_addr.as_u64(), self.is_64)
             .chain(Some(b'N'))
             .collect();
         let Ok(start) = self.binary_search(&key) else {
@@ -694,18 +694,15 @@ impl ID0Section {
         let key_len = key.len();
         let key = &entry.key[key_len..];
         ensure!(key.is_empty(), "Label ID0 entry with key");
-        let label_raw =
-            parse_maybe_cstr(&entry.value).ok_or_else(|| anyhow!("Label is not valid CStr"))?;
         let label =
-            core::str::from_utf8(label_raw).map_err(|_| anyhow!("Label is not valid UTF-8"))?;
+            parse_maybe_cstr(&entry.value).ok_or_else(|| anyhow!("Label is not valid CStr"))?;
         Ok(Some(label))
     }
 
     pub(crate) fn dirtree_from_name<T: FromDirTreeNumber>(
         &self,
         name: impl AsRef<[u8]>,
-        builder: T,
-    ) -> Result<DirTreeRoot<T::Output>> {
+    ) -> Result<DirTreeRoot<T>> {
         let Ok(index) = self.binary_search(name) else {
             // if the entry is missin, it's probably just don't have entries
             return Ok(DirTreeRoot { entries: vec![] });
@@ -724,7 +721,7 @@ impl ID0Section {
             let sub_idx = (raw_idx & 0xFFFF) as u16;
             Ok((idx, sub_idx, &entry.value[..]))
         });
-        let dirs = dirtree::parse_dirtree(&mut sub_values, builder, self.is_64)?;
+        let dirs = dirtree::parse_dirtree(&mut sub_values, self.is_64)?;
         ensure!(sub_values.next().is_none(), "unparsed diretree entries");
         Ok(dirs)
     }
@@ -732,64 +729,61 @@ impl ID0Section {
     // https://hex-rays.com/products/ida/support/idapython_docs/ida_dirtree.html
 
     /// read the `$ dirtree/tinfos` entries of the database
-    pub fn dirtree_tinfos<'a>(
-        &'a self,
-        til: &'a TILSection,
-    ) -> Result<DirTreeRoot<&'a TILTypeInfo>> {
-        self.dirtree_from_name("N$ dirtree/tinfos", TilFromDirTree { til })
+    pub fn dirtree_tinfos<'a>(&'a self) -> Result<DirTreeRoot<Id0TilOrd>> {
+        self.dirtree_from_name("N$ dirtree/tinfos")
     }
 
     // TODO remove the u64 and make it a TILOrdIndex type
     /// read the `$ dirtree/structs` entries of the database
     pub fn dirtree_structs(&self) -> Result<DirTreeRoot<u64>> {
-        self.dirtree_from_name("N$ dirtree/structs", U64FromDirTree)
+        self.dirtree_from_name("N$ dirtree/structs")
     }
 
     // TODO remove the u64 and make it a TILOrdIndex type
     /// read the `$ dirtree/enums` entries of the database
     pub fn dirtree_enums(&self) -> Result<DirTreeRoot<u64>> {
-        self.dirtree_from_name("N$ dirtree/enums", U64FromDirTree)
+        self.dirtree_from_name("N$ dirtree/enums")
     }
 
     // TODO remove the u64 and make it a FuncAddress type
     /// read the `$ dirtree/funcs` entries of the database
-    pub fn dirtree_function_address(&self) -> Result<DirTreeRoot<u64>> {
-        self.dirtree_from_name("N$ dirtree/funcs", U64FromDirTree)
+    pub fn dirtree_function_address(&self) -> Result<DirTreeRoot<Id0Address>> {
+        self.dirtree_from_name("N$ dirtree/funcs")
     }
 
     /// read the `$ dirtree/names` entries of the database
-    pub fn dirtree_names(&self) -> Result<DirTreeRoot<(u64, &str)>> {
-        self.dirtree_from_name("N$ dirtree/names", LabelFromDirTree { id0: self })
+    pub fn dirtree_names(&self) -> Result<DirTreeRoot<Id0Address>> {
+        self.dirtree_from_name("N$ dirtree/names")
     }
 
     // TODO remove the u64 and make it a ImportIDX type
     /// read the `$ dirtree/imports` entries of the database
     pub fn dirtree_imports(&self) -> Result<DirTreeRoot<u64>> {
-        self.dirtree_from_name("N$ dirtree/imports", U64FromDirTree)
+        self.dirtree_from_name("N$ dirtree/imports")
     }
 
     // TODO remove the u64 and make it a BptsIDX type
     /// read the `$ dirtree/bpts` entries of the database
     pub fn dirtree_bpts(&self) -> Result<DirTreeRoot<u64>> {
-        self.dirtree_from_name("N$ dirtree/bpts", U64FromDirTree)
+        self.dirtree_from_name("N$ dirtree/bpts")
     }
 
     // TODO remove the u64 and make it a &str type
     /// read the `$ dirtree/bookmarks_idaplace_t` entries of the database
     pub fn dirtree_bookmarks_idaplace(&self) -> Result<DirTreeRoot<u64>> {
-        self.dirtree_from_name("N$ dirtree/bookmarks_idaplace_t", U64FromDirTree)
+        self.dirtree_from_name("N$ dirtree/bookmarks_idaplace_t")
     }
 
     // TODO remove the u64 and make it a &str type
     /// read the `$ dirtree/bookmarks_structplace_t` entries of the database
     pub fn dirtree_bookmarks_structplace(&self) -> Result<DirTreeRoot<u64>> {
-        self.dirtree_from_name("N$ dirtree/bookmarks_structplace_t", U64FromDirTree)
+        self.dirtree_from_name("N$ dirtree/bookmarks_structplace_t")
     }
 
     // TODO remove the u64 and make it a &str type
     /// read the `$ dirtree/bookmarks_tiplace_t` entries of the database
     pub fn dirtree_bookmarks_tiplace(&self) -> Result<DirTreeRoot<u64>> {
-        self.dirtree_from_name("N$ dirtree/bookmarks_tiplace_t", U64FromDirTree)
+        self.dirtree_from_name("N$ dirtree/bookmarks_tiplace_t")
     }
 }
 
@@ -1042,4 +1036,8 @@ fn key_from_address(address: u64, is_64: bool) -> impl Iterator<Item = u8> {
     } else {
         u32::try_from(address).unwrap().to_be_bytes().to_vec()
     })
+}
+
+pub trait Id0AddressKey {
+    fn as_u64(&self) -> u64;
 }
