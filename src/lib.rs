@@ -543,16 +543,39 @@ mod test {
     use std::path::{Path, PathBuf};
 
     #[test]
-    fn parse_id0_til() {
+    fn parse_id0_til_1() {
         let function = [
             0x0c, // Function Type
-            0xaf, 0x81, 0x42, 0x01, 0x53, // TODO
+            0xaf, 0x81, 0x42, 0x01, 0x53, // cc
             0x01, // void ret
             0x03, //n args
             0x3d, 0x08, 0x48, 0x4d, 0x4f, 0x44, 0x55, 0x4c, 0x45, 0x3d, 0x06, 0x44, 0x57, 0x4f,
             0x52, 0x44, 0x00,
         ];
-        let _til = til::Type::new_from_id0(&function).unwrap();
+        let _til = til::Type::new_from_id0(&function[..]).unwrap();
+    }
+
+    #[test]
+    fn parse_id0_til_2() {
+        // TODO is this parsed correctly?
+        // `void __fastcall stringstream__basic_ios__sub_180007CF0_Destructor(basic_ios *__shifted(stringstream,0x94) a1);`
+        // from https://github.com/Vector35/idb-rs/issues/8
+        let function = [
+            0x0c, //Function Type
+            0x70, // cc
+            0x01, // ret void
+            0x02, // n
+            // 0..1 (n) args
+            // arg0
+            0x0a, // pointer
+            0xfe, 0x80, 0x01, // tah
+            0x3d, // typedef
+            0x04, 0x23, 0x83, 0x69, 0x3d, // buf => ord: XXXX
+            // error!
+            0x04, 0x23, 0x83, 0x66, 0x82, // buf => ord: XXXX
+            0x54, 0x00,
+        ];
+        let _til = til::Type::new_from_id0(&function[..]).unwrap();
     }
 
     #[test]
