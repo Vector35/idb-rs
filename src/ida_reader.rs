@@ -227,6 +227,18 @@ pub trait IdaGenericUnpack: Read {
         Ok(u16::from_le_bytes(data))
     }
 
+    fn read_u32(&mut self) -> Result<u32> {
+        let mut data = [0; 4];
+        self.read_exact(&mut data)?;
+        Ok(u32::from_le_bytes(data))
+    }
+
+    fn read_u64(&mut self) -> Result<u64> {
+        let mut data = [0; 8];
+        self.read_exact(&mut data)?;
+        Ok(u64::from_le_bytes(data))
+    }
+
     // read exac number of bytes, Eof (Nothing) or error
     fn read_exact_or_nothing(&mut self, mut buf: &mut [u8]) -> Result<usize> {
         let len = buf.len();

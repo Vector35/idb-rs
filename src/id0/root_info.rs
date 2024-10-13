@@ -21,6 +21,17 @@ pub enum IDBRootInfo<'a> {
     Sha256(&'a [u8; 32]),
     IDAInfo(Box<IDBParam>),
     Unknown(&'a ID0Entry),
+    FileSize(u64),
+    LoaderName(&'a str),
+    IncludePath(&'a [u8]),
+    PredefinedMacros(&'a [u8]),
+    Notepad {
+        id: u64,
+        data: &'a [u8],
+    },
+    IncludeAsm(&'a [u8]),
+    Selector(Vec<u32>),
+    AbiName(&'a [u8]),
 }
 
 #[derive(Clone, Debug)]
@@ -198,8 +209,10 @@ impl IDBParam {
             b"IDA" => false,
             _ => return Err(anyhow!("Invalid IDBParam Magic")),
         };
+        // InnerRef: 0x7e52e0, index: 0x00, offset: 0x4, len: 0x2
         let version: u16 = bincode::deserialize_from(&mut input)?;
 
+        // InnerRef: 0x7e5320, index: 0x01, offset: 0x6, len: 0x10, name: "target.processor"
         let cpu_len = match (magic_old, version) {
             (_, ..=699) => 8,
             (true, 700..) => 16,
@@ -409,85 +422,157 @@ impl IDBParam {
         cpu: Vec<u8>,
     ) -> Result<Self> {
         // NOTE in this version parse_* functions are used
+
+        // InnerRef: 0x7e5360, index: 0x02, offset: 0x16, len: 0x2
         let genflags = Inffl::new(input.unpack_dw()?)?;
+        // InnerRef: 0x7e53a0, index: 0x03, offset: 0x18, len: 0x4
         let lflags = Lflg::new(input.unpack_dd()?)?;
+        // InnerRef: 0x7e53e0, index: 0x04, offset: 0x1c, len: 0x4
         let database_change_count = input.unpack_dd()?;
+        // InnerRef: 0x7e5420, index: 0x05, offset: 0x20, len: 0x2, name: "input.file_format"
         let filetype = FileType::from_value(input.unpack_dw()?)
             .ok_or_else(|| anyhow!("Invalid FileType value"))?;
+        // InnerRef: 0x7e5460, index: 0x06, offset: 0x22, len: 0x2, name: "input.operating_system"
         let ostype = input.unpack_dw()?;
+        // InnerRef: 0x7e54a0, index: 0x07, offset: 0x24, len: 0x2, name: "input.application_type"
         let apptype = input.unpack_dw()?;
+        // InnerRef: 0x7e54e0, index: 0x08, offset: 0x26, len: 0x1, name: "target.assembler"
         let asmtype = input.read_u8()?;
+        // InnerRef: 0x7e5520, index: 0x09, offset: 0x27, len: 0x1, name: "special_segment_entry_size"
         let specsegs = input.read_u8()?;
+        // InnerRef: 0x7e5560, index: 0x0a, offset: 0x28, len: 0x4
         let af1 = input.unpack_dd()?;
+        // InnerRef: 0x7e55a0, index: 0x0b, offset: 0x2c, len: 0x4
         let af2 = input.unpack_dd()?;
         let af = Af::new(af1, af2)?;
+        // InnerRef: 0x7e55e0, index: 0x0c, offset: 0x30, len: 0x8, name: "addresses.loading_base"
         let baseaddr = input.unpack_usize()?;
+        // InnerRef: 0x7e5620, index: 0x0d, offset: 0x38, len: 0x8, name: "addresses.initial_ss"
         let start_ss = input.unpack_usize()?;
+        // InnerRef: 0x7e5660, index: 0x0e, offset: 0x40, len: 0x8, name: "addresses.initial_cs"
         let start_cs = input.unpack_usize()?;
+        // InnerRef: 0x7e56a0, index: 0x0f, offset: 0x48, len: 0x8, name: "addresses.initial_ip"
         let start_ip = input.unpack_usize()?;
+        // InnerRef: 0x7e56e0, index: 0x10, offset: 0x50, len: 0x8, name: "addresses.initial_ea"
         let start_ea = input.unpack_usize()?;
+        // InnerRef: 0x7e5720, index: 0x11, offset: 0x58, len: 0x8, name: "addresses.initial_sp"
         let start_sp = input.unpack_usize()?;
+        // InnerRef: 0x7e5760, index: 0x12, offset: 0x60, len: 0x8, name: "addresses.main_ea"
         let main = input.unpack_usize()?;
+        // InnerRef: 0x7e57a0, index: 0x13, offset: 0x68, len: 0x8, name: "addresses.min_ea"
         let min_ea = input.unpack_usize()?;
+        // InnerRef: 0x7e57e0, index: 0x14, offset: 0x70, len: 0x8, name: "addresses.max_ea"
         let max_ea = input.unpack_usize()?;
+        // InnerRef: 0x7e5820, index: 0x15, offset: 0x78, len: 0x8, name: "addresses.original_min_ea"
         let omin_ea = input.unpack_usize()?;
+        // InnerRef: 0x7e5860, index: 0x16, offset: 0x80, len: 0x8, name: "addresses.original_max_ea"
         let omax_ea = input.unpack_usize()?;
+        // InnerRef: 0x7e58a0, index: 0x17, offset: 0x88, len: 0x8, name: "suspiciousness_limits.low"
         let lowoff = input.unpack_usize()?;
+        // InnerRef: 0x7e58e0, index: 0x18, offset: 0x90, len: 0x8, name: "suspiciousness_limits.high"
         let highoff = input.unpack_usize()?;
+        // InnerRef: 0x7e5920, index: 0x19, offset: 0x98, len: 0x8, name: "xrefs.max_depth"
         let maxref = input.unpack_usize()?;
+        // InnerRef: 0x7e5960, index: 0x1a, offset: 0xa0, len: 0x10
+        // TODO Where?
+        // InnerRef: 0x7e59a0, index: 0x1b, offset: 0xa0, len: 0x8, name: "addresses.privrange.start_ea"
         let privrange_start_ea = input.unpack_usize()?;
+        // InnerRef: 0x7e59e0, index: 0x1c, offset: 0xa8, len: 0x8, name: "addresses.privrange.end_ea"
         let privrange_end_ea = input.unpack_usize()?;
+        // InnerRef: 0x7e5a20, index: 0x1d, offset: 0xb0, len: 0x8, name: "addresses.netdelta"
         let netdelta = input.unpack_usize()?;
+        // InnerRef: 0x7e5a60, index: 0x1e, offset: 0xb8, len: 0x1
         let xrefnum = input.read_u8()?;
+        // InnerRef: 0x7e5aa0, index: 0x1f, offset: 0xb9, len: 0x1, name: "xrefs.max_displayed_type_xrefs"
         let type_xrefnum = input.read_u8()?;
+        // InnerRef: 0x7e5ae0, index: 0x20, offset: 0xba, len: 0x1, name: "xrefs.max_displayed_strlit_xrefs"
         let refcmtnum = input.read_u8()?;
+        // InnerRef: 0x7e5b20, index: 0x21, offset: 0xbb, len: 0x1
         let xrefflag = XRef::new(input.read_u8()?)?;
+        // InnerRef: 0x7e5b60, index: 0x22, offset: 0xbc, len: 0x2, name: "names.max_autogenerated_name_len…"
         let max_autoname_len = input.unpack_dw()?;
 
         if magic_old {
             let _unknown: [u8; 17] = bincode::deserialize_from(&mut input)?;
         }
 
-        let nametype = input.read_u8()?;
-        let nametype = NameType::new(nametype).ok_or_else(|| anyhow!("Invalid NameType value"))?;
+        // InnerRef: 0x7e5ba0, index: 0x23, offset: 0xbe, len: 0x1, name: "names.dummy_names"
+        let nametype =
+            NameType::new(input.read_u8()?).ok_or_else(|| anyhow!("Invalid NameType value"))?;
+        // InnerRef: 0x7e5be0, index: 0x24, offset: 0xc0, len: 0x4, name: "demangler.short_form"
         let short_demnames = input.unpack_dd()?;
+        // InnerRef: 0x7e5c20, index: 0x25, offset: 0xc4, len: 0x4, name: "demangler.long_form"
         let long_demnames = input.unpack_dd()?;
+        // InnerRef: 0x7e5c60, index: 0x26, offset: 0xc8, len: 0x1
         let demnames = DemName::new(input.read_u8()?)?;
+        // InnerRef: 0x7e5ca0, index: 0x27, offset: 0xc9, len: 0x1
         let listnames = ListName::new(input.read_u8()?)?;
+        // InnerRef: 0x7e5ce0, index: 0x28, offset: 0xca, len: 0x1
         let indent = input.read_u8()?;
+        // InnerRef: 0x7e5d20, index: 0x29, offset: 0xcb, len: 0x1
         let cmt_ident = input.read_u8()?;
+        // InnerRef: 0x7e5d60, index: 0x2a, offset: 0xcc, len: 0x2
         let margin = input.unpack_dw()?;
+        // InnerRef: 0x7e5da0, index: 0x2b, offset: 0xce, len: 0x2, name: "listing.xref_margin"
         let lenxref = input.unpack_dw()?;
+        // InnerRef: 0x7e5de0, index: 0x2c, offset: 0xd0, len: 0x4
         let outflags = OutputFlags::new(input.unpack_dd()?)?;
+        // InnerRef: 0x7e5e20, index: 0x2d, offset: 0xd4, len: 0x1
         let cmtflg = CommentOptions::new(input.read_u8()?);
+        // InnerRef: 0x7e5e60, index: 0x2e, offset: 0xd5, len: 0x1
         let limiter = DelimiterOptions::new(input.read_u8()?)?;
+        // InnerRef: 0x7e5ea0, index: 0x2f, offset: 0xd6, len: 0x2
         let bin_prefix_size = input.unpack_dw()?;
+        // InnerRef: 0x7e5ee0, index: 0x30, offset: 0xd8, len: 0x1
         let prefflag = LinePrefixOptions::new(input.read_u8()?)?;
+        // InnerRef: 0x7e5f20, index: 0x31, offset: 0xd9, len: 0x1
         let strlit_flags = StrLiteralFlags::new(input.read_u8()?)?;
+        // InnerRef: 0x7e5f60, index: 0x32, offset: 0xda, len: 0x1, name: "strlits.break"
         let strlit_break = input.read_u8()?;
+        // InnerRef: 0x7e5fa0, index: 0x33, offset: 0xdb, len: 0x1, name: "strlits.leading_zeroes"
         let strlit_zeroes = input.read_u8()?;
+        // InnerRef: 0x7e5fe0, index: 0x34, offset: 0xdc, len: 0x4
         let strtype = input.unpack_dd()?;
 
-        // TODO read the len and the ignore it?
+        // TODO read the len and the ignore it? Or it's always 16?
+        // InnerRef: 0x7e6020, index: 0x35, offset: 0xe0, len: 0x10, name: "strlits.name_prefix"
         let strlit_pref_len = input.read_u8()?;
         let strlit_pref_len = if magic_old { 16 } else { strlit_pref_len };
         let mut strlit_pref = vec![0; strlit_pref_len.into()];
         input.read_exact(&mut strlit_pref)?;
         let strlit_pref = String::from_utf8(strlit_pref)?;
 
+        // InnerRef: 0x7e6060, index: 0x36, offset: 0xf0, len: 0x8, name: "strlits.serial_number"
         let strlit_sernum = input.unpack_usize()?;
+        // InnerRef: 0x7e60a0, index: 0x37, offset: 0xf8, len: 0x8, name: "data_carousel"
         let datatypes = input.unpack_usize()?;
+
+        // NOTE len is for all the cc here
+        // InnerRef: 0x7e60e0, index: 0x38, offset: 0x100, len: 0xa
+        // NOTE the len here is for the id field in cc
+        // InnerRef: 0x7e6120, index: 0x39, offset: 0x100, len: 0x1
         let cc_id = Compiler::from_value(input.read_u8()?);
+        // InnerRef: 0x7e6160, index: 0x3a, offset: 0x101, len: 0x1
         let cc_cm = input.read_u8()?;
+        // InnerRef: 0x7e61a0, index: 0x3b, offset: 0x102, len: 0x1, name: "compiler.sizeof.int"
         let cc_size_i = input.read_u8()?;
+        // InnerRef: 0x7e61e0, index: 0x3c, offset: 0x103, len: 0x1, name: "compiler.sizeof.bool"
         let cc_size_b = input.read_u8()?;
+        // InnerRef: 0x7e6220, index: 0x3d, offset: 0x104, len: 0x1, name: "compiler.sizeof.enum"
         let cc_size_e = input.read_u8()?;
+        // InnerRef: 0x7e6260, index: 0x3e, offset: 0x105, len: 0x1, name: "compiler.alignment"
         let cc_defalign = input.read_u8()?;
+        // InnerRef: 0x7e62a0, index: 0x3f, offset: 0x106, len: 0x1, name: "compiler.sizeof.short"
         let cc_size_s = input.read_u8()?;
+        // InnerRef: 0x7e62e0, index: 0x40, offset: 0x107, len: 0x1, name: "compiler.sizeof.long"
         let cc_size_l = input.read_u8()?;
+        // InnerRef: 0x7e6320, index: 0x41, offset: 0x108, len: 0x1, name: "compiler.sizeof.longlong"
         let cc_size_ll = input.read_u8()?;
+        // InnerRef: 0x7e6360, index: 0x42, offset: 0x109, len: 0x1, name: "compiler.sizeof.long_double"
         let cc_size_ldbl = input.read_u8()?;
+        // InnerRef: 0x7e63a0, index: 0x43, offset: 0x10c, len: 0x4
         let abibits = AbiOptions::new(input.unpack_dd()?)?;
+        // InnerRef: 0x7e63e0, index: 0x44, offset: 0x110, len: 0x4
         let appcall_options = input.unpack_dd()?;
 
         Ok(IDBParam::V2(IDBParam2 {

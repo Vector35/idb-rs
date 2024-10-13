@@ -407,44 +407,191 @@ impl ID0Section {
                 (b'V', 1) => return Ok(IDBRootInfo::InputFile(&entry.value)),
                 _ => {}
             }
-            let Some(value) = parse_number(&sub_key[1..], true, self.is_64) else {
-                return Ok(IDBRootInfo::Unknown(entry));
+            let value = match (sub_key[1..].len(), self.is_64) {
+                (8, true) => i64::from_be_bytes(sub_key[1..].try_into().unwrap()),
+                (4, false) => i32::from_be_bytes(sub_key[1..].try_into().unwrap()).into(),
+                _ => return Ok(IDBRootInfo::Unknown(entry)),
             };
-            match (sub_type, value as i64) {
-                (b'A', -6) => parse_number(&entry.value, false, self.is_64)
-                    .ok_or_else(|| anyhow!("Unable to parse imagebase value"))
-                    .map(IDBRootInfo::ImageBase),
-                (b'A', -5) => parse_number(&entry.value, false, self.is_64)
-                    .ok_or_else(|| anyhow!("Unable to parse crc value"))
-                    .map(IDBRootInfo::Crc),
-                (b'A', -4) => parse_number(&entry.value, false, self.is_64)
-                    .ok_or_else(|| anyhow!("Unable to parse open_count value"))
-                    .map(IDBRootInfo::OpenCount),
-                (b'A', -2) => parse_number(&entry.value, false, self.is_64)
-                    .ok_or_else(|| anyhow!("Unable to parse CreatedDate value"))
-                    .map(IDBRootInfo::CreatedDate),
+            match (sub_type, value) {
+                // InnerRef: 0x7e68e0, idx: 0x58, idb.initial_idb_version
                 (b'A', -1) => parse_number(&entry.value, false, self.is_64)
                     .ok_or_else(|| anyhow!("Unable to parse Version value"))
                     .map(IDBRootInfo::Version),
+                // InnerRef: 0x7e6920, idx: 0x59, idb.idb_creation_time
+                (b'A', -2) => parse_number(&entry.value, false, self.is_64)
+                    .ok_or_else(|| anyhow!("Unable to parse CreatedDate value"))
+                    .map(IDBRootInfo::CreatedDate),
+
+                // TODO: Ovserved in `.i64` only, always 8 bytes, very linkely a single u64-le
+                // InnerRef: 0x7e6960, idx: 0x5a
+                (b'A', -3) => Ok(IDBRootInfo::Unknown(entry)),
+
+                // InnerRef: 0x7e69A0, idx: 0x5b
+                (b'A', -4) => parse_number(&entry.value, false, self.is_64)
+                    .ok_or_else(|| anyhow!("Unable to parse open_count value"))
+                    .map(IDBRootInfo::OpenCount),
+                // InnerRef: 0x7e69E0, idx: 0x5c, input.checksum.crc32
+                (b'A', -5) => parse_number(&entry.value, false, self.is_64)
+                    .ok_or_else(|| anyhow!("Unable to parse crc value"))
+                    .map(IDBRootInfo::Crc),
+                // InnerRef: 0x7e6a20, idx: 0x5d, addresses.imagebase
+                (b'A', -6) => parse_number(&entry.value, false, self.is_64)
+                    .ok_or_else(|| anyhow!("Unable to parse imagebase value"))
+                    .map(IDBRootInfo::ImageBase),
+
+                // TODO never observed
+                // InnerRef: 0x7e6a60, idx: 0x5e
+                (b'A', -7) => Ok(IDBRootInfo::Unknown(entry)),
+
+                // InnerRef: 0x7e69A0, idx: 0x5f, input.filesize
+                (b'A', -8) => parse_number(&entry.value, false, self.is_64)
+                    .ok_or_else(|| anyhow!("Unable to parse open_count value"))
+                    .map(IDBRootInfo::FileSize),
+
+                // TODO never observed
+                // InnerRef: 0x7e6ae0, idx: 0x60
+                (b'A', -9) => Ok(IDBRootInfo::Unknown(entry)),
+
+                // InnerRef: 0x7e6420, idx: 0x45, input.loader_name
+                (b'S', 1) => parse_maybe_cstr(&entry.value)
+                    .and_then(|version| core::str::from_utf8(version).ok())
+                    .ok_or_else(|| anyhow!("Unable to parse Loader Name string"))
+                    .map(IDBRootInfo::LoaderName),
+
+                // TODO unclear what those numbers mean
+                // InnerRef: 0x7e67e0, idx: 0x54, selectors
+                (b'S', 2) => {
+                    let mut reader = &entry.value[..];
+                    // TODO always u8? unpack_dw? etc
+                    let len = reader.read_u8()?;
+                    let values = (0..len)
+                        .map(|_| {
+                            if self.is_64 {
+                                reader.read_u32()
+                            } else {
+                                reader.read_u16().map(u32::from)
+                            }
+                        })
+                        .collect::<Result<_>>()?;
+                    // NOTE always observed to be a vector 1..=len
+                    Ok(IDBRootInfo::Selector(values))
+                }
+
+                // TODO never observed
+                // InnerRef: 0x7e6460, idx: 0x46
+                (b'S', 64) => Ok(IDBRootInfo::Unknown(entry)),
+
+                // InnerRef: 0x7e64a0, idx: 0x47, compiler.include_path
+                (b'S', 65) => Ok(IDBRootInfo::IncludePath(&entry.value[..])),
+                // InnerRef: 0x7e64e0, idx: 0x48, compiler.predefined_macros
+                (b'S', 66) => Ok(IDBRootInfo::PredefinedMacros(&entry.value[..])),
+
+                // TODO it's unclear the max key for the notepad, assuming 1000
+                // InnerRef: 0x7e6820, idx: 0x55, notepad
+                (b'S', id @ 68..=999) => Ok(IDBRootInfo::Notepad {
+                    id: id as u64 - 68,
+                    data: &entry.value[..],
+                }),
+
+                // TODO maybe this is a range 1100..=1299
+                // InnerRef: 0x7e6520, idx: 0x49, compiler.asm_include
+                (b'S', 1100) => Ok(IDBRootInfo::IncludeAsm(&entry.value[..])),
+                (b'S', 1101) => todo!("Asm include range?"),
+
+                // TODO observed 9/14 bytes, if starts with 0x10 => 9bytes, 0x0e => 14bytes
+                // both 1300 and 1301 seems to be some kind of pair, their data is very similar
+                // little variation on the data
+                // InnerRef: 0x7e6560, idx: 0x4a
+                (b'S', 1300) => Ok(IDBRootInfo::Unknown(entry)),
+                // InnerRef: 0x7e65a0, idx: 0x4b
+                (b'S', 1301) => Ok(IDBRootInfo::Unknown(entry)),
+
+                // InnerRef: 0x7e65e0, idx: 0x4c, input.checksum.md5
                 (b'S', 1302) => entry
                     .value
                     .as_slice()
                     .try_into()
                     .map(IDBRootInfo::Md5)
                     .map_err(|_| anyhow!("Value Md5 with invalid len")),
+                // InnerRef: 0x7e6620, idx: 0x4d, idb.initial_ida_version
                 (b'S', 1303) => parse_maybe_cstr(&entry.value)
                     .and_then(|version| core::str::from_utf8(version).ok())
                     .ok_or_else(|| anyhow!("Unable to parse VersionString string"))
                     .map(IDBRootInfo::VersionString),
+
+                // TODO probably some kind of string encoding list, maybe string encodings found
+                // on the binary
+                // 00000000  05 03 03 02 04 05 55 54  46 2d 38 08 55 54 46 2d  |......UTF-8.UTF-|
+                // 00000010  31 36 4c 45 0c 77 69 6e  64 6f 77 73 2d 31 32 35  |16LE.windows-125|
+                // 00000020  32 08 55 54 46 2d 33 32  4c 45 0a                 |2.UTF-32LE.|
+                // 0000002b
+                // InnerRef: 0x7e6660, idx: 0x4e
+                (b'S', 1305) => Ok(IDBRootInfo::Unknown(entry)),
+
+                // TODO never observed
+                // InnerRef: 0x7e6860, idx: 0x56, source debug paths
+                (b'S', 1306) => Ok(IDBRootInfo::Unknown(entry)),
+
+                // TODO observed values: "Python", "IDC". Default script console?
+                (b'S', 1327) => Ok(IDBRootInfo::Unknown(entry)),
+
+                // TODO never observed
+                // InnerRef: 0x7e66a0, idx: 0x4f
+                (b'S', 1328) => Ok(IDBRootInfo::Unknown(entry)),
+
+                // InnerRef: 0x7e66e0, idx: 0x50, input.checksum.sha256
                 (b'S', 1349) => entry
                     .value
                     .as_slice()
                     .try_into()
                     .map(IDBRootInfo::Sha256)
                     .map_err(|_| anyhow!("Value Sha256 with invalid len")),
+
+                // InnerRef: 0x7e6720, idx: 0x51, abi.name
+                (b'S', 1350) => parse_maybe_cstr(&entry.value)
+                    .map(IDBRootInfo::AbiName)
+                    .ok_or_else(|| anyhow!("Invalid ABI name")),
+
+                // TODO never observed
+                // InnerRef: 0x7e6760, idx: 0x52, input.archive_path
+                (b'S', 1351) => Ok(IDBRootInfo::Unknown(entry)),
+
+                // TODO:
+                // example:
+                // 00000000  18 00 00 ff 19 00 00 ff  1a 00 00 ff 1b 00 00 ff  |................|
+                // 00000010  1c 00 00 ff 1d 00 00 ff  1e 00 00 ff 1f 00 00 ff  |................|
+                // 00000020  20 00 00 ff 21 00 00 ff  22 00 00 ff 23 00 00 ff  | ...!..."...#...|
+                // 00000030  24 00 00 ff 25 00 00 ff  26 00 00 ff 27 00 00 ff  |$...%...&...'...|
+                // 00000040  0a
+                // 32/64bytes variants, a sequence of number, one side going from 1X..2X, the other
+                // side always 0xFF
+                // InnerRef: 0x7e67a0, idx: 0x53
+                (b'S', 1352) => {
+                    //let mut reader = &entry.value[..];
+                    //let values: Vec<_> = if self.is_64 {
+                    //    ensure!(reader.len() % 8 == 0);
+                    //    (0..reader.len() / 8)
+                    //        .map(|_| reader.read_u64().unwrap())
+                    //        .collect()
+                    //} else {
+                    //    ensure!(reader.len() % 4 == 0);
+                    //    (0..reader.len() / 4)
+                    //        .map(|_| reader.read_u32().unwrap() as u64)
+                    //        .collect()
+                    //};
+                    //println!("{:x?}", &values);
+                    Ok(IDBRootInfo::Unknown(entry))
+                }
+
+                // TODO never observed, filenames or content?
+                // InnerRef: 0x7e68a0, idx: 0x57, user-closed source files
+                (b'S', 1353) => Ok(IDBRootInfo::Unknown(entry)),
+
                 (b'S', 0x41b994) => IDBParam::read(&entry.value, self.is_64)
                     .map(Box::new)
                     .map(IDBRootInfo::IDAInfo),
+
+                // if this match, then yout found a new entry type, please document it
                 _ => Ok(IDBRootInfo::Unknown(entry)),
             }
         }))
