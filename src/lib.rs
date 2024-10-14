@@ -337,7 +337,6 @@ impl IDBHeader {
             unk40_v5c: u32,
             unk44_zeroed: [u8; 8],
             _unk4c: [u8; 16],
-            unk5c_zeroed: [[u8; 16]; 8],
         }
 
         let v4_raw: V4Raw = bincode::deserialize_from(input)?;
@@ -347,7 +346,7 @@ impl IDBHeader {
         ensure!(v4_raw.unk38_zeroed == [0; 8], "unk38 is not zeroed");
         ensure!(v4_raw.unk40_v5c == 0x5c, "unk40 is not 0x5C");
         ensure!(v4_raw.unk44_zeroed == [0; 8], "unk44 is not zeroed");
-        ensure!(v4_raw.unk5c_zeroed == [[0; 16]; 8], "unk5c is not zeroed");
+        // TODO ensure all offsets point to after the header
 
         Ok(Self {
             magic_version: magic,
@@ -382,7 +381,6 @@ impl IDBHeader {
             unk0_v7c: u32,
             unk1_zeroed: [u8; 16],
             _unk2: [u8; 16],
-            unk3_zeroed: [[u8; 16]; 8],
         }
         let v5_raw: V5Raw = bincode::deserialize_from(input)?;
         let id0_offset =
@@ -397,7 +395,7 @@ impl IDBHeader {
         ensure!(v5_raw.seg_offset_zeroed == 0, "seg in V5 is not zeroed");
         ensure!(v5_raw.unk0_v7c == 0x7C, "unk0 not 0x7C");
         ensure!(v5_raw.unk1_zeroed == [0; 16], "unk1 is not zeroed");
-        ensure!(v5_raw.unk3_zeroed == [[0; 16]; 8], "unk3 is not zeroed");
+        // TODO ensure all offsets point to after the header
 
         Ok(Self {
             magic_version: magic,
@@ -433,7 +431,6 @@ impl IDBHeader {
             unk0_v7c: u32,
             unk1_zeroed: [u8; 16],
             _unk2: [u8; 16],
-            unk3_zeroed: [[u8; 16]; 8],
         }
         let v6_raw: V6Raw = bincode::deserialize_from(input)?;
         let id0_offset =
@@ -445,7 +442,7 @@ impl IDBHeader {
         ensure!(v6_raw.seg_offset_zeroed == 0, "seg in V6 is not zeroed");
         ensure!(v6_raw.unk0_v7c == 0x7C, "unk0 not 0x7C");
         ensure!(v6_raw.unk1_zeroed == [0; 16], "unk1 is not zeroed");
-        ensure!(v6_raw.unk3_zeroed == [[0; 16]; 8], "unk3 is not zeroed");
+        // TODO ensure all offsets point to after the header
 
         Ok(Self {
             magic_version: magic,
