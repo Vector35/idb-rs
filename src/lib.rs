@@ -299,13 +299,12 @@ impl IDBHeader {
             checksums: [u32; 3],
             unk30_zeroed: u32,
             unk33_checksum: u32,
-            unk38_zeroed: [u8; 6],
         }
 
         let v1_raw: V1Raw = bincode::deserialize_from(input)?;
         ensure!(v1_raw.unk30_zeroed == 0, "unk30 not zeroed");
         ensure!(v1_raw.id2_offset == 0, "id2 in V1 is not zeroed");
-        ensure!(v1_raw.unk38_zeroed == [0; 6], "unk38 is not zeroed");
+        // TODO ensure all offsets point to after the header
 
         Ok(Self {
             magic_version: magic,
@@ -335,8 +334,6 @@ impl IDBHeader {
             unk33_checksum: u32,
             unk38_zeroed: [u8; 8],
             unk40_v5c: u32,
-            unk44_zeroed: [u8; 8],
-            _unk4c: [u8; 16],
         }
 
         let v4_raw: V4Raw = bincode::deserialize_from(input)?;
@@ -345,7 +342,6 @@ impl IDBHeader {
         ensure!(v4_raw.id2_offset == 0, "id2 in V4 is not zeroed");
         ensure!(v4_raw.unk38_zeroed == [0; 8], "unk38 is not zeroed");
         ensure!(v4_raw.unk40_v5c == 0x5c, "unk40 is not 0x5C");
-        ensure!(v4_raw.unk44_zeroed == [0; 8], "unk44 is not zeroed");
         // TODO ensure all offsets point to after the header
 
         Ok(Self {
@@ -379,8 +375,6 @@ impl IDBHeader {
             id2_offset_zeroed: u64,
             final_checksum: u32,
             unk0_v7c: u32,
-            unk1_zeroed: [u8; 16],
-            _unk2: [u8; 16],
         }
         let v5_raw: V5Raw = bincode::deserialize_from(input)?;
         let id0_offset =
@@ -394,7 +388,6 @@ impl IDBHeader {
         ensure!(v5_raw.id2_offset_zeroed == 0, "id2 in V5 is not zeroed");
         ensure!(v5_raw.seg_offset_zeroed == 0, "seg in V5 is not zeroed");
         ensure!(v5_raw.unk0_v7c == 0x7C, "unk0 not 0x7C");
-        ensure!(v5_raw.unk1_zeroed == [0; 16], "unk1 is not zeroed");
         // TODO ensure all offsets point to after the header
 
         Ok(Self {
@@ -429,8 +422,6 @@ impl IDBHeader {
             id2_offset: u64,
             final_checksum: u32,
             unk0_v7c: u32,
-            unk1_zeroed: [u8; 16],
-            _unk2: [u8; 16],
         }
         let v6_raw: V6Raw = bincode::deserialize_from(input)?;
         let id0_offset =
@@ -441,7 +432,6 @@ impl IDBHeader {
         ensure!(v6_raw.unk4_zeroed == [0; 4], "unk4 not zeroed");
         ensure!(v6_raw.seg_offset_zeroed == 0, "seg in V6 is not zeroed");
         ensure!(v6_raw.unk0_v7c == 0x7C, "unk0 not 0x7C");
-        ensure!(v6_raw.unk1_zeroed == [0; 16], "unk1 is not zeroed");
         // TODO ensure all offsets point to after the header
 
         Ok(Self {
