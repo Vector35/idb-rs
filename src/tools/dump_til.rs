@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::BufReader;
 
 use anyhow::{anyhow, Result};
-use idb_rs::til::section::{TILSection, TILSizes};
+use idb_rs::til::section::TILSection;
 use idb_rs::til::TILMacro;
 use idb_rs::IDBParser;
 
@@ -33,10 +33,12 @@ pub fn dump_til(args: &Args) -> Result<()> {
         id,
         cm,
         def_align,
-        type_ordinal_numbers,
+        type_ordinal_alias,
         size_i,
         size_b,
-        sizes,
+        size_short,
+        size_long,
+        size_long_long,
         size_long_double,
         is_universal,
         symbols,
@@ -53,22 +55,15 @@ pub fn dump_til(args: &Args) -> Result<()> {
     println!("size_i: {size_i}");
     println!("size_b: {size_b}");
     println!("is_universal: {is_universal}");
-    if let Some(type_ordinal_numbers) = type_ordinal_numbers {
+    if let Some(type_ordinal_numbers) = type_ordinal_alias {
         println!("type_ordinal_numbers: {type_ordinal_numbers:?}");
     }
     if let Some(size_long_double) = size_long_double {
         println!("size_long_double: {size_long_double}");
     }
-    if let Some(TILSizes {
-        size_short,
-        size_long,
-        size_long_long,
-    }) = sizes
-    {
-        println!("size short: {size_short}");
-        println!("size long: {size_long}");
-        println!("size long_long: {size_long_long}");
-    }
+    println!("size short: {size_short}");
+    println!("size long: {size_long}");
+    println!("size long_long: {size_long_long}");
 
     // TODO implement Display for TILTypeInfo
     println!("types:");

@@ -36,7 +36,7 @@ pub trait IdaUnpack: IdaGenericUnpack {
         }
     }
 
-    // InnerRef: 0x38f8cc
+    // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x28f8cc
     fn unpack_address_range(&mut self) -> Result<Range<u64>> {
         if self.is_64() {
             let start = self.unpack_dq()?;
@@ -125,6 +125,7 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
     /// ValueRange: 0-0x7FFFFFFF, 0-0xFFFFFFFF
     /// Usage: Arrays
     fn read_da(&mut self) -> Result<(u8, u8)> {
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478620
         let mut a = 0;
         let mut b = 0;
         let mut da = 0;
@@ -206,6 +207,54 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
         }
         Ok(result)
     }
+
+    fn peek_u8(&mut self) -> Result<Option<u8>> {
+        Ok(self.fill_buf()?.first().copied())
+    }
+
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce40
+    fn read_ext_att(&mut self) -> Result<Option<u64>> {
+        let Some(byte0) = self.peek_u8()? else {
+            return Ok(None);
+        };
+        if byte0 == 0 {
+            return Ok(None);
+        }
+        self.consume(1);
+
+        let start_value: u16 = if byte0 & 0x80 != 0 {
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cec0
+            let byte1 = self.read_u8()?;
+            // TODO is this an error or expect possible value?
+            ensure!(byte1 != 0);
+            let start_value = ((byte1 as u16) << 7 | (byte0 as u16) & 0x7f) - 1;
+
+            match start_value {
+                0x400 => return Ok(Some(-1i64 as u64)),
+                0x200 => return Ok(Some(-1i32 as u64)),
+                other => other,
+            }
+        } else {
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce60
+            (byte0 - 1).into()
+        };
+
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce6f
+        let mut acc = 0;
+        for bit in 0..8 {
+            if (start_value >> bit) & 1 != 0 {
+                let value = self.read_u8()?;
+                // TODO is this an error or expect possible value?
+                ensure!(value != 0);
+                acc |= (value as u64) << (bit << 3);
+            }
+        }
+
+        if start_value & 0x100 != 0 {
+            acc = !acc;
+        }
+        Ok(Some(acc))
+    }
 }
 impl<R: BufRead> IdaGenericBufUnpack for R {}
 
@@ -227,6 +276,18 @@ pub trait IdaGenericUnpack: Read {
         Ok(u16::from_le_bytes(data))
     }
 
+    fn read_u32(&mut self) -> Result<u32> {
+        let mut data = [0; 4];
+        self.read_exact(&mut data)?;
+        Ok(u32::from_le_bytes(data))
+    }
+
+    fn read_u64(&mut self) -> Result<u64> {
+        let mut data = [0; 8];
+        self.read_exact(&mut data)?;
+        Ok(u64::from_le_bytes(data))
+    }
+
     // read exac number of bytes, Eof (Nothing) or error
     fn read_exact_or_nothing(&mut self, mut buf: &mut [u8]) -> Result<usize> {
         let len = buf.len();
@@ -243,7 +304,7 @@ pub trait IdaGenericUnpack: Read {
         Ok(len - buf.len())
     }
 
-    // InnerRef: unpack_dw
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46b610 unpack_dw
     // NOTE: the original implementation never fails, if input hit EoF it a partial result or 0
     /// Reads 1 to 3 bytes.
     fn unpack_dw(&mut self) -> Result<u16> {
@@ -268,7 +329,7 @@ pub trait IdaGenericUnpack: Read {
         }
     }
 
-    // InnerRef: unpack_dd
+    // InnerRef b47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46b690 unpack_dd
     // NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
     /// Reads 1 to 5 bytes.
     fn unpack_dd(&mut self) -> Result<u32> {
@@ -312,7 +373,7 @@ pub trait IdaGenericUnpack: Read {
         }
     }
 
-    // InnerRef: unpack_dq
+    // InnerRef b47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46b7b0 unpack_dq
     // NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
     /// Reads 2 to 10 bytes.
     fn unpack_dq(&mut self) -> Result<u64> {
@@ -321,7 +382,7 @@ pub trait IdaGenericUnpack: Read {
         Ok((u64::from(hi) << 32) | u64::from(lo))
     }
 
-    // InnerRef: unpack_ds
+    // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x46b7e0 unpack_ds
     // NOTE: the original implementation never fails, if input hit EoF it a partial result or 0
     fn unpack_ds(&mut self) -> Result<Vec<u8>> {
         let len = self.unpack_dd()?;
@@ -330,8 +391,7 @@ pub trait IdaGenericUnpack: Read {
         Ok(result)
     }
 
-    // TODO rename to unpack_dt_bytes
-    fn read_dt_bytes(&mut self) -> Result<Vec<u8>> {
+    fn unpack_dt_bytes(&mut self) -> Result<Vec<u8>> {
         let buf_len = self.read_dt()?;
         let mut buf = vec![0; buf_len.into()];
         self.read_exact(&mut buf)?;
@@ -342,12 +402,13 @@ pub trait IdaGenericUnpack: Read {
     /// Value Range: 0-0xFFFFFFFF
     /// Usage: Enum Deltas
     fn read_de(&mut self) -> Result<u32> {
+        // TODO check if the implementation is complete
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cdb0
         let mut val: u32 = 0;
         for _ in 0..5 {
             let mut hi = val << 6;
             let b: u32 = self.read_u8()?.into();
-            let sign = b & 0x80;
-            if sign == 0 {
+            if b & 0x80 == 0 {
                 let lo = b & 0x3F;
                 val = lo | hi;
                 return Ok(val);
@@ -364,6 +425,7 @@ pub trait IdaGenericUnpack: Read {
     /// Value Range: 0-0xFFFE
     /// Usage: 16bit numbers
     fn read_dt(&mut self) -> Result<u16> {
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cd60
         let value = match self.read_u8()? {
             0 => return Err(anyhow!("DT can't have 0 value")),
             //SEG = 2
@@ -396,6 +458,8 @@ pub trait IdaGenericUnpack: Read {
     /// Value Range: Nothing or 0-0xFFFF_FFFF
     /// Usage: some kind of size
     fn read_dt_de(&mut self) -> Result<Option<u32>> {
+        // TODO the return is always NonZero?
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cf20
         match self.read_dt()? {
             0 => Ok(None),
             0x7FFE => self.read_de().map(Some),

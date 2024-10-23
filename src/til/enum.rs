@@ -80,6 +80,7 @@ impl EnumRaw {
     ) -> anyhow::Result<Self> {
         let Some(n) = input.read_dt_de()? else {
             // is ref
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
             let taenum_bits = SDACL::read(&mut *input)?.0;
             return Ok(EnumRaw::Ref {
