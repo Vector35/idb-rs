@@ -89,7 +89,7 @@ impl Type {
         match tinfo_raw {
             TypeRaw::Basic(x) => {
                 if let Some(fields) = fields {
-                    ensure!(fields.is_empty(), "Unset with fields");
+                    ensure!(fields.is_empty(), "Basic type with fields");
                 }
                 Ok(Type::Basic(x))
             }
@@ -129,8 +129,10 @@ impl Type {
             size_i: 4.try_into().unwrap(),
             size_b: 1.try_into().unwrap(),
             def_align: 0,
-            size_s_l_ll: None,
             size_long_double: None,
+            size_short: 2.try_into().unwrap(),
+            size_long: 4.try_into().unwrap(),
+            size_long_long: 8.try_into().unwrap(),
         };
         let mut reader = data;
         let type_raw = TypeRaw::read(&mut reader, &header)?;
@@ -168,43 +170,56 @@ impl TypeRaw {
         let metadata: u8 = bincode::deserialize_from(&mut *input)?;
         let type_base = metadata & flag::tf_mask::TYPE_BASE_MASK;
         let type_flags = metadata & flag::tf_mask::TYPE_FLAGS_MASK;
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480335
         match (type_base, type_flags) {
             (flag::BT_RESERVED, _) => Err(anyhow!("Reserved Basic Type")),
             (..=flag::tf_last_basic::BT_LAST_BASIC, _) => {
                 Basic::new(til, type_base, type_flags).map(TypeRaw::Basic)
             }
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4804d7
             (flag::tf_ptr::BT_PTR, _) => PointerRaw::read(input, til, type_flags)
                 .context("Type::Pointer")
                 .map(TypeRaw::Pointer),
+
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48075a
+            (flag::tf_array::BT_ARRAY, _) => ArrayRaw::read(input, til, type_flags)
+                .context("Type::Array")
+                .map(TypeRaw::Array),
 
             (flag::tf_func::BT_FUNC, _) => FunctionRaw::read(input, til, type_flags)
                 .context("Type::Function")
                 .map(TypeRaw::Function),
 
-            (flag::tf_array::BT_ARRAY, _) => ArrayRaw::read(input, til, type_flags)
-                .context("Type::Array")
-                .map(TypeRaw::Array),
-
             (flag::tf_complex::BT_BITFIELD, _) => Ok(TypeRaw::Bitfield(
                 Bitfield::read(input, metadata).context("Type::Bitfield")?,
             )),
 
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480369
+
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480369
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_TYPEDEF) => Typedef::read(input)
                 .context("Type::Typedef")
                 .map(TypeRaw::Typedef),
 
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480378
+
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_UNION) => {
                 UnionRaw::read(input, til)
                     .context("Type::Union")
                     .map(TypeRaw::Union)
             }
 
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_STRUCT) => {
                 StructRaw::read(input, til)
                     .context("Type::Struct")
                     .map(TypeRaw::Struct)
             }
 
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_ENUM) => {
                 EnumRaw::read(input, til)
                     .context("Type::Enum")
@@ -215,7 +230,7 @@ impl TypeRaw {
     }
 
     pub fn read_ref(input: &mut impl IdaGenericUnpack, header: &TILSectionHeader) -> Result<Self> {
-        let mut bytes = input.read_dt_bytes()?;
+        let mut bytes = input.unpack_dt_bytes()?;
 
         if !bytes.starts_with(b"=") {
             let dt = serialize_dt(bytes.len().try_into().unwrap())?;
@@ -264,17 +279,7 @@ impl Basic {
 
         use flag::{tf_bool::*, tf_float::*, tf_int::*, tf_unk::*};
         match bt {
-            BT_VOID => {
-                let bytes = match btmt {
-                    // special case, void
-                    BTMT_SIZE0 => return Ok(Self::Void),
-                    BTMT_SIZE12 => 1,
-                    BTMT_SIZE48 => 4,
-                    BTMT_SIZE128 => 16,
-                    _ => unreachable!(),
-                };
-                Ok(Self::Unknown { bytes })
-            }
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480874
             BT_UNK => {
                 let bytes = match btmt {
                     BTMT_SIZE0 => return Err(anyhow!("forbidden use of BT_UNK")),
@@ -286,6 +291,21 @@ impl Basic {
                 Ok(Self::Unknown { bytes })
             }
 
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480694
+            BT_VOID => {
+                let bytes = match btmt {
+                    // special case, void
+                    BTMT_SIZE0 => return Ok(Self::Void),
+                    BTMT_SIZE12 => 1,
+                    BTMT_SIZE48 => 4,
+                    BTMT_SIZE128 => 16,
+                    _ => unreachable!(),
+                };
+                // TODO extra logic
+                // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480694
+                Ok(Self::Unknown { bytes })
+            }
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480474
             bt_int @ BT_INT8..=BT_INT => {
                 let is_signed = match btmt {
                     BTMT_UNKSIGN => None,
@@ -313,12 +333,14 @@ impl Basic {
                 Ok(Self::Int { bytes, is_signed })
             }
 
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4805c4
             BT_BOOL => {
                 let bytes = match btmt {
                     BTMT_DEFBOOL => til.size_b,
                     BTMT_BOOL1 => bytes(1),
                     BTMT_BOOL4 => bytes(4),
                     // TODO get the inf_is_64bit  field
+                    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480d6f
                     //BTMT_BOOL2 if !inf_is_64bit => Some(bytes(2)),
                     //BTMT_BOOL8 if inf_is_64bit => Some(bytes(8)),
                     BTMT_BOOL8 => bytes(2), // delete this
@@ -327,6 +349,7 @@ impl Basic {
                 Ok(Self::Bool { bytes })
             }
 
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808b4
             BT_FLOAT => {
                 let bytes = match btmt {
                     BTMT_FLOAT => bytes(4),
@@ -334,6 +357,7 @@ impl Basic {
                     // TODO error if none?
                     BTMT_LNGDBL => til.size_long_double.unwrap_or(bytes(8)),
                     // TODO find the tbyte_size field
+                    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808e7
                     //BTMT_SPECFLT if til.tbyte_size() => Some(bytes),
                     BTMT_SPECFLT => bytes(2),
                     _ => unreachable!(),
@@ -353,7 +377,7 @@ pub enum Typedef {
 
 impl Typedef {
     fn read(input: &mut impl IdaGenericUnpack) -> Result<Self> {
-        let buf = input.read_dt_bytes()?;
+        let buf = input.unpack_dt_bytes()?;
         match &buf[..] {
             [b'#', data @ ..] => {
                 let mut tmp = data;
@@ -433,7 +457,7 @@ impl TypeAttribute {
         if (val & 0x0010) > 0 {
             val = input.read_dt()?;
             for _ in 0..val {
-                let _string = input.read_dt_bytes()?;
+                let _string = input.unpack_dt_bytes()?;
                 let another_de = input.read_dt()?;
                 let mut other_string = vec![0; another_de.into()];
                 input.read_exact(&mut other_string)?;
@@ -447,6 +471,9 @@ impl TypeAttribute {
 pub struct TAH(pub TypeAttribute);
 impl TAH {
     fn read(input: &mut impl IdaGenericBufUnpack) -> Result<Self> {
+        // TODO TAH in each type have a especial meaning, verify those
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477080
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
         let Some(tah) = input.fill_buf()?.first().copied() else {
             return Err(anyhow!(std::io::Error::new(
                 std::io::ErrorKind::UnexpectedEof,
@@ -471,10 +498,12 @@ impl SDACL {
                 "Unexpected EoF on SDACL"
             )));
         };
-        if ((sdacl & !0x30) ^ 0xC0) <= 0x01 {
-            Ok(Self(TypeAttribute::read(input)?))
-        } else {
-            Ok(Self(TypeAttribute(0)))
+
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477eff
+        match sdacl {
+            //NOTE: original op ((sdacl & 0xcf) ^ 0xC0) <= 0x01
+            0xd0..=0xff | 0xc0 | 0xc1 => Ok(Self(TypeAttribute::read(input)?)),
+            _ => Ok(Self(TypeAttribute(0))),
         }
     }
 }

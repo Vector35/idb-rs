@@ -52,6 +52,7 @@ impl PointerRaw {
         metadata: u8,
     ) -> anyhow::Result<Self> {
         use crate::til::flag::tf_ptr::*;
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478d67
         let closure = match metadata {
             BTMT_DEFPTR => None,
             BTMT_CLOSURE => Some(ClosureRaw::read(&mut *input, header)?),
@@ -60,6 +61,7 @@ impl PointerRaw {
             BTMT_NEAR => None,
             _ => unreachable!(),
         };
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4804fa
         let tah = TAH::read(&mut *input)?;
         let typ = TypeRaw::read(&mut *input, header)?;
         Ok(Self {
