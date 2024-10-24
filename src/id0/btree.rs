@@ -1,4 +1,4 @@
-use std::ffi::CStr;
+use std::{ffi::CStr, io::Read};
 
 use anyhow::Result;
 
@@ -64,6 +64,9 @@ impl ID0Header {
         let page_count: u32 = bincode::deserialize_from(&mut buf_current)?;
         let _unk12: u8 = bincode::deserialize_from(&mut buf_current)?;
         let version = ID0Version::read(&mut buf_current)?;
+        // TODO maybe this is a u64/u32/u16
+        let _unk1d = buf_current.read_u8()?;
+        let header_len = 64 - buf_current.len();
         // TODO move this code out of here and use seek instead
         // read the rest of the page
         ensure!(page_size >= 64);
@@ -71,7 +74,7 @@ impl ID0Header {
         input.read_exact(&mut buf[64..])?;
         // the rest of the header should be only zeros
         ensure!(
-            buf[64..].iter().all(|b| *b == 0),
+            buf[header_len..].iter().all(|b| *b == 0),
             "Extra data on the header was not parsed"
         );
         Ok(ID0Header {
@@ -103,83 +106,81 @@ impl ID0Section {
         header: &IDBHeader,
         compress: IDBSectionCompression,
     ) -> Result<Self> {
-        match compress {
-            IDBSectionCompression::None => Self::read_inner(input, header),
+        let mut buf = vec![];
+        let _len = match compress {
+            IDBSectionCompression::None => input.read_to_end(&mut buf)?,
             IDBSectionCompression::Zlib => {
-                let mut input = flate2::read::ZlibDecoder::new(input);
-                Self::read_inner(&mut input, header)
+                flate2::read::ZlibDecoder::new(input).read_to_end(&mut buf)?
             }
-        }
+        };
+        Self::read_inner(&buf, header)
     }
 
     // NOTE this was written this way to validate the data in each file, so it's clear that no
     // data is being parsed incorrectly or is left unparsed. There way too many validations
     // and non-necessary parsing is done on delete data.
-    // TODO This is probably much more efficient if written with <I: BufRead + Seek>, this
-    // way it's not necessary to read and cache the unused/deleted pages, if you are sure this
-    // implementation is correct, you could rewrite this function to do that.
-    fn read_inner(input: &mut impl IdaGenericUnpack, idb_header: &IDBHeader) -> Result<Self> {
+    fn read_inner(input: &[u8], idb_header: &IDBHeader) -> Result<Self> {
+        let mut reader = input;
+
         // pages size are usually around that size
         let mut buf = Vec::with_capacity(0x2000);
-        let header = ID0Header::read(&mut *input, &mut buf)?;
+        let header = ID0Header::read(&mut reader, &mut buf)?;
+
+        ensure!(input.len() % header.page_size as usize == 0);
+        let pages_in_section = input.len() / header.page_size as usize;
+        // +1 for the header, some times there is more space then pages, usually empty pages at the end
+        ensure!(header.page_count as usize + 1 <= pages_in_section);
+
+        let Some(root_page) = header.root_page else {
+            ensure!(header.record_count == 0);
+            // if root is not set, then the DB is empty
+            return Ok(Self {
+                is_64: idb_header.magic_version.is_64(),
+                entries: vec![],
+            });
+        };
+
         buf.resize(header.page_size.into(), 0);
-        // NOTE sometimes deleted pages are included here, seems to happen especially if an
-        // index is deleted with all it's leafs, leaving the now-empty index and the
-        // now-disconnected children
-        let mut pages = Vec::with_capacity(header.page_count.try_into().unwrap());
+        let mut pages = HashMap::with_capacity(header.page_count.try_into().unwrap());
+        let mut pending_pages = vec![root_page];
         loop {
-            let read = input.read_exact_or_nothing(&mut buf)?;
-            if read == 0 {
-                // no more data, hit eof
+            if pending_pages.is_empty() {
                 break;
             }
-            if read != header.page_size.into() {
-                // only read part of the page
-                return Err(anyhow!("Found EoF in the middle of the page"));
+            let page_idx = pending_pages.pop().unwrap();
+            // if already parsed, ignore
+            if pages.contains_key(&page_idx) {
+                continue;
             }
             // read the full page
-            let page = ID0TreeEntrRaw::read(&buf, &header)?;
-            pages.push(Some(page));
-        }
-
-        // verify for duplicated entries
-        let pages_tree = Self::create_tree(header.root_page, &mut pages)?;
-
-        // verify that the correct number of pages were consumed and added to the tree
-        let in_tree_pages = pages
-            .iter()
-            .map(Option::as_ref)
-            .filter(Option::is_none)
-            .count();
-        ensure!(in_tree_pages == header.page_count.try_into().unwrap());
-
-        // make sure only empty pages are left out-of-the-tree
-        for page in pages.into_iter().flatten() {
-            match page {
-                ID0TreeEntrRaw::Leaf(leaf) if leaf.is_empty() => {}
-                ID0TreeEntrRaw::Index { entries, .. } if entries.is_empty() => {}
-                ID0TreeEntrRaw::Index { preceding, entries } => {
-                    return Err(anyhow!(
-                        "Extra Index preceding {}, with {} entries",
-                        preceding.get(),
-                        entries.len()
-                    ))
+            ensure!((page_idx.get() as usize) < pages_in_section);
+            let page_offset = page_idx.get() as usize * header.page_size as usize;
+            let page_raw = &input[page_offset..page_offset + header.page_size as usize];
+            let page = ID0Page::read(page_raw, &header)?;
+            // put in the queue the pages that need parsing, AKA children of this page
+            match &page {
+                ID0Page::Index { preceding, entries } => {
+                    pending_pages.extend(
+                        entries
+                            .iter()
+                            .filter_map(|entry| entry.page)
+                            .chain(*preceding),
+                    );
                 }
-                ID0TreeEntrRaw::Leaf(entries) => {
-                    let entries_len = entries
-                        .iter()
-                        .filter(|e| !e.key.is_empty() || !e.value.is_empty())
-                        .count();
-                    if entries_len != 0 {
-                        return Err(anyhow!("Extra Leaf with {} entry", entries_len));
-                    }
-                }
+                ID0Page::Leaf(_) => {}
+            }
+            // insert the parsed page
+            if let Some(_old) = pages.insert(page_idx, page) {
+                unreachable!();
             }
         }
+
+        // verify that the correct number of pages were consumed and added to the tree
+        ensure!(pages.len() <= header.page_count.try_into().unwrap());
 
         // put it all in order on the vector
         let mut entries = Vec::with_capacity(header.record_count.try_into().unwrap());
-        Self::tree_to_vec(pages_tree, &mut entries);
+        Self::tree_to_vec(root_page, &mut pages, &mut entries);
 
         // make sure the vector is sorted
         ensure!(entries.windows(2).all(|win| {
@@ -196,53 +197,25 @@ impl ID0Section {
         })
     }
 
-    fn create_tree(
-        index: Option<NonZeroU32>,
-        pages: &mut Vec<Option<ID0TreeEntrRaw>>,
-    ) -> Result<ID0TreeEntry> {
-        let Some(index) = index else {
-            return Ok(ID0TreeEntry::Leaf(vec![]));
-        };
-
-        let index = usize::try_from(index.get()).unwrap() - 1;
-        let entry = pages
-            .get_mut(index)
-            .ok_or_else(|| anyhow!("invalid page index: {index}"))?
-            .take()
-            .ok_or_else(|| anyhow!("page index {index} is referenced multiple times"))?;
-        match entry {
-            ID0TreeEntrRaw::Leaf(leaf) => Ok(ID0TreeEntry::Leaf(leaf)),
-            ID0TreeEntrRaw::Index { preceding, entries } => {
-                let preceding = Self::create_tree(Some(preceding), &mut *pages)?;
-                let index = entries
-                    .into_iter()
-                    .map(|e| {
-                        let page = Self::create_tree(e.page, &mut *pages)?;
-                        Ok(ID0TreeIndex {
-                            page: Box::new(page),
-                            key: e.key,
-                            value: e.value,
-                        })
-                    })
-                    .collect::<Result<_>>()?;
-                Ok(ID0TreeEntry::Index {
-                    preceding: Box::new(preceding),
-                    index,
-                })
-            }
-        }
-    }
-
-    fn tree_to_vec(entry: ID0TreeEntry, output: &mut Vec<ID0Entry>) {
-        match entry {
-            ID0TreeEntry::Index { preceding, index } => {
-                Self::tree_to_vec(*preceding, &mut *output);
-                for ID0TreeIndex { page, key, value } in index {
+    fn tree_to_vec(
+        page_idx: NonZeroU32,
+        pages: &mut HashMap<NonZeroU32, ID0Page>,
+        output: &mut Vec<ID0Entry>,
+    ) {
+        match pages.remove(&page_idx).unwrap() {
+            ID0Page::Index { preceding, entries } => {
+                if let Some(preceding) = preceding {
+                    // if not root, add the preceding page before this one
+                    Self::tree_to_vec(preceding, pages, &mut *output);
+                }
+                for ID0PageIndex { page, key, value } in entries {
                     output.push(ID0Entry { key, value });
-                    Self::tree_to_vec(*page, &mut *output);
+                    if let Some(page) = page {
+                        Self::tree_to_vec(page, pages, &mut *output);
+                    }
                 }
             }
-            ID0TreeEntry::Leaf(entries) => output.extend(entries),
+            ID0Page::Leaf(entries) => output.extend(entries),
         }
     }
 
@@ -729,7 +702,7 @@ impl ID0Section {
     // https://hex-rays.com/products/ida/support/idapython_docs/ida_dirtree.html
 
     /// read the `$ dirtree/tinfos` entries of the database
-    pub fn dirtree_tinfos<'a>(&'a self) -> Result<DirTreeRoot<Id0TilOrd>> {
+    pub fn dirtree_tinfos(&self) -> Result<DirTreeRoot<Id0TilOrd>> {
         self.dirtree_from_name("N$ dirtree/tinfos")
     }
 
@@ -788,38 +761,22 @@ impl ID0Section {
 }
 
 #[derive(Debug, Clone)]
-enum ID0TreeEntry {
+enum ID0Page {
     Index {
-        preceding: Box<ID0TreeEntry>,
-        index: Vec<ID0TreeIndex>,
+        preceding: Option<NonZeroU32>,
+        entries: Vec<ID0PageIndex>,
     },
     Leaf(Vec<ID0Entry>),
 }
 
 #[derive(Debug, Clone)]
-struct ID0TreeIndex {
-    page: Box<ID0TreeEntry>,
-    key: Vec<u8>,
-    value: Vec<u8>,
-}
-
-#[derive(Debug, Clone)]
-enum ID0TreeEntrRaw {
-    Index {
-        preceding: NonZeroU32,
-        entries: Vec<ID0TreeIndexRaw>,
-    },
-    Leaf(Vec<ID0Entry>),
-}
-
-#[derive(Debug, Clone)]
-struct ID0TreeIndexRaw {
+struct ID0PageIndex {
     page: Option<NonZeroU32>,
     key: Vec<u8>,
     value: Vec<u8>,
 }
 
-impl ID0TreeEntrRaw {
+impl ID0Page {
     fn read(page: &[u8], header: &ID0Header) -> Result<Self> {
         match header.version {
             ID0Version::V15 => Self::read_xx(
@@ -876,11 +833,15 @@ impl ID0TreeEntrRaw {
         let min_data_pos = entry_len
             .checked_mul(count + 2)
             .ok_or_else(|| anyhow!("Invalid number of entries"))?;
-        ensure!(min_data_pos <= id0_header.page_size);
+        ensure!(
+            min_data_pos <= id0_header.page_size,
+            "ID0 page have more data then space available"
+        );
 
         let mut data_offsets = (entry_len..).step_by(entry_len.into());
         let entry_offsets = (&mut data_offsets).take(count.into());
-        let entry = if let Some(preceding) = preceding {
+        // TODO is root always entry and never leaf?
+        let entry = if preceding.is_some() {
             // index
             let entries = entry_offsets
                 .map(|offset| {
@@ -893,10 +854,10 @@ impl ID0TreeEntrRaw {
                     ensure!(recofs < id0_header.page_size);
                     input = &page_buf[recofs.into()..];
                     let (key, value) = index_value(&mut input)?;
-                    Ok(ID0TreeIndexRaw { page, key, value })
+                    Ok(ID0PageIndex { page, key, value })
                 })
                 .collect::<Result<Vec<_>, _>>()?;
-            ID0TreeEntrRaw::Index { preceding, entries }
+            ID0Page::Index { preceding, entries }
         } else {
             // leaf
             // keys are usually very similar to one another, so it reuses the last key
@@ -935,7 +896,7 @@ impl ID0TreeEntrRaw {
                     Ok(ID0Entry { key, value })
                 })
                 .collect::<Result<Vec<_>, _>>()?;
-            ID0TreeEntrRaw::Leaf(entry)
+            ID0Page::Leaf(entry)
         };
 
         input = &page_buf[data_offsets.next().unwrap().into()..];
