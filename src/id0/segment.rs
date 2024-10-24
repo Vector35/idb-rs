@@ -49,7 +49,7 @@ impl Segment {
         id0: &ID0Section,
     ) -> Result<Self> {
         let mut cursor = IdaUnpacker::new(value, is_64);
-        // InnerRef: 0x430684
+        // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x330684
         let startea = cursor.unpack_usize()?;
         let size = cursor.unpack_usize()?;
         let name_id = cursor.unpack_usize()?;

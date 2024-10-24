@@ -125,7 +125,7 @@ pub enum IDBFunctionExtra {
 }
 
 impl IDBFunction {
-    // InnerRef: 0x38f810
+    // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f810
     fn read(key: &[u8], value: &[u8], is_64: bool) -> Result<Self> {
         let key_address = parse_number(key, true, is_64)
             .ok_or_else(|| anyhow!("Invalid IDB FileRefion Key Offset"))?;
@@ -141,7 +141,7 @@ impl IDBFunction {
         } else {
             Self::read_extra_regular(input).ok()
         };
-        // TODO Undertand the InnerRef 0x38f9d8 data
+        // TODO Undertand the InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f9d8 data
         // TODO make sure all the data is parsed
         //ensure!(input.position() == u64::try_from(data.len()).unwrap());
         Ok(Self {
@@ -152,7 +152,7 @@ impl IDBFunction {
     }
 
     fn read_extra_regular(mut input: impl IdaUnpack) -> Result<IDBFunctionExtra> {
-        // TODO Undertand the sub operation at InnerRef 0x38f98f
+        // TODO Undertand the sub operation at InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f98f
         let frame = input.unpack_usize_ext_max()?;
         let _unknown4 = input.unpack_dw()?;
         if _unknown4 == 0 {
@@ -173,7 +173,7 @@ impl IDBFunction {
         let _unknown1 = input.unpack_dw()?;
         let _unknown2 = input.unpack_usize_ext_max()?;
         // TODO make data depending on variables that I don't understant
-        // InnerRef: 0x38fa93
+        // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28fa93
         Ok(IDBFunctionExtra::Tail { owner, refqty })
     }
 }

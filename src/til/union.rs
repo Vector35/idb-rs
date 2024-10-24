@@ -74,6 +74,7 @@ impl UnionRaw {
         header: &TILSectionHeader,
     ) -> anyhow::Result<Self> {
         let Some(n) = input.read_dt_de()? else {
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // is ref
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
             let taudt_bits = SDACL::read(&mut *input)?;
@@ -82,6 +83,8 @@ impl UnionRaw {
                 taudt_bits,
             });
         };
+
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
         let alpow = n & 7;
         let mem_cnt = n >> 3;
         let effective_alignment = if alpow == 0 { 0 } else { 1 << (alpow - 1) };

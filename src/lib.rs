@@ -552,69 +552,74 @@ mod test {
     fn parse_idbs() {
         let files = find_all("resources/idbs".as_ref(), &["idb".as_ref(), "i64".as_ref()]).unwrap();
         for filename in files {
-            println!("{}", filename.to_str().unwrap());
-            let file = BufReader::new(File::open(&filename).unwrap());
-            let mut parser = IDBParser::new(file).unwrap();
-            // parse sectors
-            let id0 = parser
-                .read_id0_section(parser.id0_section_offset().unwrap())
-                .unwrap();
-            let til = parser
-                .til_section_offset()
-                .map(|til| parser.read_til_section(til).unwrap());
-            let _ = parser
-                .id1_section_offset()
-                .map(|idx| parser.read_id1_section(idx));
-            let _ = parser
-                .nam_section_offset()
-                .map(|idx| parser.read_nam_section(idx));
-
-            // parse all id0 information
-            let _ida_info = id0.ida_info().unwrap();
-            let version = match _ida_info {
-                id0::IDBParam::V1(x) => x.version,
-                id0::IDBParam::V2(x) => x.version,
-            };
-
-            let _: Vec<_> = id0.segments().unwrap().map(Result::unwrap).collect();
-            let _: Vec<_> = id0.loader_name().unwrap().map(Result::unwrap).collect();
-            let _: Vec<_> = id0.root_info().unwrap().map(Result::unwrap).collect();
-            let _: Vec<_> = id0
-                .file_regions(version)
-                .unwrap()
-                .map(Result::unwrap)
-                .collect();
-            let _: Vec<_> = id0
-                .functions_and_comments()
-                .unwrap()
-                .map(Result::unwrap)
-                .collect();
-            let _ = id0.entry_points().unwrap();
-            let _ = id0.dirtree_bpts().unwrap();
-            let _ = id0.dirtree_enums().unwrap();
-            let _dirtree_names = id0.dirtree_names().unwrap();
-            _dirtree_names.visit_leafs(|addr| {
-                // NOTE it's know that some label are missing in some databases
-                let _name = id0.label_at(*addr).unwrap();
-            });
-            let _dirtree_tinfos = id0.dirtree_tinfos().unwrap();
-            if let Some(til) = til {
-                _dirtree_tinfos.visit_leafs(|ord| {
-                    let _til = til.get_ord(*ord).unwrap();
-                });
-            }
-            let _ = id0.dirtree_imports().unwrap();
-            let _ = id0.dirtree_structs().unwrap();
-            let _ = id0.dirtree_function_address().unwrap();
-            let _ = id0.dirtree_bookmarks_tiplace().unwrap();
-            let _ = id0.dirtree_bookmarks_idaplace().unwrap();
-            let _ = id0.dirtree_bookmarks_structplace().unwrap();
-            let _: Vec<_> = id0
-                .address_info(version)
-                .unwrap()
-                .collect::<Result<_>>()
-                .unwrap();
+            parse_idb(filename)
         }
+    }
+
+    fn parse_idb(filename: impl AsRef<Path>) {
+        let filename = filename.as_ref();
+        println!("{}", filename.to_str().unwrap());
+        let file = BufReader::new(File::open(&filename).unwrap());
+        let mut parser = IDBParser::new(file).unwrap();
+        // parse sectors
+        let id0 = parser
+            .read_id0_section(parser.id0_section_offset().unwrap())
+            .unwrap();
+        let til = parser
+            .til_section_offset()
+            .map(|til| parser.read_til_section(til).unwrap());
+        let _ = parser
+            .id1_section_offset()
+            .map(|idx| parser.read_id1_section(idx));
+        let _ = parser
+            .nam_section_offset()
+            .map(|idx| parser.read_nam_section(idx));
+
+        // parse all id0 information
+        let _ida_info = id0.ida_info().unwrap();
+        let version = match _ida_info {
+            id0::IDBParam::V1(x) => x.version,
+            id0::IDBParam::V2(x) => x.version,
+        };
+
+        let _: Vec<_> = id0.segments().unwrap().map(Result::unwrap).collect();
+        let _: Vec<_> = id0.loader_name().unwrap().map(Result::unwrap).collect();
+        let _: Vec<_> = id0.root_info().unwrap().map(Result::unwrap).collect();
+        let _: Vec<_> = id0
+            .file_regions(version)
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        let _: Vec<_> = id0
+            .functions_and_comments()
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        let _ = id0.entry_points().unwrap();
+        let _ = id0.dirtree_bpts().unwrap();
+        let _ = id0.dirtree_enums().unwrap();
+        let _dirtree_names = id0.dirtree_names().unwrap();
+        _dirtree_names.visit_leafs(|addr| {
+            // NOTE it's know that some label are missing in some databases
+            let _name = id0.label_at(*addr).unwrap();
+        });
+        let _dirtree_tinfos = id0.dirtree_tinfos().unwrap();
+        if let Some(til) = til {
+            _dirtree_tinfos.visit_leafs(|ord| {
+                let _til = til.get_ord(*ord).unwrap();
+            });
+        }
+        let _ = id0.dirtree_imports().unwrap();
+        let _ = id0.dirtree_structs().unwrap();
+        let _ = id0.dirtree_function_address().unwrap();
+        let _ = id0.dirtree_bookmarks_tiplace().unwrap();
+        let _ = id0.dirtree_bookmarks_idaplace().unwrap();
+        let _ = id0.dirtree_bookmarks_structplace().unwrap();
+        let _: Vec<_> = id0
+            .address_info(version)
+            .unwrap()
+            .collect::<Result<_>>()
+            .unwrap();
     }
 
     #[test]
@@ -627,18 +632,15 @@ mod test {
                 // makes sure it don't read out-of-bounds
                 let mut input = BufReader::new(File::open(file)?);
                 // TODO make a SmartReader
-                match TILSection::read(&mut input, IDBSectionCompression::None) {
-                    Ok(_til) => {
-                        let current = input.seek(SeekFrom::Current(0))?;
-                        let end = input.seek(SeekFrom::End(0))?;
-                        ensure!(
-                            current == end,
-                            "unable to consume the entire TIL file, {current} != {end}"
-                        );
-                        Ok(())
-                    }
-                    Err(e) => Err(e),
-                }
+                TILSection::read(&mut input, IDBSectionCompression::None).and_then(|_til| {
+                    let current = input.seek(SeekFrom::Current(0))?;
+                    let end = input.seek(SeekFrom::End(0))?;
+                    ensure!(
+                        current == end,
+                        "unable to consume the entire TIL file, {current} != {end}"
+                    );
+                    Ok(())
+                })
             })
             .collect::<Result<(), _>>()
             .unwrap();

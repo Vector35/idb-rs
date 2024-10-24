@@ -863,7 +863,7 @@ pub enum NameType {
     Serial,
 }
 
-// InnerRef: 8e6e20
+// InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x7e6e20
 impl NameType {
     fn new(value: u8) -> Option<Self> {
         Some(match value {
@@ -883,7 +883,7 @@ impl NameType {
     }
 }
 
-// InnerRef: 8e6de0
+// InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x7e6de0
 #[derive(Debug, Clone, Copy)]
 pub enum DemNamesForm {
     /// display demangled names as comments
@@ -1164,7 +1164,7 @@ impl AbiOptions {
     }
 }
 
-// InnerRef: 8e6ee0
+// InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x7e6ee0
 #[derive(Debug, Clone)]
 pub enum FileType {
     Raw,
@@ -1227,7 +1227,7 @@ impl FileType {
     }
 }
 
-// InnerRef: 8e6cc0
+// InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x7e6cc0
 #[derive(Debug, Clone)]
 pub enum Compiler {
     Unknown,
