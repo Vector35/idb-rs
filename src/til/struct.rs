@@ -156,7 +156,7 @@ impl StructMemberRaw {
         };
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486d0d
         match att & 0xf {
-            0xd..=0xf => return Err(anyhow!("Invalid value for member attribute {att:#x}")),
+            0xd..=0xf => Err(anyhow!("Invalid value for member attribute {att:#x}")),
             0..=7 => Self::basic_att(input, att),
             8 | 0xb => todo!(),
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486d3f

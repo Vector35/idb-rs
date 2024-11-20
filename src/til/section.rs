@@ -101,7 +101,7 @@ impl TILSection {
             &mut *input,
             &header,
             next_ordinal,
-            type_ordinal_alias.as_ref().map(Vec::as_slice),
+            type_ordinal_alias.as_deref(),
         )?;
         let macros = header
             .flags
@@ -137,6 +137,7 @@ impl TILSection {
         })
     }
 
+    #[allow(clippy::type_complexity)]
     fn read_next_ordinal_and_alias(
         input: &mut impl IdaGenericUnpack,
         header: &TILSectionHeader,
