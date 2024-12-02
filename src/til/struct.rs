@@ -132,15 +132,23 @@ impl StructMemberRaw {
 
         let mut att1 = None;
         if is_bit_set {
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478256
             att1 = Self::read_member_att_1(input, header)?;
         }
 
-        //// InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
         let mut sdacl = SDACL(crate::til::TypeAttribute(0));
         if !is_bit_set || matches!(att1, Some(_att1)) {
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
             sdacl = SDACL::read(&mut *input)?;
-            // TODO there is more to this impl
-            //todo!();
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
+            if taudt_bits & 4 != 0 {
+                if sdacl.0 .0 & 0x200 == 0 {
+                    // TODO there is more to this impl?
+                    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478411
+                    // todo!();
+                }
+            }
         }
 
         Ok(Self { ty, sdacl })
@@ -188,12 +196,12 @@ impl StructMemberRaw {
     }
 
     fn basic_att(input: &mut impl IdaGenericBufUnpack, att: u64) -> Result<Option<u64>> {
-        if att & 0x10 != 0 {
+        if (att >> 8) & 0x10 != 0 {
             // TODO this is diferent from the implementation, double check the read_de and this code
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486df0
             let _val1 = input.read_de()?;
-            //let _val2 = input.read_de()?;
-            //let _val3 = input.read_de()?;
+            let _val2 = input.read_de()?;
+            let _val3 = input.read_de()?;
             Ok(Some(att))
         } else {
             Ok(Some(att))
