@@ -167,7 +167,7 @@ pub(crate) enum TypeRaw {
 
 impl TypeRaw {
     pub fn read(input: &mut impl IdaGenericBufUnpack, til: &TILSectionHeader) -> Result<Self> {
-        let metadata: u8 = bincode::deserialize_from(&mut *input)?;
+        let metadata: u8 = input.read_u8()?;
         let type_base = metadata & flag::tf_mask::TYPE_BASE_MASK;
         let type_flags = metadata & flag::tf_mask::TYPE_FLAGS_MASK;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480335
@@ -433,20 +433,23 @@ pub struct CallingConventionFlag(pub u8);
 #[derive(Clone, Copy, Debug)]
 pub struct TypeAttribute(pub u16);
 impl TypeAttribute {
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
     fn read(input: &mut impl IdaGenericUnpack) -> Result<Self> {
-        let mut val: u16 = 0;
-        let tah: u8 = bincode::deserialize_from(&mut *input)?;
-        let tmp = ((tah & 1) | ((tah >> 3) & 6)) + 1;
-        if tah == 0xFE || tmp == 8 {
-            if tmp == 8 {
-                val = tmp as u16;
-            }
+        let byte0: u8 = input.read_u8()?;
+        let mut val = 0;
+        if byte0 != 0xfe {
+            val = ((byte0 as u16 & 1) | ((byte0 as u16 >> 3) & 6)) + 1;
+        }
+        if byte0 == 0xFE || val == 8 {
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452878
             let mut shift = 0;
+            // TODO limit the loop to only 0..n
             loop {
-                let next_byte: u8 = bincode::deserialize_from(&mut *input)?;
-                if next_byte == 0 {
-                    return Err(anyhow!("Failed to parse TypeAttribute"));
-                }
+                let next_byte: u8 = input.read_u8()?;
+                ensure!(
+                    next_byte != 0,
+                    "Failed to parse TypeAttribute, byte is zero"
+                );
                 val |= ((next_byte & 0x7F) as u16) << shift;
                 if next_byte & 0x80 == 0 {
                     break;
@@ -454,13 +457,15 @@ impl TypeAttribute {
                 shift += 7;
             }
         }
+
         if (val & 0x0010) > 0 {
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45289e
             val = input.read_dt()?;
+            // TODO this only happen if the arg3 is nullptr
             for _ in 0..val {
                 let _string = input.unpack_dt_bytes()?;
-                let another_de = input.read_dt()?;
-                let mut other_string = vec![0; another_de.into()];
-                input.read_exact(&mut other_string)?;
+                let _other_string = input.unpack_dt_bytes()?;
+                // TODO maybe more...
             }
         }
         Ok(TypeAttribute(val))
