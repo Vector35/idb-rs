@@ -26,7 +26,7 @@ pub struct IDBFileRegions {
 }
 
 impl IDBFileRegions {
-    fn read(key: &[u8], data: &[u8], version: u16, is_64: bool) -> Result<Self> {
+    fn read(_key: &[u8], data: &[u8], version: u16, is_64: bool) -> Result<Self> {
         let mut input = IdaUnpacker::new(data, is_64);
         // TODO detect versions with more accuracy
         let (start, end, eva) = match version {
@@ -49,9 +49,6 @@ impl IDBFileRegions {
                 (start, end, rva)
             }
         };
-        let key_offset =
-            parse_number(key, true, is_64).ok_or_else(|| anyhow!("Invalid IDB File Key Offset"))?;
-        ensure!(key_offset == start);
         ensure!(input.inner().is_empty());
         Ok(Self { start, end, eva })
     }
@@ -126,12 +123,9 @@ pub enum IDBFunctionExtra {
 
 impl IDBFunction {
     // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f810
-    fn read(key: &[u8], value: &[u8], is_64: bool) -> Result<Self> {
-        let key_address = parse_number(key, true, is_64)
-            .ok_or_else(|| anyhow!("Invalid IDB FileRefion Key Offset"))?;
+    fn read(_key: &[u8], value: &[u8], is_64: bool) -> Result<Self> {
         let mut input = IdaUnpacker::new(value, is_64);
         let address = input.unpack_address_range()?;
-        ensure!(key_address == address.start);
         let flags = input.unpack_dw()?;
 
         // CONST migrate this to mod flags
