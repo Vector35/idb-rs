@@ -142,12 +142,10 @@ impl StructMemberRaw {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
             sdacl = SDACL::read(&mut *input)?;
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
-            if taudt_bits & 4 != 0 {
-                if sdacl.0 .0 & 0x200 == 0 {
-                    // TODO there is more to this impl?
-                    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478411
-                    // todo!();
-                }
+            if taudt_bits & 4 != 0 && sdacl.0 .0 & 0x200 == 0 {
+                // TODO there is more to this impl?
+                // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478411
+                // todo!();
             }
         }
 
