@@ -119,7 +119,7 @@ impl Type {
         // maybe it just use the til sector header, or more likelly it's from
         // IDBParam  in the `Root Node`
         let header = section::TILSectionHeader {
-            format: 700,
+            format: 12,
             flags: section::TILSectionFlag(0),
             title: Vec::new(),
             description: Vec::new(),
@@ -145,7 +145,7 @@ impl Type {
                 return Err(anyhow!(
                     "Extra {} bytes after reading TIL from ID0",
                     rest.len()
-                ))
+                ));
             }
         }
         Self::new(&header, type_raw, None)

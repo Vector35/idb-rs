@@ -543,6 +543,32 @@ mod test {
     }
 
     #[test]
+    fn parse_destructor_function() {
+        // from ComRAT-Orchestrator.i64 0x180007cf0
+        // ```c
+        // void __fastcall stringstream__basic_ios__sub_180007CF0_Destructor(
+        //   basic_ios *__shifted(stringstream,0x94) a1
+        // );
+        // ```
+        let function = [
+            0x0c, // Function Type
+            0x70, // TODO
+            0x01, // void ret
+            0x02, // n args (2 - 1 = 1)
+            0x0a, // arg0 type is pointer
+            0xfe, 0x80, 0x01, // pointer tah
+            0x3d, // pointer type is typedef
+            0x04, 0x23, 0x83, 0x69, // typedef ord is 233 -> basic_ios
+            // ?????
+            0x3d, // second typedef?
+            0x04, 0x23, 0x83, 0x66, // typedef ord is 230 => stringstream
+            0x82, 0x54, // ???? the 0x94 value?
+            0x00, // the final value always present
+        ];
+        let _til = til::Type::new_from_id0(&function).unwrap();
+    }
+
+    #[test]
     fn parse_idb_param() {
         let param = b"IDA\xbc\x02\x06metapc#\x8a\x03\x03\x02\x00\x00\x00\x00\xff_\xff\xff\xf7\x03\x00\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x0d\x00\x0d \x0d\x10\xff\xff\x00\x00\x00\xc0\x80\x00\x00\x00\x02\x02\x01\x0f\x0f\x06\xce\xa3\xbeg\xc6@\x00\x07\x00\x07\x10(FP\x87t\x09\x03\x00\x01\x13\x0a\x00\x00\x01a\x00\x07\x00\x13\x04\x04\x04\x00\x02\x04\x08\x00\x00\x00";
         let _parsed = id0::IDBParam::read(param, false).unwrap();
