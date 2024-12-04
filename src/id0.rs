@@ -240,7 +240,7 @@ pub struct EntryPoint {
     pub entry_type: Option<til::Type>,
 }
 
-fn parse_number(data: &[u8], big_endian: bool, is_64: bool) -> Option<u64> {
+pub(crate) fn parse_number(data: &[u8], big_endian: bool, is_64: bool) -> Option<u64> {
     Some(match (data.len(), is_64, big_endian) {
         (8, true, true) => u64::from_be_bytes(data.try_into().unwrap()),
         (8, true, false) => u64::from_le_bytes(data.try_into().unwrap()),

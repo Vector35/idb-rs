@@ -1,6 +1,7 @@
 use std::{ffi::CStr, io::Read};
 
 use anyhow::Result;
+use itertools::Itertools;
 
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 
@@ -594,7 +595,7 @@ impl ID0Section {
             let key = parse_number(key, true, self.is_64).unwrap();
             // TODO handle other values for the key
             if key == key_find {
-                return til::Type::new_from_id0(&entry.value)
+                return til::Type::new_from_id0(&entry.value, None)
                     .map(Option::Some)
                     .map_err(|e| {
                         todo!("Error parsing {:#04x?}: {e:?}", &entry.value);
@@ -609,27 +610,21 @@ impl ID0Section {
         &self,
         version: u16,
     ) -> Result<impl Iterator<Item = Result<(u64, AddressInfo)>>> {
-        let regions = self.file_regions(version)?;
-        // TODO remove the Vec/for-loop here if you want to use `itertools::flatten_ok` or implement it yourself
-        let mut info = vec![];
-        for region in regions {
-            let region = region?;
-            let start_key: Vec<u8> = key_from_address(region.start, self.is_64).collect();
-            let end_key: Vec<u8> = key_from_address(region.end, self.is_64).collect();
-            let start = self.binary_search(&start_key).unwrap_or_else(|start| start);
-            let end = self.binary_search(&end_key).unwrap_or_else(|end| end);
+        Ok(self
+            .file_regions(version)?
+            .map(|region| {
+                let region = region?;
+                let start_key: Vec<u8> = key_from_address(region.start, self.is_64).collect();
+                let end_key: Vec<u8> = key_from_address(region.end, self.is_64).collect();
+                let start = self.binary_search(&start_key).unwrap_or_else(|start| start);
+                let end = self.binary_search(&end_key).unwrap_or_else(|end| end);
 
-            let entries = &self.entries[start..end];
-            info.extend(entries.iter().map(|entry| {
-                let key = &entry.key[start_key.len()..];
-                // 1.. because it starts with '.'
-                let address =
-                    parse_number(&entry.key[1..start_key.len()], true, self.is_64).unwrap();
-                let info = address_info::AddressInfo::parse(key, &entry.value, self.is_64)?;
-                Ok((address, info))
-            }));
-        }
-        Ok(info.into_iter())
+                let entries = &self.entries[start..end];
+                Ok(AddressInfoIter::new(entries, self.is_64))
+            })
+            .flatten_ok()
+            .flatten_ok())
+        //Ok(info.into_iter())
     }
 
     /// read the address information for the address
@@ -643,15 +638,10 @@ impl ID0Section {
         let end = self.binary_search_end(&key).unwrap_or_else(|end| end);
 
         let entries = &self.entries[start..end];
-        let key_len = key.len();
-        Ok(entries.iter().map(move |entry| {
-            let key = &entry.key[key_len..];
-            // 1.. because it starts with '.'
-            let key_address = parse_number(&entry.key[1..key_len], true, self.is_64).unwrap();
-            assert_eq!(key_address, address);
-            let info = address_info::AddressInfo::parse(key, &entry.value, self.is_64)?;
-            Ok(info)
-        }))
+        // ignore the address, it will always be the same, the one request
+        let iter = AddressInfoIter::new(entries, self.is_64)
+            .map(|value| value.map(|(_addr, value)| value));
+        Ok(iter)
     }
 
     /// read the label set at address, if any

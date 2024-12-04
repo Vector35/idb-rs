@@ -186,26 +186,8 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
     // TODO rename this
     fn read_c_string_vec(&mut self) -> Result<Vec<Vec<u8>>> {
         let buf = self.read_c_string_raw()?;
-        if buf.is_empty() {
-            return Ok(vec![]);
-        }
-
-        let mut result = vec![];
-        // NOTE never 0 because this came from a CStr
-        let mut len = buf[0] - 1;
-        // NOTE zero len (buf[0] == 1) string is allowed
-        let mut current = &buf[1..];
-        loop {
-            ensure!(current.len() >= len.into(), "Invalid len on Vec of CStr");
-            let (value, rest) = current.split_at(len.into());
-            result.push(value.to_owned());
-            if rest.is_empty() {
-                break;
-            }
-            len = rest[0] - 1;
-            current = &rest[1..];
-        }
-        Ok(result)
+        split_strings_from_array(&buf)
+            .ok_or_else(|| anyhow!("Invalid len on Vec of CStr {buf:02x?}"))
     }
 
     fn peek_u8(&mut self) -> Result<Option<u8>> {
@@ -483,3 +465,28 @@ pub trait IdaGenericUnpack: Read {
 }
 
 impl<R: Read> IdaGenericUnpack for R {}
+
+pub fn split_strings_from_array(buf: &[u8]) -> Option<Vec<Vec<u8>>> {
+    if buf.is_empty() {
+        return Some(vec![]);
+    }
+
+    let mut result = vec![];
+    // NOTE never 0 because this came from a CStr
+    let mut len = buf[0] - 1;
+    // NOTE zero len (buf[0] == 1) string is allowed
+    let mut current = &buf[1..];
+    loop {
+        if current.len() < len.into() {
+            return None;
+        }
+        let (value, rest) = current.split_at(len.into());
+        result.push(value.to_owned());
+        if rest.is_empty() {
+            break;
+        }
+        len = rest[0] - 1;
+        current = &rest[1..];
+    }
+    Some(result)
+}

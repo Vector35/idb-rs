@@ -114,7 +114,7 @@ impl Type {
         }
     }
     // TODO find the best way to handle type parsing from id0
-    pub(crate) fn new_from_id0(data: &[u8]) -> Result<Self> {
+    pub(crate) fn new_from_id0(data: &[u8], fields: Option<Vec<Vec<u8>>>) -> Result<Self> {
         // TODO it's unclear what header information id0 types use to parse tils
         // maybe it just use the til sector header, or more likelly it's from
         // IDBParam  in the `Root Node`
@@ -148,7 +148,7 @@ impl Type {
                 ));
             }
         }
-        Self::new(&header, type_raw, None)
+        Self::new(&header, type_raw, fields)
     }
 }
 
