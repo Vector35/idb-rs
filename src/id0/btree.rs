@@ -616,8 +616,8 @@ impl ID0Section {
                 let region = region?;
                 let start_key: Vec<u8> = key_from_address(region.start, self.is_64).collect();
                 let end_key: Vec<u8> = key_from_address(region.end, self.is_64).collect();
-                let start = self.binary_search(&start_key).unwrap_or_else(|start| start);
-                let end = self.binary_search(&end_key).unwrap_or_else(|end| end);
+                let start = self.binary_search(start_key).unwrap_or_else(|start| start);
+                let end = self.binary_search(end_key).unwrap_or_else(|end| end);
 
                 let entries = &self.entries[start..end];
                 Ok(AddressInfoIter::new(entries, self.is_64))

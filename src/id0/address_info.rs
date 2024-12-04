@@ -102,10 +102,7 @@ impl<'a> Iterator for AddressInfoIter<'a> {
                         return true
                     };
                     let id_value = id_from_key(id, self.is_64);
-                    match (*sub_type, id_value) {
-                        (b'S', Some(0x3000..=0x3999)) => false,
-                        _ => true,
-                    }
+                    !matches!((*sub_type, id_value), (b'S', Some(0x3000..=0x3999)))
                 }).unwrap_or(0);
                 // TODO enforce sequential index for the id?
                 // get the entry for field names and rest of data
@@ -122,7 +119,7 @@ impl<'a> Iterator for AddressInfoIter<'a> {
                 self.entries = &rest[last..];
 
                 // condensate the data into a single buffer
-                let buf: Vec<u8> = current.value.iter().chain(continuation.iter().map(|entry| &entry.value[..]).flatten()).copied().collect();
+                let buf: Vec<u8> = current.value.iter().chain(continuation.iter().flat_map(|entry| &entry.value[..])).copied().collect();
                 // create the raw type
                 let til = match til::Type::new_from_id0(&buf[..], fields) {
                     Ok(til) => til,
