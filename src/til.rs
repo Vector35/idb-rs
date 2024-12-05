@@ -38,10 +38,19 @@ impl TILTypeInfo {
     pub(crate) fn read(
         input: &mut impl IdaGenericBufUnpack,
         til: &TILSectionHeader,
+        is_last: bool,
     ) -> Result<Self> {
-        let data = input.read_raw_til_type()?;
+        let data = if is_last {
+            // HACK: for some reason the last ttype in a buck could be smaller, so we can't
+            // predict the it's size
+            let mut data = vec![];
+            input.read_to_end(&mut data)?;
+            data
+        } else {
+            input.read_raw_til_type()?
+        };
         let mut cursor = &data[..];
-        let result = TILTypeInfo::inner_read(&mut cursor, til)?;
+        let result = TILTypeInfo::read_inner(&mut cursor, til)?;
         ensure!(
             cursor.is_empty(),
             "Unable to parse til type fully, left {} bytes",
@@ -50,7 +59,7 @@ impl TILTypeInfo {
         Ok(result)
     }
 
-    fn inner_read(cursor: &mut &[u8], til: &TILSectionHeader) -> Result<Self> {
+    fn read_inner(cursor: &mut &[u8], til: &TILSectionHeader) -> Result<Self> {
         let flags: u32 = cursor.read_u32()?;
         let name = cursor.read_c_string_raw()?;
         let is_u64 = (flags >> 31) != 0;
