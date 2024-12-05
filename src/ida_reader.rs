@@ -121,6 +121,38 @@ impl<I: BufRead> BufRead for IdaUnpacker<I> {
 }
 
 pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42ad36
+    fn read_raw_til_type(&mut self) -> Result<Vec<u8>> {
+        let flags = self.read_u32()?;
+        if flags == 0x7fff_fffe {
+            let len = self.read_u32()?;
+            let mut data = vec![0; 8 + len as usize];
+            self.read_exact(&mut data[8..])?;
+            data[0..4].copy_from_slice(&flags.to_le_bytes());
+            data[4..8].copy_from_slice(&len.to_le_bytes());
+            Ok(data)
+        } else {
+            let mut data = flags.to_le_bytes().to_vec();
+            // skip first str
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42ad58
+            self.read_until(b'\x00', &mut data)?;
+            let len = data.len();
+            let skip = ((flags >> 29) & 4) + 4;
+            data.resize(data.len() + skip as usize, 0);
+            self.read_exact(&mut data[len..])?;
+
+            // the four other str comp data
+            self.read_until(b'\x00', &mut data)?;
+            self.read_until(b'\x00', &mut data)?;
+            self.read_until(b'\x00', &mut data)?;
+            self.read_until(b'\x00', &mut data)?;
+
+            // the final byte
+            data.push(self.read_u8()?);
+            Ok(data)
+        }
+    }
+
     /// Reads 1 to 9 bytes.
     /// ValueRange: 0-0x7FFFFFFF, 0-0xFFFFFFFF
     /// Usage: Arrays
@@ -241,11 +273,6 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
 impl<R: BufRead> IdaGenericBufUnpack for R {}
 
 pub trait IdaGenericUnpack: Read {
-    // TODO delete
-    fn parse_u8(&mut self) -> Result<u8> {
-        self.read_u8()
-    }
-
     fn read_u8(&mut self) -> Result<u8> {
         let mut data = [0; 1];
         self.read_exact(&mut data)?;

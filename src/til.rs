@@ -39,20 +39,33 @@ impl TILTypeInfo {
         input: &mut impl IdaGenericBufUnpack,
         til: &TILSectionHeader,
     ) -> Result<Self> {
-        let flags: u32 = bincode::deserialize_from(&mut *input)?;
-        let name = input.read_c_string_raw()?;
+        let data = input.read_raw_til_type()?;
+        let mut cursor = &data[..];
+        let result = TILTypeInfo::inner_read(&mut cursor, til)?;
+        ensure!(
+            cursor.is_empty(),
+            "Unable to parse til type fully, left {} bytes",
+            cursor.len()
+        );
+        Ok(result)
+    }
+
+    fn inner_read(cursor: &mut &[u8], til: &TILSectionHeader) -> Result<Self> {
+        let flags: u32 = cursor.read_u32()?;
+        let name = cursor.read_c_string_raw()?;
         let is_u64 = (flags >> 31) != 0;
         let ordinal = match (til.format, is_u64) {
             // formats below 0x12 doesn't have 64 bits ord
-            (0..=0x11, _) | (_, false) => bincode::deserialize_from::<_, u32>(&mut *input)?.into(),
-            (_, true) => bincode::deserialize_from(&mut *input)?,
+            (0..=0x11, _) | (_, false) => cursor.read_u32()?.into(),
+            (_, true) => cursor.read_u64()?,
         };
-        let tinfo_raw = TypeRaw::read(&mut *input, til).context("parsing `TILTypeInfo::tiinfo`")?;
-        let _info = input.read_c_string_raw()?;
-        let cmt = input.read_c_string_raw()?;
-        let fields = input.read_c_string_vec()?;
-        let fieldcmts = input.read_c_string_raw()?;
-        let sclass: u8 = input.read_u8()?;
+        let tinfo_raw =
+            TypeRaw::read(&mut *cursor, til).context("parsing `TILTypeInfo::tiinfo`")?;
+        let _info = cursor.read_c_string_raw()?;
+        let cmt = cursor.read_c_string_raw()?;
+        let fields = cursor.read_c_string_vec()?;
+        let fieldcmts = cursor.read_c_string_raw()?;
+        let sclass: u8 = cursor.read_u8()?;
 
         let tinfo = Type::new(til, tinfo_raw, Some(fields))?;
 
