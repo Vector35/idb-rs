@@ -510,7 +510,7 @@ impl TILSection {
         }
         let mut input = input.take(len.into());
         let type_info = (0..ndefs)
-            .map(|_| TILTypeInfo::read(&mut input, header))
+            .map(|i| TILTypeInfo::read(&mut input, header, i == ndefs - 1))
             .collect::<Result<_>>()?;
         ensure!(
             input.limit() == 0,
