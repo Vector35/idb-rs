@@ -155,20 +155,25 @@ impl<'a> Iterator for AddressInfoIter<'a> {
                     };
                     let id_value = id_from_key(id, self.is_64);
                     !matches!((*sub_type, id_value), (b'S', Some(0x3000..=0x3999)))
-                }).unwrap_or(0);
+                }).unwrap_or(rest.len());
+                self.entries = &rest[last..];
                 // TODO enforce sequential index for the id?
                 // get the entry for field names and rest of data
                 let (fields, continuation) = match &rest[..last] {
-                    [fields, rest @ ..] if matches!(id_subkey_from_idx(&fields.key, self.is_64), Some((b'S', Some(0x3001)))) => {
+                    [fields, rest @ ..] if matches!(id_subkey_from_idx(&fields.key[key_start..], self.is_64), Some((b'S', Some(0x3001)))) => {
                         // convert the value into fields
-                        let Some(fields) = crate::ida_reader::split_strings_from_array(&fields.value) else {
+                        // usually this string ends with \x00, but bmaybe there is no garanty for that.
+                        let Some(value) = parse_maybe_cstr(&fields.value) else {
+                            // TODO: maybe those fields are continuated by the next entry
+                            return Some(Err(anyhow!("Incomplete Fields for TIL Type")));
+                        };
+                        let Some(fields) = crate::ida_reader::split_strings_from_array(value) else {
                             return Some(Err(anyhow!("Invalid Fields for TIL Type")));
                         };
                         (Some(fields), rest)
                     }
                     rest => (None, rest),
                 };
-                self.entries = &rest[last..];
 
                 // condensate the data into a single buffer
                 let buf: Vec<u8> = current.value.iter().chain(continuation.iter().flat_map(|entry| &entry.value[..])).copied().collect();
