@@ -75,9 +75,13 @@ impl FunctionRaw {
         header: &TILSectionHeader,
         metadata: u8,
     ) -> anyhow::Result<Self> {
-        // TODO failing to parse `void __fastcall stringstream__basic_ios__sub_180007CF0_Destructor(basic_ios *__shifted(stringstream,0x94) a1);`
-        // from https://github.com/Vector35/idb-rs/issues/8
-
+        //match metadata {
+        //    super::flag::tf_func::BTMT_DEFCALL => todo!(),
+        //    super::flag::tf_func::BTMT_NEARCALL => todo!(),
+        //    super::flag::tf_func::BTMT_FARCALL => todo!(),
+        //    super::flag::tf_func::BTMT_INTCALL => todo!(),
+        //    _ => unreachable!(),
+        //}
         // TODO what is that?
         let mut flags = metadata << 2;
 
