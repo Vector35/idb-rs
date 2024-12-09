@@ -47,7 +47,7 @@ impl TILTypeInfo {
             input.read_to_end(&mut data)?;
             data
         } else {
-            input.read_raw_til_type()?
+            input.read_raw_til_type(til.format)?
         };
         let mut cursor = &data[..];
         let result = TILTypeInfo::read_inner(&mut cursor, til)?;
@@ -61,6 +61,7 @@ impl TILTypeInfo {
 
     fn read_inner(cursor: &mut &[u8], til: &TILSectionHeader) -> Result<Self> {
         let flags: u32 = cursor.read_u32()?;
+        // TODO verify if flags equal to 0x7fff_fffe?
         let name = cursor.read_c_string_raw()?;
         let is_u64 = (flags >> 31) != 0;
         let ordinal = match (til.format, is_u64) {
@@ -165,7 +166,7 @@ impl Type {
             &[b'\x00'] => {}
             rest => {
                 return Err(anyhow!(
-                    "Extra {} bytes after reading TIL from ID0",
+                    "Extra {} bytes after reading TIL from ID0: {data:#x?}",
                     rest.len()
                 ));
             }
@@ -192,9 +193,16 @@ impl TypeRaw {
         let metadata: u8 = input.read_u8()?;
         let type_base = metadata & flag::tf_mask::TYPE_BASE_MASK;
         let type_flags = metadata & flag::tf_mask::TYPE_FLAGS_MASK;
+
+        // TODO find if this apply to all fields, or only a selected few?
+        // TODO some fields can be both CONST and VOLATILE at the same time, what that means?
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473084 print_til_type
+        let _is_const = metadata & flag::tf_modifiers::BTM_CONST != 0;
+        let _is_volatile = metadata & flag::tf_modifiers::BTM_VOLATILE != 0;
+
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480335
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x472e13 print_til_type
         match (type_base, type_flags) {
-            (flag::BT_RESERVED, _) => Err(anyhow!("Reserved Basic Type")),
             (..=flag::tf_last_basic::BT_LAST_BASIC, _) => {
                 Basic::new(til, type_base, type_flags).map(TypeRaw::Basic)
             }
@@ -213,7 +221,7 @@ impl TypeRaw {
                 .map(TypeRaw::Function),
 
             (flag::tf_complex::BT_BITFIELD, _) => Ok(TypeRaw::Bitfield(
-                Bitfield::read(input, metadata).context("Type::Bitfield")?,
+                Bitfield::read(input, type_flags).context("Type::Bitfield")?,
             )),
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480369
@@ -247,7 +255,13 @@ impl TypeRaw {
                     .context("Type::Enum")
                     .map(TypeRaw::Enum)
             }
-            _ => todo!(),
+
+            (flag::tf_complex::BT_COMPLEX, _) => unreachable!(),
+
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47395d print_til_type
+            (flag::BT_RESERVED, _) => Err(anyhow!("Wrong/Unknown type: {metadata:02x}")),
+
+            (flag::BT_RESERVED.., _) => unreachable!(),
         }
     }
 
@@ -300,14 +314,15 @@ impl Basic {
         }
 
         use flag::{tf_bool::*, tf_float::*, tf_int::*, tf_unk::*};
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x472e2a print_til_type
         match bt {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480874
             BT_UNK => {
                 let bytes = match btmt {
                     BTMT_SIZE0 => return Err(anyhow!("forbidden use of BT_UNK")),
-                    BTMT_SIZE12 => 2,
-                    BTMT_SIZE48 => 8,
-                    BTMT_SIZE128 => 0,
+                    BTMT_SIZE12 => 2,  // BT_UNK_WORD
+                    BTMT_SIZE48 => 8,  // BT_UNK_QWORD
+                    BTMT_SIZE128 => 0, // BT_UNKNOWN
                     _ => unreachable!(),
                 };
                 Ok(Self::Unknown { bytes })
@@ -317,10 +332,10 @@ impl Basic {
             BT_VOID => {
                 let bytes = match btmt {
                     // special case, void
-                    BTMT_SIZE0 => return Ok(Self::Void),
-                    BTMT_SIZE12 => 1,
-                    BTMT_SIZE48 => 4,
-                    BTMT_SIZE128 => 16,
+                    BTMT_SIZE0 => return Ok(Self::Void), // BT_VOID
+                    BTMT_SIZE12 => 1,                    // BT_UNK_BYTE
+                    BTMT_SIZE48 => 4,                    // BT_UNK_DWORD
+                    BTMT_SIZE128 => 16,                  // BT_UNK_OWORD
                     _ => unreachable!(),
                 };
                 // TODO extra logic
@@ -337,9 +352,9 @@ impl Basic {
                     BTMT_CHAR => {
                         return match bt_int {
                             BT_INT8 => Ok(Self::Char),
-                            BT_INT => Ok(Self::SegReg),
+                            BT_INT => Ok(Self::SegReg), // BT_SEGREG
                             _ => Err(anyhow!("Reserved use of tf_int::BTMT_CHAR {:x}", btmt)),
-                        }
+                        };
                     }
                     _ => unreachable!(),
                 };
@@ -363,6 +378,7 @@ impl Basic {
                     BTMT_BOOL4 => bytes(4),
                     // TODO get the inf_is_64bit  field
                     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480d6f
+                    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473a76
                     //BTMT_BOOL2 if !inf_is_64bit => Some(bytes(2)),
                     //BTMT_BOOL8 if inf_is_64bit => Some(bytes(8)),
                     BTMT_BOOL8 => bytes(2), // delete this
@@ -412,6 +428,12 @@ impl Typedef {
             _ => Ok(Typedef::Name(buf)),
         }
     }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum TILModifier {
+    Const,
+    Volatile,
 }
 
 #[derive(Debug, Clone)]
@@ -483,7 +505,6 @@ impl TypeAttribute {
         if (val & 0x0010) > 0 {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45289e
             val = input.read_dt()?;
-            // TODO this only happen if the arg3 is nullptr
             for _ in 0..val {
                 let _string = input.unpack_dt_bytes()?;
                 let _other_string = input.unpack_dt_bytes()?;

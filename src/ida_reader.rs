@@ -122,32 +122,37 @@ impl<I: BufRead> BufRead for IdaUnpacker<I> {
 
 pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42ad36
-    fn read_raw_til_type(&mut self) -> Result<Vec<u8>> {
+    fn read_raw_til_type(&mut self, format: u32) -> Result<Vec<u8>> {
         let flags = self.read_u32()?;
         if flags == 0x7fff_fffe {
             let len = self.read_u32()?;
             let mut data = vec![0; 8 + len as usize];
-            self.read_exact(&mut data[8..])?;
             data[0..4].copy_from_slice(&flags.to_le_bytes());
             data[4..8].copy_from_slice(&len.to_le_bytes());
+            self.read_exact(&mut data[8..])?;
             Ok(data)
         } else {
             let mut data = flags.to_le_bytes().to_vec();
-            // skip first str
+            // skip name
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42ad58
             self.read_until(b'\x00', &mut data)?;
-            let len = data.len();
-            let skip = ((flags >> 29) & 4) + 4;
-            data.resize(data.len() + skip as usize, 0);
-            self.read_exact(&mut data[len..])?;
 
-            // the four other str comp data
-            self.read_until(b'\x00', &mut data)?;
-            self.read_until(b'\x00', &mut data)?;
-            self.read_until(b'\x00', &mut data)?;
-            self.read_until(b'\x00', &mut data)?;
+            // skip the ordinal number
+            match (format, (flags >> 31) != 0) {
+                // formats below 0x12 doesn't have 64 bits ord
+                (0..=0x11, _) | (_, false) => data.extend(self.read_u32()?.to_le_bytes()),
+                (_, true) => data.extend(self.read_u64()?.to_le_bytes()),
+            }
 
-            // the final byte
+            // skip the type itself
+            self.read_until(b'\x00', &mut data)?;
+            // skip the info field
+            self.read_until(b'\x00', &mut data)?;
+            // skip the cmt field
+            self.read_until(b'\x00', &mut data)?;
+            // skip the fieldcmts field
+            self.read_until(b'\x00', &mut data)?;
+            // skip the sclass
             data.push(self.read_u8()?);
             Ok(data)
         }

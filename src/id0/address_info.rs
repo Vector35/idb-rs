@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 
 use crate::til;
 
-use super::{parse_maybe_cstr, ID0Entry};
+use super::{parse_maybe_cstr, ID0Entry, IDBFileRegions};
 
 #[derive(Clone, Debug)]
 pub enum AddressInfo<'a> {
@@ -29,6 +29,58 @@ impl<'a> Comments<'a> {
             | Comments::PreComment(x)
             | Comments::PostComment(x) => x,
         }
+    }
+}
+
+pub(crate) struct SectionAddressInfoIter<'a, I: Iterator<Item = Result<IDBFileRegions>>> {
+    all_entries: &'a [ID0Entry],
+    regions: I,
+    current_region: AddressInfoIter<'a>,
+}
+
+impl<'a, I: Iterator<Item = Result<IDBFileRegions>>> SectionAddressInfoIter<'a, I> {
+    pub fn new(all_entries: &'a [ID0Entry], regions: I, is_64: bool) -> Self {
+        Self {
+            all_entries,
+            regions,
+            current_region: AddressInfoIter::new(&[], is_64),
+        }
+    }
+}
+
+impl<'a, I: Iterator<Item = Result<IDBFileRegions>> + 'a> Iterator
+    for SectionAddressInfoIter<'a, I>
+{
+    type Item = Result<(u64, AddressInfo<'a>)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let Some(next_addr_info) = self.current_region.next() else {
+            // get the next region
+            let region = match self.regions.next() {
+                Some(Ok(region)) => region,
+                // if no more regions, finish the iter (AKA return None)
+                None => return None,
+                // return the error if err
+                Some(Err(err)) => return Some(Err(err)),
+            };
+            let is_64 = self.current_region.is_64;
+            let start_key: Vec<u8> = crate::id0::key_from_address(region.start, is_64).collect();
+            let end_key: Vec<u8> = crate::id0::key_from_address(region.end, is_64).collect();
+            let start = self
+                .all_entries
+                .binary_search_by_key(&&start_key[..], |b| &b.key[..])
+                .unwrap_or_else(|start| start);
+            let end = self
+                .all_entries
+                .binary_search_by_key(&&end_key[..], |b| &b.key[..])
+                .unwrap_or_else(|end| end);
+
+            let entries = &self.all_entries[start..end];
+            self.current_region = AddressInfoIter::new(entries, is_64);
+            // try again using this new region
+            return self.next();
+        };
+        Some(next_addr_info)
     }
 }
 

@@ -1,7 +1,6 @@
 use std::{ffi::CStr, io::Read};
 
 use anyhow::Result;
-use itertools::Itertools;
 
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 
@@ -224,7 +223,7 @@ impl ID0Section {
         self.entries.iter()
     }
 
-    fn binary_search(&self, key: impl AsRef<[u8]>) -> Result<usize, usize> {
+    pub(crate) fn binary_search(&self, key: impl AsRef<[u8]>) -> Result<usize, usize> {
         let key = key.as_ref();
         self.entries.binary_search_by_key(&key, |b| &b.key[..])
     }
@@ -595,11 +594,12 @@ impl ID0Section {
             let key = parse_number(key, true, self.is_64).unwrap();
             // TODO handle other values for the key
             if key == key_find {
-                return til::Type::new_from_id0(&entry.value, None)
+                let til_type = til::Type::new_from_id0(&entry.value, None)
                     .map(Option::Some)
                     .map_err(|e| {
                         todo!("Error parsing {:#04x?}: {e:?}", &entry.value);
                     });
+                return til_type;
             }
         }
         Ok(None)
@@ -610,21 +610,12 @@ impl ID0Section {
         &self,
         version: u16,
     ) -> Result<impl Iterator<Item = Result<(u64, AddressInfo)>>> {
-        Ok(self
-            .file_regions(version)?
-            .map(|region| {
-                let region = region?;
-                let start_key: Vec<u8> = key_from_address(region.start, self.is_64).collect();
-                let end_key: Vec<u8> = key_from_address(region.end, self.is_64).collect();
-                let start = self.binary_search(start_key).unwrap_or_else(|start| start);
-                let end = self.binary_search(end_key).unwrap_or_else(|end| end);
-
-                let entries = &self.entries[start..end];
-                Ok(AddressInfoIter::new(entries, self.is_64))
-            })
-            .flatten_ok()
-            .flatten_ok())
-        //Ok(info.into_iter())
+        let regions = self.file_regions(version)?;
+        Ok(SectionAddressInfoIter::new(
+            &self.entries[..],
+            regions,
+            self.is_64,
+        ))
     }
 
     /// read the address information for the address
@@ -981,7 +972,7 @@ impl ID0Page {
     }
 }
 
-fn key_from_address(address: u64, is_64: bool) -> impl Iterator<Item = u8> {
+pub(crate) fn key_from_address(address: u64, is_64: bool) -> impl Iterator<Item = u8> {
     b".".iter().copied().chain(if is_64 {
         address.to_be_bytes().to_vec()
     } else {
