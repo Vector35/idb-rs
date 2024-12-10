@@ -569,6 +569,101 @@ mod test {
     }
 
     #[test]
+    fn parse_function_ext_att() {
+        // ```
+        // Function {
+        //   ret: Basic(Int { bytes: 4, is_signed: None }),
+        //   args: [(
+        //     Some("env"),
+        //     Pointer(Pointer {
+        //       closure: Default,
+        //       tah: TAH(TypeAttribute(1)),
+        //       typ: Struct(Ref {
+        //         ref_type: Typedef("__jmp_buf_tag"),
+        //         taudt_bits: SDACL(TypeAttribute(0))
+        //       })
+        //     }),
+        //     None
+        //   )],
+        //   retloc: None }
+        // ```
+        let function = [
+            0x0c, // func type
+            0x13, // TODO
+            0x07, // return int
+            0x02, // 1 parameter
+            0xff, 0x48, // TODO
+            0x0a, // arg1 type pointer
+            0xfe, 0x10, // TypeAttribute val
+            0x02, // dt len 1
+            0x0d, 0x5f, 0x5f, 0x6f, 0x72, 0x67, 0x5f, 0x61, 0x72, 0x72, 0x64, 0x69,
+            0x6d, // TODO some _string: "__org_arrdim"
+            0x03, 0xac, 0x01, // TODO _other_thing
+            0x0d, // arg1 pointer type struct
+            0x01, // struct ref
+            0x0e, 0x5f, 0x5f, 0x6a, 0x6d, 0x70, 0x5f, 0x62, 0x75, 0x66, 0x5f, 0x74, 0x61,
+            0x67, // "__jmp_buf_tag"
+            0x00, // end of type
+        ];
+        let _til = til::Type::new_from_id0(&function, None).unwrap();
+    }
+
+    #[test]
+    fn parse_aes_encrypt() {
+        // ```c
+        // void AES_ctr128_encrypt(
+        //   const unsigned __int8 *in,
+        //   unsigned __int8 *out,
+        //   const unsigned int length,
+        //   const AES_KEY *key,
+        //   unsigned __int8 ivec[16],
+        //   unsigned __int8 ecount_buf[16],
+        //   unsigned int *num
+        // );
+        // ```
+        let function = [
+            0x0c, // type function
+            0x13, 0x01, // ???
+            0x08, // 7 args
+            // arg1 ...
+            0x0a, // pointer
+            0x62, // const unsigned __int8
+            // arg2 ...
+            0x0a, // pointer
+            0x22, // unsigned __int8
+            // arg3 ...
+            0x67, // const unsigned int
+            // arg4 ...
+            0x0a, // pointer
+            0x7d, // const typedef
+            0x08, 0x41, 0x45, 0x53, 0x5f, 0x4b, 0x45, 0x59, // ordinal "AES_KEY"
+            // arg5
+            0xff, 0x48, // some flag in function arg
+            0x0a, // pointer
+            0xfe, 0x10, // TypeAttribute val
+            0x02, // TypeAttribute loop once
+            0x0d, 0x5f, 0x5f, 0x6f, 0x72, 0x67, 0x5f, 0x61, 0x72, 0x72, 0x64, 0x69,
+            0x6d, // string "__org_arrdim"
+            0x03, 0xac, 0x10, // ???? some other TypeAttribute field
+            0x22, // type unsigned __int8
+            // arg6
+            0xff, 0x48, // some flag in function arg
+            0x0a, // pointer
+            0xfe, 0x10, // TypeAttribute val
+            0x02, // TypeAttribute loop once
+            0x0d, 0x5f, 0x5f, 0x6f, 0x72, 0x67, 0x5f, 0x61, 0x72, 0x72, 0x64, 0x69,
+            0x6d, // string "__org_arrdim"
+            0x03, 0xac, 0x10, // ???? some other TypeAttribute field
+            0x22, // type unsigned __int8
+            // arg7 ...
+            0x0a, // pointer
+            0x27, // unsigned int
+            0x00,
+        ];
+        let _til = til::Type::new_from_id0(&function, None).unwrap();
+    }
+
+    #[test]
     fn parse_idb_param() {
         let param = b"IDA\xbc\x02\x06metapc#\x8a\x03\x03\x02\x00\x00\x00\x00\xff_\xff\xff\xf7\x03\x00\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x0d\x00\x0d \x0d\x10\xff\xff\x00\x00\x00\xc0\x80\x00\x00\x00\x02\x02\x01\x0f\x0f\x06\xce\xa3\xbeg\xc6@\x00\x07\x00\x07\x10(FP\x87t\x09\x03\x00\x01\x13\x0a\x00\x00\x01a\x00\x07\x00\x13\x04\x04\x04\x00\x02\x04\x08\x00\x00\x00";
         let _parsed = id0::IDBParam::read(param, false).unwrap();

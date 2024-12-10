@@ -70,6 +70,7 @@ pub struct ArgLocDist {
 }
 
 impl FunctionRaw {
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473190 print_til_type
     pub(crate) fn read(
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
@@ -85,6 +86,7 @@ impl FunctionRaw {
         // TODO what is that?
         let mut flags = metadata << 2;
 
+        // TODO InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473bf1 print_til_type
         let cc = Self::read_cc(&mut *input, &mut flags)?;
 
         let _tah = TAH::read(&mut *input)?;
@@ -107,8 +109,8 @@ impl FunctionRaw {
             .map(|_| -> anyhow::Result<_> {
                 let tmp = input.fill_buf()?.first().copied();
                 if tmp == Some(0xFF) {
+                    input.consume(1);
                     // TODO what is this?
-                    let _tmp: u8 = bincode::deserialize_from(&mut *input)?;
                     let _flags = input.read_de()?;
                 }
                 let tinfo = TypeRaw::read(&mut *input, header)?;
@@ -132,28 +134,30 @@ impl FunctionRaw {
         input: &mut impl IdaGenericBufUnpack,
         flags: &mut u8,
     ) -> anyhow::Result<TypeMetadata> {
-        let mut cm = TypeMetadata::read(&mut *input)?;
-        if !cm.get_calling_convention().is_spoiled() {
-            return Ok(cm);
-        }
+        let mut cm;
         // TODO find what to do with this spoiled and flags stuff
         let mut _spoiled = vec![];
         loop {
+            cm = TypeMetadata::read(&mut *input)?;
+            if !cm.get_calling_convention().is_spoiled() {
+                return Ok(cm);
+            }
+
             // TODO create flags::CM_CC_MASK
             let nspoiled = cm.0 & 0xf;
             if nspoiled == 0xF {
-                let bfa_byte: u8 = bincode::deserialize_from(&mut *input)?;
+                let bfa_byte: u8 = input.read_u8()?;
                 if bfa_byte & 0x80 != 0 {
                     // TODO what is this? Do this repeat `bfa_byte & 0xF` number of times?
-                    let _fti_bits: u16 = bincode::deserialize_from(&mut *input)?;
+                    let _fti_bits: u16 = input.read_u16()?;
                 } else {
                     *flags |= (bfa_byte & 0x1F) << 1;
                 }
             } else {
                 for _ in 0..nspoiled {
-                    let b: u8 = bincode::deserialize_from(&mut *input)?;
+                    let b: u8 = input.read_u8()?;
                     let (size, reg) = if b & 0x80 != 0 {
-                        let size: u8 = bincode::deserialize_from(&mut *input)?;
+                        let size: u8 = input.read_u8()?;
                         let reg = b & 0x7F;
                         (size, reg)
                     } else {
@@ -165,11 +169,6 @@ impl FunctionRaw {
                     _spoiled.push((size, reg));
                 }
                 *flags |= 1;
-            }
-
-            cm = TypeMetadata::read(&mut *input)?;
-            if !cm.get_calling_convention().is_spoiled() {
-                return Ok(cm);
             }
         }
     }

@@ -41,8 +41,8 @@ impl TILTypeInfo {
         is_last: bool,
     ) -> Result<Self> {
         let data = if is_last {
-            // HACK: for some reason the last ttype in a buck could be smaller, so we can't
-            // predict the it's size
+            // HACK: for some reason the last type in a bucker could be smaller, so we can't
+            // predict the size reliably
             let mut data = vec![];
             input.read_to_end(&mut data)?;
             data
@@ -60,6 +60,7 @@ impl TILTypeInfo {
     }
 
     fn read_inner(cursor: &mut &[u8], til: &TILSectionHeader) -> Result<Self> {
+        let og_cu = *cursor;
         let flags: u32 = cursor.read_u32()?;
         // TODO verify if flags equal to 0x7fff_fffe?
         let name = cursor.read_c_string_raw()?;
@@ -69,8 +70,14 @@ impl TILTypeInfo {
             (0..=0x11, _) | (_, false) => cursor.read_u32()?.into(),
             (_, true) => cursor.read_u64()?,
         };
-        let tinfo_raw =
-            TypeRaw::read(&mut *cursor, til).context("parsing `TILTypeInfo::tiinfo`")?;
+        let tinfo_raw = TypeRaw::read(&mut *cursor, til)
+            .context("parsing `TILTypeInfo::tiinfo`")
+            .inspect_err(|e| {
+                println!(
+                    "Error: {}: {e:?}\n{og_cu:02x?}",
+                    core::str::from_utf8(&name).unwrap()
+                );
+            })?;
         let _info = cursor.read_c_string_raw()?;
         let cmt = cursor.read_c_string_raw()?;
         let fields = cursor.read_c_string_vec()?;
@@ -160,13 +167,13 @@ impl Type {
         let mut reader = data;
         let type_raw = TypeRaw::read(&mut reader, &header)?;
         match reader {
-            //
-            &[] => {}
-            // for some reason there is an \x00 at the end???
+            // all types end with \x00, unknown if it have any meaning
             &[b'\x00'] => {}
+            // in continuations, the \x00 may be missing
+            &[] => {}
             rest => {
                 return Err(anyhow!(
-                    "Extra {} bytes after reading TIL from ID0: {data:#x?}",
+                    "Extra {} bytes after reading TIL from ID0",
                     rest.len()
                 ));
             }
@@ -502,14 +509,16 @@ impl TypeAttribute {
             }
         }
 
-        if (val & 0x0010) > 0 {
-            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45289e
-            val = input.read_dt()?;
-            for _ in 0..val {
-                let _string = input.unpack_dt_bytes()?;
-                let _other_string = input.unpack_dt_bytes()?;
-                // TODO maybe more...
-            }
+        if val & 0x10 == 0 {
+            return Ok(TypeAttribute(val));
+        }
+
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45289e
+        let loop_cnt = input.read_dt()?;
+        for _ in 0..loop_cnt {
+            let _string = input.unpack_dt_bytes()?;
+            let _other_thing = input.unpack_dt_bytes()?;
+            // TODO maybe more...
         }
         Ok(TypeAttribute(val))
     }

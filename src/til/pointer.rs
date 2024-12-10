@@ -89,6 +89,7 @@ impl PointerRaw {
 #[derive(Debug, Clone)]
 pub(crate) enum PointerTypeRaw {
     Closure(Box<TypeRaw>),
+    // ptr size: {0}
     PointerBased(u8),
     Default,
     Far,

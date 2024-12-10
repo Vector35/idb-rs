@@ -594,12 +594,7 @@ impl ID0Section {
             let key = parse_number(key, true, self.is_64).unwrap();
             // TODO handle other values for the key
             if key == key_find {
-                let til_type = til::Type::new_from_id0(&entry.value, None)
-                    .map(Option::Some)
-                    .map_err(|e| {
-                        todo!("Error parsing {:#04x?}: {e:?}", &entry.value);
-                    });
-                return til_type;
+                return til::Type::new_from_id0(&entry.value, None).map(Option::Some);
             }
         }
         Ok(None)
