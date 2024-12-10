@@ -93,11 +93,11 @@ impl EnumRaw {
         let bte = bincode::deserialize_from(&mut *input)?;
         let mut cur: u64 = 0;
         let emsize = bte & flag::tf_enum::BTE_SIZE_MASK;
-        let bytesize: u32 = match emsize {
-            0 if header.size_enum != 0 => header.size_enum.into(),
-            0 => return Err(anyhow!("BTE emsize is 0 without header")),
-            1..=4 => 1u32 << (emsize - 1),
-            5..=7 => return Err(anyhow!("BTE emsize with reserved values")),
+        let bytesize: u32 = match (emsize, header.size_enum) {
+            (0, Some(enum_size)) => enum_size.get().into(),
+            (0, None) => return Err(anyhow!("BTE emsize is 0 without header")),
+            (1..=4, _) => 1u32 << (emsize - 1),
+            (5..=7, _) => return Err(anyhow!("BTE emsize with reserved values")),
             _ => unreachable!(),
         };
 

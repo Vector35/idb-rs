@@ -16,3 +16,8 @@ serde = { version = "1.0", features = ["derive"] }
 [[bin]]
 name = "idb-tools"
 path = "src/tools/tools.rs"
+
+
+[[bin]]
+name = "tilib"
+path = "src/tools/tilib.rs"

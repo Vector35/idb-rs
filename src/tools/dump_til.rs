@@ -29,13 +29,15 @@ pub fn dump_til(args: &Args) -> Result<()> {
     let TILSection {
         format,
         title,
+        flags: _,
         description,
-        id,
+        compiler_id,
         cm,
         def_align,
         type_ordinal_alias,
-        size_i,
-        size_b,
+        size_int,
+        size_enum,
+        size_bool,
         size_short,
         size_long,
         size_long_long,
@@ -49,11 +51,12 @@ pub fn dump_til(args: &Args) -> Result<()> {
     println!("format: {format}");
     println!("title: {}", String::from_utf8_lossy(&title));
     println!("description: {}", String::from_utf8_lossy(&description));
-    println!("id: {id}");
+    println!("id: {compiler_id:?}");
     println!("cm: {cm}");
     println!("def_align: {def_align}");
-    println!("size_i: {size_i}");
-    println!("size_b: {size_b}");
+    println!("size_int: {size_int}");
+    println!("size_bool: {size_bool}");
+    println!("size_enum: {size_enum:?}");
     println!("is_universal: {is_universal}");
     if let Some(type_ordinal_numbers) = type_ordinal_alias {
         println!("type_ordinal_numbers: {type_ordinal_numbers:?}");
