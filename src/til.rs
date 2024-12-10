@@ -150,14 +150,14 @@ impl Type {
         // IDBParam  in the `Root Node`
         let header = section::TILSectionHeader {
             format: 12,
-            flags: section::TILSectionFlag(0),
+            flags: section::TILSectionFlags(0),
             title: Vec::new(),
             description: Vec::new(),
-            id: 0,
+            compiler_id: 0,
             cm: 0,
-            size_enum: 0,
-            size_i: 4.try_into().unwrap(),
-            size_b: 1.try_into().unwrap(),
+            size_enum: None,
+            size_int: 4.try_into().unwrap(),
+            size_bool: 1.try_into().unwrap(),
             def_align: 0,
             size_long_double: None,
             size_short: 2.try_into().unwrap(),
@@ -371,7 +371,7 @@ impl Basic {
                     BT_INT32 => bytes(4),
                     BT_INT64 => bytes(8),
                     BT_INT128 => bytes(16),
-                    BT_INT => til.size_i,
+                    BT_INT => til.size_int,
                     _ => unreachable!(),
                 };
                 Ok(Self::Int { bytes, is_signed })
@@ -380,7 +380,7 @@ impl Basic {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4805c4
             BT_BOOL => {
                 let bytes = match btmt {
-                    BTMT_DEFBOOL => til.size_b,
+                    BTMT_DEFBOOL => til.size_bool,
                     BTMT_BOOL1 => bytes(1),
                     BTMT_BOOL4 => bytes(4),
                     // TODO get the inf_is_64bit  field

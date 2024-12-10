@@ -413,20 +413,20 @@ pub mod tf_shortcuts {
 }
 
 /// pack buckets using zip
-pub const TIL_ZIP: u32 = 0x0001;
+pub const TIL_ZIP: u16 = 0x0001;
 /// til has macro table
-pub const TIL_MAC: u32 = 0x0002;
+pub const TIL_MAC: u16 = 0x0002;
 /// extended sizeof info (short, long, longlong)
-pub const TIL_ESI: u32 = 0x0004;
+pub const TIL_ESI: u16 = 0x0004;
 /// universal til for any compiler
-pub const TIL_UNI: u32 = 0x0008;
+pub const TIL_UNI: u16 = 0x0008;
 /// type ordinal numbers are present
-pub const TIL_ORD: u32 = 0x0010;
+pub const TIL_ORD: u16 = 0x0010;
 /// type aliases are present (this bit is used only on the disk)
-pub const TIL_ALI: u32 = 0x0020;
+pub const TIL_ALI: u16 = 0x0020;
 /// til has been modified, should be saved
-pub const TIL_MOD: u32 = 0x0040;
+pub const TIL_MOD: u16 = 0x0040;
 /// til has extra streams
-pub const TIL_STM: u32 = 0x0080;
+pub const TIL_STM: u16 = 0x0080;
 /// sizeof(long double)
-pub const TIL_SLD: u32 = 0x0100;
+pub const TIL_SLD: u16 = 0x0100;
