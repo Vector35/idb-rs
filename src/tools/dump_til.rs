@@ -30,7 +30,7 @@ pub fn dump_til(args: &Args) -> Result<()> {
         format,
         title,
         flags: _,
-        description,
+        dependency: description,
         compiler_id,
         cm,
         def_align,
