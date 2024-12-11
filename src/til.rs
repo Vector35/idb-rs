@@ -239,9 +239,11 @@ impl Type {
                     } else {
                         section.def_align as u64
                     };
-                    let align_diff = sum % align as u64;
-                    if align_diff != 0 {
-                        sum += align as u64 - align_diff;
+                    if align != 0 {
+                        let align_diff = sum % align as u64;
+                        if align_diff != 0 {
+                            sum += align as u64 - align_diff;
+                        }
                     }
                     sum += field_size;
                 }

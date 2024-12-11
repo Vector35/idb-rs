@@ -13,12 +13,12 @@ pub const TIL_SECTION_MAGIC: &[u8; 6] = b"IDATIL";
 #[derive(Debug, Clone)]
 pub struct TILSection {
     pub format: u32,
-    // TODO is title and description inverted?
     /// short file name (without path and extension)
     pub title: Vec<u8>,
     pub flags: TILSectionFlags,
-    /// human readable til description
-    pub description: Vec<u8>,
+    // TODO unclear what exacly dependency is for
+    /// module required
+    pub dependency: Option<Vec<u8>>,
     /// the compiler used to generated types
     pub compiler_id: Compiler,
     /// information about the target compiler
@@ -126,7 +126,7 @@ impl TILSection {
             format: header.format,
             title: header.title,
             flags: header.flags,
-            description: header.description,
+            dependency: (header.description.len() != 0).then_some(header.description),
             compiler_id: Compiler::from_value(header.compiler_id),
             cm: header.cm,
             def_align: header.def_align,
