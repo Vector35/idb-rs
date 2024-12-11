@@ -38,15 +38,13 @@ pub fn dump_til(args: &Args) -> Result<()> {
         size_int,
         size_enum,
         size_bool,
-        size_short,
-        size_long,
-        size_long_long,
+        extended_sizeof_info: _,
         size_long_double,
         is_universal,
         symbols,
         types,
         macros,
-    } = til;
+    } = &til;
     // write the header info
     println!("format: {format}");
     println!("title: {}", String::from_utf8_lossy(&title));
@@ -64,9 +62,9 @@ pub fn dump_til(args: &Args) -> Result<()> {
     if let Some(size_long_double) = size_long_double {
         println!("size_long_double: {size_long_double}");
     }
-    println!("size short: {size_short}");
-    println!("size long: {size_long}");
-    println!("size long_long: {size_long_long}");
+    println!("size short: {}", til.sizeof_short());
+    println!("size long: {}", til.sizeof_long());
+    println!("size long_long: {}", til.sizeof_long_long());
 
     // TODO implement Display for TILTypeInfo
     println!("types:");

@@ -96,7 +96,6 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     writeln!(fmt, "")?;
 
     // compiler name
-    // TODO decode thigs at: InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b7ed
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b8c5
     let compiler_name = match section.compiler_id {
         Compiler::Unknown => "Unknown",
@@ -110,19 +109,63 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     };
     writeln!(fmt, "Compiler   : {}", compiler_name)?;
 
+    // alignement and convention stuff
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b7ed
+    if let Some((near, far)) = section.sizeof_near_far() {
+        write!(fmt, "sizeof(near*) = {near} sizeof(far*) = {far}",)?;
+    }
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40ba3b
+    if let Some((is_code_near, is_data_near)) = section.is_code_data_near() {
+        if section.sizeof_near_far().is_some() {
+            write!(fmt, " ")?;
+        }
+        let code = is_code_near.then_some("near").unwrap_or("far");
+        let data = is_data_near.then_some("near").unwrap_or("far");
+        write!(fmt, "{code} code, {data} data",)?;
+    }
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b860
+    if section.cm & 0xc != 0 {
+        if let Some(cc) = section.calling_convention() {
+            if section.sizeof_near_far().is_some() || section.is_code_data_near().is_some() {
+                write!(fmt, ",")?;
+            }
+            use idb_rs::til::section::CallingConvention::*;
+            let cc_name = match cc {
+                CCInvalid => "ccinvalid",
+                Voidarg => "voidarg",
+                Cdecl => "cdecl",
+                Ellipsis => "ellipsis",
+                Stdcall => "stdcall",
+                Pascal => "pascal",
+                Fastcall => "fastcall",
+                Thiscall => "thiscall",
+                Swift => "swift",
+                Golang => "golang",
+                Userpurge => "userpurge",
+                Uservars => "uservars",
+                Usercall => "usercall",
+            };
+            writeln!(fmt, "{cc_name}")?;
+        }
+    }
+    writeln!(fmt)?;
+
     // alignment
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b8e4
     writeln!(
         fmt,
         "default_align = {} sizeof(bool) = {} sizeof(long)  = {} sizeof(llong) = {}",
-        section.def_align, section.size_bool, section.size_long, section.size_long_long
+        section.def_align,
+        section.size_bool,
+        section.sizeof_long(),
+        section.sizeof_long_long(),
     )?;
     writeln!(
         fmt,
         "sizeof(enum) = {} sizeof(int) = {} sizeof(short) = {}",
         section.size_enum.map(NonZeroU8::get).unwrap_or(0),
         section.size_int,
-        section.size_short
+        section.sizeof_short(),
     )?;
     writeln!(
         fmt,
@@ -224,8 +267,8 @@ fn print_til_type(
         Type::Basic(Basic::Bool { bytes }) => write!(fmt, "bool{bytes}{name_helper}"),
         Type::Pointer(pointer) => {
             // TODO name
-            write!(fmt, "*")?;
-            print_til_type(fmt, section, name, &pointer.typ)
+            print_til_type(fmt, section, None, &pointer.typ)?;
+            write!(fmt, "*{name_helper}")
         }
         Type::Function(_function) => write!(fmt, "todo!()"),
         Type::Array(array) => {
@@ -240,19 +283,12 @@ fn print_til_type(
             }
         },
         Type::Struct(str_type) => match str_type {
-            Struct::Ref {
-                ref_type,
-                taudt_bits: _,
-            } => {
+            Struct::Ref { ref_type, .. } => {
                 // TODO name
                 write!(fmt, "&")?;
                 print_til_type(fmt, section, None, &*ref_type)
             }
-            Struct::NonRef {
-                effective_alignment: _,
-                taudt_bits: _,
-                members,
-            } => {
+            Struct::NonRef { members, .. } => {
                 let name = name.unwrap_or("");
                 write!(fmt, "struct {name} {{")?;
                 for member in members {
@@ -271,18 +307,11 @@ fn print_til_type(
             }
         },
         Type::Union(union_type) => match union_type {
-            Union::Ref {
-                ref_type,
-                taudt_bits: _,
-            } => {
+            Union::Ref { ref_type, .. } => {
                 write!(fmt, "&")?;
                 print_til_type(fmt, section, None, &*ref_type)
             }
-            Union::NonRef {
-                effective_alignment: _,
-                taudt_bits: _,
-                members,
-            } => {
+            Union::NonRef { members, .. } => {
                 let name = name.unwrap_or("");
                 write!(fmt, "union {name} {{")?;
                 for (member_name, member) in members {
@@ -300,20 +329,11 @@ fn print_til_type(
             }
         },
         Type::Enum(enum_type) => match enum_type {
-            Enum::Ref {
-                ref_type,
-                taenum_bits: _,
-            } => {
+            Enum::Ref { ref_type, .. } => {
                 write!(fmt, "&")?;
                 print_til_type(fmt, section, None, &*ref_type)
             }
-            Enum::NonRef {
-                group_sizes: _,
-                taenum_bits: _,
-                bte: _,
-                members,
-                bytesize: _,
-            } => {
+            Enum::NonRef { members, .. } => {
                 let name = name.unwrap_or("");
                 write!(fmt, "enum {name} {{")?;
                 for (member_name, value) in members {
