@@ -1,3 +1,5 @@
+use std::num::NonZeroU8;
+
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{associate_field_name_and_member, flag, Type, TypeAttribute, TypeRaw, SDACL, TAH};
@@ -14,7 +16,7 @@ pub enum Enum {
         taenum_bits: TypeAttribute,
         bte: u8,
         members: Vec<(Option<Vec<u8>>, u64)>,
-        bytesize: u64,
+        bytesize: Option<NonZeroU8>,
     },
 }
 impl Enum {
@@ -69,7 +71,7 @@ pub(crate) enum EnumRaw {
         taenum_bits: TypeAttribute,
         bte: u8,
         members: Vec<u64>,
-        bytesize: u64,
+        bytesize: Option<NonZeroU8>,
     },
 }
 
@@ -93,20 +95,24 @@ impl EnumRaw {
         let bte = bincode::deserialize_from(&mut *input)?;
         let mut cur: u64 = 0;
         let emsize = bte & flag::tf_enum::BTE_SIZE_MASK;
-        let bytesize: u32 = match (emsize, header.size_enum) {
-            (0, Some(enum_size)) => enum_size.get().into(),
-            (0, None) => return Err(anyhow!("BTE emsize is 0 without header")),
-            (1..=4, _) => 1u32 << (emsize - 1),
-            (5..=7, _) => return Err(anyhow!("BTE emsize with reserved values")),
+        let bytesize: Option<NonZeroU8> = match emsize {
+            0 => None,
+            1..=4 => Some((1 << (emsize - 1)).try_into().unwrap()),
+            5..=7 => return Err(anyhow!("BTE emsize with reserved values")),
             _ => unreachable!(),
         };
 
-        let mask: u64 = if bytesize >= 16 {
+        // TODO enum size defaults to 4?
+        let bytesize_final = bytesize
+            .map(|x| x.get())
+            .or(header.size_enum.map(|x| x.get().into()))
+            .unwrap_or(4);
+        let mask: u64 = if bytesize_final >= 16 {
             // is saturating valid?
             //u64::MAX
             return Err(anyhow!("Bytes size is too big"));
         } else {
-            u64::MAX >> (u64::BITS - (bytesize * 8))
+            u64::MAX >> (u64::BITS - (bytesize_final as u32 * 8))
         };
 
         let mut group_sizes = vec![];
@@ -136,7 +142,7 @@ impl EnumRaw {
             taenum_bits,
             bte,
             members,
-            bytesize: bytesize.into(),
+            bytesize,
         })
     }
 }

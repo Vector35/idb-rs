@@ -12,6 +12,7 @@ pub mod union;
 use std::num::NonZeroU8;
 
 use anyhow::{anyhow, ensure, Context, Result};
+use section::TILSection;
 
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::array::{Array, ArrayRaw};
@@ -178,6 +179,98 @@ impl Type {
         }
         Self::new(&header, type_raw, fields)
     }
+
+    pub fn type_size_bytes(&self, section: &TILSection) -> Result<u64> {
+        fn addr_size(section: &TILSection) -> u64 {
+            section
+                .sizeof_near_far()
+                .map(|(near, _far)| near.get().into())
+                .unwrap_or(4)
+        }
+        Ok(match self {
+            Type::Basic(Basic::Char) => 1,
+            // TODO what is the SegReg size?
+            Type::Basic(Basic::SegReg) => 1,
+            Type::Basic(Basic::Void) => 0,
+            Type::Basic(Basic::Unknown { bytes }) => (*bytes).into(),
+            Type::Basic(Basic::Bool) => section.size_bool.get().into(),
+            Type::Basic(Basic::Short { .. }) => section.sizeof_short().get().into(),
+            Type::Basic(Basic::Int { .. }) => section.size_int.get().into(),
+            Type::Basic(Basic::Long { .. }) => section.sizeof_long().get().into(),
+            Type::Basic(Basic::LongLong { .. }) => section.sizeof_long_long().get().into(),
+            Type::Basic(Basic::IntSized { bytes, .. }) => bytes.get().into(),
+            Type::Basic(Basic::BoolSized { bytes }) => bytes.get().into(),
+            // TODO what's the long double default size if it's not defined?
+            Type::Basic(Basic::LongDouble) => section
+                .size_long_double
+                .map(|x| x.get())
+                .unwrap_or(8)
+                .into(),
+            Type::Basic(Basic::Float { bytes }) => bytes.get().into(),
+            // TODO is pointer always near? Do pointer size default to 4?
+            Type::Pointer(_) => addr_size(section),
+            Type::Function(_) => 0, // function type dont have a size, only a pointer to it
+            Type::Array(array) => array.elem_type.type_size_bytes(section)? * array.nelem as u64,
+            Type::Typedef(Typedef::Name(name)) => section
+                .get_name(&name)
+                .ok_or_else(|| {
+                    anyhow!(
+                        "Unable to find typedef by name: {}",
+                        String::from_utf8_lossy(&name)
+                    )
+                })?
+                .tinfo
+                .type_size_bytes(section)?,
+            Type::Typedef(Typedef::Ordinal(ord)) => section
+                .get_ord(crate::id0::Id0TilOrd { ord: (*ord).into() })
+                .ok_or_else(|| anyhow!("Unable to find typedef by ord: {ord}",))?
+                .tinfo
+                .type_size_bytes(section)?,
+            Type::Struct(type_struct) => {
+                let Struct::NonRef { members, .. } = type_struct else {
+                    return Ok(addr_size(section));
+                };
+                let mut sum = 0u64;
+                for member in members {
+                    let field_size = member.member_type.type_size_bytes(section)?;
+                    // TODO default alignment, seems like default alignemnt is the field size
+                    let align = if section.def_align == 0 {
+                        field_size
+                    } else {
+                        section.def_align as u64
+                    };
+                    let align_diff = sum % align as u64;
+                    if align_diff != 0 {
+                        sum += align as u64 - align_diff;
+                    }
+                    sum += field_size;
+                }
+                sum
+            }
+            Type::Union(type_union) => {
+                let Union::NonRef { members, .. } = type_union else {
+                    return Ok(addr_size(section));
+                };
+                let mut max = 0;
+                for (_, member) in members {
+                    let size = member.type_size_bytes(section)?;
+                    max = max.max(size);
+                }
+                max
+            }
+            Type::Enum(type_enum) => {
+                let Enum::NonRef { bytesize, .. } = type_enum else {
+                    return Ok(addr_size(section));
+                };
+                bytesize
+                    .or(section.size_enum)
+                    .map(|x| x.get())
+                    .unwrap_or(4)
+                    .into()
+            }
+            Type::Bitfield(bitfield) => bitfield.width.into(),
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -295,18 +388,32 @@ pub enum Basic {
         bytes: u8,
     },
 
-    Bool {
+    Bool,
+    BoolSized {
         bytes: NonZeroU8,
     },
     Char,
     SegReg,
+    Short {
+        is_signed: Option<bool>,
+    },
+    Long {
+        is_signed: Option<bool>,
+    },
+    LongLong {
+        is_signed: Option<bool>,
+    },
     Int {
+        is_signed: Option<bool>,
+    },
+    IntSized {
         bytes: NonZeroU8,
         is_signed: Option<bool>,
     },
     Float {
         bytes: NonZeroU8,
     },
+    LongDouble,
 }
 
 impl Basic {
@@ -369,10 +476,10 @@ impl Basic {
                     BT_INT32 => bytes(4),
                     BT_INT64 => bytes(8),
                     BT_INT128 => bytes(16),
-                    BT_INT => til.size_int,
+                    BT_INT => return Ok(Self::Int { is_signed }),
                     _ => unreachable!(),
                 };
-                Ok(Self::Int { bytes, is_signed })
+                Ok(Self::IntSized { bytes, is_signed })
             }
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4805c4
@@ -389,7 +496,7 @@ impl Basic {
                     BTMT_BOOL8 => bytes(2), // delete this
                     _ => unreachable!(),
                 };
-                Ok(Self::Bool { bytes })
+                Ok(Self::BoolSized { bytes })
             }
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808b4
@@ -414,6 +521,7 @@ impl Basic {
 
 #[derive(Clone, Debug)]
 pub enum Typedef {
+    // TODO make this a `Id0TilOrd`
     Ordinal(u32),
     Name(Vec<u8>),
 }

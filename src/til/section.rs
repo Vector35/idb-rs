@@ -362,6 +362,10 @@ impl TILSection {
         Ok(())
     }
 
+    pub fn get_name(&self, name: &[u8]) -> Option<&TILTypeInfo> {
+        self.types.iter().find(|ty| ty.name.as_slice() == name)
+    }
+
     pub fn get_ord(&self, id0_ord: Id0TilOrd) -> Option<&TILTypeInfo> {
         // first search the ordinal alias
         if let Some(ordinals) = &self.type_ordinal_alias {

@@ -177,8 +177,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     // Print Symbols
     writeln!(fmt, "SYMBOLS")?;
     for symbol in &section.symbols {
-        // TODO get the len for type
-        let len = 0;
+        let len = symbol.tinfo.type_size_bytes(section).unwrap();
         write!(fmt, "{len:08X} {:08X}          ", symbol.ordinal)?;
         let name = std::str::from_utf8(&symbol.name).unwrap();
         print_til_type(&mut fmt, section, Some(name), &symbol.tinfo)?;
@@ -186,13 +185,12 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     }
     writeln!(fmt)?;
 
-    writeln!(fmt, "Types")?;
+    writeln!(fmt, "TYPES")?;
     writeln!(fmt, "(enumerated by ordinals)")?;
     let mut types_sort: Vec<_> = section.types.iter().collect();
     types_sort.sort_by_key(|ord| ord.ordinal);
     for symbol in types_sort {
-        // TODO get the len for type
-        let len = 0;
+        let len = symbol.tinfo.type_size_bytes(section).unwrap();
         write!(fmt, "{len:08X}    {}. ", symbol.ordinal)?;
         let name = std::str::from_utf8(&symbol.name).unwrap();
         print_til_type(&mut fmt, section, Some(name), &symbol.tinfo)?;
@@ -203,8 +201,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
         if symbol.name.len() == 0 {
             continue;
         }
-        // TODO get the len for type
-        let len = 0;
+        let len = symbol.tinfo.type_size_bytes(section).unwrap();
         write!(fmt, "{len:08X} ")?;
         let name = std::str::from_utf8(&symbol.name).unwrap();
         print_til_type(&mut fmt, section, Some(name), &symbol.tinfo)?;
@@ -244,17 +241,39 @@ fn print_til_type(
     til_type: &Type,
 ) -> std::io::Result<()> {
     let name_helper = name.map(|name| format!(" {name}")).unwrap_or(String::new());
+    const fn signed_name(is_signed: Option<bool>) -> &'static str {
+        match is_signed {
+            Some(true) | None => "",
+            Some(false) => "unsigned ",
+        }
+    }
     match til_type {
+        Type::Basic(Basic::Bool) => write!(fmt, "bool{name_helper}",),
         Type::Basic(Basic::Char) => write!(fmt, "char{name_helper}",),
+        Type::Basic(Basic::Short { is_signed }) => {
+            write!(fmt, "{}short{name_helper}", signed_name(*is_signed))
+        }
         Type::Basic(Basic::Void) => write!(fmt, "void{name_helper}",),
         Type::Basic(Basic::SegReg) => write!(fmt, "SegReg{name_helper}"),
         Type::Basic(Basic::Unknown { bytes }) => write!(fmt, "unknown{bytes}{name_helper}"),
-        Type::Basic(Basic::Int { bytes, is_signed }) => {
+        Type::Basic(Basic::Int { is_signed }) => {
+            write!(fmt, "{}int{name_helper}", signed_name(*is_signed))
+        }
+        Type::Basic(Basic::Long { is_signed }) => {
+            write!(fmt, "{}long{name_helper}", signed_name(*is_signed))
+        }
+        Type::Basic(Basic::LongLong { is_signed }) => {
+            write!(fmt, "{}longlong{name_helper}", signed_name(*is_signed))
+        }
+        Type::Basic(Basic::IntSized { bytes, is_signed }) => {
             match is_signed {
                 Some(false) => write!(fmt, "unsigned ")?,
                 Some(true) | None => {}
             }
             write!(fmt, "__int{}{name_helper}", bytes.get() * 8)
+        }
+        Type::Basic(Basic::LongDouble) => {
+            write!(fmt, "longfloat{name_helper}")
         }
         Type::Basic(Basic::Float { bytes }) if bytes.get() == 4 => {
             write!(fmt, "float{name_helper}")
@@ -263,8 +282,10 @@ fn print_til_type(
             write!(fmt, "double{name_helper}")
         }
         Type::Basic(Basic::Float { bytes }) => write!(fmt, "float{bytes}{name_helper}"),
-        Type::Basic(Basic::Bool { bytes }) if bytes.get() == 1 => write!(fmt, "bool{name_helper}"),
-        Type::Basic(Basic::Bool { bytes }) => write!(fmt, "bool{bytes}{name_helper}"),
+        Type::Basic(Basic::BoolSized { bytes }) if bytes.get() == 1 => {
+            write!(fmt, "bool{name_helper}")
+        }
+        Type::Basic(Basic::BoolSized { bytes }) => write!(fmt, "bool{bytes}{name_helper}"),
         Type::Pointer(pointer) => {
             // TODO name
             print_til_type(fmt, section, None, &pointer.typ)?;
@@ -276,18 +297,20 @@ fn print_til_type(
             write!(fmt, "{name_helper}[{}]", array.nelem)
         }
         Type::Typedef(typedef) => match typedef {
-            idb_rs::til::Typedef::Ordinal(ord) => write!(fmt, "todo!(ord({}))", ord),
+            idb_rs::til::Typedef::Ordinal(ord) => {
+                let ord_type = section
+                    .get_ord(idb_rs::id0::Id0TilOrd { ord: (*ord).into() })
+                    .unwrap();
+                print_til_type_name(fmt, &ord_type.name, &ord_type.tinfo)?;
+                write!(fmt, "{name_helper}")
+            }
             idb_rs::til::Typedef::Name(vec) => {
                 let name = core::str::from_utf8(&vec).unwrap();
                 write!(fmt, "{name}{name_helper}")
             }
         },
         Type::Struct(str_type) => match str_type {
-            Struct::Ref { ref_type, .. } => {
-                // TODO name
-                write!(fmt, "&")?;
-                print_til_type(fmt, section, None, &*ref_type)
-            }
+            Struct::Ref { ref_type, .. } => print_til_type(fmt, section, name, &*ref_type),
             Struct::NonRef { members, .. } => {
                 let name = name.unwrap_or("");
                 write!(fmt, "struct {name} {{")?;
@@ -307,10 +330,7 @@ fn print_til_type(
             }
         },
         Type::Union(union_type) => match union_type {
-            Union::Ref { ref_type, .. } => {
-                write!(fmt, "&")?;
-                print_til_type(fmt, section, None, &*ref_type)
-            }
+            Union::Ref { ref_type, .. } => print_til_type(fmt, section, name, &*ref_type),
             Union::NonRef { members, .. } => {
                 let name = name.unwrap_or("");
                 write!(fmt, "union {name} {{")?;
@@ -329,10 +349,7 @@ fn print_til_type(
             }
         },
         Type::Enum(enum_type) => match enum_type {
-            Enum::Ref { ref_type, .. } => {
-                write!(fmt, "&")?;
-                print_til_type(fmt, section, None, &*ref_type)
-            }
+            Enum::Ref { ref_type, .. } => print_til_type(fmt, section, name, &*ref_type),
             Enum::NonRef { members, .. } => {
                 let name = name.unwrap_or("");
                 write!(fmt, "enum {name} {{")?;
@@ -346,6 +363,21 @@ fn print_til_type(
                 write!(fmt, "}}")
             }
         },
-        Type::Bitfield(_bitfield) => write!(fmt, "todo!()"),
+        Type::Bitfield(_bitfield) => write!(fmt, "todo!(\"function\")"),
+    }
+}
+
+fn print_til_type_name(fmt: &mut impl Write, name: &[u8], tinfo: &Type) -> std::io::Result<()> {
+    let name = String::from_utf8_lossy(name);
+    match tinfo {
+        Type::Basic(_)
+        | Type::Pointer(_)
+        | Type::Function(_)
+        | Type::Array(_)
+        | Type::Typedef(_)
+        | Type::Bitfield(_) => write!(fmt, "{name}"),
+        Type::Struct(_) => write!(fmt, "struct {name}"),
+        Type::Union(_) => write!(fmt, "union {name}"),
+        Type::Enum(_) => write!(fmt, "enum {name}"),
     }
 }
