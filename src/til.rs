@@ -160,9 +160,7 @@ impl Type {
             size_bool: 1.try_into().unwrap(),
             def_align: 0,
             size_long_double: None,
-            size_short: 2.try_into().unwrap(),
-            size_long: 4.try_into().unwrap(),
-            size_long_long: 8.try_into().unwrap(),
+            extended_sizeof_info: None,
         };
         let mut reader = data;
         let type_raw = TypeRaw::read(&mut reader, &header)?;

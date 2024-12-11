@@ -31,12 +31,17 @@ pub struct TILSection {
     pub size_int: NonZeroU8,
     pub size_bool: NonZeroU8,
     pub size_enum: Option<NonZeroU8>,
-    pub size_short: NonZeroU8,
-    pub size_long: NonZeroU8,
-    pub size_long_long: NonZeroU8,
+    pub extended_sizeof_info: Option<TILSectionExtendedSizeofInfo>,
     pub size_long_double: Option<NonZeroU8>,
     pub macros: Option<Vec<TILMacro>>,
     pub is_universal: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct TILSectionExtendedSizeofInfo {
+    pub size_short: NonZeroU8,
+    pub size_long: NonZeroU8,
+    pub size_long_long: NonZeroU8,
 }
 
 #[derive(Debug, Clone)]
@@ -51,9 +56,7 @@ pub struct TILSectionHeader {
     pub size_int: NonZeroU8,
     pub size_bool: NonZeroU8,
     pub def_align: u8,
-    pub size_short: NonZeroU8,
-    pub size_long: NonZeroU8,
-    pub size_long_long: NonZeroU8,
+    pub extended_sizeof_info: Option<TILSectionExtendedSizeofInfo>,
     pub size_long_double: Option<NonZeroU8>,
 }
 
@@ -132,9 +135,7 @@ impl TILSection {
             size_bool: header.size_bool,
             size_int: header.size_int,
             size_enum: header.size_enum,
-            size_short: header.size_short,
-            size_long: header.size_long,
-            size_long_long: header.size_long_long,
+            extended_sizeof_info: header.extended_sizeof_info,
             symbols,
             type_ordinal_alias,
             types,
@@ -238,21 +239,21 @@ impl TILSection {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42ef86
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x431ffe
-        let (size_short, size_long, size_long_long) = if header1.flags.have_extended_sizeof_info() {
-            let ss = input.read_u8()?;
-            let ls = input.read_u8()?;
-            let lls = input.read_u8()?;
-            let ss = NonZeroU8::new(ss).ok_or_else(|| anyhow!("Invalid short size"))?;
-            let ls = NonZeroU8::new(ls).ok_or_else(|| anyhow!("Invalid long size"))?;
-            let lls = NonZeroU8::new(lls).ok_or_else(|| anyhow!("Invalid long long size"))?;
-            (ss, ls, lls)
-        } else {
-            (
-                2.try_into().unwrap(),
-                4.try_into().unwrap(),
-                8.try_into().unwrap(),
-            )
-        };
+        let extended_sizeof_info = header1
+            .flags
+            .have_extended_sizeof_info()
+            .then(|| -> Result<_> {
+                let ss = input.read_u8()?;
+                let ls = input.read_u8()?;
+                let lls = input.read_u8()?;
+                Ok(TILSectionExtendedSizeofInfo {
+                    size_short: NonZeroU8::new(ss).ok_or_else(|| anyhow!("Invalid short size"))?,
+                    size_long: NonZeroU8::new(ls).ok_or_else(|| anyhow!("Invalid long size"))?,
+                    size_long_long: NonZeroU8::new(lls)
+                        .ok_or_else(|| anyhow!("Invalid long long size"))?,
+                })
+            })
+            .transpose()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x432014
         let size_long_double = header1
@@ -274,9 +275,7 @@ impl TILSection {
             size_bool: header2.size_bool.try_into()?,
             cm: header2.cm,
             def_align: header2.def_align,
-            size_short,
-            size_long,
-            size_long_long,
+            extended_sizeof_info,
             size_long_double,
         })
     }
@@ -318,12 +317,13 @@ impl TILSection {
         crate::write_string_len_u8(&mut *output, &header.description)?;
         bincode::serialize_into(&mut *output, &header2)?;
         if header.flags.have_extended_sizeof_info() {
+            let sizes = header.extended_sizeof_info.unwrap();
             bincode::serialize_into(
                 &mut *output,
                 &(
-                    header.size_short.get(),
-                    header.size_long.get(),
-                    header.size_long_long.get(),
+                    sizes.size_short.get(),
+                    sizes.size_long.get(),
+                    sizes.size_long_long.get(),
                 ),
             )?;
         }
@@ -375,6 +375,56 @@ impl TILSection {
         }
         // if not and alias, search for the type directly
         self.types.iter().find(|ty| ty.ordinal == id0_ord.ord)
+    }
+
+    pub fn sizeof_short(&self) -> NonZeroU8 {
+        self.extended_sizeof_info
+            .as_ref()
+            .map(|x| x.size_short)
+            .unwrap_or(2.try_into().unwrap())
+    }
+
+    pub fn sizeof_long(&self) -> NonZeroU8 {
+        self.extended_sizeof_info
+            .as_ref()
+            .map(|x| x.size_long)
+            .unwrap_or(4.try_into().unwrap())
+    }
+
+    pub fn sizeof_long_long(&self) -> NonZeroU8 {
+        self.extended_sizeof_info
+            .as_ref()
+            .map(|x| x.size_long_long)
+            .unwrap_or(8.try_into().unwrap())
+    }
+
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b7ed
+    pub const fn sizeof_near_far(&self) -> Option<(NonZeroU8, NonZeroU8)> {
+        Some(match (self.size_int.get(), self.cm & 3) {
+            (_, 4..) => unreachable!(),
+            (_, 0) => return None,
+            (..=2, 1) => unsafe { (NonZeroU8::new_unchecked(1), NonZeroU8::new_unchecked(2)) },
+            (_, 2) => unsafe { (NonZeroU8::new_unchecked(2), NonZeroU8::new_unchecked(4)) },
+            (_, 3) => unsafe { (NonZeroU8::new_unchecked(4), NonZeroU8::new_unchecked(6)) },
+            (3.., 1) => unsafe { (NonZeroU8::new_unchecked(8), NonZeroU8::new_unchecked(8)) },
+        })
+    }
+
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40ba3b
+    pub const fn is_code_data_near(&self) -> Option<(bool, bool)> {
+        Some(match (self.cm >> 2 & 3, self.cm & 3) {
+            (4.., _) | (_, 4..) => unreachable!(),
+            (0, 0) => return None,
+            (0, _) => (true, true),
+            (1, _) => (false, false),
+            (2, _) => (true, false),
+            (3, _) => (false, true),
+        })
+    }
+
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b860
+    pub fn calling_convention(&self) -> Option<CallingConvention> {
+        CallingConvention::from_cm_raw(self.cm)
     }
 }
 
@@ -602,5 +652,44 @@ impl TILSection {
             "TypeBucket compressed data is smaller then expected"
         );
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum CallingConvention {
+    CCInvalid = 0x0,
+    Voidarg = 0x2,
+    Cdecl = 0x3,
+    Ellipsis = 0x4,
+    Stdcall = 0x5,
+    Pascal = 0x6,
+    Fastcall = 0x7,
+    Thiscall = 0x8,
+    Swift = 0x9,
+    Golang = 0xb,
+    Userpurge = 0xe,
+    Uservars = 0xd,
+    Usercall = 0xf,
+}
+
+impl CallingConvention {
+    fn from_cm_raw(cm: u8) -> Option<Self> {
+        Some(match cm & 0xf0 >> 4 {
+            0x1 | 0xa | 0xc => return None,
+            0x0 => Self::CCInvalid,
+            0x2 => Self::Voidarg,
+            0x3 => Self::Cdecl,
+            0x4 => Self::Ellipsis,
+            0x5 => Self::Stdcall,
+            0x6 => Self::Pascal,
+            0x7 => Self::Fastcall,
+            0x8 => Self::Thiscall,
+            0x9 => Self::Swift,
+            0xb => Self::Golang,
+            0xe => Self::Userpurge,
+            0xd => Self::Uservars,
+            0xf => Self::Usercall,
+            0x10.. => unreachable!(),
+        })
     }
 }
