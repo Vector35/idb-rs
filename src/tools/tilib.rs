@@ -185,9 +185,14 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     writeln!(fmt, "SYMBOLS")?;
     for symbol in &section.symbols {
         print_til_type_len(&mut fmt, section, &symbol.tinfo).unwrap();
-        write!(fmt, " {:08X}          ", symbol.ordinal)?;
+        match symbol.tinfo.type_size_bytes(section).ok() {
+            // TODO What is that???? Find it in InnerRef...
+            Some(8) => write!(fmt, " {:016X}          ", symbol.ordinal)?,
+            // TODO is limited to 32bits in InnerRef?
+            _ => write!(fmt, " {:08X}          ", symbol.ordinal & 0xFFFF_FFFF)?,
+        }
         let name = std::str::from_utf8(&symbol.name).unwrap();
-        print_til_type_root(&mut fmt, section, Some(name), &symbol.tinfo, true)?;
+        print_til_type(&mut fmt, section, Some(name), &symbol.tinfo, true, false)?;
         writeln!(fmt, ";")?;
     }
     writeln!(fmt)?;
@@ -200,7 +205,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
         print_til_type_len(&mut fmt, section, &symbol.tinfo).unwrap();
         write!(fmt, "{:5}. ", symbol.ordinal)?;
         let name = std::str::from_utf8(&symbol.name).unwrap();
-        print_til_type_root(&mut fmt, section, Some(name), &symbol.tinfo, false)?;
+        print_til_type_root(&mut fmt, section, Some(name), &symbol.tinfo)?;
         writeln!(fmt, ";")?;
     }
     writeln!(fmt, "(enumerated by names)")?;
@@ -211,7 +216,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
         print_til_type_len(&mut fmt, section, &symbol.tinfo).unwrap();
         write!(fmt, " ")?;
         let name = std::str::from_utf8(&symbol.name).unwrap();
-        print_til_type_root(&mut fmt, section, Some(name), &symbol.tinfo, false)?;
+        print_til_type_root(&mut fmt, section, Some(name), &symbol.tinfo)?;
         writeln!(fmt, ";")?;
     }
     writeln!(fmt)?;
@@ -269,15 +274,12 @@ fn print_til_type_root(
     section: &TILSection,
     name: Option<&str>,
     til_type: &Type,
-    is_symbol: bool,
 ) -> std::io::Result<()> {
-    if !is_symbol {
-        match til_type {
-            Type::Struct(Struct::NonRef { .. })
-            | Type::Union(Union::NonRef { .. })
-            | Type::Enum(Enum::NonRef { .. }) => {}
-            _ => write!(fmt, "typedef ")?,
-        }
+    match til_type {
+        Type::Struct(Struct::NonRef { .. })
+        | Type::Union(Union::NonRef { .. })
+        | Type::Enum(Enum::NonRef { .. }) => {}
+        _ => write!(fmt, "typedef ")?,
     }
     print_til_type(fmt, section, name, til_type, true, true)
 }
@@ -442,15 +444,35 @@ fn print_til_type(
                 print_pointer_space,
                 print_type_prefix,
             ),
-            Enum::NonRef { members, .. } => {
+            Enum::NonRef {
+                members, bytesize, ..
+            } => {
                 let name = name.unwrap_or("");
-                write!(fmt, "enum {name} {{")?;
+                write!(fmt, "enum {name} ")?;
+                if let Some(bytesize) = bytesize {
+                    let bits_required = members
+                        .iter()
+                        .map(|(_, value)| u64::BITS - value.leading_zeros())
+                        .max()
+                        .map(|x| x.max(1)) //can't have a value being represented in 0bits
+                        .unwrap_or(8);
+                    if bits_required / 8 < bytesize.get().into() {
+                        write!(fmt, ": __int{} ", bytesize.get() as usize * 8)?;
+                    }
+                }
+                write!(fmt, "{{")?;
                 for (member_name, value) in members {
                     let name = member_name
                         .as_ref()
                         .map(|x| core::str::from_utf8(x).unwrap())
                         .unwrap_or("_");
-                    write!(fmt, "{name} = {value:#X},")?;
+                    write!(fmt, "{name} = {value:#X}")?;
+                    // TODO find this in InnerRef
+                    match bytesize.map(NonZeroU8::get) {
+                        Some(8) => write!(fmt, "LL")?,
+                        _ => {}
+                    }
+                    write!(fmt, ",")?;
                 }
                 write!(fmt, "}}")
             }
@@ -516,7 +538,7 @@ fn print_til_type_len(
         write!(fmt, "FFFFFFFF")?;
     } else {
         // if the type is unknown it just prints "FFFFFFF"
-        let len = tinfo.type_size_bytes(section).ok().unwrap_or(0xFFFF_FFFF);
+        let len = tinfo.type_size_bytes(section).unwrap_or(0xFFFF_FFFF);
         write!(fmt, "{len:08X}")?;
     }
     Ok(())
