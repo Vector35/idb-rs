@@ -554,16 +554,70 @@ pub enum TILModifier {
 #[derive(Debug, Clone)]
 pub struct TILMacro {
     pub name: Vec<u8>,
-    pub value: Vec<u8>,
+    pub param_num: Option<u8>,
+    pub value: Vec<TILMacroValue>,
+}
+
+#[derive(Debug, Clone)]
+pub enum TILMacroValue {
+    // 0x01..=0x7F
+    Char(u8),
+    // 0x80..0xFF => 0..127
+    Param(u8),
 }
 
 impl TILMacro {
     fn read(input: &mut impl IdaGenericBufUnpack) -> Result<Self> {
         let name = input.read_c_string_raw()?;
         // TODO find what this is
-        let _flag: u16 = input.read_u16()?;
+        let flag: u16 = input.read_u16()?;
+        ensure!(flag & 0xFE00 == 0, "Unknown Macro flag value {flag}");
+        let have_param = flag & 0x100 != 0;
+        let param_num = have_param.then_some((flag & 0xFF) as u8);
+        // TODO find the InnerRef for this
         let value = input.read_c_string_raw()?;
-        Ok(Self { name, value })
+        let mut max_param = None;
+        // TODO check the implementation using the InnerRef
+        let value = value
+            .into_iter()
+            .map(|c| match c {
+                0x00 => unreachable!(),
+                0x01..=0x7F => TILMacroValue::Char(c),
+                0x80..=0xFF => {
+                    let param_idx = c & 0x7F;
+                    match (max_param, param_idx) {
+                        (None, _) => max_param = Some(param_idx),
+                        (Some(max), param_idx) if param_idx > max => max_param = Some(param_idx),
+                        (Some(_), _) => {}
+                    }
+                    TILMacroValue::Param(param_idx)
+                }
+            })
+            .collect();
+        match (param_num, max_param) {
+            // the macro not using the defined params is allowed in all situations
+            (_, None) => {}
+            // having params, where should not
+            (None, Some(_)) => {
+                return Err(anyhow!(
+                    "Macro value have param but it is not declared in the flag"
+                ))
+            }
+            // only using params that exist
+            (Some(params), Some(max)) if max <= params => {
+                ensure!(
+                    max <= params,
+                    "Macro value have more params then declared in the flag"
+                );
+            }
+            // using only allowed params
+            (Some(_params), Some(_max)) /* if _max <= _params */ => {}
+        }
+        Ok(Self {
+            name,
+            value,
+            param_num,
+        })
     }
 }
 

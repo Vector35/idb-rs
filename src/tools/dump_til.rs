@@ -30,7 +30,7 @@ pub fn dump_til(args: &Args) -> Result<()> {
         format,
         title,
         flags: _,
-        dependency: description,
+        dependency,
         compiler_id,
         cm,
         def_align,
@@ -48,7 +48,9 @@ pub fn dump_til(args: &Args) -> Result<()> {
     // write the header info
     println!("format: {format}");
     println!("title: {}", String::from_utf8_lossy(&title));
-    println!("description: {}", String::from_utf8_lossy(&description));
+    if let Some(dependency) = dependency {
+        println!("dependency: {}", String::from_utf8_lossy(dependency));
+    }
     println!("id: {compiler_id:?}");
     println!("cm: {cm}");
     println!("def_align: {def_align}");
