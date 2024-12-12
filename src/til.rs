@@ -212,11 +212,11 @@ impl Type {
             Type::Function(_) => 0, // function type dont have a size, only a pointer to it
             Type::Array(array) => array.elem_type.type_size_bytes(section)? * array.nelem as u64,
             Type::Typedef(Typedef::Name(name)) => section
-                .get_name(&name)
+                .get_name(name)
                 .ok_or_else(|| {
                     anyhow!(
                         "Unable to find typedef by name: {}",
-                        String::from_utf8_lossy(&name)
+                        String::from_utf8_lossy(name)
                     )
                 })?
                 .tinfo
@@ -240,9 +240,9 @@ impl Type {
                         section.def_align as u64
                     };
                     if align != 0 {
-                        let align_diff = sum % align as u64;
+                        let align_diff = sum % align;
                         if align_diff != 0 {
-                            sum += align as u64 - align_diff;
+                            sum += align - align_diff;
                         }
                     }
                     sum += field_size;

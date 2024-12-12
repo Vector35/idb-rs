@@ -45,7 +45,7 @@ fn main() {
 
 fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Result<()> {
     if let Some(dependency) = &section.dependency {
-        let dep = core::str::from_utf8(&dependency).unwrap();
+        let dep = core::str::from_utf8(dependency).unwrap();
         // TODO open those files? What todo with then?
         writeln!(fmt, "Warning: {dep}: No such file or directory")?;
     }
@@ -100,7 +100,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     //        write!(fmt, ", ")?;
     //    }
     //}
-    writeln!(fmt, "")?;
+    writeln!(fmt)?;
 
     // compiler name
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b8c5
@@ -126,8 +126,8 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
         if section.sizeof_near_far().is_some() {
             write!(fmt, " ")?;
         }
-        let code = is_code_near.then_some("near").unwrap_or("far");
-        let data = is_data_near.then_some("near").unwrap_or("far");
+        let code = if is_code_near { "near" } else { "far" };
+        let data = if is_data_near { "near" } else { "far" };
         write!(fmt, "{code} code, {data} data",)?;
     }
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b860
@@ -221,7 +221,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     }
     writeln!(fmt, "(enumerated by names)")?;
     for symbol in &section.types {
-        if symbol.name.len() == 0 {
+        if symbol.name.is_empty() {
             continue;
         }
         print_til_type_len(&mut fmt, section, &symbol.tinfo).unwrap();
@@ -242,7 +242,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
 
     // macros
     writeln!(fmt, "MACROS")?;
-    let macro_iter = section.macros.iter().map(|x| x.iter()).flatten();
+    let macro_iter = section.macros.iter().flat_map(Vec::as_slice);
     for macro_entry in macro_iter {
         fmt.write_all(&macro_entry.name)?;
         let mut buf = vec![];
@@ -252,7 +252,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
                 if i != 0 {
                     buf.push(b',');
                 }
-                buf.push(i as u8 | 0x80);
+                buf.push(i | 0x80);
             }
             buf.push(b')');
             fmt.write_all(&buf)?;
@@ -292,7 +292,7 @@ fn print_til_type(
     is_root: bool,
     print_pointer_space: bool,
 ) -> std::io::Result<()> {
-    let name_helper = name.map(|name| format!(" {name}")).unwrap_or(String::new());
+    let name_helper = name.map(|name| format!(" {name}")).unwrap_or_default();
     const fn signed_name(is_signed: Option<bool>) -> &'static str {
         match is_signed {
             Some(true) | None => "",
@@ -351,7 +351,7 @@ fn print_til_type(
         Type::Pointer(pointer) => {
             if let Type::Function(inner_fun) = &*pointer.typ {
                 let name = format!("(*{})", name.unwrap_or(""));
-                print_til_type_function(fmt, section, &name, &inner_fun, is_symbol)
+                print_til_type_function(fmt, section, &name, inner_fun, is_symbol)
             } else {
                 // TODO name
                 print_til_type(
@@ -389,7 +389,7 @@ fn print_til_type(
                 idb_rs::til::Typedef::Ordinal(ord) => section
                     .get_ord(idb_rs::id0::Id0TilOrd { ord: (*ord).into() })
                     .unwrap(),
-                idb_rs::til::Typedef::Name(vec) => section.get_name(&vec).unwrap(),
+                idb_rs::til::Typedef::Name(vec) => section.get_name(vec).unwrap(),
             };
             print_til_type_name(fmt, &inner_type.name, &inner_type.tinfo, is_symbol)?;
             write!(fmt, "{name_helper}")
@@ -399,7 +399,7 @@ fn print_til_type(
                 fmt,
                 section,
                 name,
-                &*ref_type,
+                ref_type,
                 is_symbol,
                 is_root,
                 print_pointer_space,
@@ -408,13 +408,14 @@ fn print_til_type(
                 let name = name.unwrap_or("");
                 write!(fmt, "struct {name} {{")?;
                 for member in members {
+                    let name = member
+                        .name
+                        .as_ref()
+                        .map(|x| core::str::from_utf8(x).unwrap());
                     print_til_type(
                         fmt,
                         section,
-                        member
-                            .name
-                            .as_ref()
-                            .map(|x| core::str::from_utf8(&x).unwrap()),
+                        name,
                         &member.member_type,
                         is_symbol,
                         false,
@@ -427,23 +428,16 @@ fn print_til_type(
         },
         Type::Union(union_type) => match union_type {
             Union::Ref { ref_type, .. } => {
-                print_til_type(fmt, section, name, &*ref_type, is_symbol, is_root, true)
+                print_til_type(fmt, section, name, ref_type, is_symbol, is_root, true)
             }
             Union::NonRef { members, .. } => {
                 let name = name.unwrap_or("");
                 write!(fmt, "union {name} {{")?;
                 for (member_name, member) in members {
-                    print_til_type(
-                        fmt,
-                        section,
-                        member_name
-                            .as_ref()
-                            .map(|x| core::str::from_utf8(&x).unwrap()),
-                        member,
-                        is_symbol,
-                        false,
-                        true,
-                    )?;
+                    let member_name = member_name
+                        .as_ref()
+                        .map(|x| core::str::from_utf8(x).unwrap());
+                    print_til_type(fmt, section, member_name, member, is_symbol, false, true)?;
                     write!(fmt, ";")?;
                 }
                 write!(fmt, "}}")
@@ -454,7 +448,7 @@ fn print_til_type(
                 fmt,
                 section,
                 name,
-                &*ref_type,
+                ref_type,
                 is_symbol,
                 is_root,
                 print_pointer_space,
@@ -465,7 +459,7 @@ fn print_til_type(
                 for (member_name, value) in members {
                     let name = member_name
                         .as_ref()
-                        .map(|x| core::str::from_utf8(&x).unwrap())
+                        .map(|x| core::str::from_utf8(x).unwrap())
                         .unwrap_or("_");
                     write!(fmt, "{name} = {value:#x},")?;
                 }
@@ -483,7 +477,7 @@ fn print_til_type_function(
     til_type: &Function,
     is_symbol: bool,
 ) -> std::io::Result<()> {
-    print_til_type(fmt, section, None, &*til_type.ret, is_symbol, false, false)?;
+    print_til_type(fmt, section, None, &til_type.ret, is_symbol, false, false)?;
     write!(fmt, " {name}(")?;
     for (i, (param_name, param, _argloc)) in til_type.args.iter().enumerate() {
         if i != 0 {

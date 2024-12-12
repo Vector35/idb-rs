@@ -105,7 +105,7 @@ impl EnumRaw {
         // TODO enum size defaults to 4?
         let bytesize_final = bytesize
             .map(|x| x.get())
-            .or(header.size_enum.map(|x| x.get().into()))
+            .or(header.size_enum.map(|x| x.into()))
             .unwrap_or(4);
         let mask: u64 = if bytesize_final >= 16 {
             // is saturating valid?
