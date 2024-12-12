@@ -187,15 +187,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
         print_til_type_len(&mut fmt, section, &symbol.tinfo).unwrap();
         write!(fmt, " {:08X}          ", symbol.ordinal)?;
         let name = std::str::from_utf8(&symbol.name).unwrap();
-        print_til_type(
-            &mut fmt,
-            section,
-            Some(name),
-            &symbol.tinfo,
-            true,
-            true,
-            true,
-        )?;
+        print_til_type_root(&mut fmt, section, Some(name), &symbol.tinfo, true)?;
         writeln!(fmt, ";")?;
     }
     writeln!(fmt)?;
@@ -208,15 +200,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
         print_til_type_len(&mut fmt, section, &symbol.tinfo).unwrap();
         write!(fmt, "{:5}. ", symbol.ordinal)?;
         let name = std::str::from_utf8(&symbol.name).unwrap();
-        print_til_type(
-            &mut fmt,
-            section,
-            Some(name),
-            &symbol.tinfo,
-            false,
-            true,
-            true,
-        )?;
+        print_til_type_root(&mut fmt, section, Some(name), &symbol.tinfo, false)?;
         writeln!(fmt, ";")?;
     }
     writeln!(fmt, "(enumerated by names)")?;
@@ -227,15 +211,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
         print_til_type_len(&mut fmt, section, &symbol.tinfo).unwrap();
         write!(fmt, " ")?;
         let name = std::str::from_utf8(&symbol.name).unwrap();
-        print_til_type(
-            &mut fmt,
-            section,
-            Some(name),
-            &symbol.tinfo,
-            false,
-            true,
-            true,
-        )?;
+        print_til_type_root(&mut fmt, section, Some(name), &symbol.tinfo, false)?;
         writeln!(fmt, ";")?;
     }
     writeln!(fmt)?;
@@ -283,29 +259,37 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     )
 }
 
-fn print_til_type(
+fn print_til_type_root(
     fmt: &mut impl Write,
     section: &TILSection,
     name: Option<&str>,
     til_type: &Type,
     is_symbol: bool,
-    is_root: bool,
+) -> std::io::Result<()> {
+    if !is_symbol {
+        match til_type {
+            Type::Struct(Struct::NonRef { .. })
+            | Type::Union(Union::NonRef { .. })
+            | Type::Enum(Enum::NonRef { .. }) => {}
+            _ => write!(fmt, "typedef ")?,
+        }
+    }
+    print_til_type(fmt, section, name, til_type, true, true)
+}
+
+fn print_til_type(
+    fmt: &mut impl Write,
+    section: &TILSection,
+    name: Option<&str>,
+    til_type: &Type,
     print_pointer_space: bool,
+    print_type_prefix: bool,
 ) -> std::io::Result<()> {
     let name_helper = name.map(|name| format!(" {name}")).unwrap_or_default();
     const fn signed_name(is_signed: Option<bool>) -> &'static str {
         match is_signed {
             Some(true) | None => "",
             Some(false) => "unsigned ",
-        }
-    }
-    // in root, for anything other then struct/union/enum make it a typedef
-    if is_root && !is_symbol {
-        match til_type {
-            Type::Struct(_) | Type::Union(_) | Type::Enum(_) => {}
-            _ => {
-                write!(fmt, "typedef ")?;
-            }
         }
     }
 
@@ -351,7 +335,7 @@ fn print_til_type(
         Type::Pointer(pointer) => {
             if let Type::Function(inner_fun) = &*pointer.typ {
                 let name = format!("(*{})", name.unwrap_or(""));
-                print_til_type_function(fmt, section, &name, inner_fun, is_symbol)
+                print_til_type_function(fmt, section, &name, inner_fun)
             } else {
                 // TODO name
                 print_til_type(
@@ -359,9 +343,8 @@ fn print_til_type(
                     section,
                     None,
                     &pointer.typ,
-                    is_symbol,
-                    false,
                     print_pointer_space,
+                    print_type_prefix,
                 )?;
                 if print_pointer_space {
                     write!(fmt, " ")?;
@@ -370,7 +353,7 @@ fn print_til_type(
             }
         }
         Type::Function(function) => {
-            print_til_type_function(fmt, section, name.unwrap_or("_"), function, is_symbol)
+            print_til_type_function(fmt, section, name.unwrap_or("_"), function)
         }
         Type::Array(array) => {
             print_til_type(
@@ -378,20 +361,31 @@ fn print_til_type(
                 section,
                 None,
                 &array.elem_type,
-                is_symbol,
-                is_root,
                 print_pointer_space,
+                print_type_prefix,
             )?;
             write!(fmt, "{name_helper}[{}]", array.nelem)
         }
         Type::Typedef(typedef) => {
-            let inner_type = match typedef {
-                idb_rs::til::Typedef::Ordinal(ord) => section
-                    .get_ord(idb_rs::id0::Id0TilOrd { ord: (*ord).into() })
-                    .unwrap(),
-                idb_rs::til::Typedef::Name(vec) => section.get_name(vec).unwrap(),
-            };
-            print_til_type_name(fmt, &inner_type.name, &inner_type.tinfo, is_symbol)?;
+            // only print prefix, if is root
+            match typedef {
+                idb_rs::til::Typedef::Ordinal(ord) => {
+                    let ty = section
+                        .get_ord(idb_rs::id0::Id0TilOrd { ord: (*ord).into() })
+                        .unwrap();
+                    print_til_type_name(fmt, &ty.name, &ty.tinfo, print_type_prefix)?;
+                }
+                idb_rs::til::Typedef::Name(name) => {
+                    let ty = section.get_name(name);
+                    match ty {
+                        Some(ty) => {
+                            print_til_type_name(fmt, &ty.name, &ty.tinfo, print_type_prefix)?
+                        }
+                        // if we can't find the type, just print the name
+                        None => write!(fmt, "{}", core::str::from_utf8(name).unwrap())?,
+                    }
+                }
+            }
             write!(fmt, "{name_helper}")
         }
         Type::Struct(str_type) => match str_type {
@@ -400,9 +394,8 @@ fn print_til_type(
                 section,
                 name,
                 ref_type,
-                is_symbol,
-                is_root,
                 print_pointer_space,
+                print_type_prefix,
             ),
             Struct::NonRef { members, .. } => {
                 let name = name.unwrap_or("");
@@ -412,15 +405,7 @@ fn print_til_type(
                         .name
                         .as_ref()
                         .map(|x| core::str::from_utf8(x).unwrap());
-                    print_til_type(
-                        fmt,
-                        section,
-                        name,
-                        &member.member_type,
-                        is_symbol,
-                        false,
-                        true,
-                    )?;
+                    print_til_type(fmt, section, name, &member.member_type, true, false)?;
                     write!(fmt, ";")?;
                 }
                 write!(fmt, "}}")
@@ -428,7 +413,7 @@ fn print_til_type(
         },
         Type::Union(union_type) => match union_type {
             Union::Ref { ref_type, .. } => {
-                print_til_type(fmt, section, name, ref_type, is_symbol, is_root, true)
+                print_til_type(fmt, section, name, ref_type, true, print_type_prefix)
             }
             Union::NonRef { members, .. } => {
                 let name = name.unwrap_or("");
@@ -437,7 +422,7 @@ fn print_til_type(
                     let member_name = member_name
                         .as_ref()
                         .map(|x| core::str::from_utf8(x).unwrap());
-                    print_til_type(fmt, section, member_name, member, is_symbol, false, true)?;
+                    print_til_type(fmt, section, member_name, member, true, false)?;
                     write!(fmt, ";")?;
                 }
                 write!(fmt, "}}")
@@ -449,9 +434,8 @@ fn print_til_type(
                 section,
                 name,
                 ref_type,
-                is_symbol,
-                is_root,
                 print_pointer_space,
+                print_type_prefix,
             ),
             Enum::NonRef { members, .. } => {
                 let name = name.unwrap_or("");
@@ -475,9 +459,8 @@ fn print_til_type_function(
     section: &TILSection,
     name: &str,
     til_type: &Function,
-    is_symbol: bool,
 ) -> std::io::Result<()> {
-    print_til_type(fmt, section, None, &til_type.ret, is_symbol, false, false)?;
+    print_til_type(fmt, section, None, &til_type.ret, false, true)?;
     write!(fmt, " {name}(")?;
     for (i, (param_name, param, _argloc)) in til_type.args.iter().enumerate() {
         if i != 0 {
@@ -491,9 +474,8 @@ fn print_til_type_function(
             section,
             param_name.as_ref().map(|name| name.borrow()),
             param,
-            is_symbol,
-            false,
             true,
+            false,
         )?;
     }
     write!(fmt, ")")
@@ -503,7 +485,7 @@ fn print_til_type_name(
     fmt: &mut impl Write,
     name: &[u8],
     tinfo: &Type,
-    is_symbol: bool,
+    print_prefix: bool,
 ) -> std::io::Result<()> {
     let name = String::from_utf8_lossy(name);
     let prefix = match tinfo {
@@ -513,26 +495,23 @@ fn print_til_type_name(
         | Type::Array(_)
         | Type::Typedef(_)
         | Type::Bitfield(_) => "",
-        Type::Struct(_) => "struct ",
         Type::Union(_) => "union ",
+        Type::Struct(_) => "struct ",
         Type::Enum(_) => "enum ",
     };
-    if is_symbol {
-        write!(fmt, "{name}")
-    } else {
-        write!(fmt, "{prefix}{name}")
-    }
+    write!(fmt, "{}{name}", if print_prefix { prefix } else { "" })
 }
 
 fn print_til_type_len(
     fmt: &mut impl Write,
     section: &TILSection,
     tinfo: &Type,
-) -> anyhow::Result<()> {
+) -> std::io::Result<()> {
     if let Type::Function(_function) = &tinfo {
         write!(fmt, "FFFFFFFF")?;
     } else {
-        let len = tinfo.type_size_bytes(section)?;
+        // if the type is unknown it just prints "FFFFFFF"
+        let len = tinfo.type_size_bytes(section).ok().unwrap_or(0xFFFF_FFFF);
         write!(fmt, "{len:08X}")?;
     }
     Ok(())

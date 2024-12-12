@@ -226,10 +226,10 @@ impl Type {
                 .ok_or_else(|| anyhow!("Unable to find typedef by ord: {ord}",))?
                 .tinfo
                 .type_size_bytes(section)?,
-            Type::Struct(type_struct) => {
-                let Struct::NonRef { members, .. } = type_struct else {
-                    return Ok(addr_size(section));
-                };
+            Type::Struct(Struct::Ref { ref_type, .. })
+            | Type::Union(Union::Ref { ref_type, .. })
+            | Type::Enum(Enum::Ref { ref_type, .. }) => ref_type.type_size_bytes(section)?,
+            Type::Struct(Struct::NonRef { members, .. }) => {
                 let mut sum = 0u64;
                 for member in members {
                     let field_size = member.member_type.type_size_bytes(section)?;
@@ -249,10 +249,7 @@ impl Type {
                 }
                 sum
             }
-            Type::Union(type_union) => {
-                let Union::NonRef { members, .. } = type_union else {
-                    return Ok(addr_size(section));
-                };
+            Type::Union(Union::NonRef { members, .. }) => {
                 let mut max = 0;
                 for (_, member) in members {
                     let size = member.type_size_bytes(section)?;
@@ -260,16 +257,11 @@ impl Type {
                 }
                 max
             }
-            Type::Enum(type_enum) => {
-                let Enum::NonRef { bytesize, .. } = type_enum else {
-                    return Ok(addr_size(section));
-                };
-                bytesize
-                    .or(section.size_enum)
-                    .map(|x| x.get())
-                    .unwrap_or(4)
-                    .into()
-            }
+            Type::Enum(Enum::NonRef { bytesize, .. }) => bytesize
+                .or(section.size_enum)
+                .map(|x| x.get())
+                .unwrap_or(4)
+                .into(),
             Type::Bitfield(bitfield) => bitfield.width.into(),
         })
     }
