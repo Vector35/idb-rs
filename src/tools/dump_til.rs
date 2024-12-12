@@ -80,9 +80,20 @@ pub fn dump_til(args: &Args) -> Result<()> {
 
     if let Some(macros) = macros {
         println!("\n------------------------------macros------------------------------");
-        for TILMacro { name, value } in macros {
+        for TILMacro {
+            name,
+            value,
+            param_num: _,
+        } in macros
+        {
             let name = String::from_utf8_lossy(&name);
-            let value = String::from_utf8_lossy(&value);
+            let value: String = value
+                .iter()
+                .map(|c| match c {
+                    idb_rs::til::TILMacroValue::Char(c) => format!("{}", *c as char),
+                    idb_rs::til::TILMacroValue::Param(param) => format!("{{P{}}}", *param),
+                })
+                .collect();
             println!("------------------------------`{name}`------------------------------");
             println!("{value}");
             println!("------------------------------`{name}`-end------------------------------",);
