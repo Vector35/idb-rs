@@ -251,7 +251,12 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
         .as_ref()
         .map(|macros| macros.len())
         .unwrap_or(0);
-    let types_num = section.types.len();
+    let alias_num = section
+        .type_ordinal_alias
+        .as_ref()
+        .map(Vec::len)
+        .unwrap_or(0);
+    let types_num = section.types.len() + alias_num;
     let symbols_num = section.symbols.len();
     writeln!(
         fmt,
@@ -445,7 +450,7 @@ fn print_til_type(
                         .as_ref()
                         .map(|x| core::str::from_utf8(x).unwrap())
                         .unwrap_or("_");
-                    write!(fmt, "{name} = {value:#x},")?;
+                    write!(fmt, "{name} = {value:#X},")?;
                 }
                 write!(fmt, "}}")
             }
