@@ -220,9 +220,27 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     writeln!(fmt, "MACROS")?;
     let macro_iter = section.macros.iter().map(|x| x.iter()).flatten();
     for macro_entry in macro_iter {
-        let name = String::from_utf8_lossy(&macro_entry.name);
-        let value = String::from_utf8_lossy(&macro_entry.value);
-        writeln!(fmt, "{name} = {value}")?;
+        fmt.write_all(&macro_entry.name)?;
+        let mut buf = vec![];
+        if let Some(param_num) = macro_entry.param_num {
+            buf.push(b'(');
+            for i in 0..param_num {
+                if i != 0 {
+                    buf.push(b',');
+                }
+                buf.push(i as u8 | 0x80);
+            }
+            buf.push(b')');
+            fmt.write_all(&buf)?;
+            buf.clear();
+        }
+        write!(fmt, " ")?;
+        buf.extend(macro_entry.value.iter().map(|c| match c {
+            idb_rs::til::TILMacroValue::Char(c) => *c,
+            idb_rs::til::TILMacroValue::Param(p) => *p | 0x80,
+        }));
+        fmt.write_all(&buf)?;
+        writeln!(fmt)?;
     }
     writeln!(fmt)?;
 
