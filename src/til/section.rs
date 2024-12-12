@@ -126,7 +126,7 @@ impl TILSection {
             format: header.format,
             title: header.title,
             flags: header.flags,
-            dependency: (header.description.len() != 0).then_some(header.description),
+            dependency: header.description.is_empty().then_some(header.description),
             compiler_id: Compiler::from_value(header.compiler_id),
             cm: header.cm,
             def_align: header.def_align,

@@ -47,7 +47,7 @@ pub fn dump_til(args: &Args) -> Result<()> {
     } = &til;
     // write the header info
     println!("format: {format}");
-    println!("title: {}", String::from_utf8_lossy(&title));
+    println!("title: {}", String::from_utf8_lossy(title));
     if let Some(dependency) = dependency {
         println!("dependency: {}", String::from_utf8_lossy(dependency));
     }
@@ -86,7 +86,7 @@ pub fn dump_til(args: &Args) -> Result<()> {
             param_num: _,
         } in macros
         {
-            let name = String::from_utf8_lossy(&name);
+            let name = String::from_utf8_lossy(name);
             let value: String = value
                 .iter()
                 .map(|c| match c {
