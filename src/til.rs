@@ -257,7 +257,7 @@ impl Type {
                 }
                 max
             }
-            Type::Enum(Enum::NonRef { bytesize, .. }) => bytesize
+            Type::Enum(Enum::NonRef { storage_size, .. }) => storage_size
                 .or(section.size_enum)
                 .map(|x| x.get())
                 .unwrap_or(4)

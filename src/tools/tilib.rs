@@ -445,19 +445,21 @@ fn print_til_type(
                 print_type_prefix,
             ),
             Enum::NonRef {
-                members, bytesize, ..
+                members,
+                storage_size,
+                ..
             } => {
                 let name = name.unwrap_or("");
                 write!(fmt, "enum {name} ")?;
-                if let Some(bytesize) = bytesize {
+                if let Some(storage_size) = storage_size {
                     let bits_required = members
                         .iter()
                         .map(|(_, value)| u64::BITS - value.leading_zeros())
                         .max()
                         .map(|x| x.max(1)) //can't have a value being represented in 0bits
                         .unwrap_or(8);
-                    if bits_required / 8 < bytesize.get().into() {
-                        write!(fmt, ": __int{} ", bytesize.get() as usize * 8)?;
+                    if bits_required / 8 < storage_size.get().into() {
+                        write!(fmt, ": __int{} ", storage_size.get() as usize * 8)?;
                     }
                 }
                 write!(fmt, "{{")?;
@@ -468,7 +470,7 @@ fn print_til_type(
                         .unwrap_or("_");
                     write!(fmt, "{name} = {value:#X}")?;
                     // TODO find this in InnerRef
-                    match bytesize.map(NonZeroU8::get) {
+                    match storage_size.map(NonZeroU8::get) {
                         Some(8) => write!(fmt, "LL")?,
                         _ => {}
                     }
