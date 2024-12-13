@@ -566,23 +566,32 @@ impl TILMacro {
         ensure!(flag & 0xFE00 == 0, "Unknown Macro flag value {flag}");
         let have_param = flag & 0x100 != 0;
         let param_num = have_param.then_some((flag & 0xFF) as u8);
+        if !have_param {
+            ensure!(flag & 0xFF == 0, "Unknown/Invalid value for TILMacro flag");
+        }
         // TODO find the InnerRef for this
         let value = input.read_c_string_raw()?;
         let mut max_param = None;
         // TODO check the implementation using the InnerRef
-        let value = value
+        let value: Vec<TILMacroValue> = value
             .into_iter()
-            .map(|c| match c {
+            .filter_map(|c| match c {
                 0x00 => unreachable!(),
-                0x01..=0x7F => TILMacroValue::Char(c),
+                0x01..=0x7F => Some(TILMacroValue::Char(c)),
                 0x80..=0xFF => {
                     let param_idx = c & 0x7F;
+                    if !have_param && matches!(param_idx, 0x20 | 0x25 | 0x29) {
+                        // HACK: it's known that some macros, although having no params
+                        // include some params in the value, It's unknown the menaing of those,
+                        // maybe they are just bugs.
+                        return None;
+                    }
                     match (max_param, param_idx) {
                         (None, _) => max_param = Some(param_idx),
                         (Some(max), param_idx) if param_idx > max => max_param = Some(param_idx),
                         (Some(_), _) => {}
                     }
-                    TILMacroValue::Param(param_idx)
+                    Some(TILMacroValue::Param(param_idx))
                 }
             })
             .collect();
@@ -590,10 +599,13 @@ impl TILMacro {
             // the macro not using the defined params is allowed in all situations
             (_, None) => {}
             // having params, where should not
-            (None, Some(_)) => {
-                return Err(anyhow!(
-                    "Macro value have param but it is not declared in the flag"
-                ))
+            (None, Some(_max)) => {
+                println!(
+                    "Macro value have params but it is not declared in the flag: {_max}",
+                )
+                //return Err(anyhow!(
+                //    "Macro value have params but it is not declared in the flag",
+                //))
             }
             // only using params that exist
             (Some(params), Some(max)) if max <= params => {
