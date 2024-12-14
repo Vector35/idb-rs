@@ -341,6 +341,7 @@ fn print_til_type(
         Type::Basic(Basic::BoolSized { bytes }) => write!(fmt, "bool{bytes}{name_helper}"),
         Type::Pointer(pointer) => {
             if let Type::Function(inner_fun) = &*pointer.typ {
+                // How to handle modifier here?
                 let name = format!("(*{})", name.unwrap_or(""));
                 print_til_type_function(fmt, section, &name, inner_fun)
             } else {
@@ -356,7 +357,13 @@ fn print_til_type(
                 if print_pointer_space {
                     write!(fmt, " ")?;
                 }
-                write!(fmt, "*{}", name.unwrap_or(""))
+                let modifier = match pointer.modifier {
+                    None => "",
+                    Some(idb_rs::til::pointer::PointerModifier::Ptr32) => "__ptr32 ",
+                    Some(idb_rs::til::pointer::PointerModifier::Ptr64) => "__ptr64 ",
+                    Some(idb_rs::til::pointer::PointerModifier::Restricted) => "__restricted ",
+                };
+                write!(fmt, "*{modifier}{}", name.unwrap_or(""))
             }
         }
         Type::Function(function) => {

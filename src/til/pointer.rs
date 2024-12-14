@@ -1,3 +1,5 @@
+use anyhow::ensure;
+
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, TAH};
@@ -5,7 +7,7 @@ use crate::til::{Type, TypeRaw, TAH};
 #[derive(Debug, Clone)]
 pub struct Pointer {
     pub closure: PointerType,
-    pub tah: TAH,
+    pub modifier: Option<PointerModifier>,
     pub typ: Box<Type>,
 }
 
@@ -17,7 +19,7 @@ impl Pointer {
     ) -> anyhow::Result<Self> {
         Ok(Self {
             closure: PointerType::new(til, raw.closure)?,
-            tah: raw.tah,
+            modifier: raw.modifier,
             typ: Type::new(til, *raw.typ, fields).map(Box::new)?,
         })
     }
@@ -44,10 +46,17 @@ impl PointerType {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum PointerModifier {
+    Ptr32,
+    Ptr64,
+    Restricted,
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct PointerRaw {
     pub closure: PointerTypeRaw,
-    pub tah: TAH,
+    pub modifier: Option<PointerModifier>,
     pub typ: Box<TypeRaw>,
 }
 
@@ -78,9 +87,21 @@ impl PointerRaw {
             let _typ = TypeRaw::read(&mut *input, header)?;
             let _value = input.read_de()?;
         }
+
+        // TODO find the flag for this
+        let modifier = match tah.0 .0 & 0x60 {
+            0x00 => None,
+            0x20 => Some(PointerModifier::Ptr32),
+            0x40 => Some(PointerModifier::Ptr64),
+            0x60 => Some(PointerModifier::Restricted),
+            _ => unreachable!(),
+        };
+        // TODO other values are known to exist
+        //ensure!(tah.0 .0 & !0x60 == 0, "Unknown value for pointer modifier");
+
         Ok(Self {
             closure,
-            tah,
+            modifier,
             typ: Box::new(typ),
         })
     }
