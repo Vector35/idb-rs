@@ -582,7 +582,7 @@ impl TILMacro {
                     let param_idx = c & 0x7F;
                     if !have_param && matches!(param_idx, 0x20 | 0x25 | 0x29) {
                         // HACK: it's known that some macros, although having no params
-                        // include some params in the value, It's unknown the menaing of those,
+                        // include some params in the value, It's unknown the meaning of those,
                         // maybe they are just bugs.
                         return None;
                     }
