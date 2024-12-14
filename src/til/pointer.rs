@@ -1,5 +1,3 @@
-use anyhow::ensure;
-
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, TAH};
@@ -89,6 +87,7 @@ impl PointerRaw {
         }
 
         // TODO find the flag for this
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6 print_til_type_att
         let modifier = match tah.0 .0 & 0x60 {
             0x00 => None,
             0x20 => Some(PointerModifier::Ptr32),

@@ -7,11 +7,10 @@ use anyhow::{anyhow, Context, Result};
 pub enum Struct {
     Ref {
         ref_type: Box<Type>,
-        taudt_bits: SDACL,
     },
     NonRef {
         effective_alignment: u16,
-        taudt_bits: SDACL,
+        modifiers: Vec<StructModifier>,
         members: Vec<StructMember>,
     },
 }
@@ -22,22 +21,18 @@ impl Struct {
         fields: Option<Vec<Vec<u8>>>,
     ) -> Result<Self> {
         match value {
-            StructRaw::Ref {
-                ref_type,
-                taudt_bits,
-            } => {
+            StructRaw::Ref { ref_type } => {
                 if matches!(&fields, Some(f) if !f.is_empty()) {
                     return Err(anyhow!("fields in a Ref Struct"));
                 }
                 Ok(Struct::Ref {
                     ref_type: Type::new(til, *ref_type, None).map(Box::new)?,
-                    taudt_bits,
                 })
             }
             StructRaw::NonRef {
                 effective_alignment,
-                taudt_bits,
                 members,
+                modifiers,
             } => {
                 let members = associate_field_name_and_member(fields, members)
                     .context("Struct")?
@@ -45,7 +40,7 @@ impl Struct {
                     .collect::<anyhow::Result<_, _>>()?;
                 Ok(Struct::NonRef {
                     effective_alignment,
-                    taudt_bits,
+                    modifiers,
                     members,
                 })
             }
@@ -57,11 +52,10 @@ impl Struct {
 pub(crate) enum StructRaw {
     Ref {
         ref_type: Box<TypeRaw>,
-        taudt_bits: SDACL,
     },
     NonRef {
         effective_alignment: u16,
-        taudt_bits: SDACL,
+        modifiers: Vec<StructModifier>,
         members: Vec<StructMemberRaw>,
     },
 }
@@ -73,10 +67,9 @@ impl StructRaw {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // simple reference
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
-            let taudt_bits = SDACL::read(&mut *input)?;
+            let _taudt_bits = SDACL::read(&mut *input)?;
             return Ok(Self::Ref {
                 ref_type: Box::new(ref_type),
-                taudt_bits,
             });
         };
 
@@ -89,12 +82,35 @@ impl StructRaw {
         let members = (0..mem_cnt)
             .map(|_| StructMemberRaw::read(&mut *input, header, taudt_bits.0 .0))
             .collect::<Result<_, _>>()?;
+
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
+        let have_attribute = taudt_bits.0 .0 & 0x20 != 0;
+        let is_cpp = taudt_bits.0 .0 & 0x80 != 0;
+        let is_unaligned = taudt_bits.0 .0 & 0x40 != 0;
+        let have_other = taudt_bits.0 .0 & !0xE0 != 0;
+        let modifiers = is_cpp
+            .then_some(StructModifier::CppObj)
+            .into_iter()
+            .chain(is_unaligned.then_some(StructModifier::Unaligned))
+            .chain(have_attribute.then_some(StructModifier::Attribute))
+            .chain(have_other.then_some(StructModifier::Unknown))
+            .collect();
         Ok(Self::NonRef {
             effective_alignment,
-            taudt_bits,
+            modifiers,
             members,
         })
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum StructModifier {
+    Unaligned,
+    // TODO include the att value indide this
+    Attribute,
+    CppObj,
+    /// Value of the att is unknown with unknown meaning
+    Unknown,
 }
 
 #[derive(Clone, Debug)]

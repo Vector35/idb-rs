@@ -411,9 +411,24 @@ fn print_til_type(
                 print_pointer_space,
                 print_type_prefix,
             ),
-            Struct::NonRef { members, .. } => {
+            Struct::NonRef {
+                members, modifiers, ..
+            } => {
                 let name = name.unwrap_or("");
-                write!(fmt, "struct {name} {{")?;
+                write!(fmt, "struct ")?;
+                for modifier in modifiers {
+                    match modifier {
+                        idb_rs::til::r#struct::StructModifier::Unaligned => {
+                            write!(fmt, "__unaligned ")?
+                        }
+                        idb_rs::til::r#struct::StructModifier::Attribute => {
+                            write!(fmt, "__attribute__((msstruct)) ")?
+                        }
+                        idb_rs::til::r#struct::StructModifier::CppObj => write!(fmt, "__cppobj ")?,
+                        idb_rs::til::r#struct::StructModifier::Unknown => write!(fmt, "__other ")?,
+                    }
+                }
+                write!(fmt, "{name} {{")?;
                 for member in members {
                     let name = member
                         .name
