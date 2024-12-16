@@ -6,6 +6,7 @@ use idb_rs::til::section::TILSection;
 use idb_rs::til::union::Union;
 use idb_rs::til::Basic;
 use idb_rs::til::Type;
+use idb_rs::til::TypeVariant;
 
 use std::borrow::Borrow;
 use std::fs::File;
@@ -275,10 +276,10 @@ fn print_til_type_root(
     name: Option<&str>,
     til_type: &Type,
 ) -> std::io::Result<()> {
-    match til_type {
-        Type::Struct(Struct::NonRef { .. })
-        | Type::Union(Union::NonRef { .. })
-        | Type::Enum(Enum::NonRef { .. }) => {}
+    match &til_type.type_variant {
+        TypeVariant::Struct(Struct::NonRef { .. })
+        | TypeVariant::Union(Union::NonRef { .. })
+        | TypeVariant::Enum(Enum::NonRef { .. }) => {}
         _ => write!(fmt, "typedef ")?,
     }
     print_til_type(fmt, section, name, til_type, true, true)
@@ -300,46 +301,46 @@ fn print_til_type(
         }
     }
 
-    match til_type {
-        Type::Basic(Basic::Bool) => write!(fmt, "bool{name_helper}",),
-        Type::Basic(Basic::Char) => write!(fmt, "char{name_helper}",),
-        Type::Basic(Basic::Short { is_signed }) => {
+    match &til_type.type_variant {
+        TypeVariant::Basic(Basic::Bool) => write!(fmt, "bool{name_helper}",),
+        TypeVariant::Basic(Basic::Char) => write!(fmt, "char{name_helper}",),
+        TypeVariant::Basic(Basic::Short { is_signed }) => {
             write!(fmt, "{}short{name_helper}", signed_name(*is_signed))
         }
-        Type::Basic(Basic::Void) => write!(fmt, "void{name_helper}",),
-        Type::Basic(Basic::SegReg) => write!(fmt, "SegReg{name_helper}"),
-        Type::Basic(Basic::Unknown { bytes }) => write!(fmt, "unknown{bytes}{name_helper}"),
-        Type::Basic(Basic::Int { is_signed }) => {
+        TypeVariant::Basic(Basic::Void) => write!(fmt, "void{name_helper}",),
+        TypeVariant::Basic(Basic::SegReg) => write!(fmt, "SegReg{name_helper}"),
+        TypeVariant::Basic(Basic::Unknown { bytes }) => write!(fmt, "unknown{bytes}{name_helper}"),
+        TypeVariant::Basic(Basic::Int { is_signed }) => {
             write!(fmt, "{}int{name_helper}", signed_name(*is_signed))
         }
-        Type::Basic(Basic::Long { is_signed }) => {
+        TypeVariant::Basic(Basic::Long { is_signed }) => {
             write!(fmt, "{}long{name_helper}", signed_name(*is_signed))
         }
-        Type::Basic(Basic::LongLong { is_signed }) => {
+        TypeVariant::Basic(Basic::LongLong { is_signed }) => {
             write!(fmt, "{}longlong{name_helper}", signed_name(*is_signed))
         }
-        Type::Basic(Basic::IntSized { bytes, is_signed }) => {
+        TypeVariant::Basic(Basic::IntSized { bytes, is_signed }) => {
             if let Some(false) = is_signed {
                 write!(fmt, "unsigned ")?;
             }
             write!(fmt, "__int{}{name_helper}", bytes.get() * 8)
         }
-        Type::Basic(Basic::LongDouble) => {
+        TypeVariant::Basic(Basic::LongDouble) => {
             write!(fmt, "longfloat{name_helper}")
         }
-        Type::Basic(Basic::Float { bytes }) if bytes.get() == 4 => {
+        TypeVariant::Basic(Basic::Float { bytes }) if bytes.get() == 4 => {
             write!(fmt, "float{name_helper}")
         }
-        Type::Basic(Basic::Float { bytes }) if bytes.get() == 8 => {
+        TypeVariant::Basic(Basic::Float { bytes }) if bytes.get() == 8 => {
             write!(fmt, "double{name_helper}")
         }
-        Type::Basic(Basic::Float { bytes }) => write!(fmt, "float{bytes}{name_helper}"),
-        Type::Basic(Basic::BoolSized { bytes }) if bytes.get() == 1 => {
+        TypeVariant::Basic(Basic::Float { bytes }) => write!(fmt, "float{bytes}{name_helper}"),
+        TypeVariant::Basic(Basic::BoolSized { bytes }) if bytes.get() == 1 => {
             write!(fmt, "bool{name_helper}")
         }
-        Type::Basic(Basic::BoolSized { bytes }) => write!(fmt, "bool{bytes}{name_helper}"),
-        Type::Pointer(pointer) => {
-            if let Type::Function(inner_fun) = &*pointer.typ {
+        TypeVariant::Basic(Basic::BoolSized { bytes }) => write!(fmt, "bool{bytes}{name_helper}"),
+        TypeVariant::Pointer(pointer) => {
+            if let TypeVariant::Function(inner_fun) = &pointer.typ.type_variant {
                 // How to handle modifier here?
                 let name = format!("(*{})", name.unwrap_or(""));
                 print_til_type_function(fmt, section, &name, inner_fun)
@@ -365,10 +366,10 @@ fn print_til_type(
                 write!(fmt, "*{modifier}{}", name.unwrap_or(""))
             }
         }
-        Type::Function(function) => {
+        TypeVariant::Function(function) => {
             print_til_type_function(fmt, section, name.unwrap_or("_"), function)
         }
-        Type::Array(array) => {
+        TypeVariant::Array(array) => {
             print_til_type(
                 fmt,
                 section,
@@ -379,7 +380,7 @@ fn print_til_type(
             )?;
             write!(fmt, "{name_helper}[{}]", array.nelem)
         }
-        Type::Typedef(typedef) => {
+        TypeVariant::Typedef(typedef) => {
             // only print prefix, if is root
             match typedef {
                 idb_rs::til::Typedef::Ordinal(ord) => {
@@ -401,7 +402,7 @@ fn print_til_type(
             }
             write!(fmt, "{name_helper}")
         }
-        Type::Struct(str_type) => match str_type {
+        TypeVariant::Struct(str_type) => match str_type {
             Struct::Ref { ref_type, .. } => print_til_type(
                 fmt,
                 section,
@@ -439,7 +440,7 @@ fn print_til_type(
                 write!(fmt, "}}")
             }
         },
-        Type::Union(union_type) => match union_type {
+        TypeVariant::Union(union_type) => match union_type {
             Union::Ref { ref_type, .. } => {
                 print_til_type(fmt, section, name, ref_type, true, print_type_prefix)
             }
@@ -456,7 +457,7 @@ fn print_til_type(
                 write!(fmt, "}}")
             }
         },
-        Type::Enum(enum_type) => match enum_type {
+        TypeVariant::Enum(enum_type) => match enum_type {
             Enum::Ref { ref_type, .. } => print_til_type(
                 fmt,
                 section,
@@ -506,7 +507,7 @@ fn print_til_type(
                 write!(fmt, "}}")
             }
         },
-        Type::Bitfield(_bitfield) => write!(fmt, "todo!(\"function\")"),
+        TypeVariant::Bitfield(_bitfield) => write!(fmt, "todo!(\"function\")"),
     }
 }
 
@@ -544,16 +545,16 @@ fn print_til_type_name(
     print_prefix: bool,
 ) -> std::io::Result<()> {
     let name = String::from_utf8_lossy(name);
-    let prefix = match tinfo {
-        Type::Basic(_)
-        | Type::Pointer(_)
-        | Type::Function(_)
-        | Type::Array(_)
-        | Type::Typedef(_)
-        | Type::Bitfield(_) => "",
-        Type::Union(_) => "union ",
-        Type::Struct(_) => "struct ",
-        Type::Enum(_) => "enum ",
+    let prefix = match &tinfo.type_variant {
+        TypeVariant::Basic(_)
+        | TypeVariant::Pointer(_)
+        | TypeVariant::Function(_)
+        | TypeVariant::Array(_)
+        | TypeVariant::Typedef(_)
+        | TypeVariant::Bitfield(_) => "",
+        TypeVariant::Union(_) => "union ",
+        TypeVariant::Struct(_) => "struct ",
+        TypeVariant::Enum(_) => "enum ",
     };
     write!(fmt, "{}{name}", if print_prefix { prefix } else { "" })
 }
@@ -563,7 +564,7 @@ fn print_til_type_len(
     section: &TILSection,
     tinfo: &Type,
 ) -> std::io::Result<()> {
-    if let Type::Function(_function) = &tinfo {
+    if let TypeVariant::Function(_function) = &tinfo.type_variant {
         write!(fmt, "FFFFFFFF")?;
     } else {
         // if the type is unknown it just prints "FFFFFFF"

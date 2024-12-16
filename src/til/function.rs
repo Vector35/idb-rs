@@ -3,6 +3,8 @@ use crate::til::section::TILSectionHeader;
 use crate::til::{associate_field_name_and_member, Basic, Type, TypeMetadata, TypeRaw, TAH};
 use anyhow::{ensure, Context};
 
+use super::TypeVariantRaw;
+
 #[derive(Debug, Clone)]
 pub struct Function {
     pub ret: Box<Type>,
@@ -93,7 +95,7 @@ impl FunctionRaw {
         let ret = TypeRaw::read(&mut *input, header)?;
         // TODO double check documentation for [flag::tf_func::BT_FUN]
         let have_retloc = cc.get_calling_convention().is_special_pe()
-            && !matches!(&ret, TypeRaw::Basic(Basic::Void));
+            && !matches!(&ret.variant, TypeVariantRaw::Basic(Basic::Void));
         let retloc = have_retloc.then(|| ArgLoc::read(&mut *input)).transpose()?;
         if cc.get_calling_convention().is_void_arg() {
             return Ok(Self {

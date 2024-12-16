@@ -100,7 +100,14 @@ impl TILTypeInfo {
 }
 
 #[derive(Debug, Clone)]
-pub enum Type {
+pub struct Type {
+    pub is_const: bool,
+    pub is_volatile: bool,
+    pub type_variant: TypeVariant,
+}
+
+#[derive(Debug, Clone)]
+pub enum TypeVariant {
     Basic(Basic),
     Pointer(Pointer),
     Function(Function),
@@ -117,32 +124,39 @@ impl Type {
         tinfo_raw: TypeRaw,
         fields: Option<Vec<Vec<u8>>>,
     ) -> Result<Self> {
-        match tinfo_raw {
-            TypeRaw::Basic(x) => {
+        let type_variant = match tinfo_raw.variant {
+            TypeVariantRaw::Basic(x) => {
                 if let Some(fields) = fields {
                     ensure!(fields.is_empty(), "Basic type with fields");
                 }
-                Ok(Type::Basic(x))
+                TypeVariant::Basic(x)
             }
-            TypeRaw::Bitfield(x) => {
+            TypeVariantRaw::Bitfield(x) => {
                 if matches!(fields, Some(f) if !f.is_empty()) {
                     return Err(anyhow!("fields in a Bitfield"));
                 }
-                Ok(Type::Bitfield(x))
+                TypeVariant::Bitfield(x)
             }
-            TypeRaw::Typedef(x) => {
+            TypeVariantRaw::Typedef(x) => {
                 if matches!(fields, Some(f) if !f.is_empty()) {
                     return Err(anyhow!("fields in a Typedef"));
                 }
-                Ok(Type::Typedef(x))
+                TypeVariant::Typedef(x)
             }
-            TypeRaw::Pointer(x) => Pointer::new(til, x, fields).map(Type::Pointer),
-            TypeRaw::Function(x) => Function::new(til, x, fields).map(Type::Function),
-            TypeRaw::Array(x) => Array::new(til, x, fields).map(Type::Array),
-            TypeRaw::Struct(x) => Struct::new(til, x, fields).map(Type::Struct),
-            TypeRaw::Union(x) => Union::new(til, x, fields).map(Type::Union),
-            TypeRaw::Enum(x) => Enum::new(til, x, fields).map(Type::Enum),
-        }
+            TypeVariantRaw::Pointer(x) => Pointer::new(til, x, fields).map(TypeVariant::Pointer)?,
+            TypeVariantRaw::Function(x) => {
+                Function::new(til, x, fields).map(TypeVariant::Function)?
+            }
+            TypeVariantRaw::Array(x) => Array::new(til, x, fields).map(TypeVariant::Array)?,
+            TypeVariantRaw::Struct(x) => Struct::new(til, x, fields).map(TypeVariant::Struct)?,
+            TypeVariantRaw::Union(x) => Union::new(til, x, fields).map(TypeVariant::Union)?,
+            TypeVariantRaw::Enum(x) => Enum::new(til, x, fields).map(TypeVariant::Enum)?,
+        };
+        Ok(Self {
+            is_const: tinfo_raw.is_const,
+            is_volatile: tinfo_raw.is_volatile,
+            type_variant,
+        })
     }
     // TODO find the best way to handle type parsing from id0
     pub(crate) fn new_from_id0(data: &[u8], fields: Option<Vec<Vec<u8>>>) -> Result<Self> {
@@ -188,31 +202,33 @@ impl Type {
                 .map(|(near, _far)| near.get().into())
                 .unwrap_or(4)
         }
-        Ok(match self {
-            Type::Basic(Basic::Char) => 1,
+        Ok(match &self.type_variant {
+            TypeVariant::Basic(Basic::Char) => 1,
             // TODO what is the SegReg size?
-            Type::Basic(Basic::SegReg) => 1,
-            Type::Basic(Basic::Void) => 0,
-            Type::Basic(Basic::Unknown { bytes }) => (*bytes).into(),
-            Type::Basic(Basic::Bool) => section.size_bool.get().into(),
-            Type::Basic(Basic::Short { .. }) => section.sizeof_short().get().into(),
-            Type::Basic(Basic::Int { .. }) => section.size_int.get().into(),
-            Type::Basic(Basic::Long { .. }) => section.sizeof_long().get().into(),
-            Type::Basic(Basic::LongLong { .. }) => section.sizeof_long_long().get().into(),
-            Type::Basic(Basic::IntSized { bytes, .. }) => bytes.get().into(),
-            Type::Basic(Basic::BoolSized { bytes }) => bytes.get().into(),
+            TypeVariant::Basic(Basic::SegReg) => 1,
+            TypeVariant::Basic(Basic::Void) => 0,
+            TypeVariant::Basic(Basic::Unknown { bytes }) => (*bytes).into(),
+            TypeVariant::Basic(Basic::Bool) => section.size_bool.get().into(),
+            TypeVariant::Basic(Basic::Short { .. }) => section.sizeof_short().get().into(),
+            TypeVariant::Basic(Basic::Int { .. }) => section.size_int.get().into(),
+            TypeVariant::Basic(Basic::Long { .. }) => section.sizeof_long().get().into(),
+            TypeVariant::Basic(Basic::LongLong { .. }) => section.sizeof_long_long().get().into(),
+            TypeVariant::Basic(Basic::IntSized { bytes, .. }) => bytes.get().into(),
+            TypeVariant::Basic(Basic::BoolSized { bytes }) => bytes.get().into(),
             // TODO what's the long double default size if it's not defined?
-            Type::Basic(Basic::LongDouble) => section
+            TypeVariant::Basic(Basic::LongDouble) => section
                 .size_long_double
                 .map(|x| x.get())
                 .unwrap_or(8)
                 .into(),
-            Type::Basic(Basic::Float { bytes }) => bytes.get().into(),
+            TypeVariant::Basic(Basic::Float { bytes }) => bytes.get().into(),
             // TODO is pointer always near? Do pointer size default to 4?
-            Type::Pointer(_) => addr_size(section),
-            Type::Function(_) => 0, // function type dont have a size, only a pointer to it
-            Type::Array(array) => array.elem_type.type_size_bytes(section)? * array.nelem as u64,
-            Type::Typedef(Typedef::Name(name)) => section
+            TypeVariant::Pointer(_) => addr_size(section),
+            TypeVariant::Function(_) => 0, // function type dont have a size, only a pointer to it
+            TypeVariant::Array(array) => {
+                array.elem_type.type_size_bytes(section)? * array.nelem as u64
+            }
+            TypeVariant::Typedef(Typedef::Name(name)) => section
                 .get_name(name)
                 .ok_or_else(|| {
                     anyhow!(
@@ -222,15 +238,15 @@ impl Type {
                 })?
                 .tinfo
                 .type_size_bytes(section)?,
-            Type::Typedef(Typedef::Ordinal(ord)) => section
+            TypeVariant::Typedef(Typedef::Ordinal(ord)) => section
                 .get_ord(crate::id0::Id0TilOrd { ord: (*ord).into() })
                 .ok_or_else(|| anyhow!("Unable to find typedef by ord: {ord}",))?
                 .tinfo
                 .type_size_bytes(section)?,
-            Type::Struct(Struct::Ref { ref_type, .. })
-            | Type::Union(Union::Ref { ref_type, .. })
-            | Type::Enum(Enum::Ref { ref_type, .. }) => ref_type.type_size_bytes(section)?,
-            Type::Struct(Struct::NonRef { members, .. }) => {
+            TypeVariant::Struct(Struct::Ref { ref_type, .. })
+            | TypeVariant::Union(Union::Ref { ref_type, .. })
+            | TypeVariant::Enum(Enum::Ref { ref_type, .. }) => ref_type.type_size_bytes(section)?,
+            TypeVariant::Struct(Struct::NonRef { members, .. }) => {
                 let mut sum = 0u64;
                 for member in members {
                     let field_size = member.member_type.type_size_bytes(section)?;
@@ -250,7 +266,7 @@ impl Type {
                 }
                 sum
             }
-            Type::Union(Union::NonRef { members, .. }) => {
+            TypeVariant::Union(Union::NonRef { members, .. }) => {
                 let mut max = 0;
                 for (_, member) in members {
                     let size = member.type_size_bytes(section)?;
@@ -258,18 +274,25 @@ impl Type {
                 }
                 max
             }
-            Type::Enum(Enum::NonRef { storage_size, .. }) => storage_size
+            TypeVariant::Enum(Enum::NonRef { storage_size, .. }) => storage_size
                 .or(section.size_enum)
                 .map(|x| x.get())
                 .unwrap_or(4)
                 .into(),
-            Type::Bitfield(bitfield) => bitfield.width.into(),
+            TypeVariant::Bitfield(bitfield) => bitfield.width.into(),
         })
     }
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum TypeRaw {
+pub(crate) struct TypeRaw {
+    is_const: bool,
+    is_volatile: bool,
+    variant: TypeVariantRaw,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum TypeVariantRaw {
     Basic(Basic),
     Pointer(PointerRaw),
     Function(FunctionRaw),
@@ -290,39 +313,39 @@ impl TypeRaw {
         // TODO find if this apply to all fields, or only a selected few?
         // TODO some fields can be both CONST and VOLATILE at the same time, what that means?
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473084 print_til_type
-        let _is_const = metadata & flag::tf_modifiers::BTM_CONST != 0;
-        let _is_volatile = metadata & flag::tf_modifiers::BTM_VOLATILE != 0;
+        let is_const = metadata & flag::tf_modifiers::BTM_CONST != 0;
+        let is_volatile = metadata & flag::tf_modifiers::BTM_VOLATILE != 0;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480335
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x472e13 print_til_type
-        match (type_base, type_flags) {
+        let variant = match (type_base, type_flags) {
             (..=flag::tf_last_basic::BT_LAST_BASIC, _) => {
-                Basic::new(til, type_base, type_flags).map(TypeRaw::Basic)
+                Basic::new(til, type_base, type_flags).map(TypeVariantRaw::Basic)?
             }
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4804d7
             (flag::tf_ptr::BT_PTR, _) => PointerRaw::read(input, til, type_flags)
                 .context("Type::Pointer")
-                .map(TypeRaw::Pointer),
+                .map(TypeVariantRaw::Pointer)?,
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48075a
             (flag::tf_array::BT_ARRAY, _) => ArrayRaw::read(input, til, type_flags)
                 .context("Type::Array")
-                .map(TypeRaw::Array),
+                .map(TypeVariantRaw::Array)?,
 
             (flag::tf_func::BT_FUNC, _) => FunctionRaw::read(input, til, type_flags)
                 .context("Type::Function")
-                .map(TypeRaw::Function),
+                .map(TypeVariantRaw::Function)?,
 
-            (flag::tf_complex::BT_BITFIELD, _) => Ok(TypeRaw::Bitfield(
+            (flag::tf_complex::BT_BITFIELD, _) => TypeVariantRaw::Bitfield(
                 Bitfield::read(input, type_flags).context("Type::Bitfield")?,
-            )),
+            ),
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480369
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480369
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_TYPEDEF) => Typedef::read(input)
                 .context("Type::Typedef")
-                .map(TypeRaw::Typedef),
+                .map(TypeVariantRaw::Typedef)?,
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480378
 
@@ -331,7 +354,7 @@ impl TypeRaw {
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_UNION) => {
                 UnionRaw::read(input, til)
                     .context("Type::Union")
-                    .map(TypeRaw::Union)
+                    .map(TypeVariantRaw::Union)?
             }
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
@@ -339,23 +362,28 @@ impl TypeRaw {
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_STRUCT) => {
                 StructRaw::read(input, til)
                     .context("Type::Struct")
-                    .map(TypeRaw::Struct)
+                    .map(TypeVariantRaw::Struct)?
             }
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_ENUM) => {
                 EnumRaw::read(input, til)
                     .context("Type::Enum")
-                    .map(TypeRaw::Enum)
+                    .map(TypeVariantRaw::Enum)?
             }
 
             (flag::tf_complex::BT_COMPLEX, _) => unreachable!(),
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47395d print_til_type
-            (flag::BT_RESERVED, _) => Err(anyhow!("Wrong/Unknown type: {metadata:02x}")),
+            (flag::BT_RESERVED, _) => return Err(anyhow!("Wrong/Unknown type: {metadata:02x}")),
 
             (flag::BT_RESERVED.., _) => unreachable!(),
-        }
+        };
+        Ok(Self {
+            is_const,
+            is_volatile,
+            variant,
+        })
     }
 
     pub fn read_ref(input: &mut impl IdaGenericUnpack, header: &TILSectionHeader) -> Result<Self> {
