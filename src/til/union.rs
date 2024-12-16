@@ -3,6 +3,8 @@ use crate::til::section::TILSectionHeader;
 use crate::til::{associate_field_name_and_member, Type, TypeRaw, SDACL};
 use anyhow::{anyhow, Context};
 
+use super::r#struct::StructModifier;
+
 #[derive(Clone, Debug)]
 pub enum Union {
     Ref {
@@ -10,8 +12,8 @@ pub enum Union {
         taudt_bits: SDACL,
     },
     NonRef {
-        taudt_bits: SDACL,
         effective_alignment: u16,
+        modifiers: Vec<StructModifier>,
         members: Vec<(Option<Vec<u8>>, Type)>,
     },
 }
@@ -35,8 +37,8 @@ impl Union {
                 })
             }
             UnionRaw::NonRef {
-                taudt_bits,
                 effective_alignment,
+                modifiers,
                 members,
             } => {
                 let members = associate_field_name_and_member(fields, members)
@@ -44,8 +46,8 @@ impl Union {
                     .map(|(n, m)| Type::new(til, m, None).map(|m| (n, m)))
                     .collect::<anyhow::Result<_, _>>()?;
                 Ok(Union::NonRef {
-                    taudt_bits,
                     effective_alignment,
+                    modifiers,
                     members,
                 })
             }
@@ -62,8 +64,8 @@ pub(crate) enum UnionRaw {
         taudt_bits: SDACL,
     },
     NonRef {
-        taudt_bits: SDACL,
         effective_alignment: u16,
+        modifiers: Vec<StructModifier>,
         members: Vec<TypeRaw>,
     },
 }
@@ -89,12 +91,13 @@ impl UnionRaw {
         let mem_cnt = n >> 3;
         let effective_alignment = if alpow == 0 { 0 } else { 1 << (alpow - 1) };
         let taudt_bits = SDACL::read(&mut *input)?;
+        let modifiers = StructModifier::from_value(taudt_bits.0 .0);
         let members = (0..mem_cnt)
             .map(|_| TypeRaw::read(&mut *input, header))
             .collect::<anyhow::Result<_, _>>()?;
         Ok(Self::NonRef {
             effective_alignment,
-            taudt_bits,
+            modifiers,
             members,
         })
     }

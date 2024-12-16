@@ -84,17 +84,7 @@ impl StructRaw {
             .collect::<Result<_, _>>()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
-        let have_attribute = taudt_bits.0 .0 & 0x20 != 0;
-        let is_cpp = taudt_bits.0 .0 & 0x80 != 0;
-        let is_unaligned = taudt_bits.0 .0 & 0x40 != 0;
-        let have_other = taudt_bits.0 .0 & !0xE0 != 0;
-        let modifiers = is_cpp
-            .then_some(StructModifier::CppObj)
-            .into_iter()
-            .chain(is_unaligned.then_some(StructModifier::Unaligned))
-            .chain(have_attribute.then_some(StructModifier::Attribute))
-            .chain(have_other.then_some(StructModifier::Unknown))
-            .collect();
+        let modifiers = StructModifier::from_value(taudt_bits.0 .0);
         Ok(Self::NonRef {
             effective_alignment,
             modifiers,
@@ -111,6 +101,21 @@ pub enum StructModifier {
     CppObj,
     /// Value of the att is unknown with unknown meaning
     Unknown,
+}
+
+impl StructModifier {
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
+    pub fn from_value(value: u16) -> Vec<StructModifier> {
+        let attribute = (value & 0x20 != 0).then_some(StructModifier::Attribute);
+        let cpp = (value & 0x80 != 0).then_some(StructModifier::CppObj);
+        let unaligned = (value & 0x40 != 0).then_some(StructModifier::Unaligned);
+        let others = (value & !0xE0 != 0).then_some(StructModifier::Unknown);
+        cpp.into_iter()
+            .chain(unaligned)
+            .chain(attribute)
+            .chain(others)
+            .collect()
+    }
 }
 
 #[derive(Clone, Debug)]

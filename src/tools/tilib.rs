@@ -319,9 +319,8 @@ fn print_til_type(
             write!(fmt, "{}longlong{name_helper}", signed_name(*is_signed))
         }
         Type::Basic(Basic::IntSized { bytes, is_signed }) => {
-            match is_signed {
-                Some(false) => write!(fmt, "unsigned ")?,
-                Some(true) | None => {}
+            if let Some(false) = is_signed {
+                write!(fmt, "unsigned ")?;
             }
             write!(fmt, "__int{}{name_helper}", bytes.get() * 8)
         }
@@ -473,16 +472,23 @@ fn print_til_type(
             } => {
                 let name = name.unwrap_or("");
                 write!(fmt, "enum {name} ")?;
-                if let Some(storage_size) = storage_size {
-                    let bits_required = members
-                        .iter()
-                        .map(|(_, value)| u64::BITS - value.leading_zeros())
-                        .max()
-                        .map(|x| x.max(1)) //can't have a value being represented in 0bits
-                        .unwrap_or(8);
-                    if bits_required / 8 < storage_size.get().into() {
-                        write!(fmt, ": __int{} ", storage_size.get() as usize * 8)?;
+                match (*storage_size, section.size_enum) {
+                    (None, None) => {}
+                    (Some(storage_size), Some(size_enum)) => {
+                        if storage_size != size_enum {
+                            let bits_required = members
+                                .iter()
+                                .map(|(_, value)| u64::BITS - value.leading_zeros())
+                                .max()
+                                .map(|x| x.max(1)) //can't have a value being represented in 0bits
+                                .unwrap_or(8);
+                            if bits_required / 8 < storage_size.get().into() {
+                                write!(fmt, ": __int{} ", storage_size.get() as usize * 8)?;
+                            }
+                        }
                     }
+                    (None, Some(_)) => {}
+                    (Some(_), None) => {}
                 }
                 write!(fmt, "{{")?;
                 for (member_name, value) in members {
@@ -492,9 +498,8 @@ fn print_til_type(
                         .unwrap_or("_");
                     write!(fmt, "{name} = {value:#X}")?;
                     // TODO find this in InnerRef
-                    match storage_size.map(NonZeroU8::get) {
-                        Some(8) => write!(fmt, "LL")?,
-                        _ => {}
+                    if let Some(8) = storage_size.map(NonZeroU8::get) {
+                        write!(fmt, "LL")?;
                     }
                     write!(fmt, ",")?;
                 }

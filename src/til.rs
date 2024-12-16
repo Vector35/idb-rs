@@ -180,6 +180,7 @@ impl Type {
         Self::new(&header, type_raw, fields)
     }
 
+    // TODO stub implementation
     pub fn type_size_bytes(&self, section: &TILSection) -> Result<u64> {
         fn addr_size(section: &TILSection) -> u64 {
             section
