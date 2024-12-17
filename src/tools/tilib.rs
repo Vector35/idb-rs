@@ -1,4 +1,5 @@
 use idb_rs::id0::Compiler;
+use idb_rs::til::function::CallingConvention;
 use idb_rs::til::function::Function;
 use idb_rs::til::r#enum::Enum;
 use idb_rs::til::r#struct::Struct;
@@ -137,23 +138,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
             if section.sizeof_near_far().is_some() || section.is_code_data_near().is_some() {
                 write!(fmt, ",")?;
             }
-            use idb_rs::til::section::CallingConvention::*;
-            let cc_name = match cc {
-                CCInvalid => "ccinvalid",
-                Voidarg => "voidarg",
-                Cdecl => "cdecl",
-                Ellipsis => "ellipsis",
-                Stdcall => "stdcall",
-                Pascal => "pascal",
-                Fastcall => "fastcall",
-                Thiscall => "thiscall",
-                Swift => "swift",
-                Golang => "golang",
-                Userpurge => "userpurge",
-                Uservars => "uservars",
-                Usercall => "usercall",
-            };
-            writeln!(fmt, "{cc_name}")?;
+            writeln!(fmt, "{}", calling_convention_to_str(cc))?;
         }
     }
     writeln!(fmt)?;
@@ -282,6 +267,12 @@ fn print_til_type_root(
         | TypeVariant::Enum(Enum::NonRef { .. }) => {}
         _ => write!(fmt, "typedef ")?,
     }
+    if til_type.is_volatile {
+        write!(fmt, "volatile ")?;
+    }
+    if til_type.is_const {
+        write!(fmt, "const ")?;
+    }
     print_til_type(fmt, section, name, til_type, true, true)
 }
 
@@ -342,8 +333,7 @@ fn print_til_type(
         TypeVariant::Pointer(pointer) => {
             if let TypeVariant::Function(inner_fun) = &pointer.typ.type_variant {
                 // How to handle modifier here?
-                let name = format!("(*{})", name.unwrap_or(""));
-                print_til_type_function(fmt, section, &name, inner_fun)
+                print_til_type_function(fmt, section, name.unwrap_or(""), inner_fun, true)
             } else {
                 // TODO name
                 print_til_type(
@@ -367,7 +357,7 @@ fn print_til_type(
             }
         }
         TypeVariant::Function(function) => {
-            print_til_type_function(fmt, section, name.unwrap_or("_"), function)
+            print_til_type_function(fmt, section, name.unwrap_or("_"), function, false)
         }
         TypeVariant::Array(array) => {
             print_til_type(
@@ -516,9 +506,22 @@ fn print_til_type_function(
     section: &TILSection,
     name: &str,
     til_type: &Function,
+    is_pointer: bool,
 ) -> std::io::Result<()> {
+    // return type
     print_til_type(fmt, section, None, &til_type.ret, false, true)?;
-    write!(fmt, " {name}(")?;
+
+    // print name and calling convention
+    let cc = (section.calling_convention() != Some(til_type.calling_convention))
+        .then_some(calling_convention_to_str(til_type.calling_convention));
+    match (is_pointer, cc) {
+        (true, Some(cc)) => write!(fmt, " ({cc} *{name})")?,
+        (false, Some(cc)) => write!(fmt, " {cc} {name}")?,
+        (true, None) => write!(fmt, " (*{name})")?,
+        (false, None) => write!(fmt, " {name}")?,
+    }
+
+    write!(fmt, " (")?;
     for (i, (param_name, param, _argloc)) in til_type.args.iter().enumerate() {
         if i != 0 {
             write!(fmt, ", ")?;
@@ -572,4 +575,25 @@ fn print_til_type_len(
         write!(fmt, "{len:08X}")?;
     }
     Ok(())
+}
+
+fn calling_convention_to_str(cc: CallingConvention) -> &'static str {
+    use idb_rs::til::function::CallingConvention::*;
+    match cc {
+        Invalid => "__ccinvalid",
+        Unknown => "__unknown",
+        Voidarg => "__voidarg",
+        Cdecl => "__cdecl",
+        Ellipsis => "__ellipsis",
+        Stdcall => "__stdcall",
+        Pascal => "__pascal",
+        Fastcall => "__fastcall",
+        Thiscall => "__thiscall",
+        Swift => "__swift",
+        Golang => "__golang",
+        Userpurge => "__userpurge",
+        Uservars => "__uservars",
+        Usercall => "__usercall",
+        Reserved3 => "__ccreserved3",
+    }
 }

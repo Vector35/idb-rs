@@ -418,19 +418,15 @@ pub trait IdaGenericUnpack: Read {
     fn read_de(&mut self) -> Result<u32> {
         // TODO check if the implementation is complete
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cdb0
-        let mut val: u32 = 0;
+        let mut acc: u32 = 0;
         for _ in 0..5 {
-            let mut hi = val << 6;
             let b: u32 = self.read_u8()?.into();
             if b & 0x80 == 0 {
-                let lo = b & 0x3F;
-                val = lo | hi;
-                return Ok(val);
-            } else {
-                let lo = 2 * hi;
-                hi = b & 0x7F;
-                val = lo | hi;
+                acc = (b & 0x3F) | (acc << 6);
+                return Ok(acc);
             }
+
+            acc = (acc << 7) | (b & 0x7F);
         }
         Err(anyhow!("Can't find the end of DE"))
     }
