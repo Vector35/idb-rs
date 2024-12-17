@@ -654,18 +654,6 @@ impl TILMacro {
     }
 }
 
-#[derive(Clone, Default, Debug)]
-pub struct TypeMetadata(pub u8);
-impl TypeMetadata {
-    fn new(value: u8) -> Self {
-        // TODO check for invalid values
-        Self(value)
-    }
-    fn read(input: &mut impl IdaGenericUnpack) -> Result<Self> {
-        Ok(Self::new(input.read_u8()?))
-    }
-}
-
 // TODO make those inner fields into enums or private
 #[derive(Clone, Copy, Debug)]
 pub struct BaseTypeFlag(pub u8);
@@ -757,38 +745,6 @@ impl SDACL {
             0xd0..=0xff | 0xc0 | 0xc1 => Ok(Self(TypeAttribute::read(input)?)),
             _ => Ok(Self(TypeAttribute(0))),
         }
-    }
-}
-
-impl CallingConventionFlag {
-    fn is_spoiled(&self) -> bool {
-        self.0 == 0xA0
-    }
-
-    fn is_void_arg(&self) -> bool {
-        self.0 == 0x20
-    }
-
-    fn is_special_pe(&self) -> bool {
-        self.0 == 0xD0 || self.0 == 0xE0 || self.0 == 0xF0
-    }
-}
-
-impl TypeMetadata {
-    pub fn get_base_type_flag(&self) -> BaseTypeFlag {
-        BaseTypeFlag(self.0 & flag::tf_mask::TYPE_BASE_MASK)
-    }
-
-    pub fn get_full_type_flag(&self) -> FullTypeFlag {
-        FullTypeFlag(self.0 & flag::tf_mask::TYPE_FULL_MASK)
-    }
-
-    pub fn get_type_flag(&self) -> TypeFlag {
-        TypeFlag(self.0 & flag::tf_mask::TYPE_FLAGS_MASK)
-    }
-
-    pub fn get_calling_convention(&self) -> CallingConventionFlag {
-        CallingConventionFlag(self.0 & 0xF0)
     }
 }
 

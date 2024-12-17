@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::io::{BufReader, Read, Write};
 use std::num::NonZeroU8;
 
+use super::function::CallingConvention;
+
 // TODO migrate this to flags
 pub const TIL_SECTION_MAGIC: &[u8; 6] = b"IDATIL";
 
@@ -656,44 +658,5 @@ impl TILSection {
             "TypeBucket compressed data is smaller then expected"
         );
         Ok(())
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum CallingConvention {
-    CCInvalid = 0x0,
-    Voidarg = 0x2,
-    Cdecl = 0x3,
-    Ellipsis = 0x4,
-    Stdcall = 0x5,
-    Pascal = 0x6,
-    Fastcall = 0x7,
-    Thiscall = 0x8,
-    Swift = 0x9,
-    Golang = 0xb,
-    Userpurge = 0xe,
-    Uservars = 0xd,
-    Usercall = 0xf,
-}
-
-impl CallingConvention {
-    fn from_cm_raw(cm: u8) -> Option<Self> {
-        Some(match cm & 0xf0 >> 4 {
-            0x1 | 0xa | 0xc => return None,
-            0x0 => Self::CCInvalid,
-            0x2 => Self::Voidarg,
-            0x3 => Self::Cdecl,
-            0x4 => Self::Ellipsis,
-            0x5 => Self::Stdcall,
-            0x6 => Self::Pascal,
-            0x7 => Self::Fastcall,
-            0x8 => Self::Thiscall,
-            0x9 => Self::Swift,
-            0xb => Self::Golang,
-            0xe => Self::Userpurge,
-            0xd => Self::Uservars,
-            0xf => Self::Usercall,
-            0x10.. => unreachable!(),
-        })
     }
 }
