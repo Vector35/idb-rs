@@ -439,8 +439,9 @@ pub trait IdaGenericUnpack: Read {
         let value = match self.read_u8()? {
             0 => return Err(anyhow!("DT can't have 0 value")),
             //SEG = 2
-            value if value & 0x80 != 0 => {
+            value @ 0x80.. => {
                 let inter: u16 = self.read_u8()?.into();
+                ensure!(inter != 0, "DT can't have a following 0 value");
                 value as u16 & 0x7F | inter << 7
             }
             //SEG = 1

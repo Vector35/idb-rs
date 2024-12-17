@@ -664,6 +664,71 @@ mod test {
     }
 
     #[test]
+    fn parse_spoiled_function_kernel_32() {
+        // ```
+        // TilType(Type { is_const: false, is_volatile: false, type_variant:
+        //   Function(Function {
+        //     ret: Type { is_const: false, is_volatile: false, type_variant: Basic(Void) },
+        //     args: [
+        //       (
+        //         Some([117, 69, 120, 105, 116, 67, 111, 100, 101]),
+        //         Type {
+        //           is_const: false,
+        //           is_volatile: false,
+        //           type_variant: Typedef(Name([85, 73, 78, 84])) }, None)],
+        //           retloc: None
+        //         }
+        //       )
+        // })
+        // ```
+        let function = [
+            0x0c, // function type
+            0xaf, 0x81, // function cc extended...
+            0x42, // flag
+            0x01, // 0 regs nspoiled
+            0x53, // cc
+            0x01, // return type void
+            0x02, // 1 param
+            0x3d, // param 1 typedef
+            0x05, 0x55, 0x49, 0x4e, 0x54, // typedef name
+            0x00, //end
+        ];
+        let _til = til::Type::new_from_id0(&function, None).unwrap();
+    }
+
+    #[test]
+    fn parse_spoiled_function_invalid_reg() {
+        // ```
+        // 0x180001030:
+        // TilType(Type { is_const: false, is_volatile: false, type_variant:
+        //   Function(Function {
+        //     ret: Type { is_const: false, is_volatile: false, type_variant: Basic(Void) },
+        //     args: [], retloc: None
+        //   })
+        // })
+        // ```
+        let function = [
+            0x0c, // function type
+            0xaa, // extended function cc, 10 nspoiled
+            0x71, // spoiled reg 0
+            0x72, // spoiled reg 1
+            0x73, // spoiled reg 2
+            0x79, // spoiled reg 3
+            0x7a, // spoiled reg 4
+            0x7b, // spoiled reg 5
+            0x7c, // spoiled reg 6
+            0xc0, 0x08, // spoiled reg 7
+            0xc4, 0x08, // spoiled reg 8
+            0xc5, 0x08, // spoiled reg 9
+            0x30, // cc
+            0x01, // return type void
+            0x01, // no params
+            0x00, // end
+        ];
+        let _til = til::Type::new_from_id0(&function, None).unwrap();
+    }
+
+    #[test]
     fn parse_idb_param() {
         let param = b"IDA\xbc\x02\x06metapc#\x8a\x03\x03\x02\x00\x00\x00\x00\xff_\xff\xff\xf7\x03\x00\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x0d\x00\x0d \x0d\x10\xff\xff\x00\x00\x00\xc0\x80\x00\x00\x00\x02\x02\x01\x0f\x0f\x06\xce\xa3\xbeg\xc6@\x00\x07\x00\x07\x10(FP\x87t\x09\x03\x00\x01\x13\x0a\x00\x00\x01a\x00\x07\x00\x13\x04\x04\x04\x00\x02\x04\x08\x00\x00\x00";
         let _parsed = id0::IDBParam::read(param, false).unwrap();
