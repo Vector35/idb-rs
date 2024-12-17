@@ -1,7 +1,7 @@
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::section::TILSectionHeader;
 use crate::til::{associate_field_name_and_member, Basic, Type, TypeRaw, TAH};
-use anyhow::{anyhow, ensure, Context};
+use anyhow::{anyhow, Context};
 
 use super::TypeVariantRaw;
 
@@ -260,34 +260,38 @@ fn read_cc(
         return Ok((cc, 0, None));
     }
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46de7c
-    let mut byte2 = input.read_u8()?;
-    let mut spoiled = None;
-    if cc & 0xF != 0xF || byte2 & 0x80 == 0 {
+    let pbyte2 = input.peek_u8()?;
+    if cc & 0xF != 0xF || matches!(pbyte2, Some(x) if x & 0x80 == 0) {
+        let mut spoiled = None;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46df47
         let mut flags = 0;
-        while cc & 0xF0 == 0xA0 {
+        loop {
             if cc & 0xF == 0xF {
+                let byte2 = input.read_u8()?;
+                // TODO check that flags are not duplicated?
                 flags |= (byte2 & 0x1F) << 1;
             } else {
-                read_cc_spoiled(input, cc as u16 & 0xF, spoiled.get_or_insert_default())?;
+                let nspoiled = cc as u16 & 0xF;
+                // TODO make sure spoiled is always None?
+                read_cc_spoiled(input, nspoiled, spoiled.get_or_insert_default())?;
             }
 
             cc = input.read_u8()?;
             if cc & 0xF0 != 0xA0 {
-                return Ok((cc, 0, None));
+                return Ok((cc, flags.into(), spoiled));
             }
-            byte2 = input.read_u8()?;
         }
-        Ok((cc, flags.into(), spoiled))
     } else {
+        let byte2 = input.read_u8()?;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46def4
+        let mut spoiled = vec![];
         let flag = input.read_de()?;
         if byte2 & 1 != 0 {
             let nspoiled = input.read_dt()?;
-            ensure!(nspoiled & 0x80 == 0, "Invalid spoiled len for read_cc");
-            let _spoiled = read_cc_spoiled(input, nspoiled, spoiled.get_or_insert_default())?;
+            read_cc_spoiled(input, nspoiled, &mut spoiled)?;
         }
-        Ok((cc, (flag & 0x1E3F) as u16, spoiled))
+        let cc = input.read_u8()?;
+        Ok((cc, (flag & 0x1E3F) as u16, Some(spoiled)))
     }
 }
 
@@ -309,7 +313,10 @@ fn read_cc_spoiled(
             spoiled.push((reg, size))
         } else {
             let size = (b >> 4) + 1;
-            let reg = (b & 0xF) - 1;
+            // TODO what if (b & 0xF) == 0?
+            let reg = (b & 0xF)
+                .checked_sub(1)
+                .ok_or_else(|| anyhow!("invalid spoiled reg value"))?;
             spoiled.push((reg.into(), size))
         }
     }
