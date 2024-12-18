@@ -170,9 +170,9 @@ impl<'a> Iterator for AddressInfoIter<'a> {
                         let Some(fields) = crate::ida_reader::split_strings_from_array(value) else {
                             return Some(Err(anyhow!("Invalid Fields for TIL Type")));
                         };
-                        (Some(fields), rest)
+                        (fields, rest)
                     }
-                    rest => (None, rest),
+                    rest => (vec![], rest),
                 };
 
                 // condensate the data into a single buffer

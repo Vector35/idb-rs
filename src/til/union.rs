@@ -1,7 +1,6 @@
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, Type, TypeRaw, SDACL};
-use anyhow::{anyhow, Context};
+use crate::til::{Type, TypeRaw, SDACL};
 
 use super::r#struct::StructModifier;
 
@@ -21,34 +20,31 @@ impl Union {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: UnionRaw,
-        fields: Option<Vec<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> anyhow::Result<Self> {
         match value {
             UnionRaw::Ref {
                 ref_type,
                 taudt_bits,
-            } => {
-                if matches!(fields, Some(f) if !f.is_empty()) {
-                    return Err(anyhow!("fields in a Ref Union"));
-                }
-                Ok(Union::Ref {
-                    ref_type: Type::new(til, *ref_type, None).map(Box::new)?,
-                    taudt_bits,
-                })
-            }
+            } => Ok(Union::Ref {
+                ref_type: Type::new(til, *ref_type, fields).map(Box::new)?,
+                taudt_bits,
+            }),
             UnionRaw::NonRef {
                 effective_alignment,
                 modifiers,
                 members,
             } => {
-                let members = associate_field_name_and_member(fields, members)
-                    .context("Union")?
-                    .map(|(n, m)| Type::new(til, m, None).map(|m| (n, m)))
-                    .collect::<anyhow::Result<_, _>>()?;
+                let mut new_members = Vec::with_capacity(members.len());
+                for member in members {
+                    let field = fields.next();
+                    let new_member = Type::new(til, member, &mut *fields)?;
+                    new_members.push((field, new_member));
+                }
                 Ok(Union::NonRef {
                     effective_alignment,
                     modifiers,
-                    members,
+                    members: new_members,
                 })
             }
         }

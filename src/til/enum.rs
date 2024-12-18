@@ -2,8 +2,8 @@ use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, flag, Type, TypeAttribute, TypeRaw, SDACL, TAH};
-use anyhow::{anyhow, ensure, Context};
+use crate::til::{flag, Type, TypeAttribute, TypeRaw, SDACL, TAH};
+use anyhow::{anyhow, ensure};
 
 use super::r#struct::StructModifier;
 
@@ -25,21 +25,16 @@ impl Enum {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: EnumRaw,
-        fields: Option<Vec<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> anyhow::Result<Self> {
         match value {
             EnumRaw::Ref {
                 ref_type,
                 taenum_bits,
-            } => {
-                if matches!(&fields, Some(f) if !f.is_empty()) {
-                    return Err(anyhow!("fields in a Ref Enum"));
-                }
-                Ok(Enum::Ref {
-                    ref_type: Type::new(til, *ref_type, None).map(Box::new)?,
-                    taenum_bits,
-                })
-            }
+            } => Ok(Enum::Ref {
+                ref_type: Type::new(til, *ref_type, fields).map(Box::new)?,
+                taenum_bits,
+            }),
             EnumRaw::NonRef {
                 output_format,
                 modifiers,
@@ -47,13 +42,14 @@ impl Enum {
                 groups,
                 storage_size,
             } => {
-                let members = associate_field_name_and_member(fields, members)
-                    .context("Enum")?
-                    .collect();
+                let mut new_members = Vec::with_capacity(members.len());
+                for member in members {
+                    new_members.push((fields.next(), member));
+                }
                 Ok(Enum::NonRef {
                     output_format,
                     modifiers,
-                    members,
+                    members: new_members,
                     groups,
                     storage_size,
                 })

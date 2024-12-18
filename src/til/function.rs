@@ -1,7 +1,7 @@
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, Basic, Type, TypeRaw, TAH};
-use anyhow::{anyhow, Context};
+use crate::til::{Basic, Type, TypeRaw, TAH};
+use anyhow::anyhow;
 
 use super::TypeVariantRaw;
 
@@ -16,15 +16,18 @@ impl Function {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: FunctionRaw,
-        fields: Option<Vec<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> anyhow::Result<Self> {
-        let args = associate_field_name_and_member(fields, value.args)
-            .context("Function")?
-            .map(|(n, (t, a))| Type::new(til, t, None).map(|t| (n, t, a)))
-            .collect::<anyhow::Result<_, _>>()?;
+        let ret = Type::new(til, *value.ret, &mut *fields)?;
+        let mut args = Vec::with_capacity(value.args.len());
+        for (arg_type, arg_loc) in value.args {
+            let field_name = fields.next();
+            let new_member = Type::new(til, arg_type, &mut *fields)?;
+            args.push((field_name, new_member, arg_loc));
+        }
         Ok(Self {
             calling_convention: value.calling_convention,
-            ret: Type::new(til, *value.ret, None).map(Box::new)?,
+            ret: Box::new(ret),
             args,
             retloc: value.retloc,
         })

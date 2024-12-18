@@ -267,12 +267,6 @@ fn print_til_type_root(
         | TypeVariant::Enum(Enum::NonRef { .. }) => {}
         _ => write!(fmt, "typedef ")?,
     }
-    if til_type.is_volatile {
-        write!(fmt, "volatile ")?;
-    }
-    if til_type.is_const {
-        write!(fmt, "const ")?;
-    }
     print_til_type(fmt, section, name, til_type, true, true)
 }
 
@@ -284,6 +278,12 @@ fn print_til_type(
     print_pointer_space: bool,
     print_type_prefix: bool,
 ) -> std::io::Result<()> {
+    if til_type.is_volatile {
+        write!(fmt, "volatile ")?;
+    }
+    if til_type.is_const {
+        write!(fmt, "const ")?;
+    }
     let name_helper = name.map(|name| format!(" {name}")).unwrap_or_default();
     const fn signed_name(is_signed: Option<bool>) -> &'static str {
         match is_signed {

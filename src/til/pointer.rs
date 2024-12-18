@@ -13,9 +13,10 @@ impl Pointer {
     pub(crate) fn new(
         til: &TILSectionHeader,
         raw: PointerRaw,
-        fields: Option<Vec<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
+            // TODO forward fields to closure?
             closure: PointerType::new(til, raw.closure)?,
             modifier: raw.modifier,
             typ: Type::new(til, *raw.typ, fields).map(Box::new)?,
@@ -35,7 +36,13 @@ pub enum PointerType {
 impl PointerType {
     fn new(til: &TILSectionHeader, raw: PointerTypeRaw) -> anyhow::Result<Self> {
         match raw {
-            PointerTypeRaw::Closure(c) => Type::new(til, *c, None).map(Box::new).map(Self::Closure),
+            PointerTypeRaw::Closure(c) => {
+                // TODO subtype get the fields?
+                let mut sub_fields = vec![].into_iter();
+                Type::new(til, *c, &mut sub_fields)
+                    .map(Box::new)
+                    .map(Self::Closure)
+            }
             PointerTypeRaw::PointerBased(p) => Ok(Self::PointerBased(p)),
             PointerTypeRaw::Default => Ok(Self::Default),
             PointerTypeRaw::Far => Ok(Self::Far),
