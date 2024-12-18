@@ -1,4 +1,4 @@
-use crate::id0::Id0TilOrd;
+use crate::id0::{Compiler, Id0TilOrd};
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::{flag, TILMacro, TILTypeInfo};
 use crate::IDBSectionCompression;
@@ -7,50 +7,58 @@ use serde::{Deserialize, Serialize};
 use std::io::{BufReader, Read, Write};
 use std::num::NonZeroU8;
 
+use super::function::CallingConvention;
+
 // TODO migrate this to flags
 pub const TIL_SECTION_MAGIC: &[u8; 6] = b"IDATIL";
 
 #[derive(Debug, Clone)]
 pub struct TILSection {
     pub format: u32,
-    // TODO is title and description inverted?
     /// short file name (without path and extension)
     pub title: Vec<u8>,
-    /// human readable til description
-    pub description: Vec<u8>,
-    pub id: u8,
+    pub flags: TILSectionFlags,
+    // TODO unclear what exacly dependency is for
+    /// module required
+    pub dependency: Option<Vec<u8>>,
+    /// the compiler used to generated types
+    pub compiler_id: Compiler,
     /// information about the target compiler
     pub cm: u8,
-    pub def_align: u8,
+    pub def_align: Option<NonZeroU8>,
     pub symbols: Vec<TILTypeInfo>,
     // TODO create a struct for ordinal aliases
     pub type_ordinal_alias: Option<Vec<(u32, u32)>>,
     pub types: Vec<TILTypeInfo>,
-    pub size_i: NonZeroU8,
-    pub size_b: NonZeroU8,
-    pub size_short: NonZeroU8,
-    pub size_long: NonZeroU8,
-    pub size_long_long: NonZeroU8,
+    pub size_int: NonZeroU8,
+    pub size_bool: NonZeroU8,
+    pub size_enum: Option<NonZeroU8>,
+    pub extended_sizeof_info: Option<TILSectionExtendedSizeofInfo>,
     pub size_long_double: Option<NonZeroU8>,
     pub macros: Option<Vec<TILMacro>>,
     pub is_universal: bool,
 }
 
 #[derive(Debug, Clone)]
-pub struct TILSectionHeader {
-    pub format: u32,
-    pub flags: TILSectionFlag,
-    pub title: Vec<u8>,
-    pub description: Vec<u8>,
-    pub id: u8,
-    pub cm: u8,
-    pub size_enum: u8,
-    pub size_i: NonZeroU8,
-    pub size_b: NonZeroU8,
-    pub def_align: u8,
+pub struct TILSectionExtendedSizeofInfo {
     pub size_short: NonZeroU8,
     pub size_long: NonZeroU8,
     pub size_long_long: NonZeroU8,
+}
+
+#[derive(Debug, Clone)]
+pub struct TILSectionHeader {
+    pub format: u32,
+    pub flags: TILSectionFlags,
+    pub title: Vec<u8>,
+    pub description: Vec<u8>,
+    pub compiler_id: u8,
+    pub cm: u8,
+    pub size_enum: Option<NonZeroU8>,
+    pub size_int: NonZeroU8,
+    pub size_bool: NonZeroU8,
+    pub def_align: Option<NonZeroU8>,
+    pub extended_sizeof_info: Option<TILSectionExtendedSizeofInfo>,
     pub size_long_double: Option<NonZeroU8>,
 }
 
@@ -58,15 +66,15 @@ pub struct TILSectionHeader {
 pub struct TILSectionHeader1 {
     pub signature: [u8; 6],
     pub format: u32,
-    pub flags: TILSectionFlag,
+    pub flags: TILSectionFlags,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct TILSectionHeader2 {
-    pub id: u8,
+    pub compiler_id: u8,
     pub cm: u8,
-    pub size_i: u8,
-    pub size_b: u8,
+    pub size_int: u8,
+    pub size_bool: u8,
     pub size_enum: u8,
     pub def_align: u8,
 }
@@ -119,17 +127,17 @@ impl TILSection {
         Ok(TILSection {
             format: header.format,
             title: header.title,
-            description: header.description,
-            id: header.id,
+            flags: header.flags,
+            dependency: header.description.is_empty().then_some(header.description),
+            compiler_id: Compiler::from_value(header.compiler_id),
             cm: header.cm,
             def_align: header.def_align,
             size_long_double: header.size_long_double,
             is_universal: header.flags.is_universal(),
-            size_b: header.size_b,
-            size_i: header.size_i,
-            size_short: header.size_short,
-            size_long: header.size_long,
-            size_long_long: header.size_long_long,
+            size_bool: header.size_bool,
+            size_int: header.size_int,
+            size_enum: header.size_enum,
+            extended_sizeof_info: header.extended_sizeof_info,
             symbols,
             type_ordinal_alias,
             types,
@@ -198,11 +206,11 @@ impl TILSection {
             format @ 0x13.. => return Err(anyhow!("Invalid TIL format {format}")),
             // read the flag after the format
             format @ 0x10..=0x12 => {
-                let flags = TILSectionFlag(input.read_u32()?);
+                let flags = TILSectionFlags::new(input.read_u32()?)?;
                 (format, flags)
             }
             // format and flag are the same
-            value @ ..=0xf => (value, TILSectionFlag(value)),
+            value @ ..=0xf => (value, TILSectionFlags::new(value)?),
         };
         let header1 = TILSectionHeader1 {
             signature,
@@ -233,22 +241,21 @@ impl TILSection {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42ef86
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x431ffe
-        let (size_short, size_long, size_long_long) =
-            if header1.flags.have_size_short_long_longlong() {
+        let extended_sizeof_info = header1
+            .flags
+            .have_extended_sizeof_info()
+            .then(|| -> Result<_> {
                 let ss = input.read_u8()?;
                 let ls = input.read_u8()?;
                 let lls = input.read_u8()?;
-                let ss = NonZeroU8::new(ss).ok_or_else(|| anyhow!("Invalid short size"))?;
-                let ls = NonZeroU8::new(ls).ok_or_else(|| anyhow!("Invalid long size"))?;
-                let lls = NonZeroU8::new(lls).ok_or_else(|| anyhow!("Invalid long long size"))?;
-                (ss, ls, lls)
-            } else {
-                (
-                    2.try_into().unwrap(),
-                    4.try_into().unwrap(),
-                    8.try_into().unwrap(),
-                )
-            };
+                Ok(TILSectionExtendedSizeofInfo {
+                    size_short: NonZeroU8::new(ss).ok_or_else(|| anyhow!("Invalid short size"))?,
+                    size_long: NonZeroU8::new(ls).ok_or_else(|| anyhow!("Invalid long size"))?,
+                    size_long_long: NonZeroU8::new(lls)
+                        .ok_or_else(|| anyhow!("Invalid long long size"))?,
+                })
+            })
+            .transpose()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x432014
         let size_long_double = header1
@@ -258,21 +265,21 @@ impl TILSection {
             .transpose()?
             .map(|size| size.try_into())
             .transpose()?;
+        let def_align =
+            (header2.def_align != 0).then(|| NonZeroU8::new(1 << (header2.def_align - 1)).unwrap());
 
         Ok(TILSectionHeader {
             format: header1.format,
             flags: header1.flags,
             title,
             description,
-            id: header2.id,
-            size_enum: header2.size_enum,
-            size_i: header2.size_i.try_into()?,
-            size_b: header2.size_b.try_into()?,
+            compiler_id: header2.compiler_id,
+            size_enum: header2.size_enum.try_into().ok(),
+            size_int: header2.size_int.try_into()?,
+            size_bool: header2.size_bool.try_into()?,
             cm: header2.cm,
-            def_align: header2.def_align,
-            size_short,
-            size_long,
-            size_long_long,
+            def_align,
+            extended_sizeof_info,
             size_long_double,
         })
     }
@@ -301,25 +308,37 @@ impl TILSection {
             format: header.format,
             flags: header.flags,
         };
+        let def_align = match header.def_align.map(|x| x.get()) {
+            None => 0,
+            Some(1) => 1,
+            Some(2) => 2,
+            Some(4) => 3,
+            Some(8) => 4,
+            Some(16) => 5,
+            Some(32) => 6,
+            Some(64) => 7,
+            _ => unreachable!(),
+        };
         let header2 = TILSectionHeader2 {
-            id: header.id,
+            compiler_id: header.compiler_id,
             cm: header.cm,
-            size_i: header.size_i.get(),
-            size_b: header.size_b.get(),
-            size_enum: header.size_enum,
-            def_align: header.def_align,
+            size_int: header.size_int.get(),
+            size_bool: header.size_bool.get(),
+            size_enum: header.size_enum.map(NonZeroU8::get).unwrap_or(0),
+            def_align,
         };
         bincode::serialize_into(&mut *output, &header1)?;
         crate::write_string_len_u8(&mut *output, &header.title)?;
         crate::write_string_len_u8(&mut *output, &header.description)?;
         bincode::serialize_into(&mut *output, &header2)?;
-        if header.flags.have_size_short_long_longlong() {
+        if header.flags.have_extended_sizeof_info() {
+            let sizes = header.extended_sizeof_info.unwrap();
             bincode::serialize_into(
                 &mut *output,
                 &(
-                    header.size_short.get(),
-                    header.size_long.get(),
-                    header.size_long_long.get(),
+                    sizes.size_short.get(),
+                    sizes.size_long.get(),
+                    sizes.size_long_long.get(),
                 ),
             )?;
         }
@@ -358,6 +377,10 @@ impl TILSection {
         Ok(())
     }
 
+    pub fn get_name(&self, name: &[u8]) -> Option<&TILTypeInfo> {
+        self.types.iter().find(|ty| ty.name.as_slice() == name)
+    }
+
     pub fn get_ord(&self, id0_ord: Id0TilOrd) -> Option<&TILTypeInfo> {
         // first search the ordinal alias
         if let Some(ordinals) = &self.type_ordinal_alias {
@@ -372,52 +395,132 @@ impl TILSection {
         // if not and alias, search for the type directly
         self.types.iter().find(|ty| ty.ordinal == id0_ord.ord)
     }
+
+    pub fn sizeof_short(&self) -> NonZeroU8 {
+        self.extended_sizeof_info
+            .as_ref()
+            .map(|x| x.size_short)
+            .unwrap_or(2.try_into().unwrap())
+    }
+
+    pub fn sizeof_long(&self) -> NonZeroU8 {
+        self.extended_sizeof_info
+            .as_ref()
+            .map(|x| x.size_long)
+            .unwrap_or(4.try_into().unwrap())
+    }
+
+    pub fn sizeof_long_long(&self) -> NonZeroU8 {
+        self.extended_sizeof_info
+            .as_ref()
+            .map(|x| x.size_long_long)
+            .unwrap_or(8.try_into().unwrap())
+    }
+
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b7ed
+    pub const fn sizeof_near_far(&self) -> Option<(NonZeroU8, NonZeroU8)> {
+        use flag::cm::cm_ptr::*;
+        Some(match (self.size_int.get(), self.cm & 3) {
+            (_, 4..) => unreachable!(),
+            // unknown
+            (_, CM_UNKNOWN) => return None,
+            // if sizeof(int)<=2: near 1 byte, far 2 bytes
+            (..=2, CM_N8_F16) => unsafe {
+                (NonZeroU8::new_unchecked(1), NonZeroU8::new_unchecked(2))
+            },
+            // near 2 bytes, far 4 bytes
+            (_, CM_N16_F32) => unsafe {
+                (NonZeroU8::new_unchecked(2), NonZeroU8::new_unchecked(4))
+            },
+            // near 4 bytes, far 6 bytes
+            (_, CM_N32_F48) => unsafe {
+                (NonZeroU8::new_unchecked(4), NonZeroU8::new_unchecked(6))
+            },
+            // if sizeof(int)>2: near 8 bytes, far 8 bytes
+            (3.., CM_N64) => unsafe { (NonZeroU8::new_unchecked(8), NonZeroU8::new_unchecked(8)) },
+        })
+    }
+
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40ba3b
+    pub const fn is_code_data_near(&self) -> Option<(bool, bool)> {
+        use flag::cm::cm_ptr::*;
+        use flag::cm::m::*;
+        Some(match (self.cm & CM_M_MASK, self.cm & CM_MASK) {
+            // small:   code=near, data=near (or unknown if CM_UNKNOWN)
+            (CM_M_NN, CM_UNKNOWN) => return None,
+            (CM_M_NN, _) => (true, true),
+            // large:   code=far, data=far
+            (CM_M_FF, _) => (false, false),
+            // compact: code=near, data=far
+            (CM_M_NF, _) => (true, false),
+            // medium:  code=far, data=near
+            (CM_M_FN, _) => (false, true),
+            _ => unreachable!(),
+        })
+    }
+
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b860
+    pub fn calling_convention(&self) -> Option<CallingConvention> {
+        CallingConvention::from_cm_raw(self.cm)
+    }
 }
 
 // TODO remove deserialize and implement a verification if the value is correct
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct TILSectionFlag(pub(crate) u32);
-impl TILSectionFlag {
+pub struct TILSectionFlags(pub(crate) u16);
+impl TILSectionFlags {
+    fn new(value: u32) -> Result<Self> {
+        ensure!(
+            value < (flag::til::TIL_SLD as u32) << 1,
+            "Unknown flag values for TILSectionFlags"
+        );
+        Ok(Self(value as u16))
+    }
+
+    pub fn as_raw(&self) -> u16 {
+        self.0
+    }
+
     pub fn is_zip(&self) -> bool {
-        self.0 & flag::TIL_ZIP != 0
+        self.0 & flag::til::TIL_ZIP != 0
     }
     pub fn set_zip(&mut self, value: bool) {
         if value {
-            self.0 |= flag::TIL_ZIP
+            self.0 |= flag::til::TIL_ZIP
         } else {
-            self.0 &= !flag::TIL_ZIP
+            self.0 &= !flag::til::TIL_ZIP
         }
     }
     pub fn has_macro_table(&self) -> bool {
-        self.0 & flag::TIL_MAC != 0
+        self.0 & flag::til::TIL_MAC != 0
     }
     /// extended sizeof info (short, long, longlong)
-    pub fn have_size_short_long_longlong(&self) -> bool {
-        self.0 & flag::TIL_ESI != 0
+    pub fn have_extended_sizeof_info(&self) -> bool {
+        self.0 & flag::til::TIL_ESI != 0
     }
     /// universal til for any compiler
     pub fn is_universal(&self) -> bool {
-        self.0 & flag::TIL_UNI != 0
+        self.0 & flag::til::TIL_UNI != 0
     }
     /// type ordinal numbers are present
     pub fn has_ordinal(&self) -> bool {
-        self.0 & flag::TIL_ORD != 0
+        self.0 & flag::til::TIL_ORD != 0
     }
     /// type aliases are present
     pub fn has_type_aliases(&self) -> bool {
-        self.0 & flag::TIL_ALI != 0
+        self.0 & flag::til::TIL_ALI != 0
     }
     /// til has been modified, should be saved
     pub fn is_mod(&self) -> bool {
-        self.0 & flag::TIL_MOD != 0
+        self.0 & flag::til::TIL_MOD != 0
     }
     /// til has extra streams
     pub fn has_extra_stream(&self) -> bool {
-        self.0 & flag::TIL_STM != 0
+        self.0 & flag::til::TIL_STM != 0
     }
     /// sizeof(long double)
     pub fn has_size_long_double(&self) -> bool {
-        self.0 & flag::TIL_SLD != 0
+        self.0 & flag::til::TIL_SLD != 0
     }
 }
 
@@ -510,7 +613,7 @@ impl TILSection {
         }
         let mut input = input.take(len.into());
         let type_info = (0..ndefs)
-            .map(|_| TILTypeInfo::read(&mut input, header))
+            .map(|i| TILTypeInfo::read(&mut input, header, i == ndefs - 1))
             .collect::<Result<_>>()?;
         ensure!(
             input.limit() == 0,

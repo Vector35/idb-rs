@@ -1,7 +1,8 @@
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, Type, TypeRaw, SDACL};
-use anyhow::{anyhow, Context};
+use crate::til::{Type, TypeRaw, SDACL};
+
+use super::StructModifierRaw;
 
 #[derive(Clone, Debug)]
 pub enum Union {
@@ -10,43 +11,39 @@ pub enum Union {
         taudt_bits: SDACL,
     },
     NonRef {
-        taudt_bits: SDACL,
         effective_alignment: u16,
         members: Vec<(Option<Vec<u8>>, Type)>,
+        // TODO parse type attributes
+        //others: StructMemberRaw,
     },
 }
 impl Union {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: UnionRaw,
-        fields: Option<Vec<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> anyhow::Result<Self> {
         match value {
             UnionRaw::Ref {
                 ref_type,
                 taudt_bits,
-            } => {
-                if matches!(fields, Some(f) if !f.is_empty()) {
-                    return Err(anyhow!("fields in a Ref Union"));
-                }
-                Ok(Union::Ref {
-                    ref_type: Type::new(til, *ref_type, None).map(Box::new)?,
-                    taudt_bits,
-                })
-            }
-            UnionRaw::NonRef {
+            } => Ok(Union::Ref {
+                ref_type: Type::new(til, *ref_type, fields).map(Box::new)?,
                 taudt_bits,
+            }),
+            UnionRaw::NonRef {
                 effective_alignment,
                 members,
             } => {
-                let members = associate_field_name_and_member(fields, members)
-                    .context("Union")?
-                    .map(|(n, m)| Type::new(til, m, None).map(|m| (n, m)))
-                    .collect::<anyhow::Result<_, _>>()?;
+                let mut new_members = Vec::with_capacity(members.len());
+                for member in members {
+                    let field = fields.next();
+                    let new_member = Type::new(til, member, &mut *fields)?;
+                    new_members.push((field, new_member));
+                }
                 Ok(Union::NonRef {
-                    taudt_bits,
                     effective_alignment,
-                    members,
+                    members: new_members,
                 })
             }
         }
@@ -62,7 +59,6 @@ pub(crate) enum UnionRaw {
         taudt_bits: SDACL,
     },
     NonRef {
-        taudt_bits: SDACL,
         effective_alignment: u16,
         members: Vec<TypeRaw>,
     },
@@ -89,12 +85,12 @@ impl UnionRaw {
         let mem_cnt = n >> 3;
         let effective_alignment = if alpow == 0 { 0 } else { 1 << (alpow - 1) };
         let taudt_bits = SDACL::read(&mut *input)?;
+        let _modifiers = StructModifierRaw::from_value(taudt_bits.0 .0);
         let members = (0..mem_cnt)
             .map(|_| TypeRaw::read(&mut *input, header))
             .collect::<anyhow::Result<_, _>>()?;
         Ok(Self::NonRef {
             effective_alignment,
-            taudt_bits,
             members,
         })
     }

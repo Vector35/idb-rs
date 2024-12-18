@@ -27,7 +27,7 @@ pub fn print_function(id0: &ID0Section, address: Id0Address) -> Result<()> {
             }
             idb_rs::id0::AddressInfo::TilType(addr_ty) => {
                 ensure!(
-                    matches!(&addr_ty, idb_rs::til::Type::Function(_)),
+                    matches!(&addr_ty.type_variant, idb_rs::til::TypeVariant::Function(_)),
                     "Type for function at {address:#?} is invalid"
                 );
                 if let Some(_old) = ty.replace(addr_ty) {
