@@ -1,4 +1,5 @@
 use idb_rs::id0::Compiler;
+use idb_rs::id0::Id0TilOrd;
 use idb_rs::til::function::CallingConvention;
 use idb_rs::til::function::Function;
 use idb_rs::til::r#enum::Enum;
@@ -6,6 +7,7 @@ use idb_rs::til::r#struct::Struct;
 use idb_rs::til::section::TILSection;
 use idb_rs::til::union::Union;
 use idb_rs::til::Basic;
+use idb_rs::til::TILTypeInfo;
 use idb_rs::til::Type;
 use idb_rs::til::TypeVariant;
 
@@ -185,13 +187,47 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
 
     writeln!(fmt, "TYPES")?;
     writeln!(fmt, "(enumerated by ordinals)")?;
-    let mut types_sort: Vec<_> = section.types.iter().collect();
-    types_sort.sort_by_key(|ord| ord.ordinal);
-    for symbol in types_sort {
-        print_til_type_len(&mut fmt, section, &symbol.tinfo).unwrap();
-        write!(fmt, "{:5}. ", symbol.ordinal)?;
-        let name = std::str::from_utf8(&symbol.name).unwrap();
-        print_til_type_root(&mut fmt, section, Some(name), &symbol.tinfo)?;
+    enum OrdType<'a> {
+        Alias(&'a (u32, u32)),
+        Type(&'a TILTypeInfo),
+    }
+    let mut types_sort: Vec<OrdType> = section
+        .types
+        .iter()
+        .map(OrdType::Type)
+        .chain(
+            section
+                .type_ordinal_alias
+                .iter()
+                .map(|x| x.iter())
+                .flatten()
+                .map(OrdType::Alias),
+        )
+        .collect();
+    types_sort.sort_by_key(|ord| match ord {
+        OrdType::Alias(x) => x.0.into(),
+        OrdType::Type(x) => x.ordinal,
+    });
+    for ord_type in types_sort {
+        let ord_num = match ord_type {
+            OrdType::Alias((ord, _)) => (*ord).into(),
+            OrdType::Type(final_type) => final_type.ordinal,
+        };
+        let final_type = match ord_type {
+            OrdType::Alias((_alias_ord, type_ord)) => section
+                .get_ord(Id0TilOrd {
+                    ord: (*type_ord).into(),
+                })
+                .unwrap(),
+            OrdType::Type(final_type) => final_type,
+        };
+        print_til_type_len(&mut fmt, section, &final_type.tinfo).unwrap();
+        write!(fmt, "{:5}. ", ord_num)?;
+        if let OrdType::Alias((_alias_ord, type_ord)) = ord_type {
+            write!(fmt, "(aliased to {type_ord}) ")?;
+        }
+        let name = std::str::from_utf8(&final_type.name).unwrap();
+        print_til_type_root(&mut fmt, section, Some(name), &final_type.tinfo)?;
         writeln!(fmt, ";")?;
     }
     writeln!(fmt, "(enumerated by names)")?;
