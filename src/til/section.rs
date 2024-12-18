@@ -440,7 +440,7 @@ pub struct TILSectionFlags(pub(crate) u16);
 impl TILSectionFlags {
     fn new(value: u32) -> Result<Self> {
         ensure!(
-            value < (flag::TIL_SLD as u32) << 1,
+            value < (flag::til::TIL_SLD as u32) << 1,
             "Unknown flag values for TILSectionFlags"
         );
         Ok(Self(value as u16))
@@ -451,45 +451,45 @@ impl TILSectionFlags {
     }
 
     pub fn is_zip(&self) -> bool {
-        self.0 & flag::TIL_ZIP != 0
+        self.0 & flag::til::TIL_ZIP != 0
     }
     pub fn set_zip(&mut self, value: bool) {
         if value {
-            self.0 |= flag::TIL_ZIP
+            self.0 |= flag::til::TIL_ZIP
         } else {
-            self.0 &= !flag::TIL_ZIP
+            self.0 &= !flag::til::TIL_ZIP
         }
     }
     pub fn has_macro_table(&self) -> bool {
-        self.0 & flag::TIL_MAC != 0
+        self.0 & flag::til::TIL_MAC != 0
     }
     /// extended sizeof info (short, long, longlong)
     pub fn have_extended_sizeof_info(&self) -> bool {
-        self.0 & flag::TIL_ESI != 0
+        self.0 & flag::til::TIL_ESI != 0
     }
     /// universal til for any compiler
     pub fn is_universal(&self) -> bool {
-        self.0 & flag::TIL_UNI != 0
+        self.0 & flag::til::TIL_UNI != 0
     }
     /// type ordinal numbers are present
     pub fn has_ordinal(&self) -> bool {
-        self.0 & flag::TIL_ORD != 0
+        self.0 & flag::til::TIL_ORD != 0
     }
     /// type aliases are present
     pub fn has_type_aliases(&self) -> bool {
-        self.0 & flag::TIL_ALI != 0
+        self.0 & flag::til::TIL_ALI != 0
     }
     /// til has been modified, should be saved
     pub fn is_mod(&self) -> bool {
-        self.0 & flag::TIL_MOD != 0
+        self.0 & flag::til::TIL_MOD != 0
     }
     /// til has extra streams
     pub fn has_extra_stream(&self) -> bool {
-        self.0 & flag::TIL_STM != 0
+        self.0 & flag::til::TIL_STM != 0
     }
     /// sizeof(long double)
     pub fn has_size_long_double(&self) -> bool {
-        self.0 & flag::TIL_SLD != 0
+        self.0 & flag::til::TIL_SLD != 0
     }
 }
 

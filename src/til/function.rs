@@ -159,14 +159,15 @@ impl ArgLoc {
                 }
             }
         } else {
+            use super::flag::tf_func::argloc::*;
             let typ = input.read_dt()?;
-            match typ & 0xF {
-                0 => Ok(Self::None),
-                1 => {
+            match (typ & 0xF) as u8 {
+                ALOC_NONE => Ok(Self::None),
+                ALOC_STACK => {
                     let sval = input.read_de()?;
                     Ok(Self::Stack(sval))
                 }
-                2 => {
+                ALOC_DIST => {
                     let n = (typ >> 5) & 0x7;
                     let dist: Vec<_> = (0..n)
                         .map(|_| {
@@ -178,27 +179,26 @@ impl ArgLoc {
                         .collect::<anyhow::Result<_>>()?;
                     Ok(Self::Dist(dist))
                 }
-                3 => {
+                ALOC_REG1 => {
                     let reg_info = input.read_dt()?;
                     // TODO read other dt?
                     Ok(Self::Reg1(reg_info.into()))
                 }
-                4 => {
+                ALOC_REG2 => {
                     let reg_info = input.read_dt()?;
                     // TODO read other dt?
                     Ok(Self::Reg2(reg_info.into()))
                 }
-                5 => {
+                ALOC_RREL => {
                     let reg = input.read_dt()?;
                     let off = input.read_de()?;
                     Ok(Self::RRel { reg, off })
                 }
-                6 => {
+                ALOC_STATIC => {
                     let sval = input.read_de()?;
                     Ok(Self::Static(sval))
                 }
-                0x7..=0xF => todo!("Custom implementation for ArgLoc"),
-                _ => unreachable!(),
+                ALOC_CUSTOM.. => Err(anyhow!("Custom implementation for ArgLoc")),
             }
         }
     }

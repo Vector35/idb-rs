@@ -2,10 +2,8 @@ use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{flag, Type, TypeAttribute, TypeRaw, SDACL, TAH};
+use crate::til::{flag, StructModifierRaw, Type, TypeAttribute, TypeRaw, SDACL, TAH};
 use anyhow::{anyhow, ensure};
-
-use super::r#struct::StructModifier;
 
 #[derive(Clone, Debug)]
 pub enum Enum {
@@ -15,10 +13,11 @@ pub enum Enum {
     },
     NonRef {
         output_format: EnumFormat,
-        modifiers: Vec<StructModifier>,
         members: Vec<(Option<Vec<u8>>, u64)>,
         groups: Vec<u16>,
         storage_size: Option<NonZeroU8>,
+        // TODO parse type attributes
+        //others: StructMemberRaw,
     },
 }
 impl Enum {
@@ -37,7 +36,6 @@ impl Enum {
             }),
             EnumRaw::NonRef {
                 output_format,
-                modifiers,
                 members,
                 groups,
                 storage_size,
@@ -48,7 +46,6 @@ impl Enum {
                 }
                 Ok(Enum::NonRef {
                     output_format,
-                    modifiers,
                     members: new_members,
                     groups,
                     storage_size,
@@ -66,7 +63,6 @@ pub(crate) enum EnumRaw {
     },
     NonRef {
         output_format: EnumFormat,
-        modifiers: Vec<StructModifier>,
         groups: Vec<u16>,
         members: Vec<u64>,
         storage_size: Option<NonZeroU8>,
@@ -92,7 +88,7 @@ impl EnumRaw {
         };
 
         let taenum_bits = TAH::read(&mut *input)?.0;
-        let modifiers = StructModifier::from_value(taenum_bits.0);
+        let _modifiers = StructModifierRaw::from_value(taenum_bits.0);
         // TODO parse ext attr
         let bte = input.read_u8()?;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452312 deserialize_enum
@@ -146,7 +142,6 @@ impl EnumRaw {
             .collect::<anyhow::Result<_>>()?;
         Ok(EnumRaw::NonRef {
             output_format,
-            modifiers,
             members,
             groups,
             storage_size,
