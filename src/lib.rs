@@ -539,7 +539,7 @@ mod test {
             0x3d, 0x08, 0x48, 0x4d, 0x4f, 0x44, 0x55, 0x4c, 0x45, 0x3d, 0x06, 0x44, 0x57, 0x4f,
             0x52, 0x44, 0x00,
         ];
-        let _til = til::Type::new_from_id0(&function, None).unwrap();
+        let _til = til::Type::new_from_id0(&function, vec![]).unwrap();
     }
 
     #[test]
@@ -565,7 +565,7 @@ mod test {
             0x82, 0x54, // ???? the 0x94 value?
             0x00, // the final value always present
         ];
-        let _til = til::Type::new_from_id0(&function, None).unwrap();
+        let _til = til::Type::new_from_id0(&function, vec![]).unwrap();
     }
 
     #[test]
@@ -605,7 +605,7 @@ mod test {
             0x67, // "__jmp_buf_tag"
             0x00, // end of type
         ];
-        let _til = til::Type::new_from_id0(&function, None).unwrap();
+        let _til = til::Type::new_from_id0(&function, vec![]).unwrap();
     }
 
     #[test]
@@ -660,7 +660,7 @@ mod test {
             0x27, // unsigned int
             0x00,
         ];
-        let _til = til::Type::new_from_id0(&function, None).unwrap();
+        let _til = til::Type::new_from_id0(&function, vec![]).unwrap();
     }
 
     #[test]
@@ -693,7 +693,7 @@ mod test {
             0x05, 0x55, 0x49, 0x4e, 0x54, // typedef name
             0x00, //end
         ];
-        let _til = til::Type::new_from_id0(&function, None).unwrap();
+        let _til = til::Type::new_from_id0(&function, vec![]).unwrap();
     }
 
     #[test]
@@ -725,7 +725,7 @@ mod test {
             0x01, // no params
             0x00, // end
         ];
-        let _til = til::Type::new_from_id0(&function, None).unwrap();
+        let _til = til::Type::new_from_id0(&function, vec![]).unwrap();
     }
 
     #[test]

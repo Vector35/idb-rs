@@ -594,7 +594,7 @@ impl ID0Section {
             let key = parse_number(key, true, self.is_64).unwrap();
             // TODO handle other values for the key
             if key == key_find {
-                return til::Type::new_from_id0(&entry.value, None).map(Option::Some);
+                return til::Type::new_from_id0(&entry.value, vec![]).map(Option::Some);
             }
         }
         Ok(None)

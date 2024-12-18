@@ -61,7 +61,6 @@ impl TILTypeInfo {
     }
 
     fn read_inner(cursor: &mut &[u8], til: &TILSectionHeader) -> Result<Self> {
-        let og_cu = *cursor;
         let flags: u32 = cursor.read_u32()?;
         // TODO verify if flags equal to 0x7fff_fffe?
         let name = cursor.read_c_string_raw()?;
@@ -71,21 +70,20 @@ impl TILTypeInfo {
             (0..=0x11, _) | (_, false) => cursor.read_u32()?.into(),
             (_, true) => cursor.read_u64()?,
         };
-        let tinfo_raw = TypeRaw::read(&mut *cursor, til)
-            .context("parsing `TILTypeInfo::tiinfo`")
-            .inspect_err(|e| {
-                println!(
-                    "Error: {}: {e:?}\n{og_cu:02x?}",
-                    core::str::from_utf8(&name).unwrap()
-                );
-            })?;
+        let tinfo_raw =
+            TypeRaw::read(&mut *cursor, til).context("parsing `TILTypeInfo::tiinfo`")?;
         let _info = cursor.read_c_string_raw()?;
         let cmt = cursor.read_c_string_raw()?;
         let fields = cursor.read_c_string_vec()?;
         let fieldcmts = cursor.read_c_string_raw()?;
         let sclass: u8 = cursor.read_u8()?;
 
-        let tinfo = Type::new(til, tinfo_raw, Some(fields))?;
+        let mut fields_iter = fields.into_iter();
+        let tinfo = Type::new(til, tinfo_raw, &mut fields_iter)?;
+        ensure!(
+            fields_iter.as_slice().is_empty(),
+            "Extra fields found for til"
+        );
 
         Ok(Self {
             _flags: flags,
@@ -122,27 +120,12 @@ impl Type {
     pub(crate) fn new(
         til: &TILSectionHeader,
         tinfo_raw: TypeRaw,
-        fields: Option<Vec<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> Result<Self> {
         let type_variant = match tinfo_raw.variant {
-            TypeVariantRaw::Basic(x) => {
-                if let Some(fields) = fields {
-                    ensure!(fields.is_empty(), "Basic type with fields");
-                }
-                TypeVariant::Basic(x)
-            }
-            TypeVariantRaw::Bitfield(x) => {
-                if matches!(fields, Some(f) if !f.is_empty()) {
-                    return Err(anyhow!("fields in a Bitfield"));
-                }
-                TypeVariant::Bitfield(x)
-            }
-            TypeVariantRaw::Typedef(x) => {
-                if matches!(fields, Some(f) if !f.is_empty()) {
-                    return Err(anyhow!("fields in a Typedef"));
-                }
-                TypeVariant::Typedef(x)
-            }
+            TypeVariantRaw::Basic(x) => TypeVariant::Basic(x),
+            TypeVariantRaw::Bitfield(x) => TypeVariant::Bitfield(x),
+            TypeVariantRaw::Typedef(x) => TypeVariant::Typedef(x),
             TypeVariantRaw::Pointer(x) => Pointer::new(til, x, fields).map(TypeVariant::Pointer)?,
             TypeVariantRaw::Function(x) => {
                 Function::new(til, x, fields).map(TypeVariant::Function)?
@@ -159,7 +142,7 @@ impl Type {
         })
     }
     // TODO find the best way to handle type parsing from id0
-    pub(crate) fn new_from_id0(data: &[u8], fields: Option<Vec<Vec<u8>>>) -> Result<Self> {
+    pub(crate) fn new_from_id0(data: &[u8], fields: Vec<Vec<u8>>) -> Result<Self> {
         // TODO it's unclear what header information id0 types use to parse tils
         // maybe it just use the til sector header, or more likelly it's from
         // IDBParam  in the `Root Node`
@@ -191,7 +174,13 @@ impl Type {
                 ));
             }
         }
-        Self::new(&header, type_raw, fields)
+        let mut fields_iter = fields.into_iter();
+        let result = Self::new(&header, type_raw, &mut fields_iter)?;
+        ensure!(
+            fields_iter.as_slice().is_empty(),
+            "Extra fields found for id0 til"
+        );
+        Ok(result)
     }
 
     // TODO stub implementation
@@ -761,19 +750,4 @@ fn serialize_dt(value: u16) -> Result<Vec<u8>> {
     }
     result.push(hi as u8);
     Ok(result)
-}
-
-fn associate_field_name_and_member<T>(
-    fields: Option<Vec<Vec<u8>>>,
-    members: Vec<T>,
-) -> Result<impl Iterator<Item = (Option<Vec<u8>>, T)>> {
-    let fields_len: usize = fields.iter().filter(|t| !t.is_empty()).count();
-    ensure!(fields_len <= members.len(), "More fields then members");
-    // allow to have fewer fields then members, first fields will have names, others not
-    Ok(fields
-        .into_iter()
-        .flat_map(Vec::into_iter)
-        .map(Some)
-        .chain(std::iter::repeat(None))
-        .zip(members))
 }

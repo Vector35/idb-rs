@@ -1,7 +1,7 @@
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, Type, TypeRaw, SDACL};
-use anyhow::{anyhow, Context, Result};
+use crate::til::{Type, TypeRaw, SDACL};
+use anyhow::{anyhow, Result};
 
 #[derive(Clone, Debug)]
 pub enum Struct {
@@ -18,30 +18,27 @@ impl Struct {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: StructRaw,
-        fields: Option<Vec<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> Result<Self> {
         match value {
-            StructRaw::Ref { ref_type } => {
-                if matches!(&fields, Some(f) if !f.is_empty()) {
-                    return Err(anyhow!("fields in a Ref Struct"));
-                }
-                Ok(Struct::Ref {
-                    ref_type: Type::new(til, *ref_type, None).map(Box::new)?,
-                })
-            }
+            StructRaw::Ref { ref_type } => Ok(Struct::Ref {
+                ref_type: Type::new(til, *ref_type, fields).map(Box::new)?,
+            }),
             StructRaw::NonRef {
                 effective_alignment,
                 members,
                 modifiers,
             } => {
-                let members = associate_field_name_and_member(fields, members)
-                    .context("Struct")?
-                    .map(|(n, m)| StructMember::new(til, n, m))
-                    .collect::<anyhow::Result<_, _>>()?;
+                let mut new_members = Vec::with_capacity(members.len());
+                for member in members {
+                    let field_name = fields.next();
+                    let new_member = StructMember::new(til, field_name, member, &mut *fields)?;
+                    new_members.push(new_member);
+                }
                 Ok(Struct::NonRef {
                     effective_alignment,
                     modifiers,
-                    members,
+                    members: new_members,
                 })
             }
         }
@@ -126,10 +123,15 @@ pub struct StructMember {
 }
 
 impl StructMember {
-    fn new(til: &TILSectionHeader, name: Option<Vec<u8>>, m: StructMemberRaw) -> Result<Self> {
+    fn new(
+        til: &TILSectionHeader,
+        name: Option<Vec<u8>>,
+        m: StructMemberRaw,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
+    ) -> Result<Self> {
         Ok(Self {
             name,
-            member_type: Type::new(til, m.ty, None)?,
+            member_type: Type::new(til, m.ty, fields)?,
             sdacl: m.sdacl,
         })
     }
