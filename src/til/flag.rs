@@ -6,7 +6,7 @@ type BteT = u8;
 type TilT = u16;
 /// TypeAtt Type flags
 type TattrT = u16;
-type CmT = u16;
+type CmT = u8;
 
 /// multi-use
 pub const RESERVED_BYTE: TypeT = 0xFF;
@@ -565,16 +565,12 @@ pub mod cm {
         pub const CM_MASK: CmT = 0x03;
         /// unknown
         pub const CM_UNKNOWN: CmT = 0x00;
-
         /// if sizeof(int)<=2: near 1 byte, far 2 bytes
         pub const CM_N8_F16: CmT = 0x01;
-
         /// if sizeof(int)>2: near 8 bytes, far 8 bytes
         pub const CM_N64: CmT = 0x01;
-
         /// near 2 bytes, far 4 bytes
         pub const CM_N16_F32: CmT = 0x02;
-
         /// near 4 bytes, far 6 bytes
         pub const CM_N32_F48: CmT = 0x03;
     }
@@ -586,10 +582,8 @@ pub mod cm {
         pub const CM_M_NN: CmT = 0x00;
         /// large:   code=far, data=far
         pub const CM_M_FF: CmT = 0x04;
-
         /// compact: code=near, data=far
         pub const CM_M_NF: CmT = 0x08;
-
         /// medium:  code=far, data=near
         pub const CM_M_FN: CmT = 0x0C;
     }
@@ -600,27 +594,20 @@ pub mod cm {
         pub const CM_CC_MASK: CmT = 0xF0;
         /// this value is invalid
         pub const CM_CC_INVALID: CmT = 0x00;
-
         /// unknown calling convention
         pub const CM_CC_UNKNOWN: CmT = 0x10;
-
         /// function without arguments
         /// if has other cc and argnum == 0,
         /// represent as f() - unknown list
         pub const CM_CC_VOIDARG: CmT = 0x20;
-
         /// stack
         pub const CM_CC_CDECL: CmT = 0x30;
-
         /// cdecl + ellipsis
         pub const CM_CC_ELLIPSIS: CmT = 0x40;
-
         /// stack, purged
         pub const CM_CC_STDCALL: CmT = 0x50;
-
         /// stack, purged, reverse order of args
         pub const CM_CC_PASCAL: CmT = 0x60;
-
         /// stack, purged (x86), first args are in regs (compiler-dependent)
         pub const CM_CC_FASTCALL: CmT = 0x70;
         /// stack, purged (x86), first arg is in reg (compiler-dependent)
@@ -632,17 +619,13 @@ pub mod cm {
         /// present real cm_t byte. if n == BFA_FUNC_MARKER,
         /// the next byte is the function attribute byte.
         pub const CM_CC_SPOILED: CmT = 0xA0;
-
         /// (Go) arguments and return value in stack
         pub const CM_CC_GOLANG: CmT = 0xB0;
-
         pub const CM_CC_RESERVE3: CmT = 0xC0;
         /// ::CM_CC_SPECIAL with ellipsis
         pub const CM_CC_SPECIALE: CmT = 0xD0;
-
         /// Equal to ::CM_CC_SPECIAL, but with purged stack
         pub const CM_CC_SPECIALP: CmT = 0xE0;
-
         /// usercall: locations of all arguments
         /// and the return value are explicitly specified
         pub const CM_CC_SPECIAL: CmT = 0xF0;

@@ -75,7 +75,9 @@ impl EnumRaw {
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
     ) -> anyhow::Result<Self> {
+        use flag::tattr_enum::*;
         use flag::tf_enum::*;
+
         let Some(member_num) = input.read_dt_de()? else {
             // is ref
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
@@ -121,7 +123,7 @@ impl EnumRaw {
             _ => unreachable!(),
         };
 
-        let is_64 = (taenum_bits.0 & 0x20) != 0;
+        let is_64 = (taenum_bits.0 & TAENUM_64BIT) != 0;
         let mut cur: u64 = 0;
         let mut groups = vec![];
         let members = (0..member_num)
