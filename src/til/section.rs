@@ -25,7 +25,7 @@ pub struct TILSection {
     pub compiler_id: Compiler,
     /// information about the target compiler
     pub cm: u8,
-    pub def_align: u8,
+    pub def_align: Option<NonZeroU8>,
     pub symbols: Vec<TILTypeInfo>,
     // TODO create a struct for ordinal aliases
     pub type_ordinal_alias: Option<Vec<(u32, u32)>>,
@@ -57,7 +57,7 @@ pub struct TILSectionHeader {
     pub size_enum: Option<NonZeroU8>,
     pub size_int: NonZeroU8,
     pub size_bool: NonZeroU8,
-    pub def_align: u8,
+    pub def_align: Option<NonZeroU8>,
     pub extended_sizeof_info: Option<TILSectionExtendedSizeofInfo>,
     pub size_long_double: Option<NonZeroU8>,
 }
@@ -265,6 +265,8 @@ impl TILSection {
             .transpose()?
             .map(|size| size.try_into())
             .transpose()?;
+        let def_align =
+            (header2.def_align != 0).then(|| NonZeroU8::new(1 << (header2.def_align - 1)).unwrap());
 
         Ok(TILSectionHeader {
             format: header1.format,
@@ -276,7 +278,7 @@ impl TILSection {
             size_int: header2.size_int.try_into()?,
             size_bool: header2.size_bool.try_into()?,
             cm: header2.cm,
-            def_align: header2.def_align,
+            def_align,
             extended_sizeof_info,
             size_long_double,
         })
@@ -306,13 +308,24 @@ impl TILSection {
             format: header.format,
             flags: header.flags,
         };
+        let def_align = match header.def_align.map(|x| x.get()) {
+            None => 0,
+            Some(1) => 1,
+            Some(2) => 2,
+            Some(4) => 3,
+            Some(8) => 4,
+            Some(16) => 5,
+            Some(32) => 6,
+            Some(64) => 7,
+            _ => unreachable!(),
+        };
         let header2 = TILSectionHeader2 {
             compiler_id: header.compiler_id,
             cm: header.cm,
             size_int: header.size_int.get(),
             size_bool: header.size_bool.get(),
             size_enum: header.size_enum.map(NonZeroU8::get).unwrap_or(0),
-            def_align: header.def_align,
+            def_align,
         };
         bincode::serialize_into(&mut *output, &header1)?;
         crate::write_string_len_u8(&mut *output, &header.title)?;

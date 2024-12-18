@@ -53,7 +53,7 @@ pub fn dump_til(args: &Args) -> Result<()> {
     }
     println!("id: {compiler_id:?}");
     println!("cm: {cm}");
-    println!("def_align: {def_align}");
+    println!("def_align: {}", def_align.map(|x| x.get()).unwrap_or(0));
     println!("size_int: {size_int}");
     println!("size_bool: {size_bool}");
     println!("size_enum: {size_enum:?}");
