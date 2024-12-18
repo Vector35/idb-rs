@@ -377,14 +377,12 @@ fn print_til_type(
                     let ty = section
                         .get_ord(idb_rs::id0::Id0TilOrd { ord: (*ord).into() })
                         .unwrap();
-                    print_til_type_name(fmt, &ty.name, &ty.tinfo, print_type_prefix)?;
+                    print_til_type_name(fmt, &ty.name, &ty.tinfo, false)?;
                 }
                 idb_rs::til::Typedef::Name(name) => {
                     let ty = section.get_name(name);
                     match ty {
-                        Some(ty) => {
-                            print_til_type_name(fmt, &ty.name, &ty.tinfo, print_type_prefix)?
-                        }
+                        Some(ty) => print_til_type_name(fmt, &ty.name, &ty.tinfo, false)?,
                         // if we can't find the type, just print the name
                         None => write!(fmt, "{}", core::str::from_utf8(name).unwrap())?,
                     }
