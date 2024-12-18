@@ -2,6 +2,11 @@
 type TypeT = u8;
 /// Enum type flags
 type BteT = u8;
+/// Til Type flags
+type TilT = u16;
+/// TypeAtt Type flags
+type TattrT = u16;
+type CmT = u16;
 
 /// multi-use
 pub const RESERVED_BYTE: TypeT = 0xFF;
@@ -161,12 +166,13 @@ pub mod tf_array {
     pub const BTMT_ARRESERV: TypeT = 0x20;
 }
 
-/// \defgroup tf_func Derived type: function
-///  Ellipsis is not taken into account in the number of parameters//
-///  The return type cannot be ::BT_ARRAY or ::BT_FUNC.
+/// Function attribute byte
+/// Zero attribute byte is forbidden.
 ///
+/// Ellipsis is not taken into account in the number of parameters//
+/// The return type cannot be ::BT_ARRAY or ::BT_FUNC.
 pub mod tf_func {
-    use super::TypeT;
+    use super::{CmT, TypeT};
     /// function.
     /// format:
     ///  optional:
@@ -211,6 +217,45 @@ pub mod tf_func {
     ///< function returns by iret
     ///< in this case cc MUST be 'unknown'
     pub const BTMT_INTCALL: TypeT = 0x30;
+    /// __noreturn
+    pub const BFA_NORET: TypeT = 0x01;
+
+    /// __pure
+    pub const BFA_PURE: TypeT = 0x02;
+
+    /// high level prototype (with possibly hidden args)
+    pub const BFA_HIGH: TypeT = 0x04;
+    /// static
+    pub const BFA_STATIC: TypeT = 0x08;
+
+    /// virtual
+    pub const BFA_VIRTUAL: TypeT = 0x10;
+
+    /// This is NOT a cc! (used internally as a marker)
+    pub const BFA_FUNC_MARKER: CmT = 0x0F;
+    /// This is NOT a real attribute (used internally as marker for extended format)
+    pub const BFA_FUNC_EXT_FORMAT: TypeT = 0x80;
+
+    /// Argument location types
+    pub mod argloc {
+        use super::TypeT;
+        /// None
+        pub const ALOC_NONE: TypeT = 0;
+        /// stack offset
+        pub const ALOC_STACK: TypeT = 1;
+        /// distributed (scattered)
+        pub const ALOC_DIST: TypeT = 2;
+        /// one register (and offset within it)
+        pub const ALOC_REG1: TypeT = 3;
+        /// register pair
+        pub const ALOC_REG2: TypeT = 4;
+        /// register relative
+        pub const ALOC_RREL: TypeT = 5;
+        /// global address
+        pub const ALOC_STATIC: TypeT = 6;
+        /// custom argloc (7 or higher)
+        pub const ALOC_CUSTOM: TypeT = 7;
+    }
 }
 
 /// Derived type: complex
@@ -412,21 +457,209 @@ pub mod tf_shortcuts {
     pub const BTF_TYPEDEF: TypeT = tf_complex::BT_COMPLEX | tf_complex::BTMT_TYPEDEF;
 }
 
-/// pack buckets using zip
-pub const TIL_ZIP: u16 = 0x0001;
-/// til has macro table
-pub const TIL_MAC: u16 = 0x0002;
-/// extended sizeof info (short, long, longlong)
-pub const TIL_ESI: u16 = 0x0004;
-/// universal til for any compiler
-pub const TIL_UNI: u16 = 0x0008;
-/// type ordinal numbers are present
-pub const TIL_ORD: u16 = 0x0010;
-/// type aliases are present (this bit is used only on the disk)
-pub const TIL_ALI: u16 = 0x0020;
-/// til has been modified, should be saved
-pub const TIL_MOD: u16 = 0x0040;
-/// til has extra streams
-pub const TIL_STM: u16 = 0x0080;
-/// sizeof(long double)
-pub const TIL_SLD: u16 = 0x0100;
+/// Type attributes
+///
+/// The type attributes start with the type attribute header byte (::TAH_BYTE),
+/// followed by attribute bytes
+pub mod tattr {
+    use super::TattrT;
+    /// type attribute header byte
+    pub const TAH_BYTE: TattrT = 0xFE;
+    /// function argument attribute header byte
+    pub const FAH_BYTE: TattrT = 0xFF;
+
+    pub const MAX_DECL_ALIGN: TattrT = 0x000F;
+
+    /// all defined bits
+    pub const TAH_ALL: TattrT = 0x03F0;
+}
+
+/// Extended type attributes
+pub mod tattr_ext {
+    use super::TattrT;
+    /// has extended attributes
+    pub const TAH_HASATTRS: TattrT = 0x0010;
+}
+
+/// Type attributes for udts
+pub mod tattr_udt {
+    use super::TattrT;
+    /// struct: unaligned struct
+    pub const TAUDT_UNALIGNED: TattrT = 0x0040;
+    /// struct: gcc msstruct attribute
+    pub const TAUDT_MSSTRUCT: TattrT = 0x0020;
+    /// struct: a c++ object, not simple pod type
+    pub const TAUDT_CPPOBJ: TattrT = 0x0080;
+    /// struct: is virtual function table
+    pub const TAUDT_VFTABLE: TattrT = 0x0100;
+}
+
+/// Type attributes for udt fields
+pub mod tattr_field {
+    use super::TattrT;
+    /// field: do not include but inherit from the current field
+    pub const TAFLD_BASECLASS: TattrT = 0x0020;
+    /// field: unaligned field
+    pub const TAFLD_UNALIGNED: TattrT = 0x0040;
+    /// field: virtual base (not supported yet)
+    pub const TAFLD_VIRTBASE: TattrT = 0x0080;
+    /// field: ptr to virtual function table
+    pub const TAFLD_VFTABLE: TattrT = 0x0100;
+    /// denotes a udt member function
+    pub const TAFLD_METHOD: TattrT = 0x0200;
+}
+
+/// Type attributes for pointers
+pub mod tattr_ptr {
+    use super::TattrT;
+    /// ptr: __ptr32
+    pub const TAPTR_PTR32: TattrT = 0x0020;
+    /// ptr: __ptr64
+    pub const TAPTR_PTR64: TattrT = 0x0040;
+    /// ptr: __restrict
+    pub const TAPTR_RESTRICT: TattrT = 0x0060;
+    /// ptr: __shifted(parent_struct, delta)
+    pub const TAPTR_SHIFTED: TattrT = 0x0080;
+}
+
+/// Type attributes for enums
+pub mod tattr_enum {
+    use super::TattrT;
+    /// enum: store 64-bit values
+    pub const TAENUM_64BIT: TattrT = 0x0020;
+    /// enum: unsigned
+    pub const TAENUM_UNSIGNED: TattrT = 0x0040;
+    /// enum: signed
+    pub const TAENUM_SIGNED: TattrT = 0x0080;
+}
+
+/// Type info library property bits
+pub mod til {
+    use super::TilT;
+    /// pack buckets using zip
+    pub const TIL_ZIP: TilT = 0x0001;
+    /// til has macro table
+    pub const TIL_MAC: TilT = 0x0002;
+    /// extended sizeof info (short, long, longlong)
+    pub const TIL_ESI: TilT = 0x0004;
+    /// universal til for any compiler
+    pub const TIL_UNI: TilT = 0x0008;
+    /// type ordinal numbers are present
+    pub const TIL_ORD: TilT = 0x0010;
+    /// type aliases are present (this bit is used only on the disk)
+    pub const TIL_ALI: TilT = 0x0020;
+    /// til has been modified, should be saved
+    pub const TIL_MOD: TilT = 0x0040;
+    /// til has extra streams
+    pub const TIL_STM: TilT = 0x0080;
+    /// sizeof(long double)
+    pub const TIL_SLD: TilT = 0x0100;
+}
+
+/// Calling convention & Model
+pub mod cm {
+    use super::CmT;
+    /// Default pointer size
+    pub mod cm_ptr {
+        use super::CmT;
+        pub const CM_MASK: CmT = 0x03;
+        /// unknown
+        pub const CM_UNKNOWN: CmT = 0x00;
+
+        /// if sizeof(int)<=2: near 1 byte, far 2 bytes
+        pub const CM_N8_F16: CmT = 0x01;
+
+        /// if sizeof(int)>2: near 8 bytes, far 8 bytes
+        pub const CM_N64: CmT = 0x01;
+
+        /// near 2 bytes, far 4 bytes
+        pub const CM_N16_F32: CmT = 0x02;
+
+        /// near 4 bytes, far 6 bytes
+        pub const CM_N32_F48: CmT = 0x03;
+    }
+    /// Model
+    pub mod m {
+        use super::CmT;
+        pub const CM_M_MASK: CmT = 0x0C;
+        /// small:   code=near, data=near (or unknown if CM_UNKNOWN)
+        pub const CM_M_NN: CmT = 0x00;
+        /// large:   code=far, data=far
+        pub const CM_M_FF: CmT = 0x04;
+
+        /// compact: code=near, data=far
+        pub const CM_M_NF: CmT = 0x08;
+
+        /// medium:  code=far, data=near
+        pub const CM_M_FN: CmT = 0x0C;
+    }
+
+    /// Calling convention
+    pub mod cc {
+        use super::CmT;
+        pub const CM_CC_MASK: CmT = 0xF0;
+        /// this value is invalid
+        pub const CM_CC_INVALID: CmT = 0x00;
+
+        /// unknown calling convention
+        pub const CM_CC_UNKNOWN: CmT = 0x10;
+
+        /// function without arguments
+        /// if has other cc and argnum == 0,
+        /// represent as f() - unknown list
+        pub const CM_CC_VOIDARG: CmT = 0x20;
+
+        /// stack
+        pub const CM_CC_CDECL: CmT = 0x30;
+
+        /// cdecl + ellipsis
+        pub const CM_CC_ELLIPSIS: CmT = 0x40;
+
+        /// stack, purged
+        pub const CM_CC_STDCALL: CmT = 0x50;
+
+        /// stack, purged, reverse order of args
+        pub const CM_CC_PASCAL: CmT = 0x60;
+
+        /// stack, purged (x86), first args are in regs (compiler-dependent)
+        pub const CM_CC_FASTCALL: CmT = 0x70;
+        /// stack, purged (x86), first arg is in reg (compiler-dependent)
+        pub const CM_CC_THISCALL: CmT = 0x80;
+        /// (Swift) arguments and return values in registers (compiler-dependent)
+        pub const CM_CC_SWIFT: CmT = 0x90;
+        /// This is NOT a cc! Mark of __spoil record
+        /// the low nibble is count and after n {spoilreg_t}
+        /// present real cm_t byte. if n == BFA_FUNC_MARKER,
+        /// the next byte is the function attribute byte.
+        pub const CM_CC_SPOILED: CmT = 0xA0;
+
+        /// (Go) arguments and return value in stack
+        pub const CM_CC_GOLANG: CmT = 0xB0;
+
+        pub const CM_CC_RESERVE3: CmT = 0xC0;
+        /// ::CM_CC_SPECIAL with ellipsis
+        pub const CM_CC_SPECIALE: CmT = 0xD0;
+
+        /// Equal to ::CM_CC_SPECIAL, but with purged stack
+        pub const CM_CC_SPECIALP: CmT = 0xE0;
+
+        /// usercall: locations of all arguments
+        /// and the return value are explicitly specified
+        pub const CM_CC_SPECIAL: CmT = 0xF0;
+    }
+
+    /// Standard C-language models for x86
+    pub mod pc {
+        use super::cm_ptr::*;
+        use super::m::*;
+        use crate::til::flag::CmT;
+
+        pub const C_PC_TINY: CmT = CM_N16_F32 | CM_M_NN;
+        pub const C_PC_SMALL: CmT = CM_N16_F32 | CM_M_NN;
+        pub const C_PC_COMPACT: CmT = CM_N16_F32 | CM_M_NF;
+        pub const C_PC_MEDIUM: CmT = CM_N16_F32 | CM_M_FN;
+        pub const C_PC_LARGE: CmT = CM_N16_F32 | CM_M_FF;
+        pub const C_PC_HUGE: CmT = CM_N16_F32 | CM_M_FF;
+        pub const C_PC_FLAT: CmT = CM_N32_F48 | CM_M_NN;
+    }
+}

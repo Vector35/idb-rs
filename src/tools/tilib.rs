@@ -267,6 +267,12 @@ fn print_til_type_root(
         | TypeVariant::Enum(Enum::NonRef { .. }) => {}
         _ => write!(fmt, "typedef ")?,
     }
+    if til_type.is_volatile {
+        write!(fmt, "volatile ")?;
+    }
+    if til_type.is_const {
+        write!(fmt, "const ")?;
+    }
     print_til_type(fmt, section, name, til_type, true, true)
 }
 
@@ -278,12 +284,6 @@ fn print_til_type(
     print_pointer_space: bool,
     print_type_prefix: bool,
 ) -> std::io::Result<()> {
-    if til_type.is_volatile {
-        write!(fmt, "volatile ")?;
-    }
-    if til_type.is_const {
-        write!(fmt, "const ")?;
-    }
     let name_helper = name.map(|name| format!(" {name}")).unwrap_or_default();
     const fn signed_name(is_signed: Option<bool>) -> &'static str {
         match is_signed {
@@ -402,21 +402,34 @@ fn print_til_type(
                 print_type_prefix,
             ),
             Struct::NonRef {
-                members, modifiers, ..
+                members,
+                is_unaligned,
+                is_msstruct,
+                is_cpp_obj,
+                is_vftable,
+                alignment,
+                others,
+                ..
             } => {
                 let name = name.unwrap_or("");
                 write!(fmt, "struct ")?;
-                for modifier in modifiers {
-                    match modifier {
-                        idb_rs::til::r#struct::StructModifier::Unaligned => {
-                            write!(fmt, "__unaligned ")?
-                        }
-                        idb_rs::til::r#struct::StructModifier::Attribute => {
-                            write!(fmt, "__attribute__((msstruct)) ")?
-                        }
-                        idb_rs::til::r#struct::StructModifier::CppObj => write!(fmt, "__cppobj ")?,
-                        idb_rs::til::r#struct::StructModifier::Unknown => write!(fmt, "__other ")?,
-                    }
+                if *is_unaligned {
+                    write!(fmt, "__unaligned ")?;
+                }
+                if *is_msstruct {
+                    write!(fmt, "__attribute__((msstruct)) ")?;
+                }
+                if *is_cpp_obj {
+                    write!(fmt, "__cppobj ")?;
+                }
+                if *is_vftable {
+                    write!(fmt, "/*VFT*/ ")?;
+                }
+                if let Some(align) = alignment {
+                    write!(fmt, "__attribute__((aligned({align}))) ")?;
+                }
+                if let Some(others) = others {
+                    write!(fmt, "__other({others:04x}) ")?;
                 }
                 write!(fmt, "{name} {{")?;
                 for member in members {

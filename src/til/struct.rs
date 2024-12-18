@@ -1,7 +1,11 @@
+use std::num::NonZeroU16;
+
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, SDACL};
 use anyhow::{anyhow, Result};
+
+use super::StructModifierRaw;
 
 #[derive(Clone, Debug)]
 pub enum Struct {
@@ -10,8 +14,20 @@ pub enum Struct {
     },
     NonRef {
         effective_alignment: u16,
-        modifiers: Vec<StructModifier>,
         members: Vec<StructMember>,
+        /// Unaligned struct
+        is_unaligned: bool,
+        /// Gcc msstruct attribute
+        is_msstruct: bool,
+        /// C++ object, not simple pod type
+        is_cpp_obj: bool,
+        /// Virtual function table
+        is_vftable: bool,
+        /// Alignment in bytes
+        alignment: Option<NonZeroU16>,
+        // TODO delete others, parse all values or return an error
+        /// other unparsed values from the type attribute
+        others: Option<NonZeroU16>,
     },
 }
 impl Struct {
@@ -27,7 +43,7 @@ impl Struct {
             StructRaw::NonRef {
                 effective_alignment,
                 members,
-                modifiers,
+                modifier,
             } => {
                 let mut new_members = Vec::with_capacity(members.len());
                 for member in members {
@@ -37,8 +53,13 @@ impl Struct {
                 }
                 Ok(Struct::NonRef {
                     effective_alignment,
-                    modifiers,
                     members: new_members,
+                    is_unaligned: modifier.is_unaligned,
+                    is_msstruct: modifier.is_msstruct,
+                    is_cpp_obj: modifier.is_cpp_obj,
+                    is_vftable: modifier.is_vftable,
+                    alignment: modifier.alignment,
+                    others: modifier.others,
                 })
             }
         }
@@ -52,7 +73,7 @@ pub(crate) enum StructRaw {
     },
     NonRef {
         effective_alignment: u16,
-        modifiers: Vec<StructModifier>,
+        modifier: StructModifierRaw,
         members: Vec<StructMemberRaw>,
     },
 }
@@ -73,6 +94,7 @@ impl StructRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
         let alpow = n & 7;
         let mem_cnt = n >> 3;
+        // TODO what is effective_alignment and how it's diferent from Modifier alignment?
         let effective_alignment = if alpow == 0 { 0 } else { 1 << (alpow - 1) };
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459c97
         let taudt_bits = SDACL::read(&mut *input)?;
@@ -81,37 +103,12 @@ impl StructRaw {
             .collect::<Result<_, _>>()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
-        let modifiers = StructModifier::from_value(taudt_bits.0 .0);
+        let modifier = StructModifierRaw::from_value(taudt_bits.0 .0);
         Ok(Self::NonRef {
             effective_alignment,
-            modifiers,
+            modifier,
             members,
         })
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum StructModifier {
-    Unaligned,
-    // TODO include the att value indide this
-    Attribute,
-    CppObj,
-    /// Value of the att is unknown with unknown meaning
-    Unknown,
-}
-
-impl StructModifier {
-    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
-    pub fn from_value(value: u16) -> Vec<StructModifier> {
-        let attribute = (value & 0x20 != 0).then_some(StructModifier::Attribute);
-        let cpp = (value & 0x80 != 0).then_some(StructModifier::CppObj);
-        let unaligned = (value & 0x40 != 0).then_some(StructModifier::Unaligned);
-        let others = (value & !0xE0 != 0).then_some(StructModifier::Unknown);
-        cpp.into_iter()
-            .chain(unaligned)
-            .chain(attribute)
-            .chain(others)
-            .collect()
     }
 }
 

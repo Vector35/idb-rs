@@ -9,7 +9,7 @@ pub mod section;
 pub mod r#struct;
 pub mod union;
 
-use std::num::NonZeroU8;
+use std::num::{NonZeroU16, NonZeroU8};
 
 use anyhow::{anyhow, ensure, Context, Result};
 use section::TILSection;
@@ -618,12 +618,9 @@ impl TILMacro {
             (_, None) => {}
             // having params, where should not
             (None, Some(_max)) => {
-                println!(
-                    "Macro value have params but it is not declared in the flag: {_max}",
-                )
-                //return Err(anyhow!(
-                //    "Macro value have params but it is not declared in the flag",
-                //))
+                return Err(anyhow!(
+                    "Macro value have params but it is not declared in the flag",
+                ))
             }
             // only using params that exist
             (Some(params), Some(max)) if max <= params => {
@@ -750,4 +747,49 @@ fn serialize_dt(value: u16) -> Result<Vec<u8>> {
     }
     result.push(hi as u8);
     Ok(result)
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct StructModifierRaw {
+    /// Unaligned struct
+    is_unaligned: bool,
+    /// Gcc msstruct attribute
+    is_msstruct: bool,
+    /// C++ object, not simple pod type
+    is_cpp_obj: bool,
+    /// Virtual function table
+    is_vftable: bool,
+    /// Alignment in bytes
+    alignment: Option<NonZeroU16>,
+    /// other unknown value
+    others: Option<NonZeroU16>,
+}
+
+impl StructModifierRaw {
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
+    pub fn from_value(value: u16) -> StructModifierRaw {
+        use flag::tattr_udt::*;
+
+        const TAUDT_ALIGN_MASK: u16 = 0x7;
+        // TODO find the flag for this and the InnerRef
+        let is_msstruct = value & TAUDT_MSSTRUCT != 0;
+        let is_cpp_obj = value & TAUDT_CPPOBJ != 0;
+        let is_unaligned = value & TAUDT_UNALIGNED != 0;
+        let is_vftable = value & TAUDT_VFTABLE != 0;
+        let alignment_raw = value & TAUDT_ALIGN_MASK;
+        let alignment =
+            (alignment_raw != 0).then(|| NonZeroU16::new(1 << (alignment_raw - 1)).unwrap());
+        // __attribute__((packed)) == Unaligned & Other(0x8)
+        let all_masks =
+            TAUDT_MSSTRUCT | TAUDT_CPPOBJ | TAUDT_UNALIGNED | TAUDT_VFTABLE | TAUDT_ALIGN_MASK;
+        let others = NonZeroU16::new(value & !all_masks);
+        Self {
+            is_unaligned,
+            is_msstruct,
+            is_cpp_obj,
+            is_vftable,
+            alignment,
+            others,
+        }
+    }
 }
