@@ -506,10 +506,19 @@ fn print_til_type(
             Enum::NonRef {
                 members,
                 storage_size,
+                output_format,
                 ..
             } => {
+                use idb_rs::til::r#enum::EnumFormat::*;
+
                 let name = name.unwrap_or("");
-                write!(fmt, "enum {name} ")?;
+                let output_fmt_name = match output_format {
+                    Char => "__char ",
+                    Hex => "",
+                    SignedDecimal => "__dec ",
+                    UnsignedDecimal => "__udec ",
+                };
+                write!(fmt, "enum {output_fmt_name}{name} ")?;
                 match (*storage_size, section.size_enum) {
                     (None, None) => {}
                     (Some(storage_size), Some(size_enum)) => {
@@ -534,7 +543,14 @@ fn print_til_type(
                         .as_ref()
                         .map(|x| core::str::from_utf8(x).unwrap())
                         .unwrap_or("_");
-                    write!(fmt, "{name} = {value:#X}")?;
+                    write!(fmt, "{name} = ")?;
+                    match output_format {
+                        Char if *value <= 0xFF => write!(fmt, "'{}'", (*value) as u8 as char)?,
+                        Char => write!(fmt, "'\\xu{value:X}'")?,
+                        Hex => write!(fmt, "{value:#X}")?,
+                        SignedDecimal => write!(fmt, "{}", (*value) as i64)?,
+                        UnsignedDecimal => write!(fmt, "{value:X}")?,
+                    }
                     // TODO find this in InnerRef
                     if let Some(8) = storage_size.map(NonZeroU8::get) {
                         write!(fmt, "LL")?;
