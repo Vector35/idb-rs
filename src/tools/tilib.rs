@@ -148,7 +148,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     writeln!(
         fmt,
         "default_align = {} sizeof(bool) = {} sizeof(long)  = {} sizeof(llong) = {}",
-        section.def_align,
+        section.def_align.map(|x| x.get()).unwrap_or(0),
         section.size_bool,
         section.sizeof_long(),
         section.sizeof_long_long(),

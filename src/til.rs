@@ -156,7 +156,7 @@ impl Type {
             size_enum: None,
             size_int: 4.try_into().unwrap(),
             size_bool: 1.try_into().unwrap(),
-            def_align: 0,
+            def_align: None,
             size_long_double: None,
             extended_sizeof_info: None,
         };
@@ -237,19 +237,13 @@ impl Type {
             | TypeVariant::Enum(Enum::Ref { ref_type, .. }) => ref_type.type_size_bytes(section)?,
             TypeVariant::Struct(Struct::NonRef { members, .. }) => {
                 let mut sum = 0u64;
+                // TODO default alignment, seems like default alignemnt is the field size
+                let align: u64 = 1;
                 for member in members {
                     let field_size = member.member_type.type_size_bytes(section)?;
-                    // TODO default alignment, seems like default alignemnt is the field size
-                    let align = if section.def_align == 0 {
-                        field_size
-                    } else {
-                        section.def_align as u64
-                    };
-                    if align != 0 {
-                        let align_diff = sum % align;
-                        if align_diff != 0 {
-                            sum += align - align_diff;
-                        }
+                    let align_diff = sum % align;
+                    if align_diff != 0 {
+                        sum += align - align_diff;
                     }
                     sum += field_size;
                 }
@@ -760,7 +754,7 @@ pub struct StructModifierRaw {
     /// Virtual function table
     is_vftable: bool,
     /// Alignment in bytes
-    alignment: Option<NonZeroU16>,
+    alignment: Option<NonZeroU8>,
     /// other unknown value
     others: Option<NonZeroU16>,
 }
@@ -770,6 +764,7 @@ impl StructModifierRaw {
     pub fn from_value(value: u16) -> StructModifierRaw {
         use flag::tattr_udt::*;
 
+        // TODO 0x8 seems to be a the packed flag in structs
         const TAUDT_ALIGN_MASK: u16 = 0x7;
         // TODO find the flag for this and the InnerRef
         let is_msstruct = value & TAUDT_MSSTRUCT != 0;
@@ -778,7 +773,7 @@ impl StructModifierRaw {
         let is_vftable = value & TAUDT_VFTABLE != 0;
         let alignment_raw = value & TAUDT_ALIGN_MASK;
         let alignment =
-            (alignment_raw != 0).then(|| NonZeroU16::new(1 << (alignment_raw - 1)).unwrap());
+            (alignment_raw != 0).then(|| NonZeroU8::new(1 << (alignment_raw - 1)).unwrap());
         let all_masks =
             TAUDT_MSSTRUCT | TAUDT_CPPOBJ | TAUDT_UNALIGNED | TAUDT_VFTABLE | TAUDT_ALIGN_MASK;
         let others = NonZeroU16::new(value & !all_masks);

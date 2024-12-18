@@ -1,4 +1,4 @@
-use std::num::NonZeroU16;
+use std::num::{NonZeroU16, NonZeroU8};
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
@@ -13,7 +13,7 @@ pub enum Struct {
         ref_type: Box<Type>,
     },
     NonRef {
-        effective_alignment: u16,
+        effective_alignment: Option<NonZeroU8>,
         members: Vec<StructMember>,
         /// Unaligned struct
         is_unaligned: bool,
@@ -24,7 +24,7 @@ pub enum Struct {
         /// Virtual function table
         is_vftable: bool,
         /// Alignment in bytes
-        alignment: Option<NonZeroU16>,
+        alignment: Option<NonZeroU8>,
         // TODO delete others, parse all values or return an error
         /// other unparsed values from the type attribute
         others: Option<NonZeroU16>,
@@ -72,7 +72,7 @@ pub(crate) enum StructRaw {
         ref_type: Box<TypeRaw>,
     },
     NonRef {
-        effective_alignment: u16,
+        effective_alignment: Option<NonZeroU8>,
         modifier: StructModifierRaw,
         members: Vec<StructMemberRaw>,
     },
@@ -92,10 +92,10 @@ impl StructRaw {
         };
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
-        let alpow = n & 7;
         let mem_cnt = n >> 3;
         // TODO what is effective_alignment and how it's diferent from Modifier alignment?
-        let effective_alignment = if alpow == 0 { 0 } else { 1 << (alpow - 1) };
+        let alpow = n & 7;
+        let effective_alignment = (alpow != 0).then(|| NonZeroU8::new(1 << (alpow - 1)).unwrap());
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459c97
         let taudt_bits = SDACL::read(&mut *input)?;
         let members = (0..mem_cnt)
