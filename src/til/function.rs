@@ -206,45 +206,60 @@ impl ArgLoc {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CallingConvention {
-    Invalid = 0x0,
+    /// unknown calling convention
     Unknown = 0x1,
+    /// function without arguments
     Voidarg = 0x2,
+    /// stack
     Cdecl = 0x3,
+    /// cdecl + ellipsis
     Ellipsis = 0x4,
+    /// stack, purged
     Stdcall = 0x5,
+    /// stack, purged, reverse order of args
     Pascal = 0x6,
+    /// stack, purged (x86), first args are in regs (compiler-dependent)
     Fastcall = 0x7,
+    /// stack, purged (x86), first arg is in reg (compiler-dependent)
     Thiscall = 0x8,
+    /// (Swift) arguments and return values in registers (compiler-dependent)
     Swift = 0x9,
+    /// (Go) arguments and return value in stack
     Golang = 0xb,
     Reserved3 = 0xc,
+    /// ::CM_CC_SPECIAL with ellipsis
     Uservars = 0xd,
+    /// Equal to ::CM_CC_SPECIAL, but with purged stack
     Userpurge = 0xe,
+    /// usercall: locations of all arguments
+    /// and the return value are explicitly specified
     Usercall = 0xf,
 }
 
 impl CallingConvention {
     pub(crate) fn from_cm_raw(cm: u8) -> Option<Self> {
-        let cc_value = (cm & 0xf0) >> 4;
-        Some(match cc_value {
+        use super::flag::cm::cc::*;
+
+        Some(match cm & CM_CC_MASK {
             // !ERR(spoil)!
-            0xa => return None,
-            0x0 => Self::Invalid,
-            0x1 => Self::Unknown,
-            0x2 => Self::Voidarg,
-            0x3 => Self::Cdecl,
-            0x4 => Self::Ellipsis,
-            0x5 => Self::Stdcall,
-            0x6 => Self::Pascal,
-            0x7 => Self::Fastcall,
-            0x8 => Self::Thiscall,
-            0x9 => Self::Swift,
-            0xb => Self::Golang,
-            0xc => Self::Reserved3,
-            0xd => Self::Uservars,
-            0xe => Self::Userpurge,
-            0xf => Self::Usercall,
-            0x10.. => unreachable!(),
+            CM_CC_SPOILED => return None,
+            // this is an invalid value
+            CM_CC_INVALID => return None,
+            CM_CC_UNKNOWN => Self::Unknown,
+            CM_CC_VOIDARG => Self::Voidarg,
+            CM_CC_CDECL => Self::Cdecl,
+            CM_CC_ELLIPSIS => Self::Ellipsis,
+            CM_CC_STDCALL => Self::Stdcall,
+            CM_CC_PASCAL => Self::Pascal,
+            CM_CC_FASTCALL => Self::Fastcall,
+            CM_CC_THISCALL => Self::Thiscall,
+            CM_CC_SWIFT => Self::Swift,
+            CM_CC_GOLANG => Self::Golang,
+            CM_CC_RESERVE3 => Self::Reserved3,
+            CM_CC_SPECIALE => Self::Uservars,
+            CM_CC_SPECIALP => Self::Userpurge,
+            CM_CC_SPECIAL => Self::Usercall,
+            _ => unreachable!(),
         })
     }
 

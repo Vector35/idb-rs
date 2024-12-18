@@ -593,7 +593,6 @@ fn print_til_type_len(
 fn calling_convention_to_str(cc: CallingConvention) -> &'static str {
     use idb_rs::til::function::CallingConvention::*;
     match cc {
-        Invalid => "__ccinvalid",
         Unknown => "__unknown",
         Voidarg => "__voidarg",
         Cdecl => "__cdecl",

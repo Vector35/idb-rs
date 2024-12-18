@@ -71,6 +71,7 @@ impl PointerRaw {
         header: &TILSectionHeader,
         metadata: u8,
     ) -> anyhow::Result<Self> {
+        use crate::til::flag::tattr_ptr::*;
         use crate::til::flag::tf_ptr::*;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478d67
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459b54
@@ -87,23 +88,26 @@ impl PointerRaw {
         let tah = TAH::read(&mut *input)?;
         let typ = TypeRaw::read(&mut *input, header)?;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6
-        if tah.0 .0 & 0x80 != 0 {
+        if tah.0 .0 & TAPTR_SHIFTED != 0 {
             // TODO __shifted?
             let _typ = TypeRaw::read(&mut *input, header)?;
             let _value = input.read_de()?;
         }
 
-        // TODO find the flag for this
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6 print_til_type_att
-        let modifier = match tah.0 .0 & 0x60 {
+        let modifier = match tah.0 .0 & (TAPTR_RESTRICT | TAPTR_PTR64 | TAPTR_PTR32) {
             0x00 => None,
-            0x20 => Some(PointerModifier::Ptr32),
-            0x40 => Some(PointerModifier::Ptr64),
-            0x60 => Some(PointerModifier::Restricted),
+            TAPTR_PTR32 => Some(PointerModifier::Ptr32),
+            TAPTR_PTR64 => Some(PointerModifier::Ptr64),
+            TAPTR_RESTRICT => Some(PointerModifier::Restricted),
             _ => unreachable!(),
         };
         // TODO other values are known to exist
-        //ensure!(tah.0 .0 & !0x60 == 0, "Unknown value for pointer modifier");
+        //let all_flags = TAPTR_RESTRICT | TAPTR_PTR64 | TAPTR_PTR32 | TAPTR_SHIFTED;
+        //anyhow::ensure!(
+        //    tah.0 .0 & !all_flags == 0,
+        //    "Unknown value for pointer modifier"
+        //);
 
         Ok(Self {
             closure,

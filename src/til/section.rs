@@ -406,25 +406,43 @@ impl TILSection {
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b7ed
     pub const fn sizeof_near_far(&self) -> Option<(NonZeroU8, NonZeroU8)> {
+        use flag::cm::cm_ptr::*;
         Some(match (self.size_int.get(), self.cm & 3) {
             (_, 4..) => unreachable!(),
-            (_, 0) => return None,
-            (..=2, 1) => unsafe { (NonZeroU8::new_unchecked(1), NonZeroU8::new_unchecked(2)) },
-            (_, 2) => unsafe { (NonZeroU8::new_unchecked(2), NonZeroU8::new_unchecked(4)) },
-            (_, 3) => unsafe { (NonZeroU8::new_unchecked(4), NonZeroU8::new_unchecked(6)) },
-            (3.., 1) => unsafe { (NonZeroU8::new_unchecked(8), NonZeroU8::new_unchecked(8)) },
+            // unknown
+            (_, CM_UNKNOWN) => return None,
+            // if sizeof(int)<=2: near 1 byte, far 2 bytes
+            (..=2, CM_N8_F16) => unsafe {
+                (NonZeroU8::new_unchecked(1), NonZeroU8::new_unchecked(2))
+            },
+            // near 2 bytes, far 4 bytes
+            (_, CM_N16_F32) => unsafe {
+                (NonZeroU8::new_unchecked(2), NonZeroU8::new_unchecked(4))
+            },
+            // near 4 bytes, far 6 bytes
+            (_, CM_N32_F48) => unsafe {
+                (NonZeroU8::new_unchecked(4), NonZeroU8::new_unchecked(6))
+            },
+            // if sizeof(int)>2: near 8 bytes, far 8 bytes
+            (3.., CM_N64) => unsafe { (NonZeroU8::new_unchecked(8), NonZeroU8::new_unchecked(8)) },
         })
     }
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40ba3b
     pub const fn is_code_data_near(&self) -> Option<(bool, bool)> {
-        Some(match (self.cm >> 2 & 3, self.cm & 3) {
-            (4.., _) | (_, 4..) => unreachable!(),
-            (0, 0) => return None,
-            (0, _) => (true, true),
-            (1, _) => (false, false),
-            (2, _) => (true, false),
-            (3, _) => (false, true),
+        use flag::cm::cm_ptr::*;
+        use flag::cm::m::*;
+        Some(match (self.cm & CM_M_MASK, self.cm & CM_MASK) {
+            // small:   code=near, data=near (or unknown if CM_UNKNOWN)
+            (CM_M_NN, CM_UNKNOWN) => return None,
+            (CM_M_NN, _) => (true, true),
+            // large:   code=far, data=far
+            (CM_M_FF, _) => (false, false),
+            // compact: code=near, data=far
+            (CM_M_NF, _) => (true, false),
+            // medium:  code=far, data=near
+            (CM_M_FN, _) => (false, true),
+            _ => unreachable!(),
         })
     }
 

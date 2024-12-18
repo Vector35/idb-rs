@@ -779,7 +779,6 @@ impl StructModifierRaw {
         let alignment_raw = value & TAUDT_ALIGN_MASK;
         let alignment =
             (alignment_raw != 0).then(|| NonZeroU16::new(1 << (alignment_raw - 1)).unwrap());
-        // __attribute__((packed)) == Unaligned & Other(0x8)
         let all_masks =
             TAUDT_MSSTRUCT | TAUDT_CPPOBJ | TAUDT_UNALIGNED | TAUDT_VFTABLE | TAUDT_ALIGN_MASK;
         let others = NonZeroU16::new(value & !all_masks);
