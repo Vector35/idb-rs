@@ -1,7 +1,6 @@
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, TAH};
-use anyhow::anyhow;
 
 #[derive(Clone, Debug)]
 pub struct Array {
@@ -14,16 +13,13 @@ impl Array {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: ArrayRaw,
-        fields: Option<Vec<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> anyhow::Result<Self> {
-        if matches!(&fields, Some(f) if !f.is_empty()) {
-            return Err(anyhow!("fields in a Array"));
-        }
         Ok(Self {
             base: value.base,
             nelem: value.nelem,
             tah: value.tah,
-            elem_type: Type::new(til, *value.elem_type, None).map(Box::new)?,
+            elem_type: Type::new(til, *value.elem_type, fields).map(Box::new)?,
         })
     }
 }

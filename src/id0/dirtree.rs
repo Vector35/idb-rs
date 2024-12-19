@@ -66,7 +66,8 @@ impl Id0AddressKey for Id0Address {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Id0TilOrd {
-    pub(crate) ord: u64,
+    // TODO remove this pub
+    pub ord: u64,
 }
 impl FromDirTreeNumber for Id0TilOrd {
     #[inline]

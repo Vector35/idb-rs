@@ -1,7 +1,9 @@
+use std::num::NonZeroU8;
+
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, flag, Type, TypeAttribute, TypeRaw, SDACL, TAH};
-use anyhow::{anyhow, Context};
+use crate::til::{flag, StructModifierRaw, Type, TypeAttribute, TypeRaw, SDACL, TAH};
+use anyhow::{anyhow, ensure};
 
 #[derive(Clone, Debug)]
 pub enum Enum {
@@ -10,48 +12,43 @@ pub enum Enum {
         taenum_bits: TypeAttribute,
     },
     NonRef {
-        group_sizes: Vec<u16>,
-        taenum_bits: TypeAttribute,
-        bte: u8,
+        output_format: EnumFormat,
         members: Vec<(Option<Vec<u8>>, u64)>,
-        bytesize: u64,
+        groups: Vec<u16>,
+        storage_size: Option<NonZeroU8>,
+        // TODO parse type attributes
+        //others: StructMemberRaw,
     },
 }
 impl Enum {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: EnumRaw,
-        fields: Option<Vec<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> anyhow::Result<Self> {
         match value {
             EnumRaw::Ref {
                 ref_type,
                 taenum_bits,
-            } => {
-                if matches!(&fields, Some(f) if !f.is_empty()) {
-                    return Err(anyhow!("fields in a Ref Enum"));
-                }
-                Ok(Enum::Ref {
-                    ref_type: Type::new(til, *ref_type, None).map(Box::new)?,
-                    taenum_bits,
-                })
-            }
-            EnumRaw::NonRef {
-                group_sizes,
+            } => Ok(Enum::Ref {
+                ref_type: Type::new(til, *ref_type, fields).map(Box::new)?,
                 taenum_bits,
-                bte,
+            }),
+            EnumRaw::NonRef {
+                output_format,
                 members,
-                bytesize,
+                groups,
+                storage_size,
             } => {
-                let members = associate_field_name_and_member(fields, members)
-                    .context("Enum")?
-                    .collect();
+                let mut new_members = Vec::with_capacity(members.len());
+                for member in members {
+                    new_members.push((fields.next(), member));
+                }
                 Ok(Enum::NonRef {
-                    group_sizes,
-                    taenum_bits,
-                    bte,
-                    members,
-                    bytesize,
+                    output_format,
+                    members: new_members,
+                    groups,
+                    storage_size,
                 })
             }
         }
@@ -65,20 +62,23 @@ pub(crate) enum EnumRaw {
         taenum_bits: TypeAttribute,
     },
     NonRef {
-        group_sizes: Vec<u16>,
-        taenum_bits: TypeAttribute,
-        bte: u8,
+        output_format: EnumFormat,
+        groups: Vec<u16>,
         members: Vec<u64>,
-        bytesize: u64,
+        storage_size: Option<NonZeroU8>,
     },
 }
 
 impl EnumRaw {
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473a08
     pub(crate) fn read(
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
     ) -> anyhow::Result<Self> {
-        let Some(n) = input.read_dt_de()? else {
+        use flag::tattr_enum::*;
+        use flag::tf_enum::*;
+
+        let Some(member_num) = input.read_dt_de()? else {
             // is ref
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
@@ -90,53 +90,71 @@ impl EnumRaw {
         };
 
         let taenum_bits = TAH::read(&mut *input)?.0;
-        let bte = bincode::deserialize_from(&mut *input)?;
-        let mut cur: u64 = 0;
-        let emsize = bte & flag::tf_enum::BTE_SIZE_MASK;
-        let bytesize: u32 = match emsize {
-            0 if header.size_enum != 0 => header.size_enum.into(),
-            0 => return Err(anyhow!("BTE emsize is 0 without header")),
-            1..=4 => 1u32 << (emsize - 1),
+        let _modifiers = StructModifierRaw::from_value(taenum_bits.0);
+        // TODO parse ext attr
+        let bte = input.read_u8()?;
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452312 deserialize_enum
+        ensure!(
+            bte & BTE_ALWAYS != 0,
+            "Enum BTE missing the Always sub-field"
+        );
+        let storage_size: Option<NonZeroU8> = match bte & BTE_SIZE_MASK {
+            0 => header.size_enum,
+            emsize @ 1..=4 => Some((1 << (emsize - 1)).try_into().unwrap()),
+            // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4523c8 deserialize_enum
             5..=7 => return Err(anyhow!("BTE emsize with reserved values")),
             _ => unreachable!(),
         };
-
-        let mask: u64 = if bytesize >= 16 {
+        // TODO enum size defaults to 4?
+        let storage_size_final = storage_size.map(NonZeroU8::get).unwrap_or(4);
+        let mask: u64 = if storage_size_final >= 16 {
             // is saturating valid?
             //u64::MAX
             return Err(anyhow!("Bytes size is too big"));
         } else {
-            u64::MAX >> (u64::BITS - (bytesize * 8))
+            u64::MAX >> (u64::BITS - (storage_size_final as u32 * 8))
         };
 
-        let mut group_sizes = vec![];
-        let mut members = vec![];
-        for _ in 0..n {
-            let lo: u64 = input.read_de()?.into();
-            let is_64 = (taenum_bits.0 & 0x0020) != 0;
-            let step = if is_64 {
-                let hi: u64 = input.read_de()?.into();
-                (lo | (hi << 32)) & mask
-            } else {
-                lo & mask
-            };
-            // TODO: subarrays
-            // https://www.hex-rays.com/products/ida/support/sdkdoc/group__tf__enum.html#ga9ae7aa54dbc597ec17cbb17555306a02
-            if (bte & flag::tf_enum::BTE_BITFIELD) != 0 {
-                let group_size = input.read_dt()?;
-                group_sizes.push(group_size);
-            }
-            // TODO check is this is wrapping by default
-            let next_step = cur.wrapping_add(step);
-            cur = next_step;
-            members.push(cur);
-        }
+        let output_format = match bte & BTE_OUT_MASK {
+            BTE_HEX => EnumFormat::Hex,
+            BTE_CHAR => EnumFormat::Char,
+            BTE_SDEC => EnumFormat::SignedDecimal,
+            BTE_UDEC => EnumFormat::UnsignedDecimal,
+            _ => unreachable!(),
+        };
+
+        let is_64 = (taenum_bits.0 & TAENUM_64BIT) != 0;
+        let mut cur: u64 = 0;
+        let mut groups = vec![];
+        let members = (0..member_num)
+            .map(|_member_idx| {
+                let mut step: u64 = input.read_de()?.into();
+                if is_64 {
+                    let hi: u64 = input.read_de()?.into();
+                    step |= hi << 32;
+                }
+                if bte & BTE_BITFIELD != 0 {
+                    let group_size = input.read_dt()?;
+                    groups.push(group_size);
+                }
+                // TODO check is this is wrapping by default
+                cur = cur.wrapping_add(step & mask);
+                Ok(cur)
+            })
+            .collect::<anyhow::Result<_>>()?;
         Ok(EnumRaw::NonRef {
-            group_sizes,
-            taenum_bits,
-            bte,
+            output_format,
             members,
-            bytesize: bytesize.into(),
+            groups,
+            storage_size,
         })
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum EnumFormat {
+    Char,
+    Hex,
+    SignedDecimal,
+    UnsignedDecimal,
 }

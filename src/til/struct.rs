@@ -1,52 +1,65 @@
+use std::num::{NonZeroU16, NonZeroU8};
+
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, Type, TypeRaw, SDACL};
-use anyhow::{anyhow, Context, Result};
+use crate::til::{Type, TypeRaw, SDACL};
+use anyhow::{anyhow, Result};
+
+use super::StructModifierRaw;
 
 #[derive(Clone, Debug)]
 pub enum Struct {
     Ref {
         ref_type: Box<Type>,
-        taudt_bits: SDACL,
     },
     NonRef {
-        effective_alignment: u16,
-        taudt_bits: SDACL,
+        effective_alignment: Option<NonZeroU8>,
         members: Vec<StructMember>,
+        /// Unaligned struct
+        is_unaligned: bool,
+        /// Gcc msstruct attribute
+        is_msstruct: bool,
+        /// C++ object, not simple pod type
+        is_cpp_obj: bool,
+        /// Virtual function table
+        is_vftable: bool,
+        /// Alignment in bytes
+        alignment: Option<NonZeroU8>,
+        // TODO delete others, parse all values or return an error
+        /// other unparsed values from the type attribute
+        others: Option<NonZeroU16>,
     },
 }
 impl Struct {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: StructRaw,
-        fields: Option<Vec<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> Result<Self> {
         match value {
-            StructRaw::Ref {
-                ref_type,
-                taudt_bits,
-            } => {
-                if matches!(&fields, Some(f) if !f.is_empty()) {
-                    return Err(anyhow!("fields in a Ref Struct"));
-                }
-                Ok(Struct::Ref {
-                    ref_type: Type::new(til, *ref_type, None).map(Box::new)?,
-                    taudt_bits,
-                })
-            }
+            StructRaw::Ref { ref_type } => Ok(Struct::Ref {
+                ref_type: Type::new(til, *ref_type, fields).map(Box::new)?,
+            }),
             StructRaw::NonRef {
                 effective_alignment,
-                taudt_bits,
                 members,
+                modifier,
             } => {
-                let members = associate_field_name_and_member(fields, members)
-                    .context("Struct")?
-                    .map(|(n, m)| StructMember::new(til, n, m))
-                    .collect::<anyhow::Result<_, _>>()?;
+                let mut new_members = Vec::with_capacity(members.len());
+                for member in members {
+                    let field_name = fields.next();
+                    let new_member = StructMember::new(til, field_name, member, &mut *fields)?;
+                    new_members.push(new_member);
+                }
                 Ok(Struct::NonRef {
                     effective_alignment,
-                    taudt_bits,
-                    members,
+                    members: new_members,
+                    is_unaligned: modifier.is_unaligned,
+                    is_msstruct: modifier.is_msstruct,
+                    is_cpp_obj: modifier.is_cpp_obj,
+                    is_vftable: modifier.is_vftable,
+                    alignment: modifier.alignment,
+                    others: modifier.others,
                 })
             }
         }
@@ -57,11 +70,10 @@ impl Struct {
 pub(crate) enum StructRaw {
     Ref {
         ref_type: Box<TypeRaw>,
-        taudt_bits: SDACL,
     },
     NonRef {
-        effective_alignment: u16,
-        taudt_bits: SDACL,
+        effective_alignment: Option<NonZeroU8>,
+        modifier: StructModifierRaw,
         members: Vec<StructMemberRaw>,
     },
 }
@@ -73,25 +85,28 @@ impl StructRaw {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // simple reference
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
-            let taudt_bits = SDACL::read(&mut *input)?;
+            let _taudt_bits = SDACL::read(&mut *input)?;
             return Ok(Self::Ref {
                 ref_type: Box::new(ref_type),
-                taudt_bits,
             });
         };
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
-        let alpow = n & 7;
         let mem_cnt = n >> 3;
-        let effective_alignment = if alpow == 0 { 0 } else { 1 << (alpow - 1) };
+        // TODO what is effective_alignment and how it's diferent from Modifier alignment?
+        let alpow = n & 7;
+        let effective_alignment = (alpow != 0).then(|| NonZeroU8::new(1 << (alpow - 1)).unwrap());
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459c97
         let taudt_bits = SDACL::read(&mut *input)?;
         let members = (0..mem_cnt)
             .map(|_| StructMemberRaw::read(&mut *input, header, taudt_bits.0 .0))
             .collect::<Result<_, _>>()?;
+
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
+        let modifier = StructModifierRaw::from_value(taudt_bits.0 .0);
         Ok(Self::NonRef {
             effective_alignment,
-            taudt_bits,
+            modifier,
             members,
         })
     }
@@ -105,10 +120,15 @@ pub struct StructMember {
 }
 
 impl StructMember {
-    fn new(til: &TILSectionHeader, name: Option<Vec<u8>>, m: StructMemberRaw) -> Result<Self> {
+    fn new(
+        til: &TILSectionHeader,
+        name: Option<Vec<u8>>,
+        m: StructMemberRaw,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
+    ) -> Result<Self> {
         Ok(Self {
             name,
-            member_type: Type::new(til, m.ty, None)?,
+            member_type: Type::new(til, m.ty, fields)?,
             sdacl: m.sdacl,
         })
     }

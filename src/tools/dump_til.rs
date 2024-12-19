@@ -29,31 +29,34 @@ pub fn dump_til(args: &Args) -> Result<()> {
     let TILSection {
         format,
         title,
-        description,
-        id,
+        flags: _,
+        dependency,
+        compiler_id,
         cm,
         def_align,
         type_ordinal_alias,
-        size_i,
-        size_b,
-        size_short,
-        size_long,
-        size_long_long,
+        size_int,
+        size_enum,
+        size_bool,
+        extended_sizeof_info: _,
         size_long_double,
         is_universal,
         symbols,
         types,
         macros,
-    } = til;
+    } = &til;
     // write the header info
     println!("format: {format}");
-    println!("title: {}", String::from_utf8_lossy(&title));
-    println!("description: {}", String::from_utf8_lossy(&description));
-    println!("id: {id}");
+    println!("title: {}", String::from_utf8_lossy(title));
+    if let Some(dependency) = dependency {
+        println!("dependency: {}", String::from_utf8_lossy(dependency));
+    }
+    println!("id: {compiler_id:?}");
     println!("cm: {cm}");
-    println!("def_align: {def_align}");
-    println!("size_i: {size_i}");
-    println!("size_b: {size_b}");
+    println!("def_align: {}", def_align.map(|x| x.get()).unwrap_or(0));
+    println!("size_int: {size_int}");
+    println!("size_bool: {size_bool}");
+    println!("size_enum: {size_enum:?}");
     println!("is_universal: {is_universal}");
     if let Some(type_ordinal_numbers) = type_ordinal_alias {
         println!("type_ordinal_numbers: {type_ordinal_numbers:?}");
@@ -61,9 +64,9 @@ pub fn dump_til(args: &Args) -> Result<()> {
     if let Some(size_long_double) = size_long_double {
         println!("size_long_double: {size_long_double}");
     }
-    println!("size short: {size_short}");
-    println!("size long: {size_long}");
-    println!("size long_long: {size_long_long}");
+    println!("size short: {}", til.sizeof_short());
+    println!("size long: {}", til.sizeof_long());
+    println!("size long_long: {}", til.sizeof_long_long());
 
     // TODO implement Display for TILTypeInfo
     println!("types:");
@@ -77,9 +80,20 @@ pub fn dump_til(args: &Args) -> Result<()> {
 
     if let Some(macros) = macros {
         println!("\n------------------------------macros------------------------------");
-        for TILMacro { name, value } in macros {
-            let name = String::from_utf8_lossy(&name);
-            let value = String::from_utf8_lossy(&value);
+        for TILMacro {
+            name,
+            value,
+            param_num: _,
+        } in macros
+        {
+            let name = String::from_utf8_lossy(name);
+            let value: String = value
+                .iter()
+                .map(|c| match c {
+                    idb_rs::til::TILMacroValue::Char(c) => format!("{}", *c as char),
+                    idb_rs::til::TILMacroValue::Param(param) => format!("{{P{}}}", *param),
+                })
+                .collect();
             println!("------------------------------`{name}`------------------------------");
             println!("{value}");
             println!("------------------------------`{name}`-end------------------------------",);
