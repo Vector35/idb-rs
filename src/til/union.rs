@@ -1,3 +1,5 @@
+use std::num::NonZeroU8;
+
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, SDACL};
@@ -12,6 +14,7 @@ pub enum Union {
     },
     NonRef {
         effective_alignment: u16,
+        alignment: Option<NonZeroU8>,
         members: Vec<(Option<Vec<u8>>, Type)>,
         // TODO parse type attributes
         //others: StructMemberRaw,
@@ -33,6 +36,7 @@ impl Union {
             }),
             UnionRaw::NonRef {
                 effective_alignment,
+                alignment,
                 members,
             } => {
                 let mut new_members = Vec::with_capacity(members.len());
@@ -43,6 +47,7 @@ impl Union {
                 }
                 Ok(Union::NonRef {
                     effective_alignment,
+                    alignment,
                     members: new_members,
                 })
             }
@@ -60,6 +65,7 @@ pub(crate) enum UnionRaw {
     },
     NonRef {
         effective_alignment: u16,
+        alignment: Option<NonZeroU8>,
         members: Vec<TypeRaw>,
     },
 }
@@ -85,12 +91,15 @@ impl UnionRaw {
         let mem_cnt = n >> 3;
         let effective_alignment = if alpow == 0 { 0 } else { 1 << (alpow - 1) };
         let taudt_bits = SDACL::read(&mut *input)?;
-        let _modifiers = StructModifierRaw::from_value(taudt_bits.0 .0);
+        let modifiers = StructModifierRaw::from_value(taudt_bits.0 .0);
+        // TODO check InnerRef to how to handle modifiers
+        let alignment = modifiers.alignment;
         let members = (0..mem_cnt)
             .map(|_| TypeRaw::read(&mut *input, header))
             .collect::<anyhow::Result<_, _>>()?;
         Ok(Self::NonRef {
             effective_alignment,
+            alignment,
             members,
         })
     }

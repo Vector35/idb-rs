@@ -1,13 +1,18 @@
 use crate::id0::{Compiler, Id0TilOrd};
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
-use crate::til::{flag, TILMacro, TILTypeInfo};
+use crate::til::{flag, Basic, TILMacro, TILTypeInfo, TypeVariant};
 use crate::IDBSectionCompression;
 use anyhow::{anyhow, ensure, Result};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::io::{BufReader, Read, Write};
 use std::num::NonZeroU8;
 
 use super::function::CallingConvention;
+use super::r#enum::Enum;
+use super::r#struct::Struct;
+use super::union::Union;
+use super::{Type, Typedef};
 
 // TODO migrate this to flags
 pub const TIL_SECTION_MAGIC: &[u8; 6] = b"IDATIL";
@@ -377,11 +382,20 @@ impl TILSection {
         Ok(())
     }
 
-    pub fn get_name(&self, name: &[u8]) -> Option<&TILTypeInfo> {
-        self.types.iter().find(|ty| ty.name.as_slice() == name)
+    // TODO replace usize with a IDTypeIdx type
+    pub fn get_type_by_idx(&self, idx: usize) -> &TILTypeInfo {
+        &self.types[idx]
     }
 
-    pub fn get_ord(&self, id0_ord: Id0TilOrd) -> Option<&TILTypeInfo> {
+    pub fn get_name_idx(&self, name: &[u8]) -> Option<usize> {
+        self.types.iter().position(|ty| ty.name.as_slice() == name)
+    }
+
+    pub fn get_name(&self, name: &[u8]) -> Option<&TILTypeInfo> {
+        self.get_name_idx(name).map(|idx| &self.types[idx])
+    }
+
+    pub fn get_ord_idx(&self, id0_ord: Id0TilOrd) -> Option<usize> {
         // first search the ordinal alias
         if let Some(ordinals) = &self.type_ordinal_alias {
             // it's unclear what is the first value
@@ -389,11 +403,15 @@ impl TILSection {
                 .iter()
                 .find(|(src, _dst)| u64::from(*src) == id0_ord.ord)
             {
-                return self.get_ord(Id0TilOrd { ord: (*dst).into() });
+                return self.get_ord_idx(Id0TilOrd { ord: (*dst).into() });
             }
         }
         // if not and alias, search for the type directly
-        self.types.iter().find(|ty| ty.ordinal == id0_ord.ord)
+        self.types.iter().position(|ty| ty.ordinal == id0_ord.ord)
+    }
+
+    pub fn get_ord(&self, id0_ord: Id0TilOrd) -> Option<&TILTypeInfo> {
+        self.get_ord_idx(id0_ord).map(|idx| &self.types[idx])
     }
 
     pub fn sizeof_short(&self) -> NonZeroU8 {
@@ -462,6 +480,109 @@ impl TILSection {
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b860
     pub fn calling_convention(&self) -> Option<CallingConvention> {
         CallingConvention::from_cm_raw(self.cm)
+    }
+
+    // TODO check this impl in InnerRef
+    pub fn addr_size(&self) -> u64 {
+        self.sizeof_near_far()
+            .map(|(near, _far)| near.get().into())
+            .unwrap_or(4)
+    }
+
+    // TODO stub implementation
+    pub fn type_size_bytes(&self, type_idx: Option<usize>, ty: &Type) -> Result<u64> {
+        let mut map = type_idx.into_iter().collect();
+        self.inner_type_size_bytes(ty, &mut map)
+    }
+
+    // map is used to avoid loops
+    fn inner_type_size_bytes(&self, ty: &Type, map: &mut HashSet<usize>) -> Result<u64> {
+        Ok(match &ty.type_variant {
+            TypeVariant::Basic(Basic::Char) => 1,
+            // TODO what is the SegReg size?
+            TypeVariant::Basic(Basic::SegReg) => 1,
+            TypeVariant::Basic(Basic::Void) => 0,
+            TypeVariant::Basic(Basic::Unknown { bytes }) => (*bytes).into(),
+            TypeVariant::Basic(Basic::Bool) => self.size_bool.get().into(),
+            TypeVariant::Basic(Basic::Short { .. }) => self.sizeof_short().get().into(),
+            TypeVariant::Basic(Basic::Int { .. }) => self.size_int.get().into(),
+            TypeVariant::Basic(Basic::Long { .. }) => self.sizeof_long().get().into(),
+            TypeVariant::Basic(Basic::LongLong { .. }) => self.sizeof_long_long().get().into(),
+            TypeVariant::Basic(Basic::IntSized { bytes, .. }) => bytes.get().into(),
+            TypeVariant::Basic(Basic::BoolSized { bytes }) => bytes.get().into(),
+            // TODO what's the long double default size if it's not defined?
+            TypeVariant::Basic(Basic::LongDouble) => {
+                self.size_long_double.map(|x| x.get()).unwrap_or(8).into()
+            }
+            TypeVariant::Basic(Basic::Float { bytes }) => bytes.get().into(),
+            // TODO is pointer always near? Do pointer size default to 4?
+            TypeVariant::Pointer(_) => self.addr_size(),
+            TypeVariant::Function(_) => 0, // function type dont have a size, only a pointer to it
+            TypeVariant::Array(array) => {
+                let element_len = self.inner_type_size_bytes(&*array.elem_type, map)?;
+                element_len * array.nelem as u64
+            }
+            TypeVariant::Typedef(Typedef::Name(name)) => {
+                let inner_type_idx = self.get_name_idx(name).ok_or_else(|| {
+                    anyhow!(
+                        "Unable to find typedef by name: {}",
+                        String::from_utf8_lossy(name)
+                    )
+                })?;
+                if !map.insert(inner_type_idx) {
+                    return Err(anyhow!(
+                        "Loop detected, type inside itself using named typedef "
+                    ));
+                }
+                let inner_type = self.get_type_by_idx(inner_type_idx);
+                self.inner_type_size_bytes(&inner_type.tinfo, map)?
+            }
+            TypeVariant::Typedef(Typedef::Ordinal(ord)) => {
+                let inner_type_idx = self
+                    .get_ord_idx(crate::id0::Id0TilOrd { ord: (*ord).into() })
+                    .ok_or_else(|| anyhow!("Unable to find typedef by ord: {ord}",))?;
+                if !map.insert(inner_type_idx) {
+                    return Err(anyhow!(
+                        "Loop detected, type inside itself using ordinal typedef"
+                    ));
+                }
+                let inner_type = self.get_type_by_idx(inner_type_idx);
+                self.inner_type_size_bytes(&inner_type.tinfo, map)?
+            }
+            TypeVariant::Struct(Struct::Ref { ref_type, .. })
+            | TypeVariant::Union(Union::Ref { ref_type, .. })
+            | TypeVariant::Enum(Enum::Ref { ref_type, .. }) => {
+                self.inner_type_size_bytes(&*ref_type, map)?
+            }
+            TypeVariant::Struct(Struct::NonRef { members, .. }) => {
+                let mut sum = 0u64;
+                // TODO default alignment, seems like default alignemnt is the field size
+                let align: u64 = 1;
+                for member in members {
+                    let field_size = self.inner_type_size_bytes(&member.member_type, map)?;
+                    let align_diff = sum % align;
+                    if align_diff != 0 {
+                        sum += align - align_diff;
+                    }
+                    sum += field_size;
+                }
+                sum
+            }
+            TypeVariant::Union(Union::NonRef { members, .. }) => {
+                let mut max = 0;
+                for (_, member) in members {
+                    let size = self.inner_type_size_bytes(member, map)?;
+                    max = max.max(size);
+                }
+                max
+            }
+            TypeVariant::Enum(Enum::NonRef { storage_size, .. }) => storage_size
+                .or(self.size_enum)
+                .map(|x| x.get())
+                .unwrap_or(4)
+                .into(),
+            TypeVariant::Bitfield(bitfield) => bitfield.width.into(),
+        })
     }
 }
 

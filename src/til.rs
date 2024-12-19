@@ -12,9 +12,9 @@ pub mod union;
 use std::num::{NonZeroU16, NonZeroU8};
 
 use anyhow::{anyhow, ensure, Context, Result};
-use section::TILSection;
 
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
+
 use crate::til::array::{Array, ArrayRaw};
 use crate::til::bitfield::Bitfield;
 use crate::til::function::{Function, FunctionRaw};
@@ -181,89 +181,6 @@ impl Type {
             "Extra fields found for id0 til"
         );
         Ok(result)
-    }
-
-    // TODO stub implementation
-    pub fn type_size_bytes(&self, section: &TILSection) -> Result<u64> {
-        fn addr_size(section: &TILSection) -> u64 {
-            section
-                .sizeof_near_far()
-                .map(|(near, _far)| near.get().into())
-                .unwrap_or(4)
-        }
-        Ok(match &self.type_variant {
-            TypeVariant::Basic(Basic::Char) => 1,
-            // TODO what is the SegReg size?
-            TypeVariant::Basic(Basic::SegReg) => 1,
-            TypeVariant::Basic(Basic::Void) => 0,
-            TypeVariant::Basic(Basic::Unknown { bytes }) => (*bytes).into(),
-            TypeVariant::Basic(Basic::Bool) => section.size_bool.get().into(),
-            TypeVariant::Basic(Basic::Short { .. }) => section.sizeof_short().get().into(),
-            TypeVariant::Basic(Basic::Int { .. }) => section.size_int.get().into(),
-            TypeVariant::Basic(Basic::Long { .. }) => section.sizeof_long().get().into(),
-            TypeVariant::Basic(Basic::LongLong { .. }) => section.sizeof_long_long().get().into(),
-            TypeVariant::Basic(Basic::IntSized { bytes, .. }) => bytes.get().into(),
-            TypeVariant::Basic(Basic::BoolSized { bytes }) => bytes.get().into(),
-            // TODO what's the long double default size if it's not defined?
-            TypeVariant::Basic(Basic::LongDouble) => section
-                .size_long_double
-                .map(|x| x.get())
-                .unwrap_or(8)
-                .into(),
-            TypeVariant::Basic(Basic::Float { bytes }) => bytes.get().into(),
-            // TODO is pointer always near? Do pointer size default to 4?
-            TypeVariant::Pointer(_) => addr_size(section),
-            TypeVariant::Function(_) => 0, // function type dont have a size, only a pointer to it
-            TypeVariant::Array(array) => {
-                array.elem_type.type_size_bytes(section)? * array.nelem as u64
-            }
-            TypeVariant::Typedef(Typedef::Name(name)) => section
-                .get_name(name)
-                .ok_or_else(|| {
-                    anyhow!(
-                        "Unable to find typedef by name: {}",
-                        String::from_utf8_lossy(name)
-                    )
-                })?
-                .tinfo
-                .type_size_bytes(section)?,
-            TypeVariant::Typedef(Typedef::Ordinal(ord)) => section
-                .get_ord(crate::id0::Id0TilOrd { ord: (*ord).into() })
-                .ok_or_else(|| anyhow!("Unable to find typedef by ord: {ord}",))?
-                .tinfo
-                .type_size_bytes(section)?,
-            TypeVariant::Struct(Struct::Ref { ref_type, .. })
-            | TypeVariant::Union(Union::Ref { ref_type, .. })
-            | TypeVariant::Enum(Enum::Ref { ref_type, .. }) => ref_type.type_size_bytes(section)?,
-            TypeVariant::Struct(Struct::NonRef { members, .. }) => {
-                let mut sum = 0u64;
-                // TODO default alignment, seems like default alignemnt is the field size
-                let align: u64 = 1;
-                for member in members {
-                    let field_size = member.member_type.type_size_bytes(section)?;
-                    let align_diff = sum % align;
-                    if align_diff != 0 {
-                        sum += align - align_diff;
-                    }
-                    sum += field_size;
-                }
-                sum
-            }
-            TypeVariant::Union(Union::NonRef { members, .. }) => {
-                let mut max = 0;
-                for (_, member) in members {
-                    let size = member.type_size_bytes(section)?;
-                    max = max.max(size);
-                }
-                max
-            }
-            TypeVariant::Enum(Enum::NonRef { storage_size, .. }) => storage_size
-                .or(section.size_enum)
-                .map(|x| x.get())
-                .unwrap_or(4)
-                .into(),
-            TypeVariant::Bitfield(bitfield) => bitfield.width.into(),
-        })
     }
 }
 
