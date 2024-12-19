@@ -172,8 +172,9 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     // Print Symbols
     writeln!(fmt, "SYMBOLS")?;
     for symbol in &section.symbols {
-        print_til_type_len(&mut fmt, section, &symbol.tinfo).unwrap();
-        match symbol.tinfo.type_size_bytes(section).ok() {
+        print_til_type_len(&mut fmt, section, None, &symbol.tinfo)?;
+        let len = section.type_size_bytes(None, &symbol.tinfo).ok();
+        match len {
             // TODO What is that???? Find it in InnerRef...
             Some(8) => write!(fmt, " {:016X}          ", symbol.ordinal)?,
             // TODO is limited to 32bits in InnerRef?
@@ -189,39 +190,43 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     writeln!(fmt, "(enumerated by ordinals)")?;
     enum OrdType<'a> {
         Alias(&'a (u32, u32)),
-        Type(&'a TILTypeInfo),
+        Type { idx: usize, ty: &'a TILTypeInfo },
     }
     let mut types_sort: Vec<OrdType> = section
         .types
         .iter()
-        .map(OrdType::Type)
+        .enumerate()
+        .map(|(idx, ty)| OrdType::Type { idx, ty })
         .chain(
             section
                 .type_ordinal_alias
                 .iter()
-                .map(|x| x.iter())
-                .flatten()
+                .flat_map(|x| x.iter())
                 .map(OrdType::Alias),
         )
         .collect();
     types_sort.sort_by_key(|ord| match ord {
         OrdType::Alias(x) => x.0.into(),
-        OrdType::Type(x) => x.ordinal,
+        OrdType::Type { ty, .. } => ty.ordinal,
     });
     for ord_type in types_sort {
         let ord_num = match ord_type {
             OrdType::Alias((ord, _)) => (*ord).into(),
-            OrdType::Type(final_type) => final_type.ordinal,
+            OrdType::Type { ty, .. } => ty.ordinal,
         };
-        let final_type = match ord_type {
-            OrdType::Alias((_alias_ord, type_ord)) => section
-                .get_ord(Id0TilOrd {
-                    ord: (*type_ord).into(),
-                })
-                .unwrap(),
-            OrdType::Type(final_type) => final_type,
+        let (idx, final_type) = match ord_type {
+            OrdType::Alias((_alias_ord, type_ord)) => {
+                let idx = section
+                    .get_ord_idx(Id0TilOrd {
+                        ord: (*type_ord).into(),
+                    })
+                    .unwrap();
+                let ty = section.get_type_by_idx(idx);
+                (idx, ty)
+            }
+            OrdType::Type { idx, ty } => (idx, ty),
         };
-        print_til_type_len(&mut fmt, section, &final_type.tinfo).unwrap();
+        print_til_type_len(&mut fmt, section, Some(idx), &final_type.tinfo).unwrap();
         write!(fmt, "{:5}. ", ord_num)?;
         if let OrdType::Alias((_alias_ord, type_ord)) = ord_type {
             write!(fmt, "(aliased to {type_ord}) ")?;
@@ -231,11 +236,11 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
         writeln!(fmt, ";")?;
     }
     writeln!(fmt, "(enumerated by names)")?;
-    for symbol in &section.types {
+    for (idx, symbol) in section.types.iter().enumerate() {
         if symbol.name.is_empty() {
             continue;
         }
-        print_til_type_len(&mut fmt, section, &symbol.tinfo).unwrap();
+        print_til_type_len(&mut fmt, section, Some(idx), &symbol.tinfo).unwrap();
         write!(fmt, " ")?;
         let name = std::str::from_utf8(&symbol.name).unwrap();
         print_til_type_root(&mut fmt, section, Some(name), &symbol.tinfo)?;
@@ -303,12 +308,6 @@ fn print_til_type_root(
         | TypeVariant::Enum(Enum::NonRef { .. }) => {}
         _ => write!(fmt, "typedef ")?,
     }
-    if til_type.is_volatile {
-        write!(fmt, "volatile ")?;
-    }
-    if til_type.is_const {
-        write!(fmt, "const ")?;
-    }
     print_til_type(fmt, section, name, til_type, true, true)
 }
 
@@ -320,6 +319,12 @@ fn print_til_type(
     print_pointer_space: bool,
     print_type_prefix: bool,
 ) -> std::io::Result<()> {
+    if til_type.is_volatile {
+        write!(fmt, "volatile ")?;
+    }
+    if til_type.is_const {
+        write!(fmt, "const ")?;
+    }
     let name_helper = name.map(|name| format!(" {name}")).unwrap_or_default();
     const fn signed_name(is_signed: Option<bool>) -> &'static str {
         match is_signed {
@@ -336,6 +341,10 @@ fn print_til_type(
         }
         TypeVariant::Basic(Basic::Void) => write!(fmt, "void{name_helper}",),
         TypeVariant::Basic(Basic::SegReg) => write!(fmt, "SegReg{name_helper}"),
+        TypeVariant::Basic(Basic::Unknown { bytes: 1 }) => write!(fmt, "_BYTE"),
+        TypeVariant::Basic(Basic::Unknown { bytes: 2 }) => write!(fmt, "_WORD"),
+        TypeVariant::Basic(Basic::Unknown { bytes: 4 }) => write!(fmt, "_DWORD"),
+        TypeVariant::Basic(Basic::Unknown { bytes: 8 }) => write!(fmt, "_QWORD"),
         TypeVariant::Basic(Basic::Unknown { bytes }) => write!(fmt, "unknown{bytes}{name_helper}"),
         TypeVariant::Basic(Basic::Int { is_signed }) => {
             write!(fmt, "{}int{name_helper}", signed_name(*is_signed))
@@ -481,9 +490,15 @@ fn print_til_type(
             Union::Ref { ref_type, .. } => {
                 print_til_type(fmt, section, name, ref_type, true, print_type_prefix)
             }
-            Union::NonRef { members, .. } => {
+            Union::NonRef {
+                members, alignment, ..
+            } => {
                 let name = name.unwrap_or("");
-                write!(fmt, "union {name} {{")?;
+                write!(fmt, "union ")?;
+                if let Some(align) = alignment {
+                    write!(fmt, "__attribute__((aligned({align}))) ")?;
+                }
+                write!(fmt, "{name} {{")?;
                 for (member_name, member) in members {
                     let member_name = member_name
                         .as_ref()
@@ -560,7 +575,7 @@ fn print_til_type(
                 write!(fmt, "}}")
             }
         },
-        TypeVariant::Bitfield(_bitfield) => write!(fmt, "todo!(\"function\")"),
+        TypeVariant::Bitfield(_bitfield) => write!(fmt, "todo!(\"Bitfield\")"),
     }
 }
 
@@ -574,17 +589,18 @@ fn print_til_type_function(
     // return type
     print_til_type(fmt, section, None, &til_type.ret, false, true)?;
 
-    // print name and calling convention
-    let cc = (section.calling_convention() != Some(til_type.calling_convention))
-        .then_some(calling_convention_to_str(til_type.calling_convention));
+    // print name and calling convention, except for Ellipsis, just put the "..." as last param
+    let cc = (section.calling_convention() != Some(til_type.calling_convention)
+        && til_type.calling_convention != CallingConvention::Ellipsis)
+        .then(|| calling_convention_to_str(til_type.calling_convention));
     match (is_pointer, cc) {
-        (true, Some(cc)) => write!(fmt, " ({cc} *{name})")?,
-        (false, Some(cc)) => write!(fmt, " {cc} {name}")?,
         (true, None) => write!(fmt, " (*{name})")?,
         (false, None) => write!(fmt, " {name}")?,
+        (true, Some(cc)) => write!(fmt, " ({cc} *{name})")?,
+        (false, Some(cc)) => write!(fmt, " {cc} {name}")?,
     }
 
-    write!(fmt, " (")?;
+    write!(fmt, "(")?;
     for (i, (param_name, param, _argloc)) in til_type.args.iter().enumerate() {
         if i != 0 {
             write!(fmt, ", ")?;
@@ -601,7 +617,13 @@ fn print_til_type_function(
             false,
         )?;
     }
-    write!(fmt, ")")
+    if til_type.calling_convention == CallingConvention::Ellipsis {
+        if !til_type.args.is_empty() {
+            write!(fmt, ", ")?;
+        }
+        write!(fmt, "...")?;
+    }
+    write!(fmt, " )")
 }
 
 fn print_til_type_name(
@@ -628,13 +650,14 @@ fn print_til_type_name(
 fn print_til_type_len(
     fmt: &mut impl Write,
     section: &TILSection,
+    idx: Option<usize>,
     tinfo: &Type,
 ) -> std::io::Result<()> {
     if let TypeVariant::Function(_function) = &tinfo.type_variant {
         write!(fmt, "FFFFFFFF")?;
     } else {
         // if the type is unknown it just prints "FFFFFFF"
-        let len = tinfo.type_size_bytes(section).unwrap_or(0xFFFF_FFFF);
+        let len = section.type_size_bytes(idx, tinfo).unwrap_or(0xFFFF_FFFF);
         write!(fmt, "{len:08X}")?;
     }
     Ok(())
