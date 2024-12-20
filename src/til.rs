@@ -114,7 +114,7 @@ pub enum TypeVariant {
     Struct(Struct),
     Union(Union),
     Enum(Enum),
-    // TODO narrow what kinds od Type can be inside the Ref
+    // TODO narrow what kinds of Type can be inside the Ref
     StructRef(Box<Type>),
     UnionRef(Box<Type>),
     EnumRef(Box<Type>),
