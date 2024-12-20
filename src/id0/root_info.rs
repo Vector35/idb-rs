@@ -1228,7 +1228,7 @@ impl FileType {
 }
 
 // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x7e6cc0
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Compiler {
     Unknown,
     VisualStudio,

@@ -1,87 +1,62 @@
+use std::num::NonZeroU8;
+
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{associate_field_name_and_member, Type, TypeRaw, SDACL};
-use anyhow::{anyhow, Context};
+use crate::til::{Type, TypeRaw, SDACL};
+
+use super::{StructModifierRaw, TypeVariantRaw};
 
 #[derive(Clone, Debug)]
-pub enum Union {
-    Ref {
-        ref_type: Box<Type>,
-        taudt_bits: SDACL,
-    },
-    NonRef {
-        taudt_bits: SDACL,
-        effective_alignment: u16,
-        members: Vec<(Option<Vec<u8>>, Type)>,
-    },
+pub struct Union {
+    pub effective_alignment: u16,
+    pub alignment: Option<NonZeroU8>,
+    pub members: Vec<(Option<Vec<u8>>, Type)>,
+    // TODO parse type attributes
+    //others: StructMemberRaw,
 }
 impl Union {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: UnionRaw,
-        fields: Option<Vec<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> anyhow::Result<Self> {
-        match value {
-            UnionRaw::Ref {
-                ref_type,
-                taudt_bits,
-            } => {
-                if matches!(fields, Some(f) if !f.is_empty()) {
-                    return Err(anyhow!("fields in a Ref Union"));
-                }
-                Ok(Union::Ref {
-                    ref_type: Type::new(til, *ref_type, None).map(Box::new)?,
-                    taudt_bits,
-                })
-            }
-            UnionRaw::NonRef {
-                taudt_bits,
-                effective_alignment,
-                members,
-            } => {
-                let members = associate_field_name_and_member(fields, members)
-                    .context("Union")?
-                    .map(|(n, m)| Type::new(til, m, None).map(|m| (n, m)))
-                    .collect::<anyhow::Result<_, _>>()?;
-                Ok(Union::NonRef {
-                    taudt_bits,
-                    effective_alignment,
-                    members,
-                })
-            }
-        }
+        let members = value
+            .members
+            .into_iter()
+            .map(|member| {
+                let field_name = fields.next();
+                let new_member = Type::new(til, member, &mut *fields)?;
+                Ok((field_name, new_member))
+            })
+            .collect::<anyhow::Result<_>>()?;
+        Ok(Union {
+            effective_alignment: value.effective_alignment,
+            alignment: value.alignment,
+            members,
+        })
     }
 }
 
 // TODO struct and union are basically identical, the diff is that member in union don't have SDACL,
 // merge both
 #[derive(Clone, Debug)]
-pub(crate) enum UnionRaw {
-    Ref {
-        ref_type: Box<TypeRaw>,
-        taudt_bits: SDACL,
-    },
-    NonRef {
-        taudt_bits: SDACL,
-        effective_alignment: u16,
-        members: Vec<TypeRaw>,
-    },
+pub(crate) struct UnionRaw {
+    effective_alignment: u16,
+    alignment: Option<NonZeroU8>,
+    members: Vec<TypeRaw>,
 }
 
 impl UnionRaw {
     pub fn read(
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
-    ) -> anyhow::Result<Self> {
+    ) -> anyhow::Result<TypeVariantRaw> {
         let Some(n) = input.read_dt_de()? else {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // is ref
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
-            let taudt_bits = SDACL::read(&mut *input)?;
-            return Ok(Self::Ref {
-                ref_type: Box::new(ref_type),
-                taudt_bits,
-            });
+            let _taudt_bits = SDACL::read(&mut *input)?;
+            return Ok(TypeVariantRaw::UnionRef(Box::new(ref_type)));
         };
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
@@ -89,13 +64,16 @@ impl UnionRaw {
         let mem_cnt = n >> 3;
         let effective_alignment = if alpow == 0 { 0 } else { 1 << (alpow - 1) };
         let taudt_bits = SDACL::read(&mut *input)?;
+        let modifiers = StructModifierRaw::from_value(taudt_bits.0 .0);
+        // TODO check InnerRef to how to handle modifiers
+        let alignment = modifiers.alignment;
         let members = (0..mem_cnt)
             .map(|_| TypeRaw::read(&mut *input, header))
             .collect::<anyhow::Result<_, _>>()?;
-        Ok(Self::NonRef {
+        Ok(TypeVariantRaw::Union(Self {
             effective_alignment,
-            taudt_bits,
+            alignment,
             members,
-        })
+        }))
     }
 }
