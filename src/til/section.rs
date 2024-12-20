@@ -519,7 +519,7 @@ impl TILSection {
             TypeVariant::Pointer(_) => self.addr_size(),
             TypeVariant::Function(_) => 0, // function type dont have a size, only a pointer to it
             TypeVariant::Array(array) => {
-                let element_len = self.inner_type_size_bytes(&*array.elem_type, map)?;
+                let element_len = self.inner_type_size_bytes(&array.elem_type, map)?;
                 element_len * array.nelem as u64
             }
             TypeVariant::Typedef(Typedef::Name(name)) => {
@@ -549,12 +549,10 @@ impl TILSection {
                 let inner_type = self.get_type_by_idx(inner_type_idx);
                 self.inner_type_size_bytes(&inner_type.tinfo, map)?
             }
-            TypeVariant::Struct(Struct::Ref { ref_type, .. })
-            | TypeVariant::Union(Union::Ref { ref_type, .. })
-            | TypeVariant::Enum(Enum::Ref { ref_type, .. }) => {
-                self.inner_type_size_bytes(&*ref_type, map)?
-            }
-            TypeVariant::Struct(Struct::NonRef { members, .. }) => {
+            TypeVariant::StructRef(ref_type)
+            | TypeVariant::UnionRef(ref_type)
+            | TypeVariant::EnumRef(ref_type) => self.inner_type_size_bytes(ref_type, map)?,
+            TypeVariant::Struct(Struct { members, .. }) => {
                 let mut sum = 0u64;
                 // TODO default alignment, seems like default alignemnt is the field size
                 let align: u64 = 1;
@@ -568,7 +566,7 @@ impl TILSection {
                 }
                 sum
             }
-            TypeVariant::Union(Union::NonRef { members, .. }) => {
+            TypeVariant::Union(Union { members, .. }) => {
                 let mut max = 0;
                 for (_, member) in members {
                     let size = self.inner_type_size_bytes(member, map)?;
@@ -576,7 +574,7 @@ impl TILSection {
                 }
                 max
             }
-            TypeVariant::Enum(Enum::NonRef { storage_size, .. }) => storage_size
+            TypeVariant::Enum(Enum { storage_size, .. }) => storage_size
                 .or(self.size_enum)
                 .map(|x| x.get())
                 .unwrap_or(4)

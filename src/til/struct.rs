@@ -5,30 +5,25 @@ use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, SDACL};
 use anyhow::{anyhow, Result};
 
-use super::StructModifierRaw;
+use super::{StructModifierRaw, TypeVariantRaw};
 
 #[derive(Clone, Debug)]
-pub enum Struct {
-    Ref {
-        ref_type: Box<Type>,
-    },
-    NonRef {
-        effective_alignment: Option<NonZeroU8>,
-        members: Vec<StructMember>,
-        /// Unaligned struct
-        is_unaligned: bool,
-        /// Gcc msstruct attribute
-        is_msstruct: bool,
-        /// C++ object, not simple pod type
-        is_cpp_obj: bool,
-        /// Virtual function table
-        is_vftable: bool,
-        /// Alignment in bytes
-        alignment: Option<NonZeroU8>,
-        // TODO delete others, parse all values or return an error
-        /// other unparsed values from the type attribute
-        others: Option<NonZeroU16>,
-    },
+pub struct Struct {
+    pub effective_alignment: Option<NonZeroU8>,
+    pub members: Vec<StructMember>,
+    /// Unaligned struct
+    pub is_unaligned: bool,
+    /// Gcc msstruct attribute
+    pub is_msstruct: bool,
+    /// C++ object, not simple pod type
+    pub is_cpp_obj: bool,
+    /// Virtual function table
+    pub is_vftable: bool,
+    /// Alignment in bytes
+    pub alignment: Option<NonZeroU8>,
+    // TODO delete others, parse all values or return an error
+    /// other unparsed values from the type attribute
+    pub others: Option<NonZeroU16>,
 }
 impl Struct {
     pub(crate) fn new(
@@ -36,59 +31,43 @@ impl Struct {
         value: StructRaw,
         fields: &mut impl Iterator<Item = Vec<u8>>,
     ) -> Result<Self> {
-        match value {
-            StructRaw::Ref { ref_type } => Ok(Struct::Ref {
-                ref_type: Type::new(til, *ref_type, fields).map(Box::new)?,
-            }),
-            StructRaw::NonRef {
-                effective_alignment,
-                members,
-                modifier,
-            } => {
-                let mut new_members = Vec::with_capacity(members.len());
-                for member in members {
-                    let field_name = fields.next();
-                    let new_member = StructMember::new(til, field_name, member, &mut *fields)?;
-                    new_members.push(new_member);
-                }
-                Ok(Struct::NonRef {
-                    effective_alignment,
-                    members: new_members,
-                    is_unaligned: modifier.is_unaligned,
-                    is_msstruct: modifier.is_msstruct,
-                    is_cpp_obj: modifier.is_cpp_obj,
-                    is_vftable: modifier.is_vftable,
-                    alignment: modifier.alignment,
-                    others: modifier.others,
-                })
-            }
-        }
+        let members = value
+            .members
+            .into_iter()
+            .map(|member| StructMember::new(til, fields.next(), member, &mut *fields))
+            .collect::<Result<_>>()?;
+        Ok(Struct {
+            effective_alignment: value.effective_alignment,
+            members,
+            is_unaligned: value.modifier.is_unaligned,
+            is_msstruct: value.modifier.is_msstruct,
+            is_cpp_obj: value.modifier.is_cpp_obj,
+            is_vftable: value.modifier.is_vftable,
+            alignment: value.modifier.alignment,
+            others: value.modifier.others,
+        })
     }
 }
 
 #[derive(Clone, Debug)]
-pub(crate) enum StructRaw {
-    Ref {
-        ref_type: Box<TypeRaw>,
-    },
-    NonRef {
-        effective_alignment: Option<NonZeroU8>,
-        modifier: StructModifierRaw,
-        members: Vec<StructMemberRaw>,
-    },
+pub(crate) struct StructRaw {
+    effective_alignment: Option<NonZeroU8>,
+    modifier: StructModifierRaw,
+    members: Vec<StructMemberRaw>,
 }
 
 impl StructRaw {
-    pub fn read(input: &mut impl IdaGenericBufUnpack, header: &TILSectionHeader) -> Result<Self> {
+    pub fn read(
+        input: &mut impl IdaGenericBufUnpack,
+        header: &TILSectionHeader,
+    ) -> Result<TypeVariantRaw> {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459883
         let Some(n) = input.read_dt_de()? else {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // simple reference
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
             let _taudt_bits = SDACL::read(&mut *input)?;
-            return Ok(Self::Ref {
-                ref_type: Box::new(ref_type),
-            });
+            return Ok(TypeVariantRaw::StructRef(Box::new(ref_type)));
         };
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
@@ -104,11 +83,11 @@ impl StructRaw {
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
         let modifier = StructModifierRaw::from_value(taudt_bits.0 .0);
-        Ok(Self::NonRef {
+        Ok(TypeVariantRaw::Struct(Self {
             effective_alignment,
             modifier,
             members,
-        })
+        }))
     }
 }
 

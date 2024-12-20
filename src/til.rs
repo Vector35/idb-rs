@@ -114,8 +114,13 @@ pub enum TypeVariant {
     Struct(Struct),
     Union(Union),
     Enum(Enum),
+    // TODO narrow what kinds od Type can be inside the Ref
+    StructRef(Box<Type>),
+    UnionRef(Box<Type>),
+    EnumRef(Box<Type>),
     Bitfield(Bitfield),
 }
+
 impl Type {
     pub(crate) fn new(
         til: &TILSectionHeader,
@@ -134,6 +139,15 @@ impl Type {
             TypeVariantRaw::Struct(x) => Struct::new(til, x, fields).map(TypeVariant::Struct)?,
             TypeVariantRaw::Union(x) => Union::new(til, x, fields).map(TypeVariant::Union)?,
             TypeVariantRaw::Enum(x) => Enum::new(til, x, fields).map(TypeVariant::Enum)?,
+            TypeVariantRaw::StructRef(type_raw) => {
+                TypeVariant::StructRef(Box::new(Type::new(til, *type_raw, fields)?))
+            }
+            TypeVariantRaw::UnionRef(type_raw) => {
+                TypeVariant::UnionRef(Box::new(Type::new(til, *type_raw, fields)?))
+            }
+            TypeVariantRaw::EnumRef(type_raw) => {
+                TypeVariant::EnumRef(Box::new(Type::new(til, *type_raw, fields)?))
+            }
         };
         Ok(Self {
             is_const: tinfo_raw.is_const,
@@ -201,6 +215,9 @@ pub(crate) enum TypeVariantRaw {
     Struct(StructRaw),
     Union(UnionRaw),
     Enum(EnumRaw),
+    StructRef(Box<TypeRaw>),
+    UnionRef(Box<TypeRaw>),
+    EnumRef(Box<TypeRaw>),
     Bitfield(Bitfield),
 }
 
@@ -252,24 +269,18 @@ impl TypeRaw {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_UNION) => {
-                UnionRaw::read(input, til)
-                    .context("Type::Union")
-                    .map(TypeVariantRaw::Union)?
+                UnionRaw::read(input, til).context("Type::Union")?
             }
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_STRUCT) => {
-                StructRaw::read(input, til)
-                    .context("Type::Struct")
-                    .map(TypeVariantRaw::Struct)?
+                StructRaw::read(input, til).context("Type::Struct")?
             }
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_ENUM) => {
-                EnumRaw::read(input, til)
-                    .context("Type::Enum")
-                    .map(TypeVariantRaw::Enum)?
+                EnumRaw::read(input, til).context("Type::Enum")?
             }
 
             (flag::tf_complex::BT_COMPLEX, _) => unreachable!(),
