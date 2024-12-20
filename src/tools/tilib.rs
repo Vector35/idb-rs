@@ -1,5 +1,6 @@
 use idb_rs::id0::Compiler;
 use idb_rs::id0::Id0TilOrd;
+use idb_rs::til::array::Array;
 use idb_rs::til::function::CallingConvention;
 use idb_rs::til::function::Function;
 use idb_rs::til::pointer::Pointer;
@@ -323,7 +324,6 @@ fn print_til_type(
     if til_type.is_const {
         write!(fmt, "const ")?;
     }
-    let name_helper = name.map(|name| format!(" {name}")).unwrap_or_default();
     match &til_type.type_variant {
         TypeVariant::Basic(til_basic) => print_til_type_basic(fmt, section, name, til_basic),
         TypeVariant::Pointer(pointer) => print_til_type_pointer(
@@ -335,19 +335,16 @@ fn print_til_type(
             print_type_prefix,
         ),
         TypeVariant::Function(function) => {
-            print_til_type_function(fmt, section, name.unwrap_or("_"), function, false)
+            print_til_type_function(fmt, section, name, function, false)
         }
-        TypeVariant::Array(array) => {
-            print_til_type(
-                fmt,
-                section,
-                None,
-                &array.elem_type,
-                print_pointer_space,
-                print_type_prefix,
-            )?;
-            write!(fmt, "{name_helper}[{}]", array.nelem)
-        }
+        TypeVariant::Array(array) => print_til_type_array(
+            fmt,
+            section,
+            name,
+            array,
+            print_pointer_space,
+            print_type_prefix,
+        ),
         TypeVariant::Typedef(typedef) => print_til_type_typedef(fmt, section, name, typedef),
         TypeVariant::StructRef(ref_type) => print_til_type(
             fmt,
@@ -387,9 +384,9 @@ fn print_til_type_basic(
             Some(false) => "unsigned ",
         }
     }
+
     let name_space = if name.is_some() { " " } else { "" };
     let name = name.unwrap_or("");
-
     match til_basic {
         Basic::Bool => write!(fmt, "bool{name_space}{name}",)?,
         Basic::Char => write!(fmt, "char{name_space}{name}",)?,
@@ -438,7 +435,7 @@ fn print_til_type_pointer(
 ) -> std::io::Result<()> {
     if let TypeVariant::Function(inner_fun) = &pointer.typ.type_variant {
         // How to handle modifier here?
-        print_til_type_function(fmt, section, name.unwrap_or(""), inner_fun, true)?;
+        print_til_type_function(fmt, section, name, inner_fun, true)?;
     } else {
         // TODO name
         print_til_type(
@@ -466,7 +463,7 @@ fn print_til_type_pointer(
 fn print_til_type_function(
     fmt: &mut impl Write,
     section: &TILSection,
-    name: &str,
+    name: Option<&str>,
     til_type: &Function,
     is_pointer: bool,
 ) -> std::io::Result<()> {
@@ -474,6 +471,7 @@ fn print_til_type_function(
     print_til_type(fmt, section, None, &til_type.ret, false, true)?;
 
     // print name and calling convention, except for Ellipsis, just put the "..." as last param
+    let name = name.unwrap_or("");
     let cc = (section.calling_convention() != Some(til_type.calling_convention)
         && til_type.calling_convention != CallingConvention::Ellipsis)
         .then(|| calling_convention_to_str(til_type.calling_convention));
@@ -510,14 +508,39 @@ fn print_til_type_function(
     write!(fmt, " )")
 }
 
+fn print_til_type_array(
+    fmt: &mut impl Write,
+    section: &TILSection,
+    name: Option<&str>,
+    til_array: &Array,
+    print_pointer_space: bool,
+    print_type_prefix: bool,
+) -> std::io::Result<()> {
+    print_til_type(
+        fmt,
+        section,
+        None,
+        &til_array.elem_type,
+        print_pointer_space,
+        print_type_prefix,
+    )?;
+    let name_space = if name.is_some() { " " } else { "" };
+    let name = name.unwrap_or("");
+    write!(fmt, "{name_space}{name}")?;
+    if til_array.nelem != 0 {
+        write!(fmt, "[{}]", til_array.nelem)?;
+    } else {
+        write!(fmt, "[]")?;
+    }
+    Ok(())
+}
+
 fn print_til_type_typedef(
     fmt: &mut impl Write,
     section: &TILSection,
     name: Option<&str>,
     typedef: &Typedef,
 ) -> std::io::Result<()> {
-    let name_space = if name.is_some() { " " } else { "" };
-    let name = name.unwrap_or("");
     // only print prefix, if is root
     match typedef {
         idb_rs::til::Typedef::Ordinal(ord) => {
@@ -535,6 +558,8 @@ fn print_til_type_typedef(
             }
         }
     }
+    let name_space = if name.is_some() { " " } else { "" };
+    let name = name.unwrap_or("");
     write!(fmt, "{name_space}{name}")
 }
 

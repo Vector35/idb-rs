@@ -5,6 +5,7 @@ use crate::til::{Type, TypeRaw, TAH};
 #[derive(Clone, Debug)]
 pub struct Array {
     pub base: u8,
+    // TODO make this Option<NonZeroU16>?
     pub nelem: u16,
     pub tah: TAH,
     pub elem_type: Box<Type>,
