@@ -4,6 +4,7 @@ use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, SDACL};
 use anyhow::{anyhow, Result};
+use num_enum::{FromPrimitive, IntoPrimitive};
 
 use super::{StructModifierRaw, TypeVariantRaw};
 
@@ -96,6 +97,7 @@ pub struct StructMember {
     pub name: Option<Vec<u8>>,
     pub member_type: Type,
     pub sdacl: SDACL,
+    pub att: Option<StructMemberAtt>,
 }
 
 impl StructMember {
@@ -109,6 +111,7 @@ impl StructMember {
             name,
             member_type: Type::new(til, m.ty, fields)?,
             sdacl: m.sdacl,
+            att: m.att,
         })
     }
 }
@@ -116,6 +119,7 @@ impl StructMember {
 pub(crate) struct StructMemberRaw {
     pub ty: TypeRaw,
     pub sdacl: SDACL,
+    pub att: Option<StructMemberAtt>,
 }
 
 impl StructMemberRaw {
@@ -129,15 +133,14 @@ impl StructMemberRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
         let is_bit_set = taudt_bits & 0x200 != 0;
 
-        let mut att1 = None;
-        if is_bit_set {
-            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478256
-            att1 = Self::read_member_att_1(input, header)?;
-        }
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478256
+        let att = is_bit_set
+            .then(|| Self::read_member_att_1(input, header))
+            .transpose()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
         let mut sdacl = SDACL(crate::til::TypeAttribute(0));
-        if !is_bit_set || matches!(att1, Some(_att1)) {
+        if !is_bit_set || matches!(att, Some(_att1)) {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
             sdacl = SDACL::read(&mut *input)?;
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
@@ -148,60 +151,120 @@ impl StructMemberRaw {
             }
         }
 
-        Ok(Self { ty, sdacl })
+        Ok(Self { ty, sdacl, att })
     }
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486cd0
     fn read_member_att_1(
         input: &mut impl IdaGenericBufUnpack,
         _header: &TILSectionHeader,
-    ) -> Result<Option<u64>> {
-        let Some(att) = input.read_ext_att()? else {
-            return Ok(None);
-        };
+    ) -> Result<StructMemberAtt> {
+        let att = input.read_ext_att()?;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486d0d
         match att & 0xf {
             0xd..=0xf => Err(anyhow!("Invalid value for member attribute {att:#x}")),
-            0..=7 => Self::basic_att(input, att),
+            0..=7 => Ok(StructMemberAtt::Var0to7(Self::basic_att(input, att)?)),
             8 | 0xb => todo!(),
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486d3f
             9 => {
                 let val1 = input.read_de()?;
-                if val1 & 0x1010 == 0 {
-                    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486f8d
-                    let _att = input
-                        .read_ext_att()?
-                        .ok_or_else(|| anyhow!("Unable to read att of type 9"))?;
-                }
+                // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486f8d
+                let att0 = (val1 & 0x1010 == 0)
+                    .then(|| input.read_ext_att())
+                    .transpose()?;
 
-                let _att1 = input
-                    .read_ext_att()?
-                    .ok_or_else(|| anyhow!("Unable to read att of type 9"))?;
-                let _att2 = input
-                    .read_ext_att()?
-                    .ok_or_else(|| anyhow!("Unable to read att of type 9"))?;
+                let att1 = input.read_ext_att()?;
+                let att2 = input.read_ext_att()?;
                 // TODO find this value
-                Ok(Some(_att2))
+                Ok(StructMemberAtt::Var9 {
+                    val1,
+                    att0,
+                    att1,
+                    att2,
+                })
             }
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486e50
             0xa | 0xc => {
-                let _val1 = input.read_de()?;
-                Self::basic_att(input, att)
+                let val1 = input.read_de()?;
+                let att0 = Self::basic_att(input, att)?;
+                Ok(StructMemberAtt::VarAorC { val1, att0 })
             }
             0x10.. => unreachable!(),
         }
     }
 
-    fn basic_att(input: &mut impl IdaGenericBufUnpack, att: u64) -> Result<Option<u64>> {
+    fn basic_att(input: &mut impl IdaGenericBufUnpack, att: u64) -> Result<StructMemberAttBasic> {
         if (att >> 8) & 0x10 != 0 {
             // TODO this is diferent from the implementation, double check the read_de and this code
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486df0
-            let _val1 = input.read_de()?;
-            let _val2 = input.read_de()?;
-            let _val3 = input.read_de()?;
-            Ok(Some(att))
+            let val1 = input.read_de()?;
+            let val2 = input.read_de()?;
+            let val3 = input.read_de()?;
+            Ok(StructMemberAttBasic::Var2 {
+                att,
+                val1,
+                val2,
+                val3,
+            })
         } else {
-            Ok(Some(att))
+            Ok(StructMemberAttBasic::Var1(att))
         }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum StructMemberAtt {
+    // Var0to7(Var1(0)) seems to indicate a "None" kind of value
+    Var0to7(StructMemberAttBasic),
+    Var9 {
+        val1: u32,
+        att0: Option<u64>,
+        att1: u64,
+        att2: u64,
+    },
+    VarAorC {
+        val1: u32,
+        att0: StructMemberAttBasic,
+    },
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum StructMemberAttBasic {
+    Var1(u64),
+    Var2 {
+        att: u64,
+        val1: u32,
+        val2: u32,
+        val3: u32,
+    },
+}
+
+impl StructMemberAtt {
+    pub fn str_type(self) -> Option<StringType> {
+        match self {
+            StructMemberAtt::VarAorC {
+                val1,
+                att0: StructMemberAttBasic::Var1(0xa),
+            } => Some(val1.into()),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, FromPrimitive, IntoPrimitive)]
+#[repr(u32)]
+pub enum StringType {
+    Utf8,
+    Utf16Le,
+    Utf32Le,
+    Utf16Be,
+    Utf32Be,
+    #[num_enum(catch_all)]
+    Other(u32),
+}
+
+impl StringType {
+    pub fn as_strlib(self) -> u32 {
+        self.into()
     }
 }

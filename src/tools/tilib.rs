@@ -1,23 +1,16 @@
-use idb_rs::id0::Compiler;
-use idb_rs::id0::Id0TilOrd;
+use idb_rs::id0::{Compiler, Id0TilOrd};
 use idb_rs::til::array::Array;
-use idb_rs::til::function::CallingConvention;
-use idb_rs::til::function::Function;
+use idb_rs::til::function::{CallingConvention, Function};
 use idb_rs::til::pointer::Pointer;
 use idb_rs::til::r#enum::Enum;
-use idb_rs::til::r#struct::Struct;
+use idb_rs::til::r#struct::{Struct, StructMemberAtt};
 use idb_rs::til::section::TILSection;
 use idb_rs::til::union::Union;
-use idb_rs::til::Basic;
-use idb_rs::til::TILTypeInfo;
-use idb_rs::til::Type;
-use idb_rs::til::TypeVariant;
-use idb_rs::til::Typedef;
+use idb_rs::til::{Basic, TILTypeInfo, Type, TypeVariant, Typedef};
 
 use std::borrow::Borrow;
 use std::fs::File;
-use std::io::BufReader;
-use std::io::Write;
+use std::io::{BufReader, Result, Write};
 use std::num::NonZeroU8;
 use std::path::PathBuf;
 
@@ -50,7 +43,7 @@ fn main() {
     }
 }
 
-fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Result<()> {
+fn print_til_section(mut fmt: impl Write, section: &TILSection) -> Result<()> {
     if let Some(dependency) = &section.dependency {
         let dep = core::str::from_utf8(dependency).unwrap();
         // TODO open those files? What todo with then?
@@ -82,7 +75,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> std::io::Resu
     Ok(())
 }
 
-fn print_header(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<()> {
+fn print_header(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     // the description of the file
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b710
     writeln!(
@@ -165,7 +158,7 @@ fn print_header(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<(
     Ok(())
 }
 
-fn print_section_flags(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<()> {
+fn print_section_flags(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     write!(fmt, "Flags      : {:04X}", section.flags.as_raw())?;
     if section.flags.is_zip() {
         write!(fmt, " compressed")?;
@@ -207,7 +200,7 @@ fn compiler_id_to_str(compiler: Compiler) -> &'static str {
     }
 }
 
-fn print_symbols(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<()> {
+fn print_symbols(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     for symbol in &section.symbols {
         print_til_type_len(fmt, section, None, &symbol.tinfo)?;
         let len = section.type_size_bytes(None, &symbol.tinfo).ok();
@@ -224,7 +217,7 @@ fn print_symbols(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<
     Ok(())
 }
 
-fn print_types(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<()> {
+fn print_types(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     writeln!(fmt, "(enumerated by ordinals)")?;
     print_types_by_ordinals(fmt, section)?;
     writeln!(fmt, "(enumerated by names)")?;
@@ -232,7 +225,7 @@ fn print_types(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<()
     Ok(())
 }
 
-fn print_types_by_ordinals(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<()> {
+fn print_types_by_ordinals(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     enum OrdType<'a> {
         Alias(&'a (u32, u32)),
         Type { idx: usize, ty: &'a TILTypeInfo },
@@ -283,7 +276,7 @@ fn print_types_by_ordinals(fmt: &mut impl Write, section: &TILSection) -> std::i
     Ok(())
 }
 
-fn print_types_by_name(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<()> {
+fn print_types_by_name(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     for (idx, symbol) in section.types.iter().enumerate() {
         if symbol.name.is_empty() {
             continue;
@@ -302,7 +295,7 @@ fn print_til_type_root(
     section: &TILSection,
     name: Option<&str>,
     til_type: &Type,
-) -> std::io::Result<()> {
+) -> Result<()> {
     match &til_type.type_variant {
         TypeVariant::Struct(_) | TypeVariant::Union(_) | TypeVariant::Enum(_) => {}
         _ => write!(fmt, "typedef ")?,
@@ -317,7 +310,7 @@ fn print_til_type(
     til_type: &Type,
     print_pointer_space: bool,
     print_type_prefix: bool,
-) -> std::io::Result<()> {
+) -> Result<()> {
     if til_type.is_volatile {
         write!(fmt, "volatile ")?;
     }
@@ -377,7 +370,7 @@ fn print_til_type_basic(
     _section: &TILSection,
     name: Option<&str>,
     til_basic: &Basic,
-) -> std::io::Result<()> {
+) -> Result<()> {
     const fn signed_name(is_signed: Option<bool>) -> &'static str {
         match is_signed {
             Some(true) | None => "",
@@ -432,7 +425,7 @@ fn print_til_type_pointer(
     pointer: &Pointer,
     print_pointer_space: bool,
     print_type_prefix: bool,
-) -> std::io::Result<()> {
+) -> Result<()> {
     if let TypeVariant::Function(inner_fun) = &pointer.typ.type_variant {
         // How to handle modifier here?
         print_til_type_function(fmt, section, name, inner_fun, true)?;
@@ -466,7 +459,7 @@ fn print_til_type_function(
     name: Option<&str>,
     til_type: &Function,
     is_pointer: bool,
-) -> std::io::Result<()> {
+) -> Result<()> {
     // return type
     print_til_type(fmt, section, None, &til_type.ret, false, true)?;
 
@@ -515,7 +508,7 @@ fn print_til_type_array(
     til_array: &Array,
     print_pointer_space: bool,
     print_type_prefix: bool,
-) -> std::io::Result<()> {
+) -> Result<()> {
     print_til_type(
         fmt,
         section,
@@ -540,7 +533,7 @@ fn print_til_type_typedef(
     section: &TILSection,
     name: Option<&str>,
     typedef: &Typedef,
-) -> std::io::Result<()> {
+) -> Result<()> {
     // only print prefix, if is root
     match typedef {
         idb_rs::til::Typedef::Ordinal(ord) => {
@@ -568,7 +561,7 @@ fn print_til_type_struct(
     section: &TILSection,
     name: Option<&str>,
     til_struct: &Struct,
-) -> std::io::Result<()> {
+) -> Result<()> {
     let name = name.unwrap_or("");
     write!(fmt, "struct ")?;
     if til_struct.is_unaligned {
@@ -596,6 +589,9 @@ fn print_til_type_struct(
             .as_ref()
             .map(|x| core::str::from_utf8(x).unwrap());
         print_til_type(fmt, section, name, &member.member_type, true, false)?;
+        if let Some(att) = &member.att {
+            print_til_struct_member_att(fmt, &member.member_type, att)?;
+        }
         write!(fmt, ";")?;
     }
     write!(fmt, "}}")
@@ -606,7 +602,7 @@ fn print_til_type_union(
     section: &TILSection,
     name: Option<&str>,
     til_union: &Union,
-) -> std::io::Result<()> {
+) -> Result<()> {
     let name = name.unwrap_or("");
     write!(fmt, "union ")?;
     if let Some(align) = til_union.alignment {
@@ -628,7 +624,7 @@ fn print_til_type_enum(
     section: &TILSection,
     name: Option<&str>,
     til_enum: &Enum,
-) -> std::io::Result<()> {
+) -> Result<()> {
     use idb_rs::til::r#enum::EnumFormat::*;
 
     let name = name.unwrap_or("");
@@ -681,12 +677,39 @@ fn print_til_type_enum(
     write!(fmt, "}}")
 }
 
+fn print_til_struct_member_att(
+    fmt: &mut impl Write,
+    tinfo: &Type,
+    att: &StructMemberAtt,
+) -> Result<()> {
+    match &tinfo.type_variant {
+        TypeVariant::Pointer(pointer) => match &pointer.typ.type_variant {
+            TypeVariant::Basic(Basic::Char) => print_til_struct_member_string_att(fmt, att)?,
+            _ => {}
+        },
+        TypeVariant::Array(array) => match &array.elem_type.type_variant {
+            TypeVariant::Basic(Basic::Char) => print_til_struct_member_string_att(fmt, att)?,
+            _ => {}
+        },
+        _ => {}
+    }
+    Ok(())
+}
+
+fn print_til_struct_member_string_att(fmt: &mut impl Write, att: &StructMemberAtt) -> Result<()> {
+    let Some(value) = att.str_type() else {
+        // todo att is unknown
+        return Ok(());
+    };
+    write!(fmt, " __strlit(0x{:08X})", value.as_strlib())
+}
+
 fn print_til_type_name(
     fmt: &mut impl Write,
     name: &[u8],
     tinfo: &Type,
     print_prefix: bool,
-) -> std::io::Result<()> {
+) -> Result<()> {
     let name = String::from_utf8_lossy(name);
     let prefix = match &tinfo.type_variant {
         TypeVariant::Basic(_)
@@ -707,7 +730,7 @@ fn print_til_type_len(
     section: &TILSection,
     idx: Option<usize>,
     tinfo: &Type,
-) -> std::io::Result<()> {
+) -> Result<()> {
     if let TypeVariant::Function(_function) = &tinfo.type_variant {
         write!(fmt, "FFFFFFFF")?;
     } else {
@@ -738,7 +761,7 @@ fn calling_convention_to_str(cc: CallingConvention) -> &'static str {
     }
 }
 
-fn print_macros(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<()> {
+fn print_macros(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     let macro_iter = section.macros.iter().flat_map(Vec::as_slice);
     for macro_entry in macro_iter {
         fmt.write_all(&macro_entry.name)?;
@@ -766,7 +789,7 @@ fn print_macros(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<(
     Ok(())
 }
 
-fn print_types_total(fmt: &mut impl Write, section: &TILSection) -> std::io::Result<()> {
+fn print_types_total(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     let macros_num = section
         .macros
         .as_ref()
