@@ -535,7 +535,9 @@ impl TILSection {
                     ));
                 }
                 let inner_type = self.get_type_by_idx(inner_type_idx);
-                self.inner_type_size_bytes(&inner_type.tinfo, map)?
+                let result = self.inner_type_size_bytes(&inner_type.tinfo, map)?;
+                map.remove(&inner_type_idx);
+                result
             }
             TypeVariant::Typedef(Typedef::Ordinal(ord)) => {
                 let inner_type_idx = self
@@ -547,7 +549,9 @@ impl TILSection {
                     ));
                 }
                 let inner_type = self.get_type_by_idx(inner_type_idx);
-                self.inner_type_size_bytes(&inner_type.tinfo, map)?
+                let result = self.inner_type_size_bytes(&inner_type.tinfo, map)?;
+                map.remove(&inner_type_idx);
+                result
             }
             TypeVariant::StructRef(ref_type)
             | TypeVariant::UnionRef(ref_type)
