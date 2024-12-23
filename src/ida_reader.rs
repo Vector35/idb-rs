@@ -232,47 +232,30 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
     }
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce40
-    fn read_ext_att(&mut self) -> Result<Option<u64>> {
-        let Some(byte0) = self.peek_u8()? else {
-            return Ok(None);
-        };
-        if byte0 == 0 {
-            return Ok(None);
-        }
-        self.consume(1);
-
-        let start_value: u16 = if byte0 & 0x80 != 0 {
-            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cec0
-            let byte1 = self.read_u8()?;
-            // TODO is this an error or expect possible value?
-            ensure!(byte1 != 0);
-            let start_value = ((byte1 as u16) << 7 | (byte0 as u16) & 0x7f) - 1;
-
-            match start_value {
-                0x400 => return Ok(Some(-1i64 as u64)),
-                0x200 => return Ok(Some(-1i32 as u64)),
-                other => other,
-            }
-        } else {
-            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce60
-            (byte0 - 1).into()
+    fn read_ext_att(&mut self) -> Result<u64> {
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cec0
+        let start_value = match self.read_dt()? {
+            0x400 => return Ok(-1i64 as u64),
+            0x200 => return Ok(-1i32 as u64),
+            other => other,
         };
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce6f
         let mut acc = 0;
         for bit in 0..8 {
+            let byte = bit * 8;
             if (start_value >> bit) & 1 != 0 {
                 let value = self.read_u8()?;
                 // TODO is this an error or expect possible value?
                 ensure!(value != 0);
-                acc |= (value as u64) << (bit << 3);
+                acc |= (value as u64) << byte;
             }
         }
 
         if start_value & 0x100 != 0 {
             acc = !acc;
         }
-        Ok(Some(acc))
+        Ok(acc)
     }
 }
 impl<R: BufRead> IdaGenericBufUnpack for R {}
@@ -445,7 +428,7 @@ pub trait IdaGenericUnpack: Read {
                 value as u16 & 0x7F | inter << 7
             }
             //SEG = 1
-            value => value.into(),
+            value @ ..=0x7F => value.into(),
         };
         Ok(value - 1)
     }
