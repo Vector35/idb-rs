@@ -498,7 +498,7 @@ fn print_til_type_function(
         }
         write!(fmt, "...")?;
     }
-    write!(fmt, " )")
+    write!(fmt, ")")
 }
 
 fn print_til_type_array(

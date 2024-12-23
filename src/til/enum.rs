@@ -9,7 +9,7 @@ use anyhow::{anyhow, ensure};
 pub struct Enum {
     pub output_format: EnumFormat,
     pub members: Vec<(Option<Vec<u8>>, u64)>,
-    pub groups: Vec<u16>,
+    pub groups: Option<Vec<u16>>,
     pub storage_size: Option<NonZeroU8>,
     // TODO parse type attributes
     //others: StructMemberRaw,
@@ -37,7 +37,7 @@ impl Enum {
 #[derive(Clone, Debug)]
 pub(crate) struct EnumRaw {
     output_format: EnumFormat,
-    groups: Vec<u16>,
+    groups: Option<Vec<u16>>,
     members: Vec<u64>,
     storage_size: Option<NonZeroU8>,
 }
@@ -94,24 +94,31 @@ impl EnumRaw {
         };
 
         let is_64 = (taenum_bits.0 & TAENUM_64BIT) != 0;
-        let mut cur: u64 = 0;
-        let mut groups = vec![];
+        let mut low_acc: u32 = 0;
+        let mut high_acc: u32 = 0;
+        let mut group_acc = 0;
+        let mut groups = (bte & BTE_BITFIELD != 0).then_some(vec![]);
         let members = (0..member_num)
             .map(|_member_idx| {
-                let mut step: u64 = input.read_de()?.into();
+                if let Some(groups) = &mut groups {
+                    // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452527 deserialize_enum
+                    if group_acc == 0 {
+                        group_acc = input.read_dt()?;
+                        groups.push(group_acc);
+                    }
+                    group_acc -= 1;
+                }
+                // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45242f deserialize_enum
+                // NOTE this is originaly i32, but wrapping_add a u32/i32 have the same result
+                low_acc = low_acc.wrapping_add(input.read_de()?);
                 if is_64 {
-                    let hi: u64 = input.read_de()?.into();
-                    step |= hi << 32;
+                    high_acc = high_acc.wrapping_add(input.read_de()?);
                 }
-                if bte & BTE_BITFIELD != 0 {
-                    let group_size = input.read_dt()?;
-                    groups.push(group_size);
-                }
-                // TODO check is this is wrapping by default
-                cur = cur.wrapping_add(step & mask);
-                Ok(cur)
+                // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452472 deserialize_enum
+                Ok((((high_acc as u64) << 32) | low_acc as u64) & mask)
             })
             .collect::<anyhow::Result<_>>()?;
+
         Ok(TypeVariantRaw::Enum(EnumRaw {
             output_format,
             members,
