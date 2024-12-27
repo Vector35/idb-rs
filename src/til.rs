@@ -259,8 +259,6 @@ impl TypeRaw {
             ),
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480369
-
-            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480369
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_TYPEDEF) => Typedef::read(input)
                 .context("Type::Typedef")
                 .map(TypeVariantRaw::Typedef)?,

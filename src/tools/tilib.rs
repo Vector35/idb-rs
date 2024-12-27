@@ -451,7 +451,13 @@ fn print_til_type_pointer(
             Some(idb_rs::til::pointer::PointerModifier::Ptr64) => "__ptr64 ",
             Some(idb_rs::til::pointer::PointerModifier::Restricted) => "__restricted ",
         };
-        write!(fmt, "*{modifier}{}", name.unwrap_or(""))?;
+        write!(fmt, "*{modifier}")?;
+        if let Some((ty, value)) = &pointer.shifted {
+            write!(fmt, "__shifted(")?;
+            print_til_type_only(fmt, section, ty)?;
+            write!(fmt, ",{value:#X}) ")?;
+        }
+        write!(fmt, "{}", name.unwrap_or(""))?;
     }
     Ok(())
 }
@@ -726,6 +732,20 @@ fn print_til_type_name(
         TypeVariant::EnumRef(_) | TypeVariant::Enum(_) => "enum ",
     };
     write!(fmt, "{}{name}", if print_prefix { prefix } else { "" })
+}
+
+fn print_til_type_only(fmt: &mut impl Write, section: &TILSection, tinfo: &Type) -> Result<()> {
+    match &tinfo.type_variant {
+        TypeVariant::Typedef(Typedef::Name(name)) => {
+            write!(fmt, "{}", String::from_utf8_lossy(name))?;
+        }
+        TypeVariant::Typedef(Typedef::Ordinal(ord)) => {
+            let ty = section.get_ord(Id0TilOrd { ord: (*ord).into() }).unwrap();
+            write!(fmt, "{}", String::from_utf8_lossy(&ty.name))?;
+        }
+        _ => {}
+    };
+    Ok(())
 }
 
 fn print_til_type_len(
