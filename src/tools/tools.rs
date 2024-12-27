@@ -37,6 +37,8 @@ mod dump_dirtree_bookmarks_structplace;
 use dump_dirtree_bookmarks_structplace::dump_dirtree_bookmarks_structplace;
 mod dump_dirtree_bookmarks_tiplace;
 use dump_dirtree_bookmarks_tiplace::dump_dirtree_bookmarks_tiplace;
+mod tilib;
+use tilib::tilib_print;
 
 use idb_rs::{id0::ID0Section, IDBParser};
 
@@ -106,6 +108,8 @@ enum Operation {
     DumpDirtreeBookmarksIdaplace,
     DumpDirtreeBookmarksStructplace,
     DumpDirtreeBookmarksTiplace,
+    /// Print all til types from file and it's information
+    PrintTilib,
 }
 
 ///// Split the IDB file into it's decompressed sectors. Allow IDB and I64 files.
@@ -175,5 +179,6 @@ fn main() -> Result<()> {
         Operation::DumpDirtreeBookmarksIdaplace => dump_dirtree_bookmarks_idaplace(&args),
         Operation::DumpDirtreeBookmarksStructplace => dump_dirtree_bookmarks_structplace(&args),
         Operation::DumpDirtreeBookmarksTiplace => dump_dirtree_bookmarks_tiplace(&args),
+        Operation::PrintTilib => tilib_print(&args),
     }
 }

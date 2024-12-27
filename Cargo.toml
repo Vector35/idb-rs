@@ -17,8 +17,3 @@ num_enum = "0.7.3"
 [[bin]]
 name = "idb-tools"
 path = "src/tools/tools.rs"
-
-
-[[bin]]
-name = "tilib"
-path = "src/tools/tilib.rs"
