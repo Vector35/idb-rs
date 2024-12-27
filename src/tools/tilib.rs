@@ -7,40 +7,33 @@ use idb_rs::til::r#struct::{Struct, StructMemberAtt};
 use idb_rs::til::section::TILSection;
 use idb_rs::til::union::Union;
 use idb_rs::til::{Basic, TILTypeInfo, Type, TypeVariant, Typedef};
+use idb_rs::IDBParser;
 
 use std::borrow::Borrow;
 use std::fs::File;
 use std::io::{BufReader, Result, Write};
 use std::num::NonZeroU8;
-use std::path::PathBuf;
 
-use clap::{Parser, Subcommand};
+use crate::{Args, FileType};
 
-/// Parse IDA files and output it's data
-#[derive(Clone, Debug, Parser)]
-struct Args {
-    #[command(subcommand)]
-    operation: Operation,
-    /// til-file
-    #[arg(short, long)]
-    input: PathBuf,
-}
-
-/// File type to parse
-#[derive(Clone, Debug, Subcommand)]
-enum Operation {
-    /// show til-file contents
-    PrintTil,
-}
-
-fn main() {
-    let args = Args::parse();
-
-    let file = BufReader::new(File::open(&args.input).unwrap());
-    let section = TILSection::parse(file).unwrap();
-    match &args.operation {
-        Operation::PrintTil => print_til_section(std::io::stdout(), &section).unwrap(),
+pub fn tilib_print(args: &Args) -> anyhow::Result<()> {
+    // parse the id0 sector/file
+    let input = BufReader::new(File::open(&args.input)?);
+    match args.input_type() {
+        FileType::Til => {
+            let section = TILSection::parse(input)?;
+            print_til_section(std::io::stdout(), &section)?;
+        }
+        FileType::Idb => {
+            let mut parser = IDBParser::new(input)?;
+            let til_offset = parser
+                .til_section_offset()
+                .ok_or_else(|| anyhow::anyhow!("IDB file don't contains a TIL sector"))?;
+            let section = parser.read_til_section(til_offset)?;
+            print_til_section(std::io::stdout(), &section)?;
+        }
     }
+    Ok(())
 }
 
 fn print_til_section(mut fmt: impl Write, section: &TILSection) -> Result<()> {
