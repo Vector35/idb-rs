@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, TAH};
@@ -6,6 +8,7 @@ use crate::til::{Type, TypeRaw, TAH};
 pub struct Pointer {
     pub closure: PointerType,
     pub modifier: Option<PointerModifier>,
+    pub shifted: Option<(Box<Type>, u32)>,
     pub typ: Box<Type>,
 }
 
@@ -14,12 +17,24 @@ impl Pointer {
         til: &TILSectionHeader,
         raw: PointerRaw,
         fields: &mut impl Iterator<Item = Vec<u8>>,
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Self> {
+        let shifted = raw
+            .shifted
+            .map(|(t, v)| -> Result<_> {
+                Ok((
+                    // TODO if this type allow non typedef, this may consume fields
+                    Type::new(til, *t, &mut vec![].into_iter()).map(Box::new)?,
+                    v,
+                ))
+            })
+            .transpose()?;
+        let typ = Type::new(til, *raw.typ, fields).map(Box::new)?;
         Ok(Self {
             // TODO forward fields to closure?
             closure: PointerType::new(til, raw.closure)?,
             modifier: raw.modifier,
-            typ: Type::new(til, *raw.typ, fields).map(Box::new)?,
+            shifted,
+            typ,
         })
     }
 }
@@ -34,7 +49,7 @@ pub enum PointerType {
 }
 
 impl PointerType {
-    fn new(til: &TILSectionHeader, raw: PointerTypeRaw) -> anyhow::Result<Self> {
+    fn new(til: &TILSectionHeader, raw: PointerTypeRaw) -> Result<Self> {
         match raw {
             PointerTypeRaw::Closure(c) => {
                 // TODO subtype get the fields?
@@ -62,6 +77,7 @@ pub enum PointerModifier {
 pub(crate) struct PointerRaw {
     pub closure: PointerTypeRaw,
     pub modifier: Option<PointerModifier>,
+    pub shifted: Option<(Box<TypeRaw>, u32)>,
     pub typ: Box<TypeRaw>,
 }
 
@@ -70,7 +86,7 @@ impl PointerRaw {
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
         metadata: u8,
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Self> {
         use crate::til::flag::tattr_ptr::*;
         use crate::til::flag::tf_ptr::*;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478d67
@@ -88,11 +104,14 @@ impl PointerRaw {
         let tah = TAH::read(&mut *input)?;
         let typ = TypeRaw::read(&mut *input, header)?;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6
-        if tah.0 .0 & TAPTR_SHIFTED != 0 {
-            // TODO __shifted?
-            let _typ = TypeRaw::read(&mut *input, header)?;
-            let _value = input.read_de()?;
-        }
+        let shifted = (tah.0 .0 & TAPTR_SHIFTED != 0)
+            .then(|| -> Result<_> {
+                // TODO allow typedef only?
+                let typ = TypeRaw::read(&mut *input, header)?;
+                let value = input.read_de()?;
+                Ok((Box::new(typ), value))
+            })
+            .transpose()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6 print_til_type_att
         let modifier = match tah.0 .0 & (TAPTR_RESTRICT | TAPTR_PTR64 | TAPTR_PTR32) {
@@ -112,6 +131,7 @@ impl PointerRaw {
         Ok(Self {
             closure,
             modifier,
+            shifted,
             typ: Box::new(typ),
         })
     }
@@ -128,10 +148,7 @@ pub(crate) enum PointerTypeRaw {
 }
 
 impl PointerTypeRaw {
-    fn read(
-        input: &mut impl IdaGenericBufUnpack,
-        header: &TILSectionHeader,
-    ) -> anyhow::Result<Self> {
+    fn read(input: &mut impl IdaGenericBufUnpack, header: &TILSectionHeader) -> Result<Self> {
         let closure_type = input.read_u8()?;
         if closure_type == 0xFF {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473b5a
