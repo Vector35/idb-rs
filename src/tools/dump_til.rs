@@ -32,7 +32,9 @@ pub fn dump_til(args: &Args) -> Result<()> {
         flags: _,
         dependency,
         compiler_id,
+        cc,
         cm,
+        cn,
         def_align,
         type_ordinal_alias,
         size_int,
@@ -52,7 +54,9 @@ pub fn dump_til(args: &Args) -> Result<()> {
         println!("dependency: {}", String::from_utf8_lossy(dependency));
     }
     println!("id: {compiler_id:?}");
-    println!("cm: {cm}");
+    println!("cc: {cc:?}");
+    println!("cm: {cm:?}");
+    println!("cn: {cn:?}");
     println!("def_align: {}", def_align.map(|x| x.get()).unwrap_or(0));
     println!("size_int: {size_int}");
     println!("size_bool: {size_bool}");

@@ -110,26 +110,29 @@ fn print_header(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
 
     // alignement and convention stuff
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b7ed
-    if let Some((near, far)) = section.sizeof_near_far() {
-        write!(fmt, "sizeof(near*) = {near} sizeof(far*) = {far}",)?;
+    if let Some(cn) = section.cn {
+        write!(
+            fmt,
+            "sizeof(near*) = {} sizeof(far*) = {}",
+            cn.near_bytes(),
+            cn.far_bytes()
+        )?;
     }
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40ba3b
-    if let Some((is_code_near, is_data_near)) = section.is_code_data_near() {
-        if section.sizeof_near_far().is_some() {
+    if let Some(cm) = section.cm {
+        if section.cn.is_some() {
             write!(fmt, " ")?;
         }
-        let code = if is_code_near { "near" } else { "far" };
-        let data = if is_data_near { "near" } else { "far" };
+        let code = if cm.is_code_near() { "near" } else { "far" };
+        let data = if cm.is_data_near() { "near" } else { "far" };
         write!(fmt, "{code} code, {data} data",)?;
     }
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b860
-    if section.cm & 0xc != 0 {
-        if let Some(cc) = section.calling_convention() {
-            if section.sizeof_near_far().is_some() || section.is_code_data_near().is_some() {
-                write!(fmt, ",")?;
-            }
-            writeln!(fmt, "{}", calling_convention_to_str(cc))?;
+    if let Some(cc) = section.cc {
+        if section.cm.is_some() || section.cn.is_some() {
+            write!(fmt, ",")?;
         }
+        writeln!(fmt, "{}", calling_convention_to_str(cc))?;
     }
     writeln!(fmt)?;
 
@@ -465,7 +468,7 @@ fn print_til_type_function(
 
     // print name and calling convention, except for Ellipsis, just put the "..." as last param
     let name = name.unwrap_or("");
-    let cc = (section.calling_convention() != Some(til_type.calling_convention)
+    let cc = (section.cc != Some(til_type.calling_convention)
         && til_type.calling_convention != CallingConvention::Ellipsis)
         .then(|| calling_convention_to_str(til_type.calling_convention));
     match (is_pointer, cc) {

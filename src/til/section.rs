@@ -5,10 +5,11 @@ use crate::IDBSectionCompression;
 use anyhow::{anyhow, ensure, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::fmt::Debug;
 use std::io::{BufReader, Read, Write};
 use std::num::NonZeroU8;
 
-use super::function::CallingConvention;
+use super::function::{CCModel, CCPtrSize, CallingConvention};
 use super::r#enum::Enum;
 use super::r#struct::Struct;
 use super::union::Union;
@@ -28,8 +29,14 @@ pub struct TILSection {
     pub dependency: Option<Vec<u8>>,
     /// the compiler used to generated types
     pub compiler_id: Compiler,
-    /// information about the target compiler
-    pub cm: u8,
+    /// default calling convention
+    pub cc: Option<CallingConvention>,
+    /// default calling ptr size
+    pub cn: Option<CCPtrSize>,
+    /// default calling convention model
+    pub cm: Option<CCModel>,
+    //pub cc: CallingConvention,
+    //pub cm: CCPtrSize,
     pub def_align: Option<NonZeroU8>,
     pub symbols: Vec<TILTypeInfo>,
     // TODO create a struct for ordinal aliases
@@ -129,13 +136,19 @@ impl TILSection {
         let _ali = header.flags.has_type_aliases();
         let _stm = header.flags.has_extra_stream();
 
+        let cc = CallingConvention::from_cm_raw(header.cm);
+        let cn = CCPtrSize::from_cm_raw(header.cm, header.size_int);
+        let cm = CCModel::from_cm_raw(header.cm);
+
         Ok(TILSection {
             format: header.format,
             title: header.title,
             flags: header.flags,
             dependency: header.description.is_empty().then_some(header.description),
             compiler_id: Compiler::from_value(header.compiler_id),
-            cm: header.cm,
+            cc,
+            cn,
+            cm,
             def_align: header.def_align,
             size_long_double: header.size_long_double,
             is_universal: header.flags.is_universal(),
@@ -435,58 +448,11 @@ impl TILSection {
             .unwrap_or(8.try_into().unwrap())
     }
 
-    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b7ed
-    pub const fn sizeof_near_far(&self) -> Option<(NonZeroU8, NonZeroU8)> {
-        use flag::cm::cm_ptr::*;
-        Some(match (self.size_int.get(), self.cm & 3) {
-            (_, 4..) => unreachable!(),
-            // unknown
-            (_, CM_UNKNOWN) => return None,
-            // if sizeof(int)<=2: near 1 byte, far 2 bytes
-            (..=2, CM_N8_F16) => unsafe {
-                (NonZeroU8::new_unchecked(1), NonZeroU8::new_unchecked(2))
-            },
-            // near 2 bytes, far 4 bytes
-            (_, CM_N16_F32) => unsafe {
-                (NonZeroU8::new_unchecked(2), NonZeroU8::new_unchecked(4))
-            },
-            // near 4 bytes, far 6 bytes
-            (_, CM_N32_F48) => unsafe {
-                (NonZeroU8::new_unchecked(4), NonZeroU8::new_unchecked(6))
-            },
-            // if sizeof(int)>2: near 8 bytes, far 8 bytes
-            (3.., CM_N64) => unsafe { (NonZeroU8::new_unchecked(8), NonZeroU8::new_unchecked(8)) },
-        })
-    }
-
-    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40ba3b
-    pub const fn is_code_data_near(&self) -> Option<(bool, bool)> {
-        use flag::cm::cm_ptr::*;
-        use flag::cm::m::*;
-        Some(match (self.cm & CM_M_MASK, self.cm & CM_MASK) {
-            // small:   code=near, data=near (or unknown if CM_UNKNOWN)
-            (CM_M_NN, CM_UNKNOWN) => return None,
-            (CM_M_NN, _) => (true, true),
-            // large:   code=far, data=far
-            (CM_M_FF, _) => (false, false),
-            // compact: code=near, data=far
-            (CM_M_NF, _) => (true, false),
-            // medium:  code=far, data=near
-            (CM_M_FN, _) => (false, true),
-            _ => unreachable!(),
-        })
-    }
-
-    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b860
-    pub fn calling_convention(&self) -> Option<CallingConvention> {
-        CallingConvention::from_cm_raw(self.cm)
-    }
-
     // TODO check this impl in InnerRef
-    pub fn addr_size(&self) -> u64 {
-        self.sizeof_near_far()
-            .map(|(near, _far)| near.get().into())
-            .unwrap_or(4)
+    pub fn addr_size(&self) -> NonZeroU8 {
+        self.cn
+            .map(CCPtrSize::near_bytes)
+            .unwrap_or(NonZeroU8::new(4).unwrap())
     }
 
     // TODO stub implementation
@@ -516,7 +482,7 @@ impl TILSection {
             }
             TypeVariant::Basic(Basic::Float { bytes }) => bytes.get().into(),
             // TODO is pointer always near? Do pointer size default to 4?
-            TypeVariant::Pointer(_) => self.addr_size(),
+            TypeVariant::Pointer(_) => self.addr_size().get().into(),
             TypeVariant::Function(_) => 0, // function type dont have a size, only a pointer to it
             TypeVariant::Array(array) => {
                 let element_len = self.inner_type_size_bytes(&array.elem_type, map)?;

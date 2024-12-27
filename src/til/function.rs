@@ -1,7 +1,9 @@
+use std::num::NonZeroU8;
+
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::section::TILSectionHeader;
 use crate::til::{Basic, Type, TypeRaw, TAH};
-use anyhow::anyhow;
+use anyhow::{anyhow, ensure};
 
 use super::TypeVariantRaw;
 
@@ -11,6 +13,15 @@ pub struct Function {
     pub ret: Box<Type>,
     pub args: Vec<(Option<Vec<u8>>, Type, Option<ArgLoc>)>,
     pub retloc: Option<ArgLoc>,
+
+    pub is_noret: bool,
+    pub is_pure: bool,
+    pub is_high: bool,
+    pub is_static: bool,
+    pub is_virtual: bool,
+    pub is_const: bool,
+    pub is_constructor: bool,
+    pub is_destructor: bool,
 }
 impl Function {
     pub(crate) fn new(
@@ -30,6 +41,14 @@ impl Function {
             ret: Box::new(ret),
             args,
             retloc: value.retloc,
+            is_noret: value.is_noret,
+            is_pure: value.is_pure,
+            is_high: value.is_high,
+            is_static: value.is_static,
+            is_virtual: value.is_virtual,
+            is_const: value.is_const,
+            is_constructor: value.is_constructor,
+            is_destructor: value.is_destructor,
         })
     }
 }
@@ -40,6 +59,15 @@ pub(crate) struct FunctionRaw {
     pub args: Vec<(TypeRaw, Option<ArgLoc>)>,
     pub retloc: Option<ArgLoc>,
     pub calling_convention: CallingConvention,
+
+    pub is_noret: bool,
+    pub is_pure: bool,
+    pub is_high: bool,
+    pub is_static: bool,
+    pub is_virtual: bool,
+    pub is_const: bool,
+    pub is_constructor: bool,
+    pub is_destructor: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -79,6 +107,7 @@ pub struct ArgLocDist {
 
 impl FunctionRaw {
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473190 print_til_type
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47c8f0
     pub(crate) fn read(
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
@@ -93,9 +122,34 @@ impl FunctionRaw {
         //}
 
         // TODO InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473bf1 print_til_type
-        let (cc, _flags, _spoiled) = read_cc(&mut *input)?;
+        let (cc, mut flags, _spoiled) = read_cc(&mut *input)?;
         let cc = CallingConvention::from_cm_raw(cc)
             .ok_or_else(|| anyhow!("Invalid Function Calling Convention"))?;
+
+        // consume the flags and verify if a unknown value is present
+        // TODO find those in flags
+        let _have_spoiled = flags & 0x0001 != 0;
+        flags &= !1;
+        let is_noret = flags & 0x0002 != 0;
+        flags &= !0x0002;
+        let is_pure = flags & 0x0004 != 0;
+        flags &= !0x0004;
+        let is_high = flags & 0x0008 != 0;
+        flags &= !0x0008;
+        let is_static = flags & 0x0010 != 0;
+        flags &= !0x0010;
+        let is_virtual = flags & 0x0020 != 0;
+        flags &= !0x0020;
+        // TODO find this flag meaning
+        //let is_TODO = flags & 0x0200 != 0;
+        flags &= !0x0200;
+        let is_const = flags & 0x00400 != 0;
+        flags &= !0x0400;
+        let is_constructor = flags & 0x0800 != 0;
+        flags &= !0x0800;
+        let is_destructor = flags & 0x1000 != 0;
+        flags &= !0x0100;
+        ensure!(flags == 0, "unknown function attrs({flags:04X})");
 
         let _tah = TAH::read(&mut *input)?;
 
@@ -105,17 +159,28 @@ impl FunctionRaw {
         let have_retloc =
             is_special_pe && !matches!(&ret.variant, TypeVariantRaw::Basic(Basic::Void));
         let retloc = have_retloc.then(|| ArgLoc::read(&mut *input)).transpose()?;
+
+        let mut result = Self {
+            calling_convention: cc,
+            ret: Box::new(ret),
+            args: vec![],
+            retloc,
+
+            is_noret,
+            is_pure,
+            is_high,
+            is_static,
+            is_virtual,
+            is_const,
+            is_constructor,
+            is_destructor,
+        };
         if matches!(cc, CallingConvention::Voidarg) {
-            return Ok(Self {
-                calling_convention: cc,
-                ret: Box::new(ret),
-                args: vec![],
-                retloc,
-            });
+            return Ok(result);
         }
 
         let n = input.read_dt()?;
-        let args = (0..n)
+        result.args = (0..n)
             .map(|_| -> anyhow::Result<_> {
                 let tmp = input.peek_u8()?;
                 if tmp == Some(0xFF) {
@@ -132,12 +197,7 @@ impl FunctionRaw {
             })
             .collect::<anyhow::Result<_, _>>()?;
 
-        Ok(Self {
-            calling_convention: cc,
-            ret: Box::new(ret),
-            args,
-            retloc,
-        })
+        Ok(result)
     }
 }
 
@@ -237,6 +297,7 @@ pub enum CallingConvention {
 }
 
 impl CallingConvention {
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b860
     pub(crate) fn from_cm_raw(cm: u8) -> Option<Self> {
         use super::flag::cm::cc::*;
 
@@ -263,24 +324,122 @@ impl CallingConvention {
         })
     }
 
-    pub fn is_special_pe(&self) -> bool {
+    pub const fn is_special_pe(self) -> bool {
         matches!(self, Self::Uservars | Self::Userpurge | Self::Usercall)
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CCPtrSize {
+    /// near 1 byte, far 2 bytes
+    N8F16,
+    /// near 2 bytes, far 4 bytes
+    N16F32,
+    /// near 4 bytes, far 6 bytes
+    N32F48,
+    /// near 8 bytes, far 8 bytes
+    N64,
+}
+
+impl CCPtrSize {
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b7ed
+    pub(crate) fn from_cm_raw(cm: u8, size_int: NonZeroU8) -> Option<Self> {
+        use super::flag::cm::cm_ptr::*;
+
+        Some(match cm & CM_MASK {
+            CM_UNKNOWN => return None,
+            CM_N8_F16 if size_int.get() <= 2 => Self::N8F16,
+            CM_N64 /* if size_int.get() > 2 */ => Self::N64,
+            CM_N16_F32 => Self::N16F32,
+            CM_N32_F48 => Self::N32F48,
+            _ => unreachable!(),
+        })
+    }
+
+    pub const fn near_bytes(self) -> NonZeroU8 {
+        match self {
+            CCPtrSize::N8F16 => unsafe { NonZeroU8::new_unchecked(1) },
+            CCPtrSize::N16F32 => unsafe { NonZeroU8::new_unchecked(2) },
+            CCPtrSize::N32F48 => unsafe { NonZeroU8::new_unchecked(4) },
+            CCPtrSize::N64 => unsafe { NonZeroU8::new_unchecked(8) },
+        }
+    }
+
+    pub const fn far_bytes(self) -> NonZeroU8 {
+        match self {
+            CCPtrSize::N8F16 => unsafe { NonZeroU8::new_unchecked(2) },
+            CCPtrSize::N16F32 => unsafe { NonZeroU8::new_unchecked(4) },
+            CCPtrSize::N32F48 => unsafe { NonZeroU8::new_unchecked(6) },
+            CCPtrSize::N64 => unsafe { NonZeroU8::new_unchecked(8) },
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CCModel {
+    /// small:   code=near, data=near
+    NN,
+    /// large:   code=far, data=far
+    FF,
+    /// compact: code=near, data=far
+    NF,
+    /// medium:  code=far, data=near
+    FN,
+}
+
+impl CCModel {
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40ba3b
+    pub(crate) fn from_cm_raw(cm: u8) -> Option<Self> {
+        use super::flag::cm::cm_ptr::*;
+        use super::flag::cm::m::*;
+        Some(match (cm & CM_M_MASK, cm & CM_MASK) {
+            // small:   code=near, data=near (or unknown if CM_UNKNOWN)
+            (CM_M_NN, CM_UNKNOWN) => return None,
+            (CM_M_NN, _) => Self::NN,
+            (CM_M_FF, _) => Self::FF,
+            (CM_M_NF, _) => Self::NF,
+            (CM_M_FN, _) => Self::FN,
+            _ => unreachable!(),
+        })
+    }
+
+    pub const fn is_code_near(self) -> bool {
+        match self {
+            CCModel::NN => true,
+            CCModel::FF => false,
+            CCModel::NF => true,
+            CCModel::FN => false,
+        }
+    }
+    pub const fn is_code_far(self) -> bool {
+        !self.is_code_near()
+    }
+
+    pub const fn is_data_near(self) -> bool {
+        match self {
+            CCModel::NN => true,
+            CCModel::FF => false,
+            CCModel::NF => false,
+            CCModel::FN => true,
+        }
+    }
+    pub const fn is_data_far(self) -> bool {
+        !self.is_data_near()
+    }
+}
+
+// InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x476e60
 /// [BT_FUNC](https://hex-rays.com/products/ida/support/sdkdoc/group__tf__func.html#ga7b7fee21f21237beb6d91e854410e0fa)
-fn read_cc(
-    input: &mut impl IdaGenericBufUnpack,
-) -> anyhow::Result<(u8, u16, Option<Vec<(u16, u8)>>)> {
+fn read_cc(input: &mut impl IdaGenericBufUnpack) -> anyhow::Result<(u8, u16, Vec<(u16, u8)>)> {
     let mut cc = input.read_u8()?;
     // TODO find the flag for that
     if cc & 0xF0 != 0xA0 {
-        return Ok((cc, 0, None));
+        return Ok((cc, 0, vec![]));
     }
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46de7c
     let pbyte2 = input.peek_u8()?;
     if cc & 0xF != 0xF || matches!(pbyte2, Some(x) if x & 0x80 == 0) {
-        let mut spoiled = None;
+        let mut spoiled = vec![];
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46df47
         let mut flags = 0;
         loop {
@@ -290,8 +449,9 @@ fn read_cc(
                 flags |= (byte2 & 0x1F) << 1;
             } else {
                 let nspoiled = cc as u16 & 0xF;
+                flags |= 1;
                 // TODO make sure spoiled is always None?
-                read_cc_spoiled(input, nspoiled, spoiled.get_or_insert_default())?;
+                read_cc_spoiled(input, nspoiled, &mut spoiled)?;
             }
 
             cc = input.read_u8()?;
@@ -309,7 +469,8 @@ fn read_cc(
             read_cc_spoiled(input, nspoiled, &mut spoiled)?;
         }
         let cc = input.read_u8()?;
-        Ok((cc, (flag & 0x1E3F) as u16, Some(spoiled)))
+        // TODO is this `&` realy necessary? Should we allow invalid flags?
+        Ok((cc, (flag & 0x1E3F) as u16, spoiled))
     }
 }
 
@@ -318,6 +479,7 @@ fn read_cc_spoiled(
     nspoiled: u16,
     spoiled: &mut Vec<(u16, u8)>,
 ) -> anyhow::Result<()> {
+    spoiled.reserve(nspoiled.into());
     for _i in 0..nspoiled {
         let b: u8 = input.read_u8()?;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c23d

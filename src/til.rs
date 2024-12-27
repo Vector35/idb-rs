@@ -249,6 +249,7 @@ impl TypeRaw {
                 .context("Type::Array")
                 .map(TypeVariantRaw::Array)?,
 
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48055d
             (flag::tf_func::BT_FUNC, _) => FunctionRaw::read(input, til, type_flags)
                 .context("Type::Function")
                 .map(TypeVariantRaw::Function)?,
