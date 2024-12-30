@@ -3,13 +3,13 @@ use std::num::NonZeroU8;
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::section::TILSectionHeader;
 use crate::til::{Basic, Type, TypeRaw, TAH};
-use anyhow::{anyhow, ensure};
+use anyhow::{anyhow, ensure, Result};
 
 use super::TypeVariantRaw;
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    pub calling_convention: CallingConvention,
+    pub calling_convention: Option<CallingConvention>,
     pub ret: Box<Type>,
     pub args: Vec<(Option<Vec<u8>>, Type, Option<ArgLoc>)>,
     pub retloc: Option<ArgLoc>,
@@ -24,12 +24,13 @@ pub struct Function {
     pub is_constructor: bool,
     pub is_destructor: bool,
 }
+
 impl Function {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: FunctionRaw,
         fields: &mut impl Iterator<Item = Vec<u8>>,
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Self> {
         let ret = Type::new(til, *value.ret, &mut *fields)?;
         let mut args = Vec::with_capacity(value.args.len());
         for (arg_type, arg_loc) in value.args {
@@ -60,7 +61,7 @@ pub(crate) struct FunctionRaw {
     pub ret: Box<TypeRaw>,
     pub args: Vec<(TypeRaw, Option<ArgLoc>)>,
     pub retloc: Option<ArgLoc>,
-    pub calling_convention: CallingConvention,
+    pub calling_convention: Option<CallingConvention>,
 
     pub method: Option<CallMethod>,
     pub is_noret: bool,
@@ -115,7 +116,7 @@ impl FunctionRaw {
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
         metadata: u8,
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Self> {
         use super::flag::tf_func::*;
         let method = match metadata {
             BTMT_DEFCALL => None,
@@ -127,8 +128,7 @@ impl FunctionRaw {
 
         // TODO InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473bf1 print_til_type
         let (cc, mut flags, _spoiled) = read_cc(&mut *input)?;
-        let cc = CallingConvention::from_cm_raw(cc)
-            .ok_or_else(|| anyhow!("Invalid Function Calling Convention"))?;
+        let cc = CallingConvention::from_cm_raw(cc)?;
 
         // TODO investigate why this don't hold true
         // function returns by iret (BTMT_INTCALL) in this case cc MUST be 'unknown'
@@ -168,7 +168,7 @@ impl FunctionRaw {
 
         let ret = TypeRaw::read(&mut *input, header)?;
         // TODO double check documentation for [flag::tf_func::BT_FUN]
-        let is_special_pe = cc.is_special_pe();
+        let is_special_pe = cc.map(CallingConvention::is_special_pe).unwrap_or(false);
         let have_retloc =
             is_special_pe && !matches!(&ret.variant, TypeVariantRaw::Basic(Basic::Void));
         let retloc = have_retloc.then(|| ArgLoc::read(&mut *input)).transpose()?;
@@ -189,13 +189,13 @@ impl FunctionRaw {
             is_constructor,
             is_destructor,
         };
-        if matches!(cc, CallingConvention::Voidarg) {
+        if cc == Some(CallingConvention::Voidarg) {
             return Ok(result);
         }
 
         let n = input.read_dt()?;
         result.args = (0..n)
-            .map(|_| -> anyhow::Result<_> {
+            .map(|_| -> Result<_> {
                 let tmp = input.peek_u8()?;
                 if tmp == Some(0xFF) {
                     input.consume(1);
@@ -209,14 +209,14 @@ impl FunctionRaw {
 
                 Ok((tinfo, argloc))
             })
-            .collect::<anyhow::Result<_, _>>()?;
+            .collect::<Result<_, _>>()?;
 
         Ok(result)
     }
 }
 
 impl ArgLoc {
-    fn read(input: &mut impl IdaGenericUnpack) -> anyhow::Result<Self> {
+    fn read(input: &mut impl IdaGenericUnpack) -> Result<Self> {
         let t: u8 = input.read_u8()?;
         if t != 0xFF {
             let b = t & 0x7F;
@@ -250,7 +250,7 @@ impl ArgLoc {
                             let size = input.read_dt()?;
                             Ok(ArgLocDist { info, off, size })
                         })
-                        .collect::<anyhow::Result<_>>()?;
+                        .collect::<Result<_>>()?;
                     Ok(Self::Dist(dist))
                 }
                 ALOC_REG1 => {
@@ -280,8 +280,6 @@ impl ArgLoc {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CallingConvention {
-    /// unknown calling convention
-    Unknown = 0x1,
     /// function without arguments
     Voidarg = 0x2,
     /// stack
@@ -312,15 +310,15 @@ pub enum CallingConvention {
 
 impl CallingConvention {
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b860
-    pub(crate) fn from_cm_raw(cm: u8) -> Option<Self> {
+    pub(crate) fn from_cm_raw(cm: u8) -> Result<Option<Self>> {
         use super::flag::cm::cc::*;
 
-        Some(match cm & CM_CC_MASK {
+        Ok(Some(match cm & CM_CC_MASK {
             // !ERR(spoil)!
-            CM_CC_SPOILED => return None,
+            CM_CC_SPOILED => return Err(anyhow!("Unexpected Spoiled Function Calling Convention")),
             // this is an invalid value
-            CM_CC_INVALID => return None,
-            CM_CC_UNKNOWN => Self::Unknown,
+            CM_CC_INVALID => return Err(anyhow!("Invalid Function Calling Convention")),
+            CM_CC_UNKNOWN => return Ok(None),
             CM_CC_VOIDARG => Self::Voidarg,
             CM_CC_CDECL => Self::Cdecl,
             CM_CC_ELLIPSIS => Self::Ellipsis,
@@ -335,7 +333,7 @@ impl CallingConvention {
             CM_CC_SPECIALP => Self::Userpurge,
             CM_CC_SPECIAL => Self::Usercall,
             _ => unreachable!(),
-        })
+        }))
     }
 
     pub const fn is_special_pe(self) -> bool {
@@ -451,7 +449,7 @@ pub enum CallMethod {
 
 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x476e60
 /// [BT_FUNC](https://hex-rays.com/products/ida/support/sdkdoc/group__tf__func.html#ga7b7fee21f21237beb6d91e854410e0fa)
-fn read_cc(input: &mut impl IdaGenericBufUnpack) -> anyhow::Result<(u8, u16, Vec<(u16, u8)>)> {
+fn read_cc(input: &mut impl IdaGenericBufUnpack) -> Result<(u8, u16, Vec<(u16, u8)>)> {
     let mut cc = input.read_u8()?;
     // TODO find the flag for that
     if cc & 0xF0 != 0xA0 {
@@ -499,7 +497,7 @@ fn read_cc_spoiled(
     input: &mut impl IdaGenericBufUnpack,
     nspoiled: u16,
     spoiled: &mut Vec<(u16, u8)>,
-) -> anyhow::Result<()> {
+) -> Result<()> {
     spoiled.reserve(nspoiled.into());
     for _i in 0..nspoiled {
         let b: u8 = input.read_u8()?;
