@@ -208,14 +208,14 @@ pub mod tf_func {
     /// ```
     pub const BT_FUNC: TypeT = 0x0C;
 
-    ///< call method - default for model or unknown
+    /// call method - default for model or unknown
     pub const BTMT_DEFCALL: TypeT = 0x00;
-    ///< function returns by retn
+    /// function returns by retn
     pub const BTMT_NEARCALL: TypeT = 0x10;
-    ///< function returns by retf
+    /// function returns by retf
     pub const BTMT_FARCALL: TypeT = 0x20;
-    ///< function returns by iret
-    ///< in this case cc MUST be 'unknown'
+    /// function returns by iret
+    /// in this case cc MUST be 'unknown'
     pub const BTMT_INTCALL: TypeT = 0x30;
     /// __noreturn
     pub const BFA_NORET: TypeT = 0x01;
