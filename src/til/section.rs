@@ -136,7 +136,7 @@ impl TILSection {
         let _ali = header.flags.has_type_aliases();
         let _stm = header.flags.has_extra_stream();
 
-        let cc = CallingConvention::from_cm_raw(header.cm);
+        let cc = CallingConvention::from_cm_raw(header.cm)?;
         let cn = CCPtrSize::from_cm_raw(header.cm, header.size_int);
         let cm = CCModel::from_cm_raw(header.cm);
 

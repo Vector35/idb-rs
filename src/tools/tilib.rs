@@ -465,11 +465,16 @@ fn print_til_type_function(
     // return type
     print_til_type(fmt, section, None, &til_type.ret, false, true)?;
 
-    // print name and calling convention, except for Ellipsis, just put the "..." as last param
+    let cc = match (section.cc, til_type.calling_convention) {
+        // don't print if using the default cc, or if elipsis just print the '...' as last param
+        (_, None | Some(CallingConvention::Ellipsis)) => None,
+        // if uses the default cc, don't print anything
+        (Some(scc), Some(tcc)) if scc == tcc => None,
+        (_, Some(cc)) => Some(calling_convention_to_str(cc)),
+    };
+
+    // print name and calling convention
     let name = name.unwrap_or("");
-    let cc = (section.cc != Some(til_type.calling_convention)
-        && til_type.calling_convention != CallingConvention::Ellipsis)
-        .then(|| calling_convention_to_str(til_type.calling_convention));
     match (is_pointer, cc) {
         (true, None) => write!(fmt, " (*{name})")?,
         (false, None) => write!(fmt, " {name}")?,
@@ -494,7 +499,7 @@ fn print_til_type_function(
             false,
         )?;
     }
-    if til_type.calling_convention == CallingConvention::Ellipsis {
+    if til_type.calling_convention == Some(CallingConvention::Ellipsis) {
         if !til_type.args.is_empty() {
             write!(fmt, ", ")?;
         }
@@ -760,7 +765,6 @@ fn print_til_type_len(
 fn calling_convention_to_str(cc: CallingConvention) -> &'static str {
     use idb_rs::til::function::CallingConvention::*;
     match cc {
-        Unknown => "__unknown",
         Voidarg => "__voidarg",
         Cdecl => "__cdecl",
         Ellipsis => "__ellipsis",
