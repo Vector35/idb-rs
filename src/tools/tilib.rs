@@ -41,7 +41,9 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> Result<()> {
         let dep = core::str::from_utf8(dependency).unwrap();
         // TODO open those files? What todo with then?
         // TODO some files still missing this warning
-        writeln!(fmt, "Warning: {dep}: No such file or directory")?;
+        if !dep.is_empty() {
+            writeln!(fmt, "Warning: {dep}: No such file or directory")?;
+        }
     }
 
     writeln!(fmt)?;
@@ -123,9 +125,9 @@ fn print_header(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b860
     if let Some(cc) = section.cc {
         if section.cm.is_some() || section.cn.is_some() {
-            write!(fmt, ",")?;
+            write!(fmt, ", ")?;
         }
-        writeln!(fmt, "{}", calling_convention_to_str(cc))?;
+        write!(fmt, "{}", calling_convention_to_str(cc))?;
     }
     writeln!(fmt)?;
 
@@ -466,10 +468,13 @@ fn print_til_type_function(
     print_til_type(fmt, section, None, &til_type.ret, false, true)?;
 
     let cc = match (section.cc, til_type.calling_convention) {
-        // don't print if using the default cc, or if elipsis just print the '...' as last param
-        (_, None | Some(CallingConvention::Ellipsis)) => None,
-        // if uses the default cc, don't print anything
-        (Some(scc), Some(tcc)) if scc == tcc => None,
+        // don't print if using the til section default cc
+        | (_, None)
+        // if elipsis just print the '...' as last param
+        | (_, Some(CallingConvention::Ellipsis))
+        // if void arg, just don't print the args (there will be none)
+        | (_, Some(CallingConvention::Voidarg)) => None,
+
         (_, Some(cc)) => Some(calling_convention_to_str(cc)),
     };
 
@@ -478,8 +483,8 @@ fn print_til_type_function(
     match (is_pointer, cc) {
         (true, None) => write!(fmt, " (*{name})")?,
         (false, None) => write!(fmt, " {name}")?,
-        (true, Some(cc)) => write!(fmt, " ({cc} *{name})")?,
-        (false, Some(cc)) => write!(fmt, " {cc} {name}")?,
+        (true, Some(cc)) => write!(fmt, " (__{cc} *{name})")?,
+        (false, Some(cc)) => write!(fmt, " __{cc} {name}")?,
     }
 
     write!(fmt, "(")?;
@@ -765,19 +770,19 @@ fn print_til_type_len(
 fn calling_convention_to_str(cc: CallingConvention) -> &'static str {
     use idb_rs::til::function::CallingConvention::*;
     match cc {
-        Voidarg => "__voidarg",
-        Cdecl => "__cdecl",
-        Ellipsis => "__ellipsis",
-        Stdcall => "__stdcall",
-        Pascal => "__pascal",
-        Fastcall => "__fastcall",
-        Thiscall => "__thiscall",
-        Swift => "__swift",
-        Golang => "__golang",
-        Userpurge => "__userpurge",
-        Uservars => "__uservars",
-        Usercall => "__usercall",
-        Reserved3 => "__ccreserved3",
+        Voidarg => "voidarg",
+        Cdecl => "cdecl",
+        Ellipsis => "ellipsis",
+        Stdcall => "stdcall",
+        Pascal => "pascal",
+        Fastcall => "fastcall",
+        Thiscall => "thiscall",
+        Swift => "swift",
+        Golang => "golang",
+        Userpurge => "userpurge",
+        Uservars => "uservars",
+        Usercall => "usercall",
+        Reserved3 => "ccreserved3",
     }
 }
 
