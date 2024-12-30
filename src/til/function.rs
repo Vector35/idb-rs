@@ -130,13 +130,14 @@ impl FunctionRaw {
         let cc = CallingConvention::from_cm_raw(cc)
             .ok_or_else(|| anyhow!("Invalid Function Calling Convention"))?;
 
+        // TODO investigate why this don't hold true
         // function returns by iret (BTMT_INTCALL) in this case cc MUST be 'unknown'
-        if method == Some(CallMethod::Int) {
-            ensure!(
-                cc == CallingConvention::Unknown,
-                "Invalid CC in function with CallMethod Int"
-            );
-        }
+        //if method == Some(CallMethod::Int) {
+        //    ensure!(
+        //        cc == CallingConvention::Unknown,
+        //        "Invalid CC in function with CallMethod Int"
+        //    );
+        //}
 
         // consume the flags and verify if a unknown value is present
         // TODO find those in flags
