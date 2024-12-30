@@ -52,6 +52,7 @@ impl ArrayRaw {
                 (base, nelem.into())
             }
         };
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48078e
         let tah = TAH::read(&mut *input)?;
         let elem_type = TypeRaw::read(&mut *input, header)?;
         Ok(ArrayRaw {

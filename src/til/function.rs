@@ -14,6 +14,7 @@ pub struct Function {
     pub args: Vec<(Option<Vec<u8>>, Type, Option<ArgLoc>)>,
     pub retloc: Option<ArgLoc>,
 
+    pub method: Option<CallMethod>,
     pub is_noret: bool,
     pub is_pure: bool,
     pub is_high: bool,
@@ -40,6 +41,7 @@ impl Function {
             calling_convention: value.calling_convention,
             ret: Box::new(ret),
             args,
+            method: value.method,
             retloc: value.retloc,
             is_noret: value.is_noret,
             is_pure: value.is_pure,
@@ -60,6 +62,7 @@ pub(crate) struct FunctionRaw {
     pub retloc: Option<ArgLoc>,
     pub calling_convention: CallingConvention,
 
+    pub method: Option<CallMethod>,
     pub is_noret: bool,
     pub is_pure: bool,
     pub is_high: bool,
@@ -111,20 +114,29 @@ impl FunctionRaw {
     pub(crate) fn read(
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
-        _metadata: u8,
+        metadata: u8,
     ) -> anyhow::Result<Self> {
-        //match metadata {
-        //    super::flag::tf_func::BTMT_DEFCALL => todo!(),
-        //    super::flag::tf_func::BTMT_NEARCALL => todo!(),
-        //    super::flag::tf_func::BTMT_FARCALL => todo!(),
-        //    super::flag::tf_func::BTMT_INTCALL => todo!(),
-        //    _ => unreachable!(),
-        //}
+        use super::flag::tf_func::*;
+        let method = match metadata {
+            BTMT_DEFCALL => None,
+            BTMT_NEARCALL => Some(CallMethod::Near),
+            BTMT_FARCALL => Some(CallMethod::Far),
+            BTMT_INTCALL => Some(CallMethod::Int),
+            _ => unreachable!(),
+        };
 
         // TODO InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473bf1 print_til_type
         let (cc, mut flags, _spoiled) = read_cc(&mut *input)?;
         let cc = CallingConvention::from_cm_raw(cc)
             .ok_or_else(|| anyhow!("Invalid Function Calling Convention"))?;
+
+        // function returns by iret (BTMT_INTCALL) in this case cc MUST be 'unknown'
+        if method == Some(CallMethod::Int) {
+            ensure!(
+                cc == CallingConvention::Unknown,
+                "Invalid CC in function with CallMethod Int"
+            );
+        }
 
         // consume the flags and verify if a unknown value is present
         // TODO find those in flags
@@ -166,6 +178,7 @@ impl FunctionRaw {
             args: vec![],
             retloc,
 
+            method,
             is_noret,
             is_pure,
             is_high,
@@ -426,6 +439,13 @@ impl CCModel {
     pub const fn is_data_far(self) -> bool {
         !self.is_data_near()
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CallMethod {
+    Near,
+    Far,
+    Int,
 }
 
 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x476e60
