@@ -114,10 +114,9 @@ pub enum TypeVariant {
     Struct(Struct),
     Union(Union),
     Enum(Enum),
-    // TODO narrow what kinds of Type can be inside the Ref
-    StructRef(Box<Type>),
-    UnionRef(Box<Type>),
-    EnumRef(Box<Type>),
+    StructRef(Typedef),
+    UnionRef(Typedef),
+    EnumRef(Typedef),
     Bitfield(Bitfield),
 }
 
@@ -139,15 +138,9 @@ impl Type {
             TypeVariantRaw::Struct(x) => Struct::new(til, x, fields).map(TypeVariant::Struct)?,
             TypeVariantRaw::Union(x) => Union::new(til, x, fields).map(TypeVariant::Union)?,
             TypeVariantRaw::Enum(x) => Enum::new(til, x, fields).map(TypeVariant::Enum)?,
-            TypeVariantRaw::StructRef(type_raw) => {
-                TypeVariant::StructRef(Box::new(Type::new(til, *type_raw, fields)?))
-            }
-            TypeVariantRaw::UnionRef(type_raw) => {
-                TypeVariant::UnionRef(Box::new(Type::new(til, *type_raw, fields)?))
-            }
-            TypeVariantRaw::EnumRef(type_raw) => {
-                TypeVariant::EnumRef(Box::new(Type::new(til, *type_raw, fields)?))
-            }
+            TypeVariantRaw::StructRef(typedef) => TypeVariant::StructRef(typedef),
+            TypeVariantRaw::UnionRef(typedef) => TypeVariant::UnionRef(typedef),
+            TypeVariantRaw::EnumRef(typedef) => TypeVariant::EnumRef(typedef),
         };
         Ok(Self {
             is_const: tinfo_raw.is_const,
@@ -215,9 +208,9 @@ pub(crate) enum TypeVariantRaw {
     Struct(StructRaw),
     Union(UnionRaw),
     Enum(EnumRaw),
-    StructRef(Box<TypeRaw>),
-    UnionRef(Box<TypeRaw>),
-    EnumRef(Box<TypeRaw>),
+    StructRef(Typedef),
+    UnionRef(Typedef),
+    EnumRef(Typedef),
     Bitfield(Bitfield),
 }
 

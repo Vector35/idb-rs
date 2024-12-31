@@ -68,7 +68,10 @@ impl StructRaw {
             // simple reference
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
             let _taudt_bits = SDACL::read(&mut *input)?;
-            return Ok(TypeVariantRaw::StructRef(Box::new(ref_type)));
+            let TypeVariantRaw::Typedef(ref_type) = ref_type.variant else {
+                return Err(anyhow!("StructRef Non Typedef"));
+            };
+            return Ok(TypeVariantRaw::StructRef(ref_type));
         };
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
