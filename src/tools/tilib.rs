@@ -206,14 +206,28 @@ fn print_symbols(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
         let len = section.type_size_bytes(None, &symbol.tinfo).ok();
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a80
         match len.and_then(|b| u32::try_from(b).ok()) {
-            Some(8) => write!(fmt, " {:016X}          ", symbol.ordinal)?,
-            Some(bytes @ 0..=7) => write!(
-                fmt,
-                " {:08X}          ",
-                symbol.ordinal & !(u64::MAX << (bytes * 8))
-            )?,
-            _ => write!(fmt, " {:08X}          ", symbol.ordinal)?,
+            Some(8) => write!(fmt, " {:016X}", symbol.ordinal)?,
+            Some(bytes @ 0..=7) => {
+                write!(fmt, " {:08X}", symbol.ordinal & !(u64::MAX << (bytes * 8)))?
+            }
+            _ => write!(fmt, " {:08X}", symbol.ordinal)?,
         }
+
+        // TODO find this in InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a49
+        //let sym_kind = match arg8 {
+        //    0 => "        ",
+        //    1 => "typedef ",
+        //    2 => "extern  ",
+        //    3 => "static  ",
+        //    4 => "register",
+        //    5 => "auto    ",
+        //    6 => "friend  ",
+        //    7 => "virtual ",
+        //    _ => "?!",
+        //};
+        let sym_kind = "        ";
+        write!(fmt, "{}", sym_kind)?;
+
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a3a
         print_til_type(fmt, section, Some(&symbol.name), &symbol.tinfo, true, false)?;
         writeln!(fmt, ";")?;
@@ -298,8 +312,11 @@ fn print_til_type_root(
     name: Option<&[u8]>,
     til_type: &Type,
 ) -> Result<()> {
+    // TODO: InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4438d1
+    // TODO: if a is a typedef and ComplexRef or something like it, also print typedef
     match &til_type.type_variant {
         TypeVariant::Struct(_) | TypeVariant::Union(_) | TypeVariant::Enum(_) => {}
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x443906
         _ => write!(fmt, "typedef ")?,
     }
     print_til_type(fmt, section, name, til_type, true, true)
