@@ -4,7 +4,7 @@ use idb_rs::til::function::{CallingConvention, Function};
 use idb_rs::til::pointer::Pointer;
 use idb_rs::til::r#enum::Enum;
 use idb_rs::til::r#struct::{Struct, StructMemberAtt};
-use idb_rs::til::section::TILSection;
+use idb_rs::til::section::{TILSection, TILTypeSizeSolver};
 use idb_rs::til::union::Union;
 use idb_rs::til::{Basic, TILTypeInfo, Type, TypeVariant, Typedef};
 use idb_rs::IDBParser;
@@ -51,14 +51,16 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> Result<()> {
     print_header(&mut fmt, section)?;
     writeln!(fmt)?;
 
+    let mut size_solver = TILTypeSizeSolver::new(section);
+
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b926
     writeln!(fmt, "SYMBOLS")?;
-    print_symbols(&mut fmt, section)?;
+    print_symbols(&mut fmt, section, &mut size_solver)?;
     writeln!(fmt)?;
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b94d
     writeln!(fmt, "TYPES")?;
-    print_types(&mut fmt, section)?;
+    print_types(&mut fmt, section, &mut size_solver)?;
     writeln!(fmt)?;
 
     // TODO streams
@@ -200,10 +202,14 @@ fn compiler_id_to_str(compiler: Compiler) -> &'static str {
     }
 }
 
-fn print_symbols(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
+fn print_symbols(
+    fmt: &mut impl Write,
+    section: &TILSection,
+    solver: &mut TILTypeSizeSolver<'_>,
+) -> Result<()> {
     for symbol in &section.symbols {
-        print_til_type_len(fmt, section, None, &symbol.tinfo)?;
-        let len = section.type_size_bytes(None, &symbol.tinfo).ok();
+        print_til_type_len(fmt, None, &symbol.tinfo, solver)?;
+        let len = solver.type_size_bytes(None, &symbol.tinfo);
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a80
         match len.and_then(|b| u32::try_from(b).ok()) {
             Some(8) => write!(fmt, " {:016X}", symbol.ordinal)?,
@@ -235,15 +241,23 @@ fn print_symbols(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     Ok(())
 }
 
-fn print_types(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
+fn print_types(
+    fmt: &mut impl Write,
+    section: &TILSection,
+    solver: &mut TILTypeSizeSolver<'_>,
+) -> Result<()> {
     writeln!(fmt, "(enumerated by ordinals)")?;
-    print_types_by_ordinals(fmt, section)?;
+    print_types_by_ordinals(fmt, section, solver)?;
     writeln!(fmt, "(enumerated by names)")?;
-    print_types_by_name(fmt, section)?;
+    print_types_by_name(fmt, section, solver)?;
     Ok(())
 }
 
-fn print_types_by_ordinals(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
+fn print_types_by_ordinals(
+    fmt: &mut impl Write,
+    section: &TILSection,
+    solver: &mut TILTypeSizeSolver<'_>,
+) -> Result<()> {
     enum OrdType<'a> {
         Alias(&'a (u32, u32)),
         Type { idx: usize, ty: &'a TILTypeInfo },
@@ -282,7 +296,7 @@ fn print_types_by_ordinals(fmt: &mut impl Write, section: &TILSection) -> Result
             }
             OrdType::Type { idx, ty } => (idx, ty),
         };
-        print_til_type_len(fmt, section, Some(idx), &final_type.tinfo).unwrap();
+        print_til_type_len(fmt, Some(idx), &final_type.tinfo, solver).unwrap();
         write!(fmt, "{:5}. ", ord_num)?;
         if let OrdType::Alias((_alias_ord, type_ord)) = ord_type {
             write!(fmt, "(aliased to {type_ord}) ")?;
@@ -293,12 +307,16 @@ fn print_types_by_ordinals(fmt: &mut impl Write, section: &TILSection) -> Result
     Ok(())
 }
 
-fn print_types_by_name(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
+fn print_types_by_name(
+    fmt: &mut impl Write,
+    section: &TILSection,
+    solver: &mut TILTypeSizeSolver<'_>,
+) -> Result<()> {
     for (idx, symbol) in section.types.iter().enumerate() {
         if symbol.name.is_empty() {
             continue;
         }
-        print_til_type_len(fmt, section, Some(idx), &symbol.tinfo).unwrap();
+        print_til_type_len(fmt, Some(idx), &symbol.tinfo, solver).unwrap();
         write!(fmt, " ")?;
         print_til_type_root(fmt, section, Some(&symbol.name), &symbol.tinfo)?;
         writeln!(fmt, ";")?;
@@ -358,27 +376,11 @@ fn print_til_type(
             print_type_prefix,
         ),
         TypeVariant::Typedef(typedef) => print_til_type_typedef(fmt, section, name, typedef),
-        TypeVariant::StructRef(ref_type) => print_til_type(
-            fmt,
-            section,
-            name,
-            ref_type,
-            print_pointer_space,
-            print_type_prefix,
-        ),
+        TypeVariant::UnionRef(ref_type)
+        | TypeVariant::EnumRef(ref_type)
+        | TypeVariant::StructRef(ref_type) => print_til_type_typedef(fmt, section, name, ref_type),
         TypeVariant::Struct(til_struct) => print_til_type_struct(fmt, section, name, til_struct),
-        TypeVariant::UnionRef(ref_type) => {
-            print_til_type(fmt, section, name, ref_type, true, print_type_prefix)
-        }
         TypeVariant::Union(til_union) => print_til_type_union(fmt, section, name, til_union),
-        TypeVariant::EnumRef(ref_type) => print_til_type(
-            fmt,
-            section,
-            name,
-            ref_type,
-            print_pointer_space,
-            print_type_prefix,
-        ),
         TypeVariant::Enum(til_enum) => print_til_type_enum(fmt, section, name, til_enum),
         TypeVariant::Bitfield(_bitfield) => write!(fmt, "todo!(\"Bitfield\")"),
     }
@@ -772,15 +774,17 @@ fn print_til_type_only(fmt: &mut impl Write, section: &TILSection, tinfo: &Type)
 
 fn print_til_type_len(
     fmt: &mut impl Write,
-    section: &TILSection,
     idx: Option<usize>,
     tinfo: &Type,
+    size_solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     if let TypeVariant::Function(_function) = &tinfo.type_variant {
         write!(fmt, "FFFFFFFF")?;
     } else {
         // if the type is unknown it just prints "FFFFFFF"
-        let len = section.type_size_bytes(idx, tinfo).unwrap_or(0xFFFF_FFFF);
+        let len = size_solver
+            .type_size_bytes(idx, tinfo)
+            .unwrap_or(0xFFFF_FFFF);
         write!(fmt, "{len:08X}")?;
     }
     Ok(())
