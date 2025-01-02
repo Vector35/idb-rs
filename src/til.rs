@@ -78,11 +78,12 @@ impl TILTypeInfo {
         let fieldcmts = cursor.read_c_string_raw()?;
         let sclass: u8 = cursor.read_u8()?;
 
-        let mut fields_iter = fields
-            .into_iter()
-            .map(|field| field.is_empty().then_some(None).unwrap_or(Some(field)));
+        let mut fields_iter =
+            fields
+                .into_iter()
+                .map(|field| if field.is_empty() { None } else { Some(field) });
         let tinfo = Type::new(til, tinfo_raw, &mut fields_iter)?;
-        ensure!(fields_iter.next() == None, "Extra fields found for til");
+        ensure!(fields_iter.next().is_none(), "Extra fields found for til");
 
         Ok(Self {
             _flags: flags,
@@ -180,11 +181,15 @@ impl Type {
                 ));
             }
         }
-        let mut fields_iter = fields
-            .into_iter()
-            .map(|field| field.is_empty().then_some(None).unwrap_or(Some(field)));
+        let mut fields_iter =
+            fields
+                .into_iter()
+                .map(|field| if field.is_empty() { None } else { Some(field) });
         let result = Self::new(&header, type_raw, &mut fields_iter)?;
-        ensure!(fields_iter.next() == None, "Extra fields found for id0 til");
+        ensure!(
+            fields_iter.next().is_none(),
+            "Extra fields found for id0 til"
+        );
         Ok(result)
     }
 }
@@ -462,9 +467,7 @@ impl Typedef {
                 }
                 Ok(Typedef::Ordinal(de))
             }
-            _ => Ok(Typedef::Name(
-                buf.is_empty().then_some(None).unwrap_or(Some(buf)),
-            )),
+            _ => Ok(Typedef::Name(if buf.is_empty() { None } else { Some(buf) })),
         }
     }
 }
