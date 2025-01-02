@@ -884,6 +884,7 @@ fn print_til_struct_member_att(
     att: &StructMemberAtt,
 ) -> Result<()> {
     match &tinfo.type_variant {
+        TypeVariant::Basic(_) => print_til_struct_member_basic_att(fmt, att)?,
         TypeVariant::Pointer(pointer) => match &pointer.typ.type_variant {
             TypeVariant::Basic(Basic::Char) => print_til_struct_member_string_att(fmt, att)?,
             // TODO is valid for other then void?
@@ -901,9 +902,11 @@ fn print_til_struct_member_att(
 
 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4872f0
 fn print_til_struct_member_string_att(fmt: &mut impl Write, att: &StructMemberAtt) -> Result<()> {
-    if let Some(value) = att.str_type() {
-        write!(fmt, " __strlit(0x{:08X})", value.as_strlib())?;
+    let Some(value) = att.str_type() else {
+        // TODO don't ignore errors
+        return Ok(());
     };
+    write!(fmt, " __strlit(0x{:08X})", value.as_strlib())?;
     Ok(())
 }
 
@@ -911,37 +914,90 @@ fn print_til_struct_member_void_pointer_att(
     fmt: &mut impl Write,
     att: &StructMemberAtt,
 ) -> Result<()> {
-    if let Some(value) = att.offset_type() {
-        write!(fmt, " __offset({:#X}", value.offset)?;
-        // InnerRef InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x720aa0
-        if value.is_rvaoff() {
-            write!(fmt, "|RVAOFF")?;
-        }
-        if value.is_pastend() {
-            write!(fmt, "|PASTEND")?;
-        }
-        if value.is_nobase() {
-            write!(fmt, "|NOBASE")?;
-        }
-        if value.is_subtract() {
-            write!(fmt, "|SUBTRACT")?;
-        }
-        if value.is_signedop() {
-            write!(fmt, "|SIGNEDOP")?;
-        }
-        if value.is_nozeroes() {
-            write!(fmt, "|NOZEROES")?;
-        }
-        if value.is_noones() {
-            write!(fmt, "|NOONES")?;
-        }
-        if value.is_selfref() {
-            write!(fmt, "|SELFREF")?;
-        }
-        write!(fmt, ")")?;
+    let Some(value) = att.offset_type() else {
+        // TODO don't ignore errors
+        return Ok(());
+    };
+    write!(fmt, " __offset({:#X}", value.offset)?;
+    // InnerRef InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x720aa0
+    if value.is_rvaoff() {
+        write!(fmt, "|RVAOFF")?;
     }
+    if value.is_pastend() {
+        write!(fmt, "|PASTEND")?;
+    }
+    if value.is_nobase() {
+        write!(fmt, "|NOBASE")?;
+    }
+    if value.is_subtract() {
+        write!(fmt, "|SUBTRACT")?;
+    }
+    if value.is_signedop() {
+        write!(fmt, "|SIGNEDOP")?;
+    }
+    if value.is_nozeroes() {
+        write!(fmt, "|NOZEROES")?;
+    }
+    if value.is_noones() {
+        write!(fmt, "|NOONES")?;
+    }
+    if value.is_selfref() {
+        write!(fmt, "|SELFREF")?;
+    }
+    write!(fmt, ")")?;
+    Ok(())
+}
 
-    return Ok(());
+fn print_til_struct_member_basic_att(fmt: &mut impl Write, att: &StructMemberAtt) -> Result<()> {
+    let Some(basic_att) = att.basic() else {
+        write!(fmt, " {att:x?}")?;
+        // TODO don't ignore errors
+        return Ok(());
+    };
+
+    use idb_rs::til::r#struct::ExtAttBasicFmt::*;
+    if basic_att.is_inv_bits {
+        write!(fmt, " __invbits")?
+    }
+    if basic_att.is_inv_sign {
+        write!(fmt, " __invsign")?
+    }
+    if basic_att.is_lzero {
+        write!(fmt, " __lzero")?
+    }
+    match (basic_att.fmt, basic_att.is_signed) {
+        (Bin, true) => write!(fmt, " __sbin")?,
+        (Bin, false) => write!(fmt, " __bin")?,
+        (Oct, true) => write!(fmt, " __soct")?,
+        (Oct, false) => write!(fmt, " __oct")?,
+        (Hex, true) => write!(fmt, " __shex")?,
+        (Hex, false) => write!(fmt, " __hex")?,
+        (Dec, true) => write!(fmt, " __dec")?,
+        (Dec, false) => write!(fmt, " __udec")?,
+        (Float, _) => write!(fmt, " __float")?,
+        (Char, _) => write!(fmt, " __char")?,
+        (Segm, _) => write!(fmt, " __segm")?,
+        (Off, _) => write!(fmt, " __off")?,
+    };
+    match (basic_att.fmt, basic_att.is_signed) {
+        (_, false) => {}
+        // already included on the name
+        (Bin | Dec | Oct | Hex, _) => {}
+        (Float | Char | Segm | Off, true) => write!(fmt, " __signed")?,
+    };
+
+    if let Some(tabform) = basic_att.tabform {
+        // InnerRef InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48857f
+        let val1 = match tabform.val1 {
+            idb_rs::til::r#struct::ExtAttBasicTabformVal1::NODUPS => "NODUPS",
+            idb_rs::til::r#struct::ExtAttBasicTabformVal1::HEX => "HEX",
+            idb_rs::til::r#struct::ExtAttBasicTabformVal1::DEC => "DEC",
+            idb_rs::til::r#struct::ExtAttBasicTabformVal1::OCT => "OCT",
+            idb_rs::til::r#struct::ExtAttBasicTabformVal1::BIN => "BIN",
+        };
+        write!(fmt, " __tabform({val1},{})", tabform.val2)?;
+    }
+    Ok(())
 }
 
 fn print_til_type_name(
