@@ -231,7 +231,7 @@ fn print_symbols(
         //    _ => "?!",
         //};
         let sym_kind = "        ";
-        write!(fmt, "{}", sym_kind)?;
+        write!(fmt, " {} ", sym_kind)?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a3a
         print_til_type(
@@ -877,6 +877,7 @@ fn print_til_type_enum(
     write!(fmt, "}}")
 }
 
+// InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x423c20
 fn print_til_struct_member_att(
     fmt: &mut impl Write,
     tinfo: &Type,
@@ -885,6 +886,8 @@ fn print_til_struct_member_att(
     match &tinfo.type_variant {
         TypeVariant::Pointer(pointer) => match &pointer.typ.type_variant {
             TypeVariant::Basic(Basic::Char) => print_til_struct_member_string_att(fmt, att)?,
+            // TODO is valid for other then void?
+            TypeVariant::Basic(Basic::Void) => print_til_struct_member_void_pointer_att(fmt, att)?,
             _ => {}
         },
         TypeVariant::Array(array) => match &array.elem_type.type_variant {
@@ -896,12 +899,49 @@ fn print_til_struct_member_att(
     Ok(())
 }
 
+// InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4872f0
 fn print_til_struct_member_string_att(fmt: &mut impl Write, att: &StructMemberAtt) -> Result<()> {
-    let Some(value) = att.str_type() else {
-        // todo att is unknown
-        return Ok(());
+    if let Some(value) = att.str_type() {
+        write!(fmt, " __strlit(0x{:08X})", value.as_strlib())?;
     };
-    write!(fmt, " __strlit(0x{:08X})", value.as_strlib())
+    Ok(())
+}
+
+fn print_til_struct_member_void_pointer_att(
+    fmt: &mut impl Write,
+    att: &StructMemberAtt,
+) -> Result<()> {
+    if let Some(value) = att.offset_type() {
+        write!(fmt, " __offset({:#X}", value.offset)?;
+        // InnerRef InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x720aa0
+        if value.is_rvaoff() {
+            write!(fmt, "|RVAOFF")?;
+        }
+        if value.is_pastend() {
+            write!(fmt, "|PASTEND")?;
+        }
+        if value.is_nobase() {
+            write!(fmt, "|NOBASE")?;
+        }
+        if value.is_subtract() {
+            write!(fmt, "|SUBTRACT")?;
+        }
+        if value.is_signedop() {
+            write!(fmt, "|SIGNEDOP")?;
+        }
+        if value.is_nozeroes() {
+            write!(fmt, "|NOZEROES")?;
+        }
+        if value.is_noones() {
+            write!(fmt, "|NOONES")?;
+        }
+        if value.is_selfref() {
+            write!(fmt, "|SELFREF")?;
+        }
+        write!(fmt, ")")?;
+    }
+
+    return Ok(());
 }
 
 fn print_til_type_name(
