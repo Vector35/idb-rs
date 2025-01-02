@@ -78,12 +78,11 @@ impl TILTypeInfo {
         let fieldcmts = cursor.read_c_string_raw()?;
         let sclass: u8 = cursor.read_u8()?;
 
-        let mut fields_iter = fields.into_iter();
+        let mut fields_iter = fields
+            .into_iter()
+            .map(|field| field.is_empty().then_some(None).unwrap_or(Some(field)));
         let tinfo = Type::new(til, tinfo_raw, &mut fields_iter)?;
-        ensure!(
-            fields_iter.as_slice().is_empty(),
-            "Extra fields found for til"
-        );
+        ensure!(fields_iter.next() == None, "Extra fields found for til");
 
         Ok(Self {
             _flags: flags,
@@ -124,7 +123,7 @@ impl Type {
     pub(crate) fn new(
         til: &TILSectionHeader,
         tinfo_raw: TypeRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
         let type_variant = match tinfo_raw.variant {
             TypeVariantRaw::Basic(x) => TypeVariant::Basic(x),
@@ -181,12 +180,11 @@ impl Type {
                 ));
             }
         }
-        let mut fields_iter = fields.into_iter();
+        let mut fields_iter = fields
+            .into_iter()
+            .map(|field| field.is_empty().then_some(None).unwrap_or(Some(field)));
         let result = Self::new(&header, type_raw, &mut fields_iter)?;
-        ensure!(
-            fields_iter.as_slice().is_empty(),
-            "Extra fields found for id0 til"
-        );
+        ensure!(fields_iter.next() == None, "Extra fields found for id0 til");
         Ok(result)
     }
 }

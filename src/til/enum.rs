@@ -18,12 +18,12 @@ impl Enum {
     pub(crate) fn new(
         _til: &TILSectionHeader,
         value: EnumRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         let members = value
             .members
             .into_iter()
-            .map(|member| (fields.next(), member))
+            .map(|member| (fields.next().flatten(), member))
             .collect();
         Ok(Self {
             output_format: value.output_format,

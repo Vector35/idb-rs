@@ -20,13 +20,13 @@ impl Union {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: UnionRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         let members = value
             .members
             .into_iter()
             .map(|member| {
-                let field_name = fields.next();
+                let field_name = fields.next().flatten();
                 let new_member = Type::new(til, member, &mut *fields)?;
                 Ok((field_name, new_member))
             })
