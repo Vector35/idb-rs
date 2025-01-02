@@ -796,7 +796,7 @@ impl<'a> TILTypeSizeSolver<'a> {
         let idx = match typedef {
             Typedef::Name(name) => {
                 // NOTE missing names may indicate a external type, just return no size
-                self.section.get_name_idx(name)?
+                self.section.get_name_idx(name.as_ref()?)?
             }
             Typedef::Ordinal(ord) => self
                 .section

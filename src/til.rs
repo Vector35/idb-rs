@@ -447,7 +447,7 @@ impl Basic {
 pub enum Typedef {
     // TODO make this a `Id0TilOrd`
     Ordinal(u32),
-    Name(Vec<u8>),
+    Name(Option<Vec<u8>>),
 }
 
 impl Typedef {
@@ -462,7 +462,9 @@ impl Typedef {
                 }
                 Ok(Typedef::Ordinal(de))
             }
-            _ => Ok(Typedef::Name(buf)),
+            _ => Ok(Typedef::Name(
+                buf.is_empty().then_some(None).unwrap_or(Some(buf)),
+            )),
         }
     }
 }
