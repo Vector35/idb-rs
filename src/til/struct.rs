@@ -231,8 +231,23 @@ pub enum StructMemberAtt {
     },
 }
 
+// InnerRef InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x720880
 #[derive(Clone, Copy, Debug)]
 pub enum StructMemberAttBasic {
+    // 0x0 0x1   "__bin"
+    // 0x0 0x2   "__oct"
+    // 0x0 0x3   "__hex"
+    // 0x0 0x404 "__dec"
+    // 0x0 0x5   "__float"
+    // 0x0 0x6   "__char"
+    // 0x0 0x7   "__segm"
+    // 0x6 0x8   "__enum"
+    // 0x0 0x9   "__off"
+    // 0x8 0x9   "__offset"
+    // 0x8 0xa   "__strlit"
+    // 0x8 0xb   "__stroff"
+    // 0x8 0xc   "__custom"
+    // 0x0 0x100 "__invsign"
     Var1(u64),
     Var2 {
         att: u64,
@@ -245,12 +260,62 @@ pub enum StructMemberAttBasic {
 impl StructMemberAtt {
     pub fn str_type(self) -> Option<StringType> {
         match self {
+            // 0x8 0xa   "__strlit"
             StructMemberAtt::VarAorC {
                 val1,
                 att0: StructMemberAttBasic::Var1(0xa),
             } => Some(val1.into()),
             _ => None,
         }
+    }
+    pub fn offset_type(self) -> Option<ExtAttOffset> {
+        match self {
+            // 0x8 0x9   "__offset"
+            StructMemberAtt::Var9 {
+                val1,
+                att0: None,
+                att1: 0,
+                att2: u64::MAX,
+            } => Some(ExtAttOffset {
+                offset: (val1 & 0xf) as u8,
+                flag: val1 & !0xf,
+            }),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ExtAttOffset {
+    pub offset: u8,
+    // InnerRef InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x720aa0
+    flag: u32,
+}
+
+impl ExtAttOffset {
+    pub fn is_rvaoff(&self) -> bool {
+        self.flag & 0x10 != 0
+    }
+    pub fn is_pastend(&self) -> bool {
+        self.flag & 0x20 != 0
+    }
+    pub fn is_nobase(&self) -> bool {
+        self.flag & 0x80 != 0
+    }
+    pub fn is_subtract(&self) -> bool {
+        self.flag & 0x100 != 0
+    }
+    pub fn is_signedop(&self) -> bool {
+        self.flag & 0x200 != 0
+    }
+    pub fn is_nozeroes(&self) -> bool {
+        self.flag & 0x400 != 0
+    }
+    pub fn is_noones(&self) -> bool {
+        self.flag & 0x800 != 0
+    }
+    pub fn is_selfref(&self) -> bool {
+        self.flag & 0x1000 != 0
     }
 }
 
