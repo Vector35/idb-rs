@@ -675,7 +675,7 @@ fn print_til_type_struct(
     }
     write!(fmt, "{{")?;
     for member in &til_struct.members {
-        let member_name = member.name.as_ref().map(Vec::as_slice);
+        let member_name = member.name.as_deref();
         print_til_type_complex_member(
             fmt,
             section,
@@ -712,7 +712,7 @@ fn print_til_type_union(
     }
     write!(fmt, "{{")?;
     for (member_name, member) in &til_union.members {
-        let member_name = member_name.as_ref().map(Vec::as_slice);
+        let member_name = member_name.as_deref();
         print_til_type_complex_member(fmt, section, name, member_name, member, true, true)?;
         write!(fmt, ";")?;
     }
