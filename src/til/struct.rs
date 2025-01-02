@@ -30,12 +30,12 @@ impl Struct {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: StructRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
         let members = value
             .members
             .into_iter()
-            .map(|member| StructMember::new(til, fields.next(), member, &mut *fields))
+            .map(|member| StructMember::new(til, fields.next().flatten(), member, &mut *fields))
             .collect::<Result<_>>()?;
         Ok(Struct {
             effective_alignment: value.effective_alignment,
@@ -108,7 +108,7 @@ impl StructMember {
         til: &TILSectionHeader,
         name: Option<Vec<u8>>,
         m: StructMemberRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
         Ok(Self {
             name,

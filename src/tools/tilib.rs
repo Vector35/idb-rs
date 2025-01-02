@@ -235,7 +235,15 @@ fn print_symbols(
         write!(fmt, "{}", sym_kind)?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a3a
-        print_til_type(fmt, section, Some(&symbol.name), &symbol.tinfo, true, false)?;
+        print_til_type(
+            fmt,
+            section,
+            Some(&symbol.name),
+            &symbol.tinfo,
+            true,
+            false,
+            true,
+        )?;
         writeln!(fmt, ";")?;
     }
     Ok(())
@@ -337,7 +345,7 @@ fn print_til_type_root(
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x443906
         _ => write!(fmt, "typedef ")?,
     }
-    print_til_type(fmt, section, name, til_type, true, true)
+    print_til_type(fmt, section, name, til_type, true, true, true)
 }
 
 fn print_til_type(
@@ -347,6 +355,7 @@ fn print_til_type(
     til_type: &Type,
     print_pointer_space: bool,
     print_type_prefix: bool,
+    print_name: bool,
 ) -> Result<()> {
     if til_type.is_volatile {
         write!(fmt, "volatile ")?;
@@ -375,12 +384,20 @@ fn print_til_type(
             print_pointer_space,
             print_type_prefix,
         ),
-        TypeVariant::Typedef(typedef) => print_til_type_typedef(fmt, section, name, typedef),
+        TypeVariant::Typedef(ref_type) => {
+            print_til_type_typedef(fmt, section, name, ref_type, false)
+        }
         TypeVariant::UnionRef(ref_type)
         | TypeVariant::EnumRef(ref_type)
-        | TypeVariant::StructRef(ref_type) => print_til_type_typedef(fmt, section, name, ref_type),
-        TypeVariant::Struct(til_struct) => print_til_type_struct(fmt, section, name, til_struct),
-        TypeVariant::Union(til_union) => print_til_type_union(fmt, section, name, til_union),
+        | TypeVariant::StructRef(ref_type) => {
+            print_til_type_typedef(fmt, section, name, ref_type, true)
+        }
+        TypeVariant::Struct(til_struct) => {
+            print_til_type_struct(fmt, section, name, til_struct, print_name)
+        }
+        TypeVariant::Union(til_union) => {
+            print_til_type_union(fmt, section, name, til_union, print_name)
+        }
         TypeVariant::Enum(til_enum) => print_til_type_enum(fmt, section, name, til_enum),
         TypeVariant::Bitfield(_bitfield) => write!(fmt, "todo!(\"Bitfield\")"),
     }
@@ -455,6 +472,7 @@ fn print_til_type_pointer(
             &pointer.typ,
             print_pointer_space,
             print_type_prefix,
+            true,
         )?;
         if print_pointer_space {
             write!(fmt, " ")?;
@@ -486,7 +504,7 @@ fn print_til_type_function(
     is_pointer: bool,
 ) -> Result<()> {
     // return type
-    print_til_type(fmt, section, None, &til_type.ret, false, true)?;
+    print_til_type(fmt, section, None, &til_type.ret, false, true, true)?;
 
     let cc = match (section.cc, til_type.calling_convention) {
         // don't print if using the til section default cc
@@ -520,7 +538,7 @@ fn print_til_type_function(
             write!(fmt, ", ")?;
         }
         let param_name = param_name.as_ref().map(Vec::as_slice);
-        print_til_type(fmt, section, param_name, param, true, false)?;
+        print_til_type(fmt, section, param_name, param, true, false, true)?;
     }
     if til_type.calling_convention == Some(CallingConvention::Ellipsis) {
         if !til_type.args.is_empty() {
@@ -546,6 +564,7 @@ fn print_til_type_array(
         &til_array.elem_type,
         print_pointer_space,
         print_type_prefix,
+        true,
     )?;
     if let Some(name) = name {
         write!(fmt, " ")?;
@@ -564,6 +583,7 @@ fn print_til_type_typedef(
     section: &TILSection,
     name: Option<&[u8]>,
     typedef: &Typedef,
+    print_prefix: bool,
 ) -> Result<()> {
     // only print prefix, if is root
     match typedef {
@@ -571,12 +591,12 @@ fn print_til_type_typedef(
             let ty = section
                 .get_ord(idb_rs::id0::Id0TilOrd { ord: (*ord).into() })
                 .unwrap();
-            print_til_type_name(fmt, &ty.name, &ty.tinfo, false)?;
+            print_til_type_name(fmt, &ty.name, &ty.tinfo, print_prefix)?;
         }
         idb_rs::til::Typedef::Name(name) => {
             let ty = section.get_name(name);
             match ty {
-                Some(ty) => print_til_type_name(fmt, &ty.name, &ty.tinfo, false)?,
+                Some(ty) => print_til_type_name(fmt, &ty.name, &ty.tinfo, print_prefix)?,
                 // if we can't find the type, just print the name
                 None => write!(fmt, "{}", core::str::from_utf8(name).unwrap())?,
             }
@@ -594,6 +614,7 @@ fn print_til_type_struct(
     section: &TILSection,
     name: Option<&[u8]>,
     til_struct: &Struct,
+    print_name: bool,
 ) -> Result<()> {
     write!(fmt, "struct ")?;
     if til_struct.is_unaligned {
@@ -615,12 +636,23 @@ fn print_til_type_struct(
         write!(fmt, "__other({others:04x}) ")?;
     }
     if let Some(name) = name {
-        fmt.write_all(name)?;
+        if print_name {
+            fmt.write_all(name)?;
+            write!(fmt, " ")?;
+        }
     }
-    write!(fmt, " {{")?;
+    write!(fmt, "{{")?;
     for member in &til_struct.members {
-        let name = member.name.as_ref().map(Vec::as_slice);
-        print_til_type(fmt, section, name, &member.member_type, true, false)?;
+        let member_name = member.name.as_ref().map(Vec::as_slice);
+        print_til_type_complex_member(
+            fmt,
+            section,
+            name,
+            member_name,
+            &member.member_type,
+            true,
+            true,
+        )?;
         if let Some(att) = &member.att {
             print_til_struct_member_att(fmt, &member.member_type, att)?;
         }
@@ -634,21 +666,113 @@ fn print_til_type_union(
     section: &TILSection,
     name: Option<&[u8]>,
     til_union: &Union,
+    print_name: bool,
 ) -> Result<()> {
     write!(fmt, "union ")?;
     if let Some(align) = til_union.alignment {
         write!(fmt, "__attribute__((aligned({align}))) ")?;
     }
     if let Some(name) = name {
-        fmt.write_all(name)?;
+        if print_name {
+            fmt.write_all(name)?;
+            write!(fmt, " ")?;
+        }
     }
-    write!(fmt, " {{")?;
+    write!(fmt, "{{")?;
     for (member_name, member) in &til_union.members {
         let member_name = member_name.as_ref().map(Vec::as_slice);
-        print_til_type(fmt, section, member_name, member, true, false)?;
+        print_til_type_complex_member(fmt, section, name, member_name, member, true, true)?;
         write!(fmt, ";")?;
     }
     write!(fmt, "}}")
+}
+
+// just print the type, unless we want to embed it
+fn print_til_type_complex_member(
+    fmt: &mut impl Write,
+    section: &TILSection,
+    parent_name: Option<&[u8]>,
+    name: Option<&[u8]>,
+    til: &Type,
+    print_pointer_space: bool,
+    print_name: bool,
+) -> Result<()> {
+    // if parent is not named, don't embeded it, because we can verify if it's part
+    // of the parent
+    let Some(parent_name) = parent_name else {
+        return print_til_type(
+            fmt,
+            section,
+            name,
+            til,
+            print_pointer_space,
+            false,
+            print_name,
+        );
+    };
+    let qualified_parent_name: Vec<_> = parent_name.iter().chain(b"::").copied().collect();
+
+    // TODO if the field is named, don't embeded it?
+    if name.is_some() {
+        return print_til_type(
+            fmt,
+            section,
+            name,
+            til,
+            print_pointer_space,
+            false,
+            print_name,
+        );
+    }
+
+    // if typedef of complex ref, we may want to embed the definition inside the type
+    // otherwise just print the type regularly
+    let typedef = match &til.type_variant {
+        TypeVariant::EnumRef(typedef)
+        | TypeVariant::StructRef(typedef)
+        | TypeVariant::UnionRef(typedef)
+        | TypeVariant::Typedef(typedef) => typedef,
+        _ => {
+            return print_til_type(
+                fmt,
+                section,
+                name,
+                til,
+                print_pointer_space,
+                false,
+                print_name,
+            );
+        }
+    };
+
+    let inner_type = match typedef {
+        Typedef::Ordinal(ord) => section.get_ord(Id0TilOrd { ord: (*ord).into() }).unwrap(),
+        Typedef::Name(name) => section.get_name(name).unwrap(),
+    };
+
+    // if the inner_type name is in the format `parent_name::something_else` then
+    // we embed it
+    if !inner_type.name.starts_with(&qualified_parent_name) {
+        return print_til_type(
+            fmt,
+            section,
+            name,
+            til,
+            print_pointer_space,
+            false,
+            print_name,
+        );
+    }
+
+    print_til_type(
+        fmt,
+        section,
+        Some(&inner_type.name),
+        &inner_type.tinfo,
+        print_pointer_space,
+        true,
+        false,
+    )
 }
 
 fn print_til_type_enum(

@@ -16,7 +16,7 @@ impl Pointer {
     pub(crate) fn new(
         til: &TILSectionHeader,
         raw: PointerRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
         let shifted = raw
             .shifted
