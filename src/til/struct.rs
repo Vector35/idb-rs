@@ -4,7 +4,7 @@ use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, SDACL};
 use anyhow::{anyhow, Result};
-use num_enum::{FromPrimitive, IntoPrimitive};
+use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 
 use super::{StructModifierRaw, TypeVariantRaw};
 
@@ -217,7 +217,6 @@ impl StructMemberRaw {
 
 #[derive(Clone, Copy, Debug)]
 pub enum StructMemberAtt {
-    // Var0to7(Var1(0)) seems to indicate a "None" kind of value
     Var0to7(StructMemberAttBasic),
     Var9 {
         val1: u32,
@@ -234,20 +233,6 @@ pub enum StructMemberAtt {
 // InnerRef InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x720880
 #[derive(Clone, Copy, Debug)]
 pub enum StructMemberAttBasic {
-    // 0x0 0x1   "__bin"
-    // 0x0 0x2   "__oct"
-    // 0x0 0x3   "__hex"
-    // 0x0 0x404 "__dec"
-    // 0x0 0x5   "__float"
-    // 0x0 0x6   "__char"
-    // 0x0 0x7   "__segm"
-    // 0x6 0x8   "__enum"
-    // 0x0 0x9   "__off"
-    // 0x8 0x9   "__offset"
-    // 0x8 0xa   "__strlit"
-    // 0x8 0xb   "__stroff"
-    // 0x8 0xc   "__custom"
-    // 0x0 0x100 "__invsign"
     Var1(u64),
     Var2 {
         att: u64,
@@ -280,6 +265,22 @@ impl StructMemberAtt {
                 offset: (val1 & 0xf) as u8,
                 flag: val1 & !0xf,
             }),
+            _ => None,
+        }
+    }
+
+    pub fn basic(self) -> Option<ExtAttBasic> {
+        match self {
+            StructMemberAtt::Var0to7(StructMemberAttBasic::Var1(raw)) => {
+                ExtAttBasic::from_raw(raw, None)
+            }
+            // 0x9 0x1000 "__tabform"
+            StructMemberAtt::Var0to7(StructMemberAttBasic::Var2 {
+                att,
+                val1,
+                val2,
+                val3: u32::MAX,
+            }) if att & 0x1000 != 0 => ExtAttBasic::from_raw(att & !0x1000, Some((val1, val2))),
             _ => None,
         }
     }
@@ -335,4 +336,85 @@ impl StringType {
     pub fn as_strlib(self) -> u32 {
         self.into()
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ExtAttBasic {
+    pub fmt: ExtAttBasicFmt,
+    pub tabform: Option<ExtAttBasicTabform>,
+    pub is_signed: bool,
+    pub is_inv_sign: bool,
+    pub is_inv_bits: bool,
+    pub is_lzero: bool,
+}
+impl ExtAttBasic {
+    fn from_raw(value: u64, val1: Option<(u32, u32)>) -> Option<Self> {
+        use ExtAttBasicFmt::*;
+        let fmt = match value & 0xf {
+            0x1 => Bin,
+            0x2 => Oct,
+            0x3 => Hex,
+            0x4 => Dec,
+            0x5 => Float,
+            0x6 => Char,
+            0x7 => Segm,
+            0x9 => Off,
+            _ => return None,
+        };
+        let is_inv_sign = value & 0x100 != 0;
+        let is_inv_bits = value & 0x200 != 0;
+        let is_signed = value & 0x400 != 0;
+        let is_lzero = value & 0x800 != 0;
+
+        let tabform = val1.map(|(val1, val2)| {
+            let val1 = ExtAttBasicTabformVal1::try_from_primitive(val1.try_into().ok()?).ok()?;
+            Some(ExtAttBasicTabform { val1, val2 })
+        });
+        let tabform = match tabform {
+            // convert correctly
+            Some(Some(val)) => Some(val),
+            // coud not convert, return nothing
+            Some(None) => return None,
+            // there is no tabform
+            None => None,
+        };
+
+        // TODO panic on unknown values?
+        Some(Self {
+            fmt,
+            tabform,
+            is_signed,
+            is_inv_sign,
+            is_inv_bits,
+            is_lzero,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum ExtAttBasicFmt {
+    Bin,
+    Oct,
+    Hex,
+    Dec,
+    Float,
+    Char,
+    Segm,
+    Off,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ExtAttBasicTabform {
+    pub val1: ExtAttBasicTabformVal1,
+    pub val2: u32,
+}
+
+#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive)]
+#[repr(u8)]
+pub enum ExtAttBasicTabformVal1 {
+    NODUPS = 0,
+    HEX = 1,
+    DEC = 2,
+    OCT = 3,
+    BIN = 4,
 }
