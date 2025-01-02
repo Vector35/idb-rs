@@ -233,16 +233,15 @@ fn print_symbols(
         let sym_kind = "        ";
         write!(fmt, " {} ", sym_kind)?;
 
+        // TODO investiage this
+        let name = if symbol.ordinal == 0 && symbol.name.get(0) == Some(&b'_') {
+            // remove the first "_", if any
+            &symbol.name[1..]
+        } else {
+            &symbol.name
+        };
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a3a
-        print_til_type(
-            fmt,
-            section,
-            Some(&symbol.name),
-            &symbol.tinfo,
-            true,
-            false,
-            true,
-        )?;
+        print_til_type(fmt, section, Some(name), &symbol.tinfo, true, false, true)?;
         writeln!(fmt, ";")?;
     }
     Ok(())
