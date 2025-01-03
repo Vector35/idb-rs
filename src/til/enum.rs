@@ -7,6 +7,8 @@ use anyhow::{anyhow, ensure};
 
 #[derive(Clone, Debug)]
 pub struct Enum {
+    pub is_signed: bool,
+    pub is_unsigned: bool,
     pub output_format: EnumFormat,
     pub members: Vec<(Option<Vec<u8>>, u64)>,
     pub groups: Option<Vec<u16>>,
@@ -26,6 +28,8 @@ impl Enum {
             .map(|member| (fields.next().flatten(), member))
             .collect();
         Ok(Self {
+            is_signed: value.is_signed,
+            is_unsigned: value.is_unsigned,
             output_format: value.output_format,
             members,
             groups: value.groups,
@@ -36,6 +40,8 @@ impl Enum {
 
 #[derive(Clone, Debug)]
 pub(crate) struct EnumRaw {
+    is_signed: bool,
+    is_unsigned: bool,
     output_format: EnumFormat,
     groups: Option<Vec<u16>>,
     members: Vec<u64>,
@@ -72,7 +78,7 @@ impl EnumRaw {
             "Enum BTE missing the Always sub-field"
         );
         let storage_size: Option<NonZeroU8> = match bte & BTE_SIZE_MASK {
-            0 => header.size_enum,
+            0 => None,
             emsize @ 1..=4 => Some((1 << (emsize - 1)).try_into().unwrap()),
             // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4523c8 deserialize_enum
             5..=7 => return Err(anyhow!("BTE emsize with reserved values")),
@@ -96,6 +102,11 @@ impl EnumRaw {
             _ => unreachable!(),
         };
 
+        // TODO ensure no bits from bte or taenum_bits are unparsed
+        let is_signed = taenum_bits.0 & TAENUM_SIGNED != 0;
+        let is_unsigned = taenum_bits.0 & TAENUM_UNSIGNED != 0;
+        // TODO ensure only signed/unsigned is allowed?
+        //
         let is_64 = (taenum_bits.0 & TAENUM_64BIT) != 0;
         let mut low_acc: u32 = 0;
         let mut high_acc: u32 = 0;
@@ -123,6 +134,8 @@ impl EnumRaw {
             .collect::<anyhow::Result<_>>()?;
 
         Ok(TypeVariantRaw::Enum(EnumRaw {
+            is_signed,
+            is_unsigned,
             output_format,
             members,
             groups,

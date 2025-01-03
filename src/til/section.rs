@@ -293,6 +293,7 @@ impl TILSection {
             title,
             description,
             compiler_id: header2.compiler_id,
+            // TODO panic if None?
             size_enum: header2.size_enum.try_into().ok(),
             size_int: header2.size_int.try_into()?,
             size_bool: header2.size_bool.try_into()?,
