@@ -947,6 +947,16 @@ fn print_til_struct_member_void_pointer_att(
 }
 
 fn print_til_struct_member_basic_att(fmt: &mut impl Write, att: &StructMemberAtt) -> Result<()> {
+    // TODO imcomplete implementation
+    if let Some((val, is_auto)) = att.basic_offset_type() {
+        write!(
+            fmt,
+            " __offset({val:#x}{})",
+            if is_auto { "|AUTO" } else { "" }
+        )?;
+        return Ok(());
+    }
+
     let Some(basic_att) = att.basic() else {
         // TODO don't ignore errors
         return Ok(());
