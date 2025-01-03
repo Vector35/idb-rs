@@ -632,7 +632,11 @@ fn print_til_type_struct(
 ) -> Result<()> {
     write!(fmt, "struct ")?;
     if til_struct.is_unaligned {
-        write!(fmt, "__unaligned ")?;
+        if til_struct.is_uknown_8 {
+            write!(fmt, "__attribute__((packed)) ")?;
+        } else {
+            write!(fmt, "__unaligned ")?;
+        }
     }
     if til_struct.is_msstruct {
         write!(fmt, "__attribute__((msstruct)) ")?;

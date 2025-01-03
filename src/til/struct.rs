@@ -20,6 +20,8 @@ pub struct Struct {
     pub is_cpp_obj: bool,
     /// Virtual function table
     pub is_vftable: bool,
+    /// Unknown meaning, use at your own risk
+    pub is_uknown_8: bool,
     /// Alignment in bytes
     pub alignment: Option<NonZeroU8>,
     // TODO delete others, parse all values or return an error
@@ -44,6 +46,7 @@ impl Struct {
             is_msstruct: value.modifier.is_msstruct,
             is_cpp_obj: value.modifier.is_cpp_obj,
             is_vftable: value.modifier.is_vftable,
+            is_uknown_8: value.modifier.is_unknown_8,
             alignment: value.modifier.alignment,
             others: value.modifier.others,
         })
@@ -80,9 +83,17 @@ impl StructRaw {
         let alpow = n & 7;
         let effective_alignment = (alpow != 0).then(|| NonZeroU8::new(1 << (alpow - 1)).unwrap());
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459c97
-        let taudt_bits = SDACL::read(&mut *input)?;
+        let mut taudt_bits = SDACL::read(&mut *input)?;
+
+        // consume the is_bit used by the StructMemberRaw
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
+        let is_bitset = taudt_bits.0 .0 & 0x200 != 0;
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
+        let is_bitset2 = taudt_bits.0 .0 & 0x4 != 0;
+        taudt_bits.0 .0 &= !0x204;
+
         let members = (0..mem_cnt)
-            .map(|_| StructMemberRaw::read(&mut *input, header, taudt_bits.0 .0))
+            .map(|_| StructMemberRaw::read(&mut *input, header, is_bitset, is_bitset2))
             .collect::<Result<_, _>>()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
@@ -129,12 +140,10 @@ impl StructMemberRaw {
     fn read(
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
-        taudt_bits: u16,
+        is_bit_set: bool,
+        is_bit_set2: bool,
     ) -> Result<Self> {
         let ty = TypeRaw::read(&mut *input, header)?;
-
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
-        let is_bit_set = taudt_bits & 0x200 != 0;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478256
         let att = is_bit_set
@@ -147,7 +156,7 @@ impl StructMemberRaw {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
             sdacl = SDACL::read(&mut *input)?;
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
-            if taudt_bits & 4 != 0 && sdacl.0 .0 & 0x200 == 0 {
+            if is_bit_set2 && sdacl.0 .0 & 0x200 == 0 {
                 // TODO there is more to this impl?
                 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478411
                 // todo!();
