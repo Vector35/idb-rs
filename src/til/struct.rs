@@ -293,6 +293,18 @@ impl StructMemberAtt {
             _ => None,
         }
     }
+
+    pub fn basic_offset_type(self) -> Option<(u32, bool)> {
+        match self {
+            StructMemberAtt::Var9 {
+                val1,
+                att0: Some(att0 @ (0 | 0x3f58)),
+                att1: 0,
+                att2: u64::MAX,
+            } => Some((val1, att0 == 0x3f58)),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
