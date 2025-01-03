@@ -387,7 +387,7 @@ fn print_til_type(
             print_type_prefix,
         ),
         TypeVariant::Typedef(ref_type) => {
-            print_til_type_typedef(fmt, section, name, ref_type, false)
+            print_til_type_typedef(fmt, section, name, ref_type, false, None)
         }
         TypeVariant::UnionRef(ref_type) => {
             print_til_type_complex_ref(fmt, section, name, ref_type, "union", true)
@@ -480,7 +480,8 @@ fn print_til_type_pointer(
             print_type_prefix,
             true,
         )?;
-        if print_pointer_space {
+        // if the innertype is also a pointer, don't print the space
+        if print_pointer_space && !matches!(&pointer.typ.type_variant, TypeVariant::Pointer(_)) {
             write!(fmt, " ")?;
         }
         let modifier = match pointer.modifier {
@@ -590,6 +591,7 @@ fn print_til_type_typedef(
     name: Option<&[u8]>,
     typedef: &Typedef,
     print_prefix: bool,
+    ref_prefix: Option<&str>,
 ) -> Result<()> {
     // only print prefix, if is root
     match typedef {
@@ -607,7 +609,14 @@ fn print_til_type_typedef(
             match ty {
                 Some(ty) => print_til_type_name(fmt, &ty.name, &ty.tinfo, print_prefix)?,
                 // if we can't find the type, just print the name
-                None => write!(fmt, "{}", String::from_utf8_lossy(name))?,
+                None => {
+                    if print_prefix {
+                        if let Some(ref_prefix) = ref_prefix {
+                            write!(fmt, "{ref_prefix} ")?;
+                        }
+                    }
+                    write!(fmt, "{}", String::from_utf8_lossy(name))?
+                }
             }
         }
     }
@@ -635,7 +644,7 @@ fn print_til_type_complex_ref(
             }
         }
     } else {
-        print_til_type_typedef(fmt, section, name, typedef, print_prefix)?;
+        print_til_type_typedef(fmt, section, name, typedef, print_prefix, Some(prefix_name))?;
     }
     Ok(())
 }
