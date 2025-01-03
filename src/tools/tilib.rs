@@ -499,6 +499,11 @@ fn print_til_type_pointer(
         if let Some(name) = name {
             fmt.write_all(name)?;
         }
+
+        // if the pointed type itself is a VFT then the pointer need to print that
+        if is_vft(section, &pointer.typ) {
+            write!(fmt, " /*VFT*/")?;
+        }
     }
     Ok(())
 }
@@ -953,7 +958,6 @@ fn print_til_struct_member_void_pointer_att(
 
 fn print_til_struct_member_basic_att(fmt: &mut impl Write, att: &StructMemberAtt) -> Result<()> {
     let Some(basic_att) = att.basic() else {
-        write!(fmt, " {att:x?}")?;
         // TODO don't ignore errors
         return Ok(());
     };
@@ -1120,4 +1124,25 @@ fn print_types_total(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
         fmt,
         "Total {symbols_num} symbols, {types_num} types, {macros_num} macros"
     )
+}
+
+fn is_vft(section: &TILSection, typ: &Type) -> bool {
+    match &typ.type_variant {
+        // propagate the search?
+        //TypeVariant::Pointer(pointer) => todo!(),
+        // TODO struct with only function-pointers is also vftable?
+        TypeVariant::Struct(ty) => ty.is_vftable,
+        TypeVariant::Typedef(typedef) | TypeVariant::StructRef(typedef) => {
+            let inner_type = match typedef {
+                Typedef::Ordinal(ord) => section.get_ord(Id0TilOrd { ord: (*ord).into() }),
+                Typedef::Name(None) => return false,
+                Typedef::Name(Some(name)) => section.get_name(name),
+            };
+            let Some(inner_type) = inner_type else {
+                return false;
+            };
+            is_vft(section, &inner_type.tinfo)
+        }
+        _ => false,
+    }
 }
