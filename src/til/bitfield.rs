@@ -1,3 +1,5 @@
+use std::num::NonZeroU8;
+
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::TAH;
 
@@ -5,7 +7,7 @@ use crate::til::TAH;
 pub struct Bitfield {
     pub unsigned: bool,
     pub width: u16,
-    pub nbytes: i32,
+    pub nbytes: NonZeroU8,
 }
 
 impl Bitfield {
@@ -25,7 +27,7 @@ impl Bitfield {
         Ok(Self {
             unsigned,
             width,
-            nbytes,
+            nbytes: nbytes.try_into().unwrap(),
         })
     }
 }
