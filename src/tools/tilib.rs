@@ -1,5 +1,6 @@
 use idb_rs::id0::{Compiler, Id0TilOrd};
 use idb_rs::til::array::Array;
+use idb_rs::til::bitfield::Bitfield;
 use idb_rs::til::function::{CallingConvention, Function};
 use idb_rs::til::pointer::Pointer;
 use idb_rs::til::r#enum::Enum;
@@ -405,7 +406,7 @@ fn print_til_type(
             print_til_type_union(fmt, section, name, til_union, print_name)
         }
         TypeVariant::Enum(til_enum) => print_til_type_enum(fmt, section, name, til_enum),
-        TypeVariant::Bitfield(_bitfield) => write!(fmt, "todo!(\"Bitfield\")"),
+        TypeVariant::Bitfield(bitfield) => print_til_type_bitfield(fmt, name, bitfield),
     }
 }
 
@@ -415,44 +416,9 @@ fn print_til_type_basic(
     name: Option<&[u8]>,
     til_basic: &Basic,
 ) -> Result<()> {
-    const fn signed_name(is_signed: Option<bool>) -> &'static str {
-        match is_signed {
-            Some(true) | None => "",
-            Some(false) => "unsigned ",
-        }
-    }
-
-    let name_space = if name.is_some() { " " } else { "" };
-    match til_basic {
-        Basic::Bool => write!(fmt, "bool{name_space}",)?,
-        Basic::Char => write!(fmt, "char{name_space}",)?,
-        Basic::Short { is_signed } => write!(fmt, "{}short{name_space}", signed_name(*is_signed))?,
-        Basic::Void => write!(fmt, "void{name_space}",)?,
-        Basic::SegReg => write!(fmt, "SegReg{name_space}")?,
-        Basic::Unknown { bytes: 1 } => write!(fmt, "_BYTE{name_space}")?,
-        Basic::Unknown { bytes: 2 } => write!(fmt, "_WORD{name_space}")?,
-        Basic::Unknown { bytes: 4 } => write!(fmt, "_DWORD{name_space}")?,
-        Basic::Unknown { bytes: 8 } => write!(fmt, "_QWORD{name_space}")?,
-        Basic::Unknown { bytes } => write!(fmt, "unknown{bytes}{name_space}")?,
-        Basic::Int { is_signed } => write!(fmt, "{}int{name_space}", signed_name(*is_signed))?,
-        Basic::Long { is_signed } => write!(fmt, "{}long{name_space}", signed_name(*is_signed))?,
-        Basic::LongLong { is_signed } => {
-            write!(fmt, "{}longlong{name_space}", signed_name(*is_signed))?
-        }
-        Basic::IntSized { bytes, is_signed } => {
-            if let Some(false) = is_signed {
-                write!(fmt, "unsigned ")?;
-            }
-            write!(fmt, "__int{}{name_space}", bytes.get() * 8)?
-        }
-        Basic::LongDouble => write!(fmt, "longfloat{name_space}")?,
-        Basic::Float { bytes } if bytes.get() == 4 => write!(fmt, "float{name_space}")?,
-        Basic::Float { bytes } if bytes.get() == 8 => write!(fmt, "double{name_space}")?,
-        Basic::Float { bytes } => write!(fmt, "float{bytes}{name_space}")?,
-        Basic::BoolSized { bytes } if bytes.get() == 1 => write!(fmt, "bool{name_space}")?,
-        Basic::BoolSized { bytes } => write!(fmt, "bool{bytes}{name_space}")?,
-    }
+    print_basic_type(fmt, til_basic)?;
     if let Some(name) = name {
+        write!(fmt, " ")?;
         fmt.write_all(name)?;
     }
     Ok(())
@@ -885,6 +851,26 @@ fn print_til_type_enum(
     write!(fmt, "}}")
 }
 
+fn print_til_type_bitfield(
+    fmt: &mut impl Write,
+    name: Option<&[u8]>,
+    bitfield: &Bitfield,
+) -> Result<()> {
+    print_basic_type(
+        fmt,
+        &Basic::IntSized {
+            bytes: bitfield.nbytes,
+            is_signed: Some(!bitfield.unsigned),
+        },
+    )?;
+    if let Some(name) = name {
+        write!(fmt, " ")?;
+        fmt.write_all(name)?;
+    }
+    write!(fmt, " : {}", bitfield.width)?;
+    Ok(())
+}
+
 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x423c20
 fn print_til_struct_member_att(
     fmt: &mut impl Write,
@@ -1145,4 +1131,42 @@ fn is_vft(section: &TILSection, typ: &Type) -> bool {
         }
         _ => false,
     }
+}
+
+fn print_basic_type(fmt: &mut impl Write, til_basic: &Basic) -> Result<()> {
+    const fn signed_name(is_signed: Option<bool>) -> &'static str {
+        match is_signed {
+            Some(true) | None => "",
+            Some(false) => "unsigned ",
+        }
+    }
+
+    match til_basic {
+        Basic::Bool => write!(fmt, "bool")?,
+        Basic::Char => write!(fmt, "char")?,
+        Basic::Short { is_signed } => write!(fmt, "{}short", signed_name(*is_signed))?,
+        Basic::Void => write!(fmt, "void")?,
+        Basic::SegReg => write!(fmt, "SegReg")?,
+        Basic::Unknown { bytes: 1 } => write!(fmt, "_BYTE")?,
+        Basic::Unknown { bytes: 2 } => write!(fmt, "_WORD")?,
+        Basic::Unknown { bytes: 4 } => write!(fmt, "_DWORD")?,
+        Basic::Unknown { bytes: 8 } => write!(fmt, "_QWORD")?,
+        Basic::Unknown { bytes } => write!(fmt, "unknown{bytes}")?,
+        Basic::Int { is_signed } => write!(fmt, "{}int", signed_name(*is_signed))?,
+        Basic::Long { is_signed } => write!(fmt, "{}long", signed_name(*is_signed))?,
+        Basic::LongLong { is_signed } => write!(fmt, "{}longlong", signed_name(*is_signed))?,
+        Basic::IntSized { bytes, is_signed } => {
+            if let Some(false) = is_signed {
+                write!(fmt, "unsigned ")?;
+            }
+            write!(fmt, "__int{}", bytes.get() * 8)?
+        }
+        Basic::LongDouble => write!(fmt, "longfloat")?,
+        Basic::Float { bytes } if bytes.get() == 4 => write!(fmt, "float")?,
+        Basic::Float { bytes } if bytes.get() == 8 => write!(fmt, "double")?,
+        Basic::Float { bytes } => write!(fmt, "float{bytes}")?,
+        Basic::BoolSized { bytes } if bytes.get() == 1 => write!(fmt, "bool")?,
+        Basic::BoolSized { bytes } => write!(fmt, "bool{bytes}")?,
+    }
+    Ok(())
 }
