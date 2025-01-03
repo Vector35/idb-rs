@@ -521,6 +521,9 @@ fn print_til_type_function(
         let param_name = param_name.as_ref().map(Vec::as_slice);
         print_til_type(fmt, section, param_name, param, true, false, true)?;
     }
+    if til_type.args.len() == 0 {
+        write!(fmt, "void")?;
+    }
     if til_type.calling_convention == Some(CallingConvention::Ellipsis) {
         if !til_type.args.is_empty() {
             write!(fmt, ", ")?;
@@ -958,12 +961,6 @@ fn print_til_struct_member_basic_att(fmt: &mut impl Write, att: &StructMemberAtt
     }
 
     let Some(basic_att) = att.basic() else {
-        if !matches!(
-            att,
-            StructMemberAtt::Var0to7(idb_rs::til::r#struct::StructMemberAttBasic::Var1(0))
-        ) {
-            write!(fmt, " __other({att:x?})",)?;
-        }
         // TODO don't ignore errors
         return Ok(());
     };
