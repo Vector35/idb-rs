@@ -958,6 +958,12 @@ fn print_til_struct_member_basic_att(fmt: &mut impl Write, att: &StructMemberAtt
     }
 
     let Some(basic_att) = att.basic() else {
+        if !matches!(
+            att,
+            StructMemberAtt::Var0to7(idb_rs::til::r#struct::StructMemberAttBasic::Var1(0))
+        ) {
+            write!(fmt, " __other({att:x?})",)?;
+        }
         // TODO don't ignore errors
         return Ok(());
     };
