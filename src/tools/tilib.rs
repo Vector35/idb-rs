@@ -511,7 +511,10 @@ fn print_til_type_function(
     is_pointer: bool,
 ) -> Result<()> {
     // return type
-    print_til_type(fmt, section, None, &til_type.ret, false, true, true)?;
+    print_til_type(fmt, section, None, &til_type.ret, true, true, true)?;
+    if !matches!(&til_type.ret.type_variant, TypeVariant::Pointer(_)) {
+        write!(fmt, " ")?;
+    }
 
     let cc = match (section.cc, til_type.calling_convention) {
         // don't print if using the til section default cc
@@ -526,10 +529,10 @@ fn print_til_type_function(
 
     // print name and calling convention
     match (is_pointer, cc) {
-        (true, None) => write!(fmt, " (*")?,
-        (false, None) => write!(fmt, " ")?,
-        (true, Some(cc)) => write!(fmt, " (__{cc} *")?,
-        (false, Some(cc)) => write!(fmt, " __{cc} ")?,
+        (true, None) => write!(fmt, "(*")?,
+        (false, None) => write!(fmt, "")?,
+        (true, Some(cc)) => write!(fmt, "(__{cc} *")?,
+        (false, Some(cc)) => write!(fmt, "__{cc} ")?,
     }
     if let Some(name) = name {
         fmt.write_all(name)?;
@@ -843,6 +846,7 @@ fn print_til_type_enum(
     write!(fmt, "enum {output_fmt_name}")?;
     if let Some(name) = name {
         fmt.write_all(name)?;
+        write!(fmt, " ")?;
     }
     match (til_enum.storage_size, section.size_enum) {
         (None, None) => {}
@@ -856,14 +860,14 @@ fn print_til_type_enum(
                     .map(|x| x.max(1)) //can't have a value being represented in 0bits
                     .unwrap_or(8);
                 if bits_required / 8 < storage_size.get().into() {
-                    write!(fmt, ": __int{}", storage_size.get() as usize * 8)?;
+                    write!(fmt, ": __int{} ", storage_size.get() as usize * 8)?;
                 }
             }
         }
         (None, Some(_)) => {}
         (Some(_), None) => {}
     }
-    write!(fmt, " {{")?;
+    write!(fmt, "{{")?;
     for (member_name, value) in &til_enum.members {
         if let Some(member_name) = member_name {
             fmt.write_all(member_name)?;
