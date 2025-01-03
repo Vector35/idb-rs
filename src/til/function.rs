@@ -29,12 +29,12 @@ impl Function {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: FunctionRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
         let ret = Type::new(til, *value.ret, &mut *fields)?;
         let mut args = Vec::with_capacity(value.args.len());
         for (arg_type, arg_loc) in value.args {
-            let field_name = fields.next();
+            let field_name = fields.next().flatten();
             let new_member = Type::new(til, arg_type, &mut *fields)?;
             args.push((field_name, new_member, arg_loc));
         }

@@ -4,7 +4,7 @@ use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw, SDACL};
 use anyhow::{anyhow, Result};
-use num_enum::{FromPrimitive, IntoPrimitive};
+use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 
 use super::{StructModifierRaw, TypeVariantRaw};
 
@@ -20,6 +20,8 @@ pub struct Struct {
     pub is_cpp_obj: bool,
     /// Virtual function table
     pub is_vftable: bool,
+    /// Unknown meaning, use at your own risk
+    pub is_uknown_8: bool,
     /// Alignment in bytes
     pub alignment: Option<NonZeroU8>,
     // TODO delete others, parse all values or return an error
@@ -30,12 +32,12 @@ impl Struct {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: StructRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
         let members = value
             .members
             .into_iter()
-            .map(|member| StructMember::new(til, fields.next(), member, &mut *fields))
+            .map(|member| StructMember::new(til, fields.next().flatten(), member, &mut *fields))
             .collect::<Result<_>>()?;
         Ok(Struct {
             effective_alignment: value.effective_alignment,
@@ -44,6 +46,7 @@ impl Struct {
             is_msstruct: value.modifier.is_msstruct,
             is_cpp_obj: value.modifier.is_cpp_obj,
             is_vftable: value.modifier.is_vftable,
+            is_uknown_8: value.modifier.is_unknown_8,
             alignment: value.modifier.alignment,
             others: value.modifier.others,
         })
@@ -68,7 +71,10 @@ impl StructRaw {
             // simple reference
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
             let _taudt_bits = SDACL::read(&mut *input)?;
-            return Ok(TypeVariantRaw::StructRef(Box::new(ref_type)));
+            let TypeVariantRaw::Typedef(ref_type) = ref_type.variant else {
+                return Err(anyhow!("StructRef Non Typedef"));
+            };
+            return Ok(TypeVariantRaw::StructRef(ref_type));
         };
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
@@ -77,9 +83,18 @@ impl StructRaw {
         let alpow = n & 7;
         let effective_alignment = (alpow != 0).then(|| NonZeroU8::new(1 << (alpow - 1)).unwrap());
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459c97
-        let taudt_bits = SDACL::read(&mut *input)?;
+        let mut taudt_bits = SDACL::read(&mut *input)?;
+
+        // consume the is_bit used by the StructMemberRaw
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
+        let is_bitset = taudt_bits.0 .0 & 0x200 != 0;
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
+        // TODO this value can't be right, it defines the alignment!
+        let is_bitset2 = taudt_bits.0 .0 & 0x4 != 0;
+        taudt_bits.0 .0 &= !0x200; // NOTE don't consume 0x4, it's used somewhere else
+
         let members = (0..mem_cnt)
-            .map(|_| StructMemberRaw::read(&mut *input, header, taudt_bits.0 .0))
+            .map(|_| StructMemberRaw::read(&mut *input, header, is_bitset, is_bitset2))
             .collect::<Result<_, _>>()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
@@ -105,7 +120,7 @@ impl StructMember {
         til: &TILSectionHeader,
         name: Option<Vec<u8>>,
         m: StructMemberRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
         Ok(Self {
             name,
@@ -126,12 +141,10 @@ impl StructMemberRaw {
     fn read(
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
-        taudt_bits: u16,
+        is_bit_set: bool,
+        is_bit_set2: bool,
     ) -> Result<Self> {
         let ty = TypeRaw::read(&mut *input, header)?;
-
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
-        let is_bit_set = taudt_bits & 0x200 != 0;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478256
         let att = is_bit_set
@@ -144,7 +157,7 @@ impl StructMemberRaw {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
             sdacl = SDACL::read(&mut *input)?;
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
-            if taudt_bits & 4 != 0 && sdacl.0 .0 & 0x200 == 0 {
+            if is_bit_set2 && sdacl.0 .0 & 0x200 == 0 {
                 // TODO there is more to this impl?
                 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478411
                 // todo!();
@@ -214,7 +227,6 @@ impl StructMemberRaw {
 
 #[derive(Clone, Copy, Debug)]
 pub enum StructMemberAtt {
-    // Var0to7(Var1(0)) seems to indicate a "None" kind of value
     Var0to7(StructMemberAttBasic),
     Var9 {
         val1: u32,
@@ -228,6 +240,7 @@ pub enum StructMemberAtt {
     },
 }
 
+// InnerRef InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x720880
 #[derive(Clone, Copy, Debug)]
 pub enum StructMemberAttBasic {
     Var1(u64),
@@ -242,12 +255,91 @@ pub enum StructMemberAttBasic {
 impl StructMemberAtt {
     pub fn str_type(self) -> Option<StringType> {
         match self {
+            // 0x8 0xa   "__strlit"
             StructMemberAtt::VarAorC {
                 val1,
                 att0: StructMemberAttBasic::Var1(0xa),
             } => Some(val1.into()),
             _ => None,
         }
+    }
+    pub fn offset_type(self) -> Option<ExtAttOffset> {
+        match self {
+            // 0x8 0x9   "__offset"
+            StructMemberAtt::Var9 {
+                val1,
+                att0: None,
+                att1: 0,
+                att2: u64::MAX,
+            } => Some(ExtAttOffset {
+                offset: (val1 & 0xf) as u8,
+                flag: val1 & !0xf,
+            }),
+            _ => None,
+        }
+    }
+
+    pub fn basic(self) -> Option<ExtAttBasic> {
+        match self {
+            StructMemberAtt::Var0to7(StructMemberAttBasic::Var1(raw)) => {
+                ExtAttBasic::from_raw(raw, None)
+            }
+            // 0x9 0x1000 "__tabform"
+            StructMemberAtt::Var0to7(StructMemberAttBasic::Var2 {
+                att,
+                val1,
+                val2,
+                val3: u32::MAX,
+            }) if att & 0x1000 != 0 => ExtAttBasic::from_raw(att & !0x1000, Some((val1, val2))),
+            _ => None,
+        }
+    }
+
+    pub fn basic_offset_type(self) -> Option<(u32, bool)> {
+        // TODO find the InnerRef
+        match self {
+            StructMemberAtt::Var9 {
+                val1,
+                att0: Some(att0 @ (0 | 0x4e8 | 0x3f58)),
+                att1: 0,
+                att2: u64::MAX,
+            } => Some((val1, att0 != 0)),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ExtAttOffset {
+    pub offset: u8,
+    // InnerRef InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x720aa0
+    flag: u32,
+}
+
+impl ExtAttOffset {
+    pub fn is_rvaoff(&self) -> bool {
+        self.flag & 0x10 != 0
+    }
+    pub fn is_pastend(&self) -> bool {
+        self.flag & 0x20 != 0
+    }
+    pub fn is_nobase(&self) -> bool {
+        self.flag & 0x80 != 0
+    }
+    pub fn is_subtract(&self) -> bool {
+        self.flag & 0x100 != 0
+    }
+    pub fn is_signedop(&self) -> bool {
+        self.flag & 0x200 != 0
+    }
+    pub fn is_nozeroes(&self) -> bool {
+        self.flag & 0x400 != 0
+    }
+    pub fn is_noones(&self) -> bool {
+        self.flag & 0x800 != 0
+    }
+    pub fn is_selfref(&self) -> bool {
+        self.flag & 0x1000 != 0
     }
 }
 
@@ -267,4 +359,85 @@ impl StringType {
     pub fn as_strlib(self) -> u32 {
         self.into()
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ExtAttBasic {
+    pub fmt: ExtAttBasicFmt,
+    pub tabform: Option<ExtAttBasicTabform>,
+    pub is_signed: bool,
+    pub is_inv_sign: bool,
+    pub is_inv_bits: bool,
+    pub is_lzero: bool,
+}
+impl ExtAttBasic {
+    fn from_raw(value: u64, val1: Option<(u32, u32)>) -> Option<Self> {
+        use ExtAttBasicFmt::*;
+        let fmt = match value & 0xf {
+            0x1 => Bin,
+            0x2 => Oct,
+            0x3 => Hex,
+            0x4 => Dec,
+            0x5 => Float,
+            0x6 => Char,
+            0x7 => Segm,
+            0x9 => Off,
+            _ => return None,
+        };
+        let is_inv_sign = value & 0x100 != 0;
+        let is_inv_bits = value & 0x200 != 0;
+        let is_signed = value & 0x400 != 0;
+        let is_lzero = value & 0x800 != 0;
+
+        let tabform = val1.map(|(val1, val2)| {
+            let val1 = ExtAttBasicTabformVal1::try_from_primitive(val1.try_into().ok()?).ok()?;
+            Some(ExtAttBasicTabform { val1, val2 })
+        });
+        let tabform = match tabform {
+            // convert correctly
+            Some(Some(val)) => Some(val),
+            // coud not convert, return nothing
+            Some(None) => return None,
+            // there is no tabform
+            None => None,
+        };
+
+        // TODO panic on unknown values?
+        Some(Self {
+            fmt,
+            tabform,
+            is_signed,
+            is_inv_sign,
+            is_inv_bits,
+            is_lzero,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum ExtAttBasicFmt {
+    Bin,
+    Oct,
+    Hex,
+    Dec,
+    Float,
+    Char,
+    Segm,
+    Off,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ExtAttBasicTabform {
+    pub val1: ExtAttBasicTabformVal1,
+    pub val2: u32,
+}
+
+#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive)]
+#[repr(u8)]
+pub enum ExtAttBasicTabformVal1 {
+    NODUPS = 0,
+    HEX = 1,
+    DEC = 2,
+    OCT = 3,
+    BIN = 4,
 }

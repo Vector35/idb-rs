@@ -1,3 +1,5 @@
+use anyhow::anyhow;
+
 use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
@@ -18,13 +20,13 @@ impl Union {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: UnionRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         let members = value
             .members
             .into_iter()
             .map(|member| {
-                let field_name = fields.next();
+                let field_name = fields.next().flatten();
                 let new_member = Type::new(til, member, &mut *fields)?;
                 Ok((field_name, new_member))
             })
@@ -56,7 +58,10 @@ impl UnionRaw {
             // is ref
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
             let _taudt_bits = SDACL::read(&mut *input)?;
-            return Ok(TypeVariantRaw::UnionRef(Box::new(ref_type)));
+            let TypeVariantRaw::Typedef(ref_type) = ref_type.variant else {
+                return Err(anyhow!("UnionRef Non Typedef"));
+            };
+            return Ok(TypeVariantRaw::UnionRef(ref_type));
         };
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9

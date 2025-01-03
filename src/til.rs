@@ -78,12 +78,12 @@ impl TILTypeInfo {
         let fieldcmts = cursor.read_c_string_raw()?;
         let sclass: u8 = cursor.read_u8()?;
 
-        let mut fields_iter = fields.into_iter();
+        let mut fields_iter =
+            fields
+                .into_iter()
+                .map(|field| if field.is_empty() { None } else { Some(field) });
         let tinfo = Type::new(til, tinfo_raw, &mut fields_iter)?;
-        ensure!(
-            fields_iter.as_slice().is_empty(),
-            "Extra fields found for til"
-        );
+        ensure!(fields_iter.next().is_none(), "Extra fields found for til");
 
         Ok(Self {
             _flags: flags,
@@ -114,10 +114,9 @@ pub enum TypeVariant {
     Struct(Struct),
     Union(Union),
     Enum(Enum),
-    // TODO narrow what kinds of Type can be inside the Ref
-    StructRef(Box<Type>),
-    UnionRef(Box<Type>),
-    EnumRef(Box<Type>),
+    StructRef(Typedef),
+    UnionRef(Typedef),
+    EnumRef(Typedef),
     Bitfield(Bitfield),
 }
 
@@ -125,7 +124,7 @@ impl Type {
     pub(crate) fn new(
         til: &TILSectionHeader,
         tinfo_raw: TypeRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
         let type_variant = match tinfo_raw.variant {
             TypeVariantRaw::Basic(x) => TypeVariant::Basic(x),
@@ -139,15 +138,9 @@ impl Type {
             TypeVariantRaw::Struct(x) => Struct::new(til, x, fields).map(TypeVariant::Struct)?,
             TypeVariantRaw::Union(x) => Union::new(til, x, fields).map(TypeVariant::Union)?,
             TypeVariantRaw::Enum(x) => Enum::new(til, x, fields).map(TypeVariant::Enum)?,
-            TypeVariantRaw::StructRef(type_raw) => {
-                TypeVariant::StructRef(Box::new(Type::new(til, *type_raw, fields)?))
-            }
-            TypeVariantRaw::UnionRef(type_raw) => {
-                TypeVariant::UnionRef(Box::new(Type::new(til, *type_raw, fields)?))
-            }
-            TypeVariantRaw::EnumRef(type_raw) => {
-                TypeVariant::EnumRef(Box::new(Type::new(til, *type_raw, fields)?))
-            }
+            TypeVariantRaw::StructRef(typedef) => TypeVariant::StructRef(typedef),
+            TypeVariantRaw::UnionRef(typedef) => TypeVariant::UnionRef(typedef),
+            TypeVariantRaw::EnumRef(typedef) => TypeVariant::EnumRef(typedef),
         };
         Ok(Self {
             is_const: tinfo_raw.is_const,
@@ -188,10 +181,13 @@ impl Type {
                 ));
             }
         }
-        let mut fields_iter = fields.into_iter();
+        let mut fields_iter =
+            fields
+                .into_iter()
+                .map(|field| if field.is_empty() { None } else { Some(field) });
         let result = Self::new(&header, type_raw, &mut fields_iter)?;
         ensure!(
-            fields_iter.as_slice().is_empty(),
+            fields_iter.next().is_none(),
             "Extra fields found for id0 til"
         );
         Ok(result)
@@ -215,9 +211,9 @@ pub(crate) enum TypeVariantRaw {
     Struct(StructRaw),
     Union(UnionRaw),
     Enum(EnumRaw),
-    StructRef(Box<TypeRaw>),
-    UnionRef(Box<TypeRaw>),
-    EnumRef(Box<TypeRaw>),
+    StructRef(Typedef),
+    UnionRef(Typedef),
+    EnumRef(Typedef),
     Bitfield(Bitfield),
 }
 
@@ -456,7 +452,7 @@ impl Basic {
 pub enum Typedef {
     // TODO make this a `Id0TilOrd`
     Ordinal(u32),
-    Name(Vec<u8>),
+    Name(Option<Vec<u8>>),
 }
 
 impl Typedef {
@@ -471,7 +467,7 @@ impl Typedef {
                 }
                 Ok(Typedef::Ordinal(de))
             }
-            _ => Ok(Typedef::Name(buf)),
+            _ => Ok(Typedef::Name(if buf.is_empty() { None } else { Some(buf) })),
         }
     }
 }
@@ -680,6 +676,8 @@ pub struct StructModifierRaw {
     is_cpp_obj: bool,
     /// Virtual function table
     is_vftable: bool,
+    // TODO unknown meaning
+    is_unknown_8: bool,
     /// Alignment in bytes
     alignment: Option<NonZeroU8>,
     /// other unknown value
@@ -699,10 +697,15 @@ impl StructModifierRaw {
         let is_unaligned = value & TAUDT_UNALIGNED != 0;
         let is_vftable = value & TAUDT_VFTABLE != 0;
         let alignment_raw = value & TAUDT_ALIGN_MASK;
+        let is_unknown_8 = value & 0x8 != 0;
         let alignment =
             (alignment_raw != 0).then(|| NonZeroU8::new(1 << (alignment_raw - 1)).unwrap());
-        let all_masks =
-            TAUDT_MSSTRUCT | TAUDT_CPPOBJ | TAUDT_UNALIGNED | TAUDT_VFTABLE | TAUDT_ALIGN_MASK;
+        let all_masks = TAUDT_MSSTRUCT
+            | TAUDT_CPPOBJ
+            | TAUDT_UNALIGNED
+            | TAUDT_VFTABLE
+            | TAUDT_ALIGN_MASK
+            | 0x8;
         let others = NonZeroU16::new(value & !all_masks);
         Self {
             is_unaligned,
@@ -710,6 +713,7 @@ impl StructModifierRaw {
             is_cpp_obj,
             is_vftable,
             alignment,
+            is_unknown_8,
             others,
         }
     }

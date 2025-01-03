@@ -14,7 +14,7 @@ impl Array {
     pub(crate) fn new(
         til: &TILSectionHeader,
         value: ArrayRaw,
-        fields: &mut impl Iterator<Item = Vec<u8>>,
+        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             base: value.base,
