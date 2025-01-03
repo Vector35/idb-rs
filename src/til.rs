@@ -676,6 +676,8 @@ pub struct StructModifierRaw {
     is_cpp_obj: bool,
     /// Virtual function table
     is_vftable: bool,
+    // TODO unknown meaning
+    is_unknown_8: bool,
     /// Alignment in bytes
     alignment: Option<NonZeroU8>,
     /// other unknown value
@@ -695,10 +697,15 @@ impl StructModifierRaw {
         let is_unaligned = value & TAUDT_UNALIGNED != 0;
         let is_vftable = value & TAUDT_VFTABLE != 0;
         let alignment_raw = value & TAUDT_ALIGN_MASK;
+        let is_unknown_8 = value & 0x8 != 0;
         let alignment =
             (alignment_raw != 0).then(|| NonZeroU8::new(1 << (alignment_raw - 1)).unwrap());
-        let all_masks =
-            TAUDT_MSSTRUCT | TAUDT_CPPOBJ | TAUDT_UNALIGNED | TAUDT_VFTABLE | TAUDT_ALIGN_MASK;
+        let all_masks = TAUDT_MSSTRUCT
+            | TAUDT_CPPOBJ
+            | TAUDT_UNALIGNED
+            | TAUDT_VFTABLE
+            | TAUDT_ALIGN_MASK
+            | 0x8;
         let others = NonZeroU16::new(value & !all_masks);
         Self {
             is_unaligned,
@@ -706,6 +713,7 @@ impl StructModifierRaw {
             is_cpp_obj,
             is_vftable,
             alignment,
+            is_unknown_8,
             others,
         }
     }
