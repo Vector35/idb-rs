@@ -848,24 +848,15 @@ fn print_til_type_enum(
         fmt.write_all(name)?;
         write!(fmt, " ")?;
     }
-    match (til_enum.storage_size, section.size_enum) {
-        (None, None) => {}
-        (Some(storage_size), Some(size_enum)) => {
-            if storage_size != size_enum {
-                let bits_required = til_enum
-                    .members
-                    .iter()
-                    .map(|(_, value)| u64::BITS - value.leading_zeros())
-                    .max()
-                    .map(|x| x.max(1)) //can't have a value being represented in 0bits
-                    .unwrap_or(8);
-                if bits_required / 8 < storage_size.get().into() {
-                    write!(fmt, ": __int{} ", storage_size.get() as usize * 8)?;
-                }
-            }
-        }
-        (None, Some(_)) => {}
-        (Some(_), None) => {}
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4443b0
+    if til_enum.storage_size.is_some() || til_enum.is_signed || til_enum.is_unsigned {
+        let bytes = til_enum.storage_size.or(section.size_enum).unwrap();
+        let signed = if til_enum.is_unsigned {
+            "unsigned "
+        } else {
+            ""
+        };
+        write!(fmt, ": {signed}__int{} ", bytes.get() as usize * 8)?;
     }
     write!(fmt, "{{")?;
     for (member_name, value) in &til_enum.members {
