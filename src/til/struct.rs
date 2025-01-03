@@ -89,8 +89,9 @@ impl StructRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
         let is_bitset = taudt_bits.0 .0 & 0x200 != 0;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
+        // TODO this value can't be right, it defines the alignment!
         let is_bitset2 = taudt_bits.0 .0 & 0x4 != 0;
-        taudt_bits.0 .0 &= !0x204;
+        taudt_bits.0 .0 &= !0x200; // NOTE don't consume 0x4, it's used somewhere else
 
         let members = (0..mem_cnt)
             .map(|_| StructMemberRaw::read(&mut *input, header, is_bitset, is_bitset2))
