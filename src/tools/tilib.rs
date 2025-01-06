@@ -360,53 +360,51 @@ fn print_til_type(
     print_type_prefix: bool,
     print_name: bool,
 ) -> Result<()> {
-    if til_type.is_volatile {
-        write!(fmt, "volatile ")?;
-    }
-    if til_type.is_const {
-        write!(fmt, "const ")?;
-    }
     match &til_type.type_variant {
-        TypeVariant::Basic(til_basic) => print_til_type_basic(fmt, section, name, til_basic),
+        TypeVariant::Basic(til_basic) => {
+            print_til_type_basic(fmt, section, name, til_type, til_basic)
+        }
         TypeVariant::Pointer(pointer) => print_til_type_pointer(
             fmt,
             section,
             name,
+            til_type,
             pointer,
             print_pointer_space,
             print_type_prefix,
         ),
         TypeVariant::Function(function) => {
-            print_til_type_function(fmt, section, name, function, false)
+            print_til_type_function(fmt, section, name, til_type, function, false)
         }
         TypeVariant::Array(array) => print_til_type_array(
             fmt,
             section,
             name,
+            til_type,
             array,
             print_pointer_space,
             print_type_prefix,
         ),
         TypeVariant::Typedef(ref_type) => {
-            print_til_type_typedef(fmt, section, name, ref_type, false, None)
+            print_til_type_typedef(fmt, section, name, til_type, ref_type, false)
         }
         TypeVariant::UnionRef(ref_type) => {
-            print_til_type_complex_ref(fmt, section, name, ref_type, "union", true)
+            print_til_type_complex_ref(fmt, section, name, til_type, ref_type, print_type_prefix)
         }
         TypeVariant::EnumRef(ref_type) => {
-            print_til_type_complex_ref(fmt, section, name, ref_type, "enum", true)
+            print_til_type_complex_ref(fmt, section, name, til_type, ref_type, print_type_prefix)
         }
         TypeVariant::StructRef(ref_type) => {
-            print_til_type_complex_ref(fmt, section, name, ref_type, "struct", true)
+            print_til_type_complex_ref(fmt, section, name, til_type, ref_type, print_type_prefix)
         }
         TypeVariant::Struct(til_struct) => {
-            print_til_type_struct(fmt, section, name, til_struct, print_name)
+            print_til_type_struct(fmt, section, name, til_type, til_struct, print_name)
         }
         TypeVariant::Union(til_union) => {
-            print_til_type_union(fmt, section, name, til_union, print_name)
+            print_til_type_union(fmt, section, name, til_type, til_union, print_name)
         }
-        TypeVariant::Enum(til_enum) => print_til_type_enum(fmt, section, name, til_enum),
-        TypeVariant::Bitfield(bitfield) => print_til_type_bitfield(fmt, name, bitfield),
+        TypeVariant::Enum(til_enum) => print_til_type_enum(fmt, section, name, til_type, til_enum),
+        TypeVariant::Bitfield(bitfield) => print_til_type_bitfield(fmt, name, til_type, bitfield),
     }
 }
 
@@ -414,8 +412,15 @@ fn print_til_type_basic(
     fmt: &mut impl Write,
     _section: &TILSection,
     name: Option<&[u8]>,
+    til_type: &Type,
     til_basic: &Basic,
 ) -> Result<()> {
+    if til_type.is_volatile {
+        write!(fmt, "volatile ")?;
+    }
+    if til_type.is_const {
+        write!(fmt, "const ")?;
+    }
     print_basic_type(fmt, til_basic)?;
     if let Some(name) = name {
         write!(fmt, " ")?;
@@ -428,13 +433,14 @@ fn print_til_type_pointer(
     fmt: &mut impl Write,
     section: &TILSection,
     name: Option<&[u8]>,
+    til_type: &Type,
     pointer: &Pointer,
     print_pointer_space: bool,
     print_type_prefix: bool,
 ) -> Result<()> {
     if let TypeVariant::Function(inner_fun) = &pointer.typ.type_variant {
         // How to handle modifier here?
-        print_til_type_function(fmt, section, name, inner_fun, true)?;
+        print_til_type_function(fmt, section, name, til_type, inner_fun, true)?;
     } else {
         // TODO name
         print_til_type(
@@ -450,13 +456,21 @@ fn print_til_type_pointer(
         if print_pointer_space && !matches!(&pointer.typ.type_variant, TypeVariant::Pointer(_)) {
             write!(fmt, " ")?;
         }
-        let modifier = match pointer.modifier {
-            None => "",
-            Some(idb_rs::til::pointer::PointerModifier::Ptr32) => "__ptr32 ",
-            Some(idb_rs::til::pointer::PointerModifier::Ptr64) => "__ptr64 ",
-            Some(idb_rs::til::pointer::PointerModifier::Restricted) => "__restricted ",
-        };
-        write!(fmt, "*{modifier}")?;
+        write!(fmt, "*")?;
+        if til_type.is_volatile {
+            write!(fmt, "volatile ")?;
+        }
+        if til_type.is_const {
+            write!(fmt, "const ")?;
+        }
+        match pointer.modifier {
+            None => {}
+            Some(idb_rs::til::pointer::PointerModifier::Ptr32) => write!(fmt, "__ptr32 ")?,
+            Some(idb_rs::til::pointer::PointerModifier::Ptr64) => write!(fmt, "__ptr64 ")?,
+            Some(idb_rs::til::pointer::PointerModifier::Restricted) => {
+                write!(fmt, "__restricted ")?
+            }
+        }
         if let Some((ty, value)) = &pointer.shifted {
             write!(fmt, "__shifted(")?;
             print_til_type_only(fmt, section, ty)?;
@@ -478,16 +492,23 @@ fn print_til_type_function(
     fmt: &mut impl Write,
     section: &TILSection,
     name: Option<&[u8]>,
-    til_type: &Function,
+    til_type: &Type,
+    til_function: &Function,
     is_pointer: bool,
 ) -> Result<()> {
+    if til_type.is_volatile {
+        write!(fmt, "volatile ")?;
+    }
+    if til_type.is_const {
+        write!(fmt, "const ")?;
+    }
     // return type
-    print_til_type(fmt, section, None, &til_type.ret, true, true, true)?;
-    if !matches!(&til_type.ret.type_variant, TypeVariant::Pointer(_)) {
+    print_til_type(fmt, section, None, &til_function.ret, true, true, true)?;
+    if !matches!(&til_function.ret.type_variant, TypeVariant::Pointer(_)) {
         write!(fmt, " ")?;
     }
 
-    let cc = match (section.cc, til_type.calling_convention) {
+    let cc = match (section.cc, til_function.calling_convention) {
         // don't print if using the til section default cc
         | (_, None)
         // if elipsis just print the '...' as last param
@@ -508,13 +529,13 @@ fn print_til_type_function(
 
     // between the name and cc print some flags
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x442ccf
-    if til_type.is_noret {
+    if til_function.is_noret {
         write!(fmt, "__noreturn ")?;
     }
-    if til_type.is_pure {
+    if til_function.is_pure {
         write!(fmt, "__pure ")?;
     }
-    if til_type.is_high {
+    if til_function.is_high {
         write!(fmt, "__high ")?;
     }
 
@@ -530,18 +551,18 @@ fn print_til_type_function(
     }
 
     write!(fmt, "(")?;
-    for (i, (param_name, param, _argloc)) in til_type.args.iter().enumerate() {
+    for (i, (param_name, param, _argloc)) in til_function.args.iter().enumerate() {
         if i != 0 {
             write!(fmt, ", ")?;
         }
         let param_name = param_name.as_ref().map(Vec::as_slice);
         print_til_type(fmt, section, param_name, param, true, false, true)?;
     }
-    if til_type.args.len() == 0 {
+    if til_function.args.len() == 0 {
         write!(fmt, "void")?;
     }
-    if til_type.calling_convention == Some(CallingConvention::Ellipsis) {
-        if !til_type.args.is_empty() {
+    if til_function.calling_convention == Some(CallingConvention::Ellipsis) {
+        if !til_function.args.is_empty() {
             write!(fmt, ", ")?;
         }
         write!(fmt, "...")?;
@@ -553,10 +574,17 @@ fn print_til_type_array(
     fmt: &mut impl Write,
     section: &TILSection,
     name: Option<&[u8]>,
+    til_type: &Type,
     til_array: &Array,
     print_pointer_space: bool,
     print_type_prefix: bool,
 ) -> Result<()> {
+    if til_type.is_volatile {
+        write!(fmt, "volatile ")?;
+    }
+    if til_type.is_const {
+        write!(fmt, "const ")?;
+    }
     print_til_type(
         fmt,
         section,
@@ -567,7 +595,11 @@ fn print_til_type_array(
         true,
     )?;
     if let Some(name) = name {
-        write!(fmt, " ")?;
+        // only print space if not a pointer
+        match &til_array.elem_type.type_variant {
+            TypeVariant::Pointer(_) => {}
+            _ => write!(fmt, " ")?,
+        }
         fmt.write_all(name)?;
     }
     if til_array.nelem != 0 {
@@ -582,17 +614,26 @@ fn print_til_type_typedef(
     fmt: &mut impl Write,
     section: &TILSection,
     name: Option<&[u8]>,
+    til_type: &Type,
     typedef: &Typedef,
     print_prefix: bool,
-    ref_prefix: Option<&str>,
 ) -> Result<()> {
+    if til_type.is_volatile {
+        write!(fmt, "volatile ")?;
+    }
+    if til_type.is_const {
+        write!(fmt, "const ")?;
+    }
     // only print prefix, if is root
     match typedef {
         idb_rs::til::Typedef::Ordinal(ord) => {
             let ty = section
                 .get_ord(idb_rs::id0::Id0TilOrd { ord: (*ord).into() })
                 .unwrap();
-            print_til_type_name(fmt, &ty.name, &ty.tinfo, print_prefix)?;
+            if print_prefix {
+                print_til_type_prefix(fmt, &ty.tinfo, true)?;
+            }
+            fmt.write_all(&ty.name)?;
         }
         idb_rs::til::Typedef::Name(None) => {
             // TODO print nothing?
@@ -600,13 +641,16 @@ fn print_til_type_typedef(
         idb_rs::til::Typedef::Name(Some(name)) => {
             let ty = section.get_name(name);
             match ty {
-                Some(ty) => print_til_type_name(fmt, &ty.name, &ty.tinfo, print_prefix)?,
+                Some(ty) => {
+                    if print_prefix {
+                        print_til_type_prefix(fmt, &ty.tinfo, true)?;
+                    }
+                    fmt.write_all(&ty.name)?;
+                }
                 // if we can't find the type, just print the name
                 None => {
                     if print_prefix {
-                        if let Some(ref_prefix) = ref_prefix {
-                            write!(fmt, "{ref_prefix} ")?;
-                        }
+                        print_til_type_prefix(fmt, til_type, true)?;
                     }
                     write!(fmt, "{}", String::from_utf8_lossy(name))?
                 }
@@ -624,20 +668,16 @@ fn print_til_type_complex_ref(
     fmt: &mut impl Write,
     section: &TILSection,
     name: Option<&[u8]>,
+    til_type: &Type,
     typedef: &Typedef,
-    prefix_name: &str,
     print_prefix: bool,
 ) -> Result<()> {
     if let idb_rs::til::Typedef::Name(None) = typedef {
-        if print_prefix {
-            write!(fmt, "{}", prefix_name)?;
-            if let Some(name) = name {
-                write!(fmt, " ")?;
-                fmt.write_all(name)?;
-            }
+        if let Some(name) = name {
+            fmt.write_all(name)?;
         }
     } else {
-        print_til_type_typedef(fmt, section, name, typedef, print_prefix, Some(prefix_name))?;
+        print_til_type_typedef(fmt, section, name, til_type, typedef, print_prefix)?;
     }
     Ok(())
 }
@@ -646,6 +686,7 @@ fn print_til_type_struct(
     fmt: &mut impl Write,
     section: &TILSection,
     name: Option<&[u8]>,
+    _til_type: &Type,
     til_struct: &Struct,
     print_name: bool,
 ) -> Result<()> {
@@ -702,6 +743,7 @@ fn print_til_type_union(
     fmt: &mut impl Write,
     section: &TILSection,
     name: Option<&[u8]>,
+    _til_type: &Type,
     til_union: &Union,
     print_name: bool,
 ) -> Result<()> {
@@ -827,6 +869,7 @@ fn print_til_type_enum(
     fmt: &mut impl Write,
     section: &TILSection,
     name: Option<&[u8]>,
+    _til_type: &Type,
     til_enum: &Enum,
 ) -> Result<()> {
     use idb_rs::til::r#enum::EnumFormat::*;
@@ -877,6 +920,7 @@ fn print_til_type_enum(
 fn print_til_type_bitfield(
     fmt: &mut impl Write,
     name: Option<&[u8]>,
+    _til_type: &Type,
     bitfield: &Bitfield,
 ) -> Result<()> {
     print_basic_type(
@@ -1026,25 +1070,17 @@ fn print_til_struct_member_basic_att(fmt: &mut impl Write, att: &StructMemberAtt
     Ok(())
 }
 
-fn print_til_type_name(
-    fmt: &mut impl Write,
-    name: &[u8],
-    tinfo: &Type,
-    print_prefix: bool,
-) -> Result<()> {
-    let name = String::from_utf8_lossy(name);
-    let prefix = match &tinfo.type_variant {
-        TypeVariant::Basic(_)
-        | TypeVariant::Pointer(_)
-        | TypeVariant::Function(_)
-        | TypeVariant::Array(_)
-        | TypeVariant::Typedef(_)
-        | TypeVariant::Bitfield(_) => "",
-        TypeVariant::UnionRef(_) | TypeVariant::Union(_) => "union ",
-        TypeVariant::StructRef(_) | TypeVariant::Struct(_) => "struct ",
-        TypeVariant::EnumRef(_) | TypeVariant::Enum(_) => "enum ",
-    };
-    write!(fmt, "{}{name}", if print_prefix { prefix } else { "" })
+fn print_til_type_prefix(fmt: &mut impl Write, tinfo: &Type, with_space: bool) -> Result<()> {
+    match &tinfo.type_variant {
+        TypeVariant::UnionRef(_) | TypeVariant::Union(_) => write!(fmt, "union")?,
+        TypeVariant::StructRef(_) | TypeVariant::Struct(_) => write!(fmt, "struct")?,
+        TypeVariant::EnumRef(_) | TypeVariant::Enum(_) => write!(fmt, "enum")?,
+        _ => return Ok(()),
+    }
+    if with_space {
+        write!(fmt, " ")?;
+    }
+    Ok(())
 }
 
 fn print_til_type_only(fmt: &mut impl Write, section: &TILSection, tinfo: &Type) -> Result<()> {
