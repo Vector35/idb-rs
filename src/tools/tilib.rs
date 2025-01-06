@@ -254,9 +254,11 @@ fn print_types(
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     // TODO only print by ordinals if there are ordinals
-    writeln!(fmt, "(enumerated by ordinals)")?;
-    print_types_by_ordinals(fmt, section, solver)?;
-    writeln!(fmt, "(enumerated by names)")?;
+    if section.flags.has_ordinal() {
+        writeln!(fmt, "(enumerated by ordinals)")?;
+        print_types_by_ordinals(fmt, section, solver)?;
+        writeln!(fmt, "(enumerated by names)")?;
+    }
     print_types_by_name(fmt, section, solver)?;
     Ok(())
 }
@@ -558,14 +560,15 @@ fn print_til_type_function(
         let param_name = param_name.as_ref().map(Vec::as_slice);
         print_til_type(fmt, section, param_name, param, true, false, true)?;
     }
-    if til_function.args.len() == 0 {
-        write!(fmt, "void")?;
-    }
-    if til_function.calling_convention == Some(CallingConvention::Ellipsis) {
-        if !til_function.args.is_empty() {
-            write!(fmt, ", ")?;
+    match til_function.calling_convention {
+        Some(CallingConvention::Voidarg) => write!(fmt, "void")?,
+        Some(CallingConvention::Ellipsis) => {
+            if !til_function.args.is_empty() {
+                write!(fmt, ", ")?;
+            }
+            write!(fmt, "...")?;
         }
-        write!(fmt, "...")?;
+        _ => {}
     }
     write!(fmt, ")")
 }
@@ -624,41 +627,31 @@ fn print_til_type_typedef(
     if til_type.is_const {
         write!(fmt, "const ")?;
     }
-    // only print prefix, if is root
-    match typedef {
+    if print_prefix {
+        print_til_type_prefix(fmt, til_type, true)?;
+    }
+    // get the type referenced by the typdef
+    let need_space = match typedef {
         idb_rs::til::Typedef::Ordinal(ord) => {
-            let ty = section
+            let inner_ty = section
                 .get_ord(idb_rs::id0::Id0TilOrd { ord: (*ord).into() })
                 .unwrap();
-            if print_prefix {
-                print_til_type_prefix(fmt, &ty.tinfo, true)?;
-            }
-            fmt.write_all(&ty.name)?;
-        }
-        idb_rs::til::Typedef::Name(None) => {
-            // TODO print nothing?
+            fmt.write_all(&inner_ty.name)?;
+            true
         }
         idb_rs::til::Typedef::Name(Some(name)) => {
-            let ty = section.get_name(name);
-            match ty {
-                Some(ty) => {
-                    if print_prefix {
-                        print_til_type_prefix(fmt, &ty.tinfo, true)?;
-                    }
-                    fmt.write_all(&ty.name)?;
-                }
-                // if we can't find the type, just print the name
-                None => {
-                    if print_prefix {
-                        print_til_type_prefix(fmt, til_type, true)?;
-                    }
-                    write!(fmt, "{}", String::from_utf8_lossy(name))?
-                }
-            }
+            // NOTE don't need to get the inner type, we already have it's name
+            fmt.write_all(&name)?;
+            true
         }
-    }
+        // Nothing to print
+        idb_rs::til::Typedef::Name(None) => false,
+    };
+    // print the type name, if some
     if let Some(name) = name {
-        write!(fmt, " ")?;
+        if need_space {
+            write!(fmt, " ")?;
+        }
         fmt.write_all(name)?;
     }
     Ok(())
@@ -673,6 +666,9 @@ fn print_til_type_complex_ref(
     print_prefix: bool,
 ) -> Result<()> {
     if let idb_rs::til::Typedef::Name(None) = typedef {
+        if print_prefix {
+            print_til_type_prefix(fmt, til_type, true)?;
+        }
         if let Some(name) = name {
             fmt.write_all(name)?;
         }
@@ -785,7 +781,7 @@ fn print_til_type_complex_member(
             name,
             til,
             print_pointer_space,
-            false,
+            true,
             print_name,
         );
     };
@@ -799,7 +795,7 @@ fn print_til_type_complex_member(
             name,
             til,
             print_pointer_space,
-            false,
+            true,
             print_name,
         );
     }
@@ -818,7 +814,7 @@ fn print_til_type_complex_member(
                 name,
                 til,
                 print_pointer_space,
-                false,
+                true,
                 print_name,
             );
         }
@@ -833,7 +829,7 @@ fn print_til_type_complex_member(
                 name,
                 til,
                 print_pointer_space,
-                false,
+                true,
                 print_name,
             );
         }
@@ -849,7 +845,7 @@ fn print_til_type_complex_member(
             name,
             til,
             print_pointer_space,
-            false,
+            true,
             print_name,
         );
     }
