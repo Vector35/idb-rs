@@ -4,7 +4,7 @@ use std::num::NonZeroU8;
 use crate::til::bitfield::Bitfield;
 
 use super::r#enum::Enum;
-use super::r#struct::{Struct, StructMember};
+use super::r#struct::StructMember;
 use super::section::TILSection;
 use super::union::Union;
 use super::{Basic, Type, TypeVariant, Typedef};
@@ -86,13 +86,14 @@ impl<'a> TILTypeSizeSolver<'a> {
             | TypeVariant::UnionRef(ref_type)
             | TypeVariant::EnumRef(ref_type)
             | TypeVariant::Typedef(ref_type) => self.solve_typedef(ref_type)?,
-            TypeVariant::Struct(Struct { members, .. }) => {
+            TypeVariant::Struct(til_struct) => {
                 let mut sum = 0u64;
                 // TODO default alignment, seems like default alignemnt is the field size
                 let align: u64 = 1;
-                let mut members = &members[..];
+                let mut members = &til_struct.members[..];
                 loop {
-                    let field_size = match members.get(0).map(|x| &x.member_type.type_variant) {
+                    let first_member = members.get(0);
+                    let field_size = match first_member.map(|x| &x.member_type.type_variant) {
                         // no more members
                         None => break,
                         // if bit-field, condensate one or more to create a byte-field
@@ -111,9 +112,16 @@ impl<'a> TILTypeSizeSolver<'a> {
                             self.inner_type_size_bytes(&first.member_type)?
                         }
                     };
-                    let align_diff = sum % align;
-                    if align_diff != 0 {
-                        sum += align - align_diff;
+                    if !til_struct.is_unaligned {
+                        let align = first_member
+                            .map(|first| self.alignemnt(&first.member_type, field_size))
+                            .flatten()
+                            .unwrap_or(align)
+                            .max(1);
+                        let align_diff = sum % align;
+                        if align_diff != 0 {
+                            sum += align - align_diff;
+                        }
                     }
                     sum += field_size;
                 }
@@ -160,6 +168,44 @@ impl<'a> TILTypeSizeSolver<'a> {
             assert!(self.solved.insert(idx, result).is_none());
         }
         result
+    }
+
+    fn alignemnt(&mut self, til: &Type, til_size: u64) -> Option<u64> {
+        match &til.type_variant {
+            // TODO basic types have a inherited alignment?
+            TypeVariant::Basic(_) | TypeVariant::Enum(_) | TypeVariant::Pointer(_) => {
+                Some(til_size)
+            }
+            TypeVariant::Array(array) => {
+                let size = self.inner_type_size_bytes(&array.elem_type);
+                self.alignemnt(&array.elem_type, size.unwrap_or(1))
+            }
+            TypeVariant::EnumRef(ty) => {
+                let ty = match ty {
+                    Typedef::Ordinal(ord) => self
+                        .section
+                        .get_ord(crate::id0::Id0TilOrd { ord: (*ord).into() }),
+                    Typedef::Name(Some(name)) => self.section.get_name(name),
+                    Typedef::Name(None) => None,
+                };
+                ty.map(|ty| self.inner_type_size_bytes(&ty.tinfo)).flatten()
+            }
+            TypeVariant::Typedef(ty) => {
+                let ty = match ty {
+                    Typedef::Ordinal(ord) => self
+                        .section
+                        .get_ord(crate::id0::Id0TilOrd { ord: (*ord).into() }),
+                    Typedef::Name(Some(name)) => self.section.get_name(name),
+                    Typedef::Name(None) => None,
+                };
+                ty.map(|ty| {
+                    let size = self.inner_type_size_bytes(&ty.tinfo).unwrap_or(1);
+                    self.alignemnt(&ty.tinfo, size)
+                })
+                .flatten()
+            }
+            _ => None,
+        }
     }
 }
 
