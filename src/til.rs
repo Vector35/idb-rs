@@ -9,6 +9,10 @@ pub mod section;
 pub mod r#struct;
 pub mod union;
 
+mod size_calculator;
+
+pub use size_calculator::*;
+
 use std::num::{NonZeroU16, NonZeroU8};
 
 use anyhow::{anyhow, ensure, Context, Result};
