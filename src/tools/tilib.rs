@@ -5,9 +5,9 @@ use idb_rs::til::function::{CallingConvention, Function};
 use idb_rs::til::pointer::Pointer;
 use idb_rs::til::r#enum::Enum;
 use idb_rs::til::r#struct::{Struct, StructMemberAtt};
-use idb_rs::til::section::{TILSection, TILTypeSizeSolver};
+use idb_rs::til::section::TILSection;
 use idb_rs::til::union::Union;
-use idb_rs::til::{Basic, TILTypeInfo, Type, TypeVariant, Typedef};
+use idb_rs::til::{Basic, TILTypeInfo, TILTypeSizeSolver, Type, TypeVariant, Typedef};
 use idb_rs::IDBParser;
 
 use std::fs::File;

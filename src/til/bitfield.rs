@@ -3,7 +3,7 @@ use std::num::NonZeroU8;
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::TAH;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Bitfield {
     pub unsigned: bool,
     pub width: u16,
