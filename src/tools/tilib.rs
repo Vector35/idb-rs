@@ -498,19 +498,35 @@ fn print_til_type_function(
         (_, Some(cc)) => Some(calling_convention_to_str(cc)),
     };
 
-    // print name and calling convention
+    // print name and calling convention and some flags
     match (is_pointer, cc) {
-        (true, None) => write!(fmt, "(*")?,
-        (false, None) => write!(fmt, "")?,
-        (true, Some(cc)) => write!(fmt, "(__{cc} *")?,
+        (true, None) => write!(fmt, "(")?,
+        (false, None) => {}
+        (true, Some(cc)) => write!(fmt, "(__{cc} ")?,
         (false, Some(cc)) => write!(fmt, "__{cc} ")?,
     }
+
+    // between the name and cc print some flags
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x442ccf
+    if til_type.is_noret {
+        write!(fmt, "__noreturn ")?;
+    }
+    if til_type.is_pure {
+        write!(fmt, "__pure ")?;
+    }
+    if til_type.is_high {
+        write!(fmt, "__high ")?;
+    }
+
+    if is_pointer {
+        write!(fmt, "*")?;
+    }
+
     if let Some(name) = name {
         fmt.write_all(name)?;
     }
-    match (is_pointer, cc) {
-        (true, Some(_)) | (true, None) => write!(fmt, ")")?,
-        (false, Some(_)) | (false, None) => {}
+    if is_pointer {
+        write!(fmt, ")")?;
     }
 
     write!(fmt, "(")?;
