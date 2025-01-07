@@ -127,7 +127,9 @@ impl PointerRaw {
             TAPTR_RESTRICT => Some(PointerModifier::Restricted),
             _ => unreachable!(),
         };
+        // TODO find menaing: commonly set as true
         let is_unknown_ta10 = tah.0 .0 & 0x10 != 0;
+        // TODO find meaning: normally 5 in one type at `vc10_64` and `ntddk64`
         let ta_lower = (tah.0 .0 & 0xf) as u8;
 
         Ok(Self {

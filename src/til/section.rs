@@ -136,11 +136,15 @@ impl TILSection {
         let cn = CCPtrSize::from_cm_raw(header.cm, header.size_int);
         let cm = CCModel::from_cm_raw(header.cm);
 
-        let dependencies = header
-            .dependencies
-            .split(|x| *x == b',')
-            .map(<[_]>::to_vec)
-            .collect();
+        let dependencies = if header.dependencies.len() != 0 {
+            header
+                .dependencies
+                .split(|x| *x == b',')
+                .map(<[_]>::to_vec)
+                .collect()
+        } else {
+            vec![]
+        };
 
         Ok(TILSection {
             format: header.format,
