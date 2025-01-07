@@ -71,8 +71,6 @@ impl TILTypeInfo {
         let is_u64 = (flags >> 31) != 0;
         let ordinal = match (til.format, is_u64) {
             // formats below 0x12 doesn't have 64 bits ord
-            // TODO don't convert it directly into u64, tilib seems to handle
-            // u32 and u64 values diferently
             (0..=0x11, _) | (_, false) => cursor.read_u32()?.into(),
             (_, true) => cursor.read_u64()?,
         };
