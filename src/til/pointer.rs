@@ -7,9 +7,13 @@ use crate::til::{Type, TypeRaw, TAH};
 #[derive(Debug, Clone)]
 pub struct Pointer {
     pub closure: PointerType,
-    pub modifier: Option<PointerModifier>,
-    pub shifted: Option<(Box<Type>, u32)>,
     pub typ: Box<Type>,
+    pub shifted: Option<(Box<Type>, u32)>,
+    pub is_ptr32: bool,
+    pub is_ptr64: bool,
+    pub is_restricted: bool,
+    pub is_unknown_ta10: bool,
+    pub ta_lower: u8,
 }
 
 impl Pointer {
@@ -32,9 +36,13 @@ impl Pointer {
         Ok(Self {
             // TODO forward fields to closure?
             closure: PointerType::new(til, raw.closure)?,
-            modifier: raw.modifier,
-            shifted,
             typ,
+            shifted,
+            is_ptr32: raw.is_ptr32,
+            is_ptr64: raw.is_ptr64,
+            is_restricted: raw.is_restricted,
+            is_unknown_ta10: raw.is_unknown_ta10,
+            ta_lower: raw.ta_lower,
         })
     }
 }
@@ -66,19 +74,16 @@ impl PointerType {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum PointerModifier {
-    Ptr32,
-    Ptr64,
-    Restricted,
-}
-
 #[derive(Debug, Clone)]
 pub(crate) struct PointerRaw {
     pub closure: PointerTypeRaw,
-    pub modifier: Option<PointerModifier>,
-    pub shifted: Option<(Box<TypeRaw>, u32)>,
     pub typ: Box<TypeRaw>,
+    pub is_ptr32: bool,
+    pub is_ptr64: bool,
+    pub is_restricted: bool,
+    pub is_unknown_ta10: bool,
+    pub shifted: Option<(Box<TypeRaw>, u32)>,
+    pub ta_lower: u8,
 }
 
 impl PointerRaw {
@@ -107,32 +112,28 @@ impl PointerRaw {
         let shifted = (tah.0 .0 & TAPTR_SHIFTED != 0)
             .then(|| -> Result<_> {
                 // TODO allow typedef only?
+                // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6 print_til_type_att
                 let typ = TypeRaw::read(&mut *input, header)?;
                 let value = input.read_de()?;
                 Ok((Box::new(typ), value))
             })
             .transpose()?;
-
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6 print_til_type_att
-        let modifier = match tah.0 .0 & (TAPTR_RESTRICT | TAPTR_PTR64 | TAPTR_PTR32) {
-            0x00 => None,
-            TAPTR_PTR32 => Some(PointerModifier::Ptr32),
-            TAPTR_PTR64 => Some(PointerModifier::Ptr64),
-            TAPTR_RESTRICT => Some(PointerModifier::Restricted),
-            _ => unreachable!(),
-        };
-        // TODO other values are known to exist
-        //let all_flags = TAPTR_RESTRICT | TAPTR_PTR64 | TAPTR_PTR32 | TAPTR_SHIFTED;
-        //anyhow::ensure!(
-        //    tah.0 .0 & !all_flags == 0,
-        //    "Unknown value for pointer modifier"
-        //);
+        let is_ptr32 = tah.0 .0 & TAPTR_PTR32 != 0;
+        let is_ptr64 = tah.0 .0 & TAPTR_PTR64 != 0;
+        let is_restricted = tah.0 .0 & TAPTR_RESTRICT != 0;
+        // TODO find the flag or doc for this
+        let is_unknown_ta10 = tah.0 .0 & 0x10 != 0;
+        let ta_lower = (tah.0 .0 & 0xf) as u8;
 
         Ok(Self {
             closure,
-            modifier,
-            shifted,
             typ: Box::new(typ),
+            shifted,
+            is_ptr32,
+            is_ptr64,
+            is_restricted,
+            is_unknown_ta10,
+            ta_lower,
         })
     }
 }
