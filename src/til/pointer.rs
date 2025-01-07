@@ -10,6 +10,8 @@ pub struct Pointer {
     pub modifier: Option<PointerModifier>,
     pub shifted: Option<(Box<Type>, u32)>,
     pub typ: Box<Type>,
+    pub is_unknown_ta10: bool,
+    pub ta_lower: u8,
 }
 
 impl Pointer {
@@ -35,6 +37,8 @@ impl Pointer {
             modifier: raw.modifier,
             shifted,
             typ,
+            is_unknown_ta10: raw.is_unknown_ta10,
+            ta_lower: raw.ta_lower,
         })
     }
 }
@@ -79,6 +83,8 @@ pub(crate) struct PointerRaw {
     pub modifier: Option<PointerModifier>,
     pub shifted: Option<(Box<TypeRaw>, u32)>,
     pub typ: Box<TypeRaw>,
+    pub is_unknown_ta10: bool,
+    pub ta_lower: u8,
 }
 
 impl PointerRaw {
@@ -114,25 +120,23 @@ impl PointerRaw {
             .transpose()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6 print_til_type_att
-        let modifier = match tah.0 .0 & (TAPTR_RESTRICT | TAPTR_PTR64 | TAPTR_PTR32) {
+        let modifier = match tah.0 .0 & TAPTR_RESTRICT {
             0x00 => None,
             TAPTR_PTR32 => Some(PointerModifier::Ptr32),
             TAPTR_PTR64 => Some(PointerModifier::Ptr64),
             TAPTR_RESTRICT => Some(PointerModifier::Restricted),
             _ => unreachable!(),
         };
-        // TODO other values are known to exist
-        //let all_flags = TAPTR_RESTRICT | TAPTR_PTR64 | TAPTR_PTR32 | TAPTR_SHIFTED;
-        //anyhow::ensure!(
-        //    tah.0 .0 & !all_flags == 0,
-        //    "Unknown value for pointer modifier"
-        //);
+        let is_unknown_ta10 = tah.0 .0 & 0x10 != 0;
+        let ta_lower = (tah.0 .0 & 0xf) as u8;
 
         Ok(Self {
             closure,
             modifier,
             shifted,
             typ: Box::new(typ),
+            is_unknown_ta10,
+            ta_lower,
         })
     }
 }
