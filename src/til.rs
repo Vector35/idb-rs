@@ -162,8 +162,8 @@ impl Type {
         let header = section::TILSectionHeader {
             format: 12,
             flags: section::TILSectionFlags(0),
-            title: Vec::new(),
             description: Vec::new(),
+            dependencies: Vec::new(),
             compiler_id: 0,
             cm: 0,
             size_enum: None,
