@@ -464,15 +464,12 @@ fn print_til_type_pointer(
         if til_type.is_const {
             write!(fmt, "const ")?;
         }
-        if pointer.is_ptr32 {
-            write!(fmt, "__ptr32 ")?;
-        } else {
-            if pointer.is_ptr64 {
-                write!(fmt, "__ptr64 ")?;
-            } else {
-                if pointer.is_restricted {
-                    write!(fmt, "__restricted ")?;
-                }
+        match pointer.modifier {
+            None => {}
+            Some(idb_rs::til::pointer::PointerModifier::Ptr32) => write!(fmt, "__ptr32 ")?,
+            Some(idb_rs::til::pointer::PointerModifier::Ptr64) => write!(fmt, "__ptr64 ")?,
+            Some(idb_rs::til::pointer::PointerModifier::Restricted) => {
+                write!(fmt, "__restricted ")?
             }
         }
         if let Some((ty, value)) = &pointer.shifted {
@@ -560,7 +557,7 @@ fn print_til_type_function(
             write!(fmt, ", ")?;
         }
         let param_name = param_name.as_ref().map(Vec::as_slice);
-        print_til_type(fmt, section, param_name, param, true, true, true)?;
+        print_til_type(fmt, section, param_name, param, true, false, true)?;
     }
     match til_function.calling_convention {
         Some(CallingConvention::Voidarg) => write!(fmt, "void")?,
@@ -675,7 +672,7 @@ fn print_til_type_complex_ref(
             fmt.write_all(name)?;
         }
     } else {
-        print_til_type_typedef(fmt, section, name, til_type, typedef, true)?;
+        print_til_type_typedef(fmt, section, name, til_type, typedef, print_prefix)?;
     }
     Ok(())
 }
