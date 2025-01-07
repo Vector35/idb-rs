@@ -28,9 +28,9 @@ pub fn dump_til(args: &Args) -> Result<()> {
     // this deconstruction is to changes on TILSection to force a review on this code
     let TILSection {
         format,
-        title,
+        description: title,
         flags: _,
-        dependency,
+        dependencies: dependency,
         compiler_id,
         cc,
         cm,
@@ -50,8 +50,8 @@ pub fn dump_til(args: &Args) -> Result<()> {
     // write the header info
     println!("format: {format}");
     println!("title: {}", String::from_utf8_lossy(title));
-    if let Some(dependency) = dependency {
-        println!("dependency: {}", String::from_utf8_lossy(dependency));
+    for (i, dependency) in dependency.iter().enumerate() {
+        println!("dependency-{i}: {}", String::from_utf8_lossy(dependency));
     }
     println!("id: {compiler_id:?}");
     println!("cc: {cc:?}");

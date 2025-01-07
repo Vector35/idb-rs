@@ -37,11 +37,10 @@ pub fn tilib_print(args: &Args) -> anyhow::Result<()> {
 }
 
 fn print_til_section(mut fmt: impl Write, section: &TILSection) -> Result<()> {
-    if let Some(dependency) = &section.dependency {
+    if !section.dependencies.is_empty() {
         // TODO open those files? What todo with then?
-        // TODO some files still missing this warning
-        if !dependency.is_empty() {
-            write!(fmt, "Warning: ")?;
+        write!(fmt, "Warning: ")?;
+        for dependency in &section.dependencies {
             fmt.write_all(dependency)?;
             writeln!(fmt, ": No such file or directory")?;
         }
@@ -80,7 +79,7 @@ fn print_header(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     // the description of the file
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b710
     write!(fmt, "Description: ")?;
-    fmt.write_all(&section.title)?;
+    fmt.write_all(&section.description)?;
     writeln!(fmt)?;
 
     // flags from the section header
@@ -467,12 +466,14 @@ fn print_til_type_pointer(
         }
         if pointer.is_ptr32 {
             write!(fmt, "__ptr32 ")?;
-        }
-        if pointer.is_ptr64 {
-            write!(fmt, "__ptr64 ")?;
-        }
-        if pointer.is_restricted {
-            write!(fmt, "__restricted ")?;
+        } else {
+            if pointer.is_ptr64 {
+                write!(fmt, "__ptr64 ")?;
+            } else {
+                if pointer.is_restricted {
+                    write!(fmt, "__restricted ")?;
+                }
+            }
         }
         if let Some((ty, value)) = &pointer.shifted {
             write!(fmt, "__shifted(")?;

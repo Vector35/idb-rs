@@ -18,11 +18,11 @@ pub const TIL_SECTION_MAGIC: &[u8; 6] = b"IDATIL";
 pub struct TILSection {
     pub format: u32,
     /// short file name (without path and extension)
-    pub title: Vec<u8>,
+    pub description: Vec<u8>,
     pub flags: TILSectionFlags,
     // TODO unclear what exacly dependency is for
     /// module required
-    pub dependency: Option<Vec<u8>>,
+    pub dependencies: Vec<Vec<u8>>,
     /// the compiler used to generated types
     pub compiler_id: Compiler,
     /// default calling convention
@@ -58,8 +58,8 @@ pub struct TILSectionExtendedSizeofInfo {
 pub struct TILSectionHeader {
     pub format: u32,
     pub flags: TILSectionFlags,
-    pub title: Vec<u8>,
     pub description: Vec<u8>,
+    pub dependencies: Vec<u8>,
     pub compiler_id: u8,
     pub cm: u8,
     pub size_enum: Option<NonZeroU8>,
@@ -136,11 +136,17 @@ impl TILSection {
         let cn = CCPtrSize::from_cm_raw(header.cm, header.size_int);
         let cm = CCModel::from_cm_raw(header.cm);
 
+        let dependencies = header
+            .dependencies
+            .split(|x| *x == b',')
+            .map(<[_]>::to_vec)
+            .collect();
+
         Ok(TILSection {
             format: header.format,
-            title: header.title,
+            description: header.description,
             flags: header.flags,
-            dependency: header.description.is_empty().then_some(header.description),
+            dependencies,
             compiler_id: Compiler::from_value(header.compiler_id),
             cc,
             cn,
@@ -232,19 +238,19 @@ impl TILSection {
             flags,
         };
 
-        let title = input.read_bytes_len_u8()?;
-        let mut description = input.read_bytes_len_u8()?;
+        let description = input.read_bytes_len_u8()?;
+        let mut dependencies = input.read_bytes_len_u8()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x431f64
         // remove the "_arm" from the description
         const MACOS_ARM_EXCEPTION: &[u8] = b"macosx_arm";
-        if let Some(pos) = description
+        if let Some(pos) = dependencies
             .windows(MACOS_ARM_EXCEPTION.len())
             .position(|window| window == MACOS_ARM_EXCEPTION)
         {
-            description = description[..pos + 6]
+            dependencies = dependencies[..pos + 6]
                 .iter()
-                .chain(&description[pos + MACOS_ARM_EXCEPTION.len()..])
+                .chain(&dependencies[pos + MACOS_ARM_EXCEPTION.len()..])
                 .copied()
                 .collect::<Vec<_>>();
         }
@@ -285,8 +291,8 @@ impl TILSection {
         Ok(TILSectionHeader {
             format: header1.format,
             flags: header1.flags,
-            title,
             description,
+            dependencies,
             compiler_id: header2.compiler_id,
             // TODO panic if None?
             size_enum: header2.size_enum.try_into().ok(),
@@ -343,8 +349,8 @@ impl TILSection {
             def_align,
         };
         bincode::serialize_into(&mut *output, &header1)?;
-        crate::write_string_len_u8(&mut *output, &header.title)?;
         crate::write_string_len_u8(&mut *output, &header.description)?;
+        crate::write_string_len_u8(&mut *output, &header.dependencies)?;
         bincode::serialize_into(&mut *output, &header2)?;
         if header.flags.have_extended_sizeof_info() {
             let sizes = header.extended_sizeof_info.unwrap();
