@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 
 use std::num::NonZeroU8;
 
@@ -75,7 +75,7 @@ impl UnionRaw {
         // TODO check InnerRef to how to handle modifiers
         let alignment = modifiers.alignment;
         let members = (0..mem_cnt)
-            .map(|_| TypeRaw::read(&mut *input, header))
+            .map(|i| TypeRaw::read(&mut *input, header).with_context(|| format!("Member {i}")))
             .collect::<anyhow::Result<_, _>>()?;
         Ok(TypeVariantRaw::Union(Self {
             effective_alignment,

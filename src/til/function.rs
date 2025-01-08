@@ -3,7 +3,7 @@ use std::num::NonZeroU8;
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::section::TILSectionHeader;
 use crate::til::{Basic, Type, TypeRaw};
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 
 use super::TypeVariantRaw;
 
@@ -166,12 +166,15 @@ impl FunctionRaw {
 
         let _tah = input.read_tah()?;
 
-        let ret = TypeRaw::read(&mut *input, header)?;
+        let ret = TypeRaw::read(&mut *input, header).context("Return Argument")?;
         // TODO double check documentation for [flag::tf_func::BT_FUN]
         let is_special_pe = cc.map(CallingConvention::is_special_pe).unwrap_or(false);
         let have_retloc =
             is_special_pe && !matches!(&ret.variant, TypeVariantRaw::Basic(Basic::Void));
-        let retloc = have_retloc.then(|| ArgLoc::read(&mut *input)).transpose()?;
+        let retloc = have_retloc
+            .then(|| ArgLoc::read(&mut *input))
+            .transpose()
+            .context("Retloc")?;
 
         let mut result = Self {
             calling_convention: cc,
@@ -195,17 +198,19 @@ impl FunctionRaw {
 
         let n = input.read_dt()?;
         result.args = (0..n)
-            .map(|_| -> Result<_> {
+            .map(|i| -> Result<_> {
                 let tmp = input.peek_u8()?;
                 if tmp == Some(0xFF) {
                     input.consume(1);
                     // TODO what is this?
                     let _flags = input.read_de()?;
                 }
-                let tinfo = TypeRaw::read(&mut *input, header)?;
+                let tinfo = TypeRaw::read(&mut *input, header)
+                    .with_context(|| format!("Argument Type {i}"))?;
                 let argloc = is_special_pe
                     .then(|| ArgLoc::read(&mut *input))
-                    .transpose()?;
+                    .transpose()
+                    .with_context(|| format!("Argument Argloc {i}"))?;
 
                 Ok((tinfo, argloc))
             })

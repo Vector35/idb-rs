@@ -68,15 +68,18 @@ impl TILTypeInfo {
         let flags: u32 = cursor.read_u32()?;
         // TODO verify if flags equal to 0x7fff_fffe?
         let name = cursor.read_c_string_raw()?;
-        println!("{}", String::from_utf8_lossy(&name));
         let is_u64 = (flags >> 31) != 0;
         let ordinal = match (til.format, is_u64) {
             // formats below 0x12 doesn't have 64 bits ord
             (0..=0x11, _) | (_, false) => cursor.read_u32()?.into(),
             (_, true) => cursor.read_u64()?,
         };
-        let tinfo_raw =
-            TypeRaw::read(&mut *cursor, til).context("parsing `TILTypeInfo::tiinfo`")?;
+        let tinfo_raw = TypeRaw::read(&mut *cursor, til).with_context(|| {
+            format!(
+                "parsing `TILTypeInfo::tiinfo` for type \"{}\"",
+                String::from_utf8_lossy(&name)
+            )
+        })?;
         let _info = cursor.read_c_string_raw()?;
         let cmt = cursor.read_c_string_raw()?;
         let fields = cursor.read_c_string_vec()?;
@@ -88,7 +91,11 @@ impl TILTypeInfo {
                 .into_iter()
                 .map(|field| if field.is_empty() { None } else { Some(field) });
         let tinfo = Type::new(til, tinfo_raw, &mut fields_iter)?;
-        ensure!(fields_iter.next().is_none(), "Extra fields found for til");
+        ensure!(
+            fields_iter.next().is_none(),
+            "Extra fields found for til type \"{}\"",
+            String::from_utf8_lossy(&name)
+        );
 
         Ok(Self {
             _flags: flags,
@@ -237,9 +244,9 @@ impl TypeRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480335
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x472e13 print_til_type
         let variant = match (type_base, type_flags) {
-            (..=flag::tf_last_basic::BT_LAST_BASIC, _) => {
-                Basic::new(til, type_base, type_flags).map(TypeVariantRaw::Basic)?
-            }
+            (..=flag::tf_last_basic::BT_LAST_BASIC, _) => Basic::new(til, type_base, type_flags)
+                .context("Type::Basic")
+                .map(TypeVariantRaw::Basic)?,
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4804d7
             (flag::tf_ptr::BT_PTR, _) => PointerRaw::read(input, til, type_flags)
                 .context("Type::Pointer")
