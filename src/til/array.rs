@@ -1,13 +1,13 @@
+use std::num::NonZeroU16;
+
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{Type, TypeRaw, TAH};
+use crate::til::{Type, TypeRaw};
 
 #[derive(Clone, Debug)]
 pub struct Array {
     pub base: u8,
-    // TODO make this Option<NonZeroU16>?
-    pub nelem: u16,
-    pub tah: TAH,
+    pub nelem: Option<NonZeroU16>,
     pub elem_type: Box<Type>,
 }
 impl Array {
@@ -19,7 +19,6 @@ impl Array {
         Ok(Self {
             base: value.base,
             nelem: value.nelem,
-            tah: value.tah,
             elem_type: Type::new(til, *value.elem_type, fields).map(Box::new)?,
         })
     }
@@ -28,8 +27,7 @@ impl Array {
 #[derive(Clone, Debug)]
 pub(crate) struct ArrayRaw {
     pub base: u8,
-    pub nelem: u16,
-    pub tah: TAH,
+    pub nelem: Option<NonZeroU16>,
     pub elem_type: Box<TypeRaw>,
 }
 
@@ -42,7 +40,6 @@ impl ArrayRaw {
         use crate::til::flag::tf_array::*;
         let (base, nelem) = match metadata {
             BTMT_NONBASED => {
-                // TODO if num_elem==0 then the array size is unknown
                 let nelem = input.read_dt()?;
                 (0, nelem)
             }
@@ -53,12 +50,11 @@ impl ArrayRaw {
             }
         };
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48078e
-        let tah = TAH::read(&mut *input)?;
+        let _tah = input.read_tah()?;
         let elem_type = TypeRaw::read(&mut *input, header)?;
         Ok(ArrayRaw {
             base,
-            nelem,
-            tah,
+            nelem: NonZeroU16::new(nelem),
             elem_type: Box::new(elem_type),
         })
     }

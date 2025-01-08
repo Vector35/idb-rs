@@ -604,8 +604,8 @@ fn print_til_type_array(
         }
         fmt.write_all(name)?;
     }
-    if til_array.nelem != 0 {
-        write!(fmt, "[{}]", til_array.nelem)?;
+    if let Some(nelem) = til_array.nelem {
+        write!(fmt, "[{nelem}]")?;
     } else {
         write!(fmt, "[]")?;
     }

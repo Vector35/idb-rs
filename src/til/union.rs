@@ -4,7 +4,7 @@ use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{Type, TypeRaw, SDACL};
+use crate::til::{Type, TypeRaw};
 
 use super::{StructModifierRaw, TypeVariantRaw};
 
@@ -57,7 +57,7 @@ impl UnionRaw {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // is ref
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
-            let _taudt_bits = SDACL::read(&mut *input)?;
+            let _taudt_bits = input.read_sdacl()?;
             let TypeVariantRaw::Typedef(ref_type) = ref_type.variant else {
                 return Err(anyhow!("UnionRef Non Typedef"));
             };
@@ -68,8 +68,10 @@ impl UnionRaw {
         let alpow = n & 7;
         let mem_cnt = n >> 3;
         let effective_alignment = if alpow == 0 { 0 } else { 1 << (alpow - 1) };
-        let taudt_bits = SDACL::read(&mut *input)?;
-        let modifiers = StructModifierRaw::from_value(taudt_bits.0 .0);
+        let taudt_bits = input.read_sdacl()?;
+        // TODO handle ext atts
+        let taudt_bits = taudt_bits.as_ref().map(|x| x.tattr).unwrap_or(0);
+        let modifiers = StructModifierRaw::from_value(taudt_bits);
         // TODO check InnerRef to how to handle modifiers
         let alignment = modifiers.alignment;
         let members = (0..mem_cnt)

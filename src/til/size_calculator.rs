@@ -80,7 +80,8 @@ impl<'a> TILTypeSizeSolver<'a> {
             TypeVariant::Function(_) => 0, // function type dont have a size, only a pointer to it
             TypeVariant::Array(array) => {
                 let element_len = self.inner_type_size_bytes(&array.elem_type)?;
-                element_len * array.nelem as u64
+                let nelem = array.nelem.map(|x| x.get()).unwrap_or(0) as u64;
+                element_len * nelem
             }
             TypeVariant::StructRef(ref_type)
             | TypeVariant::UnionRef(ref_type)

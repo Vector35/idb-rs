@@ -1,11 +1,23 @@
 use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
-use crate::til::TAH;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Bitfield {
     pub unsigned: bool,
+    // TODO what a 0 width bitfield means? The start of a new byte-field?
+    // ntddk_win10.til
+    // struct _D3DKMDT_DISPLAYMODE_FLAGS {
+    //   unsigned __int32 ValidatedAgainstMonitorCaps : 1;
+    //   unsigned __int32 RoundedFakeMode : 1;
+    //   unsigned __int32 : 0;
+    //   __int32 ModePruningReason : 4;
+    //   unsigned __int32 Stereo : 1;
+    //   unsigned __int32 AdvancedScanCapable : 1;
+    //   unsigned __int32 PreferredTiming : 1;
+    //   unsigned __int32 PhysicalModeSupported : 1;
+    //   unsigned __int32 Reserved : 24;
+    // };
     pub width: u16,
     pub nbytes: NonZeroU8,
 }
@@ -23,7 +35,7 @@ impl Bitfield {
         let dt = input.read_dt()?;
         let width = dt >> 1;
         let unsigned = (dt & 1) > 0;
-        let _tag = TAH::read(&mut *input)?;
+        let _tah = input.read_tah()?;
         Ok(Self {
             unsigned,
             width,

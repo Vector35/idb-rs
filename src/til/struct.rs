@@ -2,7 +2,7 @@ use std::num::{NonZeroU16, NonZeroU8};
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{Type, TypeRaw, SDACL};
+use crate::til::{Type, TypeRaw};
 use anyhow::{anyhow, Result};
 use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 
@@ -70,7 +70,7 @@ impl StructRaw {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // simple reference
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
-            let _taudt_bits = SDACL::read(&mut *input)?;
+            let _taudt_bits = input.read_sdacl()?;
             let TypeVariantRaw::Typedef(ref_type) = ref_type.variant else {
                 return Err(anyhow!("StructRef Non Typedef"));
             };
@@ -83,22 +83,24 @@ impl StructRaw {
         let alpow = n & 7;
         let effective_alignment = (alpow != 0).then(|| NonZeroU8::new(1 << (alpow - 1)).unwrap());
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459c97
-        let mut taudt_bits = SDACL::read(&mut *input)?;
+        let taudt_bits = input.read_sdacl()?;
+        // TODO check ext atts
+        let mut taudt_bits = taudt_bits.map(|x| x.tattr).unwrap_or(0);
 
         // consume the is_bit used by the StructMemberRaw
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
-        let is_bitset = taudt_bits.0 .0 & 0x200 != 0;
+        let is_bitset = taudt_bits & 0x200 != 0;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
         // TODO this value can't be right, it defines the alignment!
-        let is_bitset2 = taudt_bits.0 .0 & 0x4 != 0;
-        taudt_bits.0 .0 &= !0x200; // NOTE don't consume 0x4, it's used somewhere else
+        let is_bitset2 = taudt_bits & 0x4 != 0;
+        taudt_bits &= !0x200; // NOTE don't consume 0x4, it's used somewhere else
 
         let members = (0..mem_cnt)
             .map(|_| StructMemberRaw::read(&mut *input, header, is_bitset, is_bitset2))
             .collect::<Result<_, _>>()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
-        let modifier = StructModifierRaw::from_value(taudt_bits.0 .0);
+        let modifier = StructModifierRaw::from_value(taudt_bits);
         Ok(TypeVariantRaw::Struct(Self {
             effective_alignment,
             modifier,
@@ -111,7 +113,6 @@ impl StructRaw {
 pub struct StructMember {
     pub name: Option<Vec<u8>>,
     pub member_type: Type,
-    pub sdacl: SDACL,
     pub att: Option<StructMemberAtt>,
 }
 
@@ -125,7 +126,6 @@ impl StructMember {
         Ok(Self {
             name,
             member_type: Type::new(til, m.ty, fields)?,
-            sdacl: m.sdacl,
             att: m.att,
         })
     }
@@ -133,7 +133,6 @@ impl StructMember {
 #[derive(Clone, Debug)]
 pub(crate) struct StructMemberRaw {
     pub ty: TypeRaw,
-    pub sdacl: SDACL,
     pub att: Option<StructMemberAtt>,
 }
 
@@ -152,19 +151,19 @@ impl StructMemberRaw {
             .transpose()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
-        let mut sdacl = SDACL(crate::til::TypeAttribute(0));
         if !is_bit_set || matches!(att, Some(_att1)) {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
-            sdacl = SDACL::read(&mut *input)?;
+            let sdacl = input.read_sdacl()?;
+            let sdacl_value = sdacl.as_ref().map(|x| x.tattr).unwrap_or(0);
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
-            if is_bit_set2 && sdacl.0 .0 & 0x200 == 0 {
+            if is_bit_set2 && sdacl_value & 0x200 == 0 {
                 // TODO there is more to this impl?
                 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478411
                 // todo!();
             }
         }
 
-        Ok(Self { ty, sdacl, att })
+        Ok(Self { ty, att })
     }
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486cd0

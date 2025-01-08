@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{Type, TypeRaw, TAH};
+use crate::til::{Type, TypeRaw};
 
 #[derive(Debug, Clone)]
 pub struct Pointer {
@@ -107,10 +107,12 @@ impl PointerRaw {
         };
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4804fa
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459b7e
-        let tah = TAH::read(&mut *input)?;
+        let tah = input.read_tah()?;
+        // TODO handle ext att
+        let tah = tah.map(|x| x.tattr).unwrap_or(0);
         let typ = TypeRaw::read(&mut *input, header)?;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6
-        let shifted = (tah.0 .0 & TAPTR_SHIFTED != 0)
+        let shifted = (tah & TAPTR_SHIFTED != 0)
             .then(|| -> Result<_> {
                 // TODO allow typedef only?
                 let typ = TypeRaw::read(&mut *input, header)?;
@@ -120,7 +122,7 @@ impl PointerRaw {
             .transpose()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6 print_til_type_att
-        let modifier = match tah.0 .0 & TAPTR_RESTRICT {
+        let modifier = match tah & TAPTR_RESTRICT {
             0x00 => None,
             TAPTR_PTR32 => Some(PointerModifier::Ptr32),
             TAPTR_PTR64 => Some(PointerModifier::Ptr64),
@@ -128,9 +130,9 @@ impl PointerRaw {
             _ => unreachable!(),
         };
         // TODO find menaing: commonly set as true
-        let is_unknown_ta10 = tah.0 .0 & 0x10 != 0;
+        let is_unknown_ta10 = tah & 0x10 != 0;
         // TODO find meaning: normally 5 in one type at `vc10_64` and `ntddk64`
-        let ta_lower = (tah.0 .0 & 0xf) as u8;
+        let ta_lower = (tah & 0xf) as u8;
 
         Ok(Self {
             closure,
