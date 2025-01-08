@@ -2,7 +2,7 @@ use std::num::NonZeroU8;
 
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::section::TILSectionHeader;
-use crate::til::{Basic, Type, TypeRaw, TAH};
+use crate::til::{Basic, Type, TypeRaw};
 use anyhow::{anyhow, ensure, Result};
 
 use super::TypeVariantRaw;
@@ -164,7 +164,7 @@ impl FunctionRaw {
         flags &= !0x0100;
         ensure!(flags == 0, "unknown function attrs({flags:04X})");
 
-        let _tah = TAH::read(&mut *input)?;
+        let _tah = input.read_tah()?;
 
         let ret = TypeRaw::read(&mut *input, header)?;
         // TODO double check documentation for [flag::tf_func::BT_FUN]

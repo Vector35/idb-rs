@@ -3,6 +3,8 @@ use anyhow::{anyhow, ensure, Result};
 use std::io::{BufRead, ErrorKind, Read, Seek};
 use std::ops::Range;
 
+use crate::til::{TypeAttribute, TypeAttributeExt};
+
 pub trait IdbReader: Seek + IdaGenericBufUnpack {}
 impl<R: Seek + IdaGenericBufUnpack> IdbReader for R {}
 
@@ -257,6 +259,39 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
         }
         Ok(acc)
     }
+
+    fn read_tah(&mut self) -> Result<Option<TypeAttribute>> {
+        // TODO TAH in each type have a especial meaning, verify those
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477080
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
+        let Some(tah) = self.peek_u8()? else {
+            return Err(anyhow!(std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                "Unexpected EoF on DA"
+            )));
+        };
+        if tah == 0xFE {
+            Ok(Some(self.read_type_attribute()?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn read_sdacl(&mut self) -> Result<Option<TypeAttribute>> {
+        let Some(sdacl) = self.peek_u8()? else {
+            return Err(anyhow!(std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                "Unexpected EoF on SDACL"
+            )));
+        };
+
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477eff
+        match sdacl {
+            //NOTE: original op ((sdacl & 0xcf) ^ 0xC0) <= 0x01
+            0xd0..=0xff | 0xc0 | 0xc1 => Ok(Some(self.read_type_attribute()?)),
+            _ => Ok(None),
+        }
+    }
 }
 impl<R: BufRead> IdaGenericBufUnpack for R {}
 
@@ -459,6 +494,60 @@ pub trait IdaGenericUnpack: Read {
             0x7FFE => self.read_de().map(Some),
             n => Ok(Some(n.into())),
         }
+    }
+
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
+    fn read_type_attribute(&mut self) -> Result<TypeAttribute> {
+        use crate::til::flag::tattr_ext::*;
+        let byte0: u8 = self.read_u8()?;
+        let mut tattr = 0;
+        if byte0 != 0xfe {
+            tattr = ((byte0 as u16 & 1) | ((byte0 as u16 >> 3) & 6)) + 1;
+        }
+        if byte0 == 0xFE || tattr == 8 {
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452878
+            let mut shift = 0;
+            // TODO limit the loop to only 0..n
+            loop {
+                let next_byte: u8 = self.read_u8()?;
+                ensure!(
+                    next_byte != 0,
+                    "Failed to parse TypeAttribute, byte is zero"
+                );
+                tattr |= ((next_byte & 0x7F) as u16) << shift;
+                if next_byte & 0x80 == 0 {
+                    break;
+                }
+                shift += 7;
+                ensure!(
+                    shift < u16::BITS,
+                    "Failed to find the end of type attribute"
+                );
+            }
+        }
+
+        if tattr & TAH_HASATTRS == 0 {
+            return Ok(TypeAttribute {
+                tattr,
+                extended: None,
+            });
+        }
+        tattr &= !TAH_HASATTRS;
+
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45289e
+        let loop_cnt = self.read_dt()?;
+        let extended = (0..loop_cnt)
+            .map(|_| {
+                let _value1 = self.unpack_dt_bytes()?;
+                let _value2 = self.unpack_dt_bytes()?;
+                // TODO maybe more...
+                Ok(TypeAttributeExt { _value1, _value2 })
+            })
+            .collect::<Result<_>>()?;
+        return Ok(TypeAttribute {
+            tattr,
+            extended: Some(extended),
+        });
     }
 
     fn read_bytes_len_u16(&mut self) -> Result<Vec<u8>> {

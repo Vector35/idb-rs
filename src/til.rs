@@ -68,6 +68,7 @@ impl TILTypeInfo {
         let flags: u32 = cursor.read_u32()?;
         // TODO verify if flags equal to 0x7fff_fffe?
         let name = cursor.read_c_string_raw()?;
+        println!("{}", String::from_utf8_lossy(&name));
         let is_u64 = (flags >> 31) != 0;
         let ordinal = match (til.format, is_u64) {
             // formats below 0x12 doesn't have 64 bits ord
@@ -571,88 +572,16 @@ pub struct TypeFlag(pub u8);
 #[derive(Clone, Copy, Debug)]
 pub struct CallingConventionFlag(pub u8);
 
-#[derive(Clone, Copy, Debug)]
-pub struct TypeAttribute(pub u16);
-impl TypeAttribute {
-    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
-    fn read(input: &mut impl IdaGenericUnpack) -> Result<Self> {
-        let byte0: u8 = input.read_u8()?;
-        let mut val = 0;
-        if byte0 != 0xfe {
-            val = ((byte0 as u16 & 1) | ((byte0 as u16 >> 3) & 6)) + 1;
-        }
-        if byte0 == 0xFE || val == 8 {
-            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452878
-            let mut shift = 0;
-            // TODO limit the loop to only 0..n
-            loop {
-                let next_byte: u8 = input.read_u8()?;
-                ensure!(
-                    next_byte != 0,
-                    "Failed to parse TypeAttribute, byte is zero"
-                );
-                val |= ((next_byte & 0x7F) as u16) << shift;
-                if next_byte & 0x80 == 0 {
-                    break;
-                }
-                shift += 7;
-            }
-        }
-
-        if val & 0x10 == 0 {
-            return Ok(TypeAttribute(val));
-        }
-
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45289e
-        let loop_cnt = input.read_dt()?;
-        for _ in 0..loop_cnt {
-            let _string = input.unpack_dt_bytes()?;
-            let _other_thing = input.unpack_dt_bytes()?;
-            // TODO maybe more...
-        }
-        Ok(TypeAttribute(val))
-    }
+#[derive(Clone, Debug)]
+pub struct TypeAttribute {
+    pub tattr: u16,
+    pub extended: Option<Vec<TypeAttributeExt>>,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct TAH(pub TypeAttribute);
-impl TAH {
-    fn read(input: &mut impl IdaGenericBufUnpack) -> Result<Self> {
-        // TODO TAH in each type have a especial meaning, verify those
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477080
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
-        let Some(tah) = input.fill_buf()?.first().copied() else {
-            return Err(anyhow!(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "Unexpected EoF on DA"
-            )));
-        };
-        if tah == 0xFE {
-            Ok(Self(TypeAttribute::read(input)?))
-        } else {
-            Ok(Self(TypeAttribute(0)))
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct SDACL(pub TypeAttribute);
-impl SDACL {
-    fn read(input: &mut impl IdaGenericBufUnpack) -> Result<Self> {
-        let Some(sdacl) = input.fill_buf()?.first().copied() else {
-            return Err(anyhow!(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "Unexpected EoF on SDACL"
-            )));
-        };
-
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477eff
-        match sdacl {
-            //NOTE: original op ((sdacl & 0xcf) ^ 0xC0) <= 0x01
-            0xd0..=0xff | 0xc0 | 0xc1 => Ok(Self(TypeAttribute::read(input)?)),
-            _ => Ok(Self(TypeAttribute(0))),
-        }
-    }
+#[derive(Clone, Debug)]
+pub struct TypeAttributeExt {
+    pub _value1: Vec<u8>,
+    pub _value2: Vec<u8>,
 }
 
 fn serialize_dt(value: u16) -> Result<Vec<u8>> {

@@ -2,7 +2,7 @@ use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{flag, StructModifierRaw, TypeRaw, TypeVariantRaw, SDACL, TAH};
+use crate::til::{flag, StructModifierRaw, TypeRaw, TypeVariantRaw};
 use anyhow::{anyhow, ensure};
 
 #[derive(Clone, Debug)]
@@ -61,15 +61,14 @@ impl EnumRaw {
             // is ref
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
-            let _taenum_bits = SDACL::read(&mut *input)?.0;
+            let _taenum_bits = input.read_sdacl()?;
             let TypeVariantRaw::Typedef(ref_type) = ref_type.variant else {
                 return Err(anyhow!("EnumRef Non Typedef"));
             };
             return Ok(TypeVariantRaw::EnumRef(ref_type));
         };
 
-        let taenum_bits = TAH::read(&mut *input)?.0;
-        let _modifiers = StructModifierRaw::from_value(taenum_bits.0);
+        let taenum_bits = input.read_tah()?;
         // TODO parse ext attr
         let bte = input.read_u8()?;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452312 deserialize_enum
@@ -103,11 +102,13 @@ impl EnumRaw {
         };
 
         // TODO ensure no bits from bte or taenum_bits are unparsed
-        let is_signed = taenum_bits.0 & TAENUM_SIGNED != 0;
-        let is_unsigned = taenum_bits.0 & TAENUM_UNSIGNED != 0;
+        let taenum_bits = taenum_bits.as_ref().map(|x| x.tattr).unwrap_or(0);
+        let _modifiers = StructModifierRaw::from_value(taenum_bits);
+        let is_signed = taenum_bits & TAENUM_SIGNED != 0;
+        let is_unsigned = taenum_bits & TAENUM_UNSIGNED != 0;
         // TODO ensure only signed/unsigned is allowed?
         //
-        let is_64 = (taenum_bits.0 & TAENUM_64BIT) != 0;
+        let is_64 = (taenum_bits & TAENUM_64BIT) != 0;
         let mut low_acc: u32 = 0;
         let mut high_acc: u32 = 0;
         let mut group_acc = 0;
