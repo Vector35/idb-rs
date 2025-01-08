@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{ensure, Result};
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
@@ -111,6 +111,10 @@ impl PointerRaw {
                 let ta_lower = (tattr & MAX_DECL_ALIGN) as u8;
                 let is_shifted = tattr & TAPTR_SHIFTED != 0;
                 let ptr_type = tattr & TAPTR_RESTRICT;
+                ensure!(
+                    tattr & !(TAPTR_SHIFTED | TAPTR_RESTRICT | MAX_DECL_ALIGN) == 0,
+                    "Invalid Pointer taenum_bits {tattr:x}"
+                );
                 if let Some(_extended) = extended {
                     // TODO parse extended values, known:
                     // "__org_arrdim" :"\xac\xXX"

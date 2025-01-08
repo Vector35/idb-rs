@@ -1,12 +1,12 @@
-use std::num::{NonZeroU16, NonZeroU8};
+use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 
-use super::{StructModifierRaw, TypeVariantRaw};
+use super::{TypeAttribute, TypeVariantRaw};
 
 #[derive(Clone, Debug)]
 pub struct Struct {
@@ -17,16 +17,13 @@ pub struct Struct {
     /// Gcc msstruct attribute
     pub is_msstruct: bool,
     /// C++ object, not simple pod type
-    pub is_cpp_obj: bool,
+    pub is_cppobj: bool,
     /// Virtual function table
-    pub is_vftable: bool,
+    pub is_vft: bool,
     /// Unknown meaning, use at your own risk
     pub is_uknown_8: bool,
     /// Alignment in bytes
     pub alignment: Option<NonZeroU8>,
-    // TODO delete others, parse all values or return an error
-    /// other unparsed values from the type attribute
-    pub others: Option<NonZeroU16>,
 }
 impl Struct {
     pub(crate) fn new(
@@ -42,13 +39,12 @@ impl Struct {
         Ok(Struct {
             effective_alignment: value.effective_alignment,
             members,
-            is_unaligned: value.modifier.is_unaligned,
-            is_msstruct: value.modifier.is_msstruct,
-            is_cpp_obj: value.modifier.is_cpp_obj,
-            is_vftable: value.modifier.is_vftable,
-            is_uknown_8: value.modifier.is_unknown_8,
-            alignment: value.modifier.alignment,
-            others: value.modifier.others,
+            is_unaligned: value.is_unaligned,
+            is_msstruct: value.is_msstruct,
+            is_cppobj: value.is_cppobj,
+            is_vft: value.is_vft,
+            is_uknown_8: value.is_unknown_8,
+            alignment: value.alignment,
         })
     }
 }
@@ -56,8 +52,20 @@ impl Struct {
 #[derive(Clone, Debug)]
 pub(crate) struct StructRaw {
     effective_alignment: Option<NonZeroU8>,
-    modifier: StructModifierRaw,
     members: Vec<StructMemberRaw>,
+
+    /// Unaligned struct
+    is_unaligned: bool,
+    /// Gcc msstruct attribute
+    is_msstruct: bool,
+    /// C++ object, not simple pod type
+    is_cppobj: bool,
+    /// Virtual function table
+    is_vft: bool,
+    // TODO unknown meaning
+    is_unknown_8: bool,
+    /// Alignment in bytes
+    alignment: Option<NonZeroU8>,
 }
 
 impl StructRaw {
@@ -83,31 +91,68 @@ impl StructRaw {
         let alpow = n & 7;
         let effective_alignment = (alpow != 0).then(|| NonZeroU8::new(1 << (alpow - 1)).unwrap());
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459c97
-        let taudt_bits = input.read_sdacl()?;
-        // TODO check ext atts
-        let mut taudt_bits = taudt_bits.map(|x| x.tattr).unwrap_or(0);
+        let mut alignment = None;
+        let mut is_unknown_8 = false;
+        let mut is_msstruct = false;
+        let mut is_unaligned = false;
+        let mut is_cppobj = false;
+        let mut is_vft = false;
+        let mut is_method = false;
+        let mut is_bitset2 = false;
+        if let Some(TypeAttribute { tattr, extended }) = input.read_sdacl()? {
+            use crate::til::flag::tattr::*;
+            use crate::til::flag::tattr_field::*;
+            use crate::til::flag::tattr_udt::*;
 
-        // consume the is_bit used by the StructMemberRaw
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
-        let is_bitset = taudt_bits & 0x200 != 0;
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
-        // TODO this value can't be right, it defines the alignment!
-        let is_bitset2 = taudt_bits & 0x4 != 0;
-        taudt_bits &= !0x200; // NOTE don't consume 0x4, it's used somewhere else
+            let align_raw = (tattr & MAX_DECL_ALIGN) as u8;
+
+            // TODO WHY?
+            is_unknown_8 = align_raw & 0x8 != 0;
+            alignment = NonZeroU8::new(align_raw & 0x7);
+
+            is_msstruct = tattr & TAUDT_MSSTRUCT != 0;
+            is_unaligned = tattr & TAUDT_UNALIGNED != 0;
+            is_cppobj = tattr & TAUDT_CPPOBJ != 0;
+            is_vft = tattr & TAUDT_VFTABLE != 0;
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
+            // TODO using a field flag on the struct seems out-of-place
+            is_method = tattr & TAFLD_METHOD != 0;
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
+            // TODO this value can't be right, it defines the alignment!
+            is_bitset2 = align_raw & 0x4 != 0;
+
+            const ALL_FLAGS: u16 = MAX_DECL_ALIGN
+                | TAUDT_MSSTRUCT
+                | TAUDT_UNALIGNED
+                | TAUDT_CPPOBJ
+                | TAUDT_VFTABLE
+                | TAFLD_METHOD;
+            ensure!(
+                tattr & !ALL_FLAGS == 0,
+                "Invalid Struct taenum_bits {tattr:x}"
+            );
+            ensure!(
+                extended.is_none(),
+                "Unable to parse extended attributes for struct"
+            );
+        }
 
         let members = (0..mem_cnt)
             .map(|i| {
-                StructMemberRaw::read(&mut *input, header, is_bitset, is_bitset2)
+                StructMemberRaw::read(&mut *input, header, is_method, is_bitset2)
                     .with_context(|| format!("Member {i}"))
             })
             .collect::<Result<_, _>>()?;
 
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
-        let modifier = StructModifierRaw::from_value(taudt_bits);
         Ok(TypeVariantRaw::Struct(Self {
             effective_alignment,
-            modifier,
             members,
+            is_unaligned,
+            is_msstruct,
+            is_cppobj,
+            is_vft,
+            is_unknown_8,
+            alignment,
         }))
     }
 }
@@ -117,6 +162,12 @@ pub struct StructMember {
     pub name: Option<Vec<u8>>,
     pub member_type: Type,
     pub att: Option<StructMemberAtt>,
+
+    pub alignment: Option<NonZeroU8>,
+    pub is_baseclass: bool,
+    pub is_unaligned: bool,
+    pub is_vft: bool,
+    pub is_method: bool,
 }
 
 impl StructMember {
@@ -130,6 +181,11 @@ impl StructMember {
             name,
             member_type: Type::new(til, m.ty, fields)?,
             att: m.att,
+            alignment: m.alignment,
+            is_baseclass: m.is_baseclass,
+            is_unaligned: m.is_unaligned,
+            is_vft: m.is_vft,
+            is_method: m.is_method,
         })
     }
 }
@@ -137,6 +193,11 @@ impl StructMember {
 pub(crate) struct StructMemberRaw {
     pub ty: TypeRaw,
     pub att: Option<StructMemberAtt>,
+    pub alignment: Option<NonZeroU8>,
+    pub is_baseclass: bool,
+    pub is_unaligned: bool,
+    pub is_vft: bool,
+    pub is_method: bool,
 }
 
 impl StructMemberRaw {
@@ -153,20 +214,59 @@ impl StructMemberRaw {
             .then(|| Self::read_member_att_1(input, header))
             .transpose()?;
 
+        let mut alignment = None;
+        let mut is_baseclass = false;
+        let mut is_unaligned = false;
+        let mut is_vft = false;
+        let mut is_method = false;
+
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
-        if !is_bit_set || matches!(att, Some(_att1)) {
+        if !is_bit_set || att.is_some() {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
-            let sdacl = input.read_sdacl()?;
-            let sdacl_value = sdacl.as_ref().map(|x| x.tattr).unwrap_or(0);
+            if let Some(TypeAttribute { tattr, extended }) = input.read_sdacl()? {
+                use crate::til::flag::tattr::*;
+                use crate::til::flag::tattr_field::*;
+
+                alignment = NonZeroU8::new((tattr & MAX_DECL_ALIGN) as u8);
+                is_baseclass = tattr & TAFLD_BASECLASS != 0;
+                is_unaligned = tattr & TAFLD_UNALIGNED != 0;
+                let is_virtbase = tattr & TAFLD_VIRTBASE != 0;
+                ensure!(!is_virtbase, "UDT Member virtual base is not supported yet");
+                is_vft = tattr & TAFLD_VFTABLE != 0;
+                // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
+                is_method = tattr & TAFLD_METHOD != 0;
+                const ALL_FLAGS: u16 = MAX_DECL_ALIGN
+                    | TAFLD_BASECLASS
+                    | TAFLD_UNALIGNED
+                    | TAFLD_VFTABLE
+                    | TAFLD_METHOD;
+                ensure!(
+                    tattr & !ALL_FLAGS == 0,
+                    "Invalid Struct taenum_bits {tattr:x}"
+                );
+                ensure!(
+                    extended.is_none(),
+                    "Unable to parse extended attributes for struct member"
+                );
+            }
+
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
-            if is_bit_set2 && sdacl_value & 0x200 == 0 {
+            if is_bit_set2 && !is_method {
                 // TODO there is more to this impl?
                 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478411
                 // todo!();
             }
         }
 
-        Ok(Self { ty, att })
+        Ok(Self {
+            ty,
+            att,
+            alignment,
+            is_baseclass,
+            is_unaligned,
+            is_vft,
+            is_method,
+        })
     }
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486cd0
