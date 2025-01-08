@@ -93,7 +93,7 @@ impl<'a> TILTypeSizeSolver<'a> {
                 let align: u64 = 1;
                 let mut members = &til_struct.members[..];
                 loop {
-                    let first_member = members.get(0);
+                    let first_member = members.first();
                     let field_size = match first_member.map(|x| &x.member_type.type_variant) {
                         // no more members
                         None => break,
@@ -115,8 +115,7 @@ impl<'a> TILTypeSizeSolver<'a> {
                     };
                     if !til_struct.is_unaligned {
                         let align = first_member
-                            .map(|first| self.alignemnt(&first.member_type, field_size))
-                            .flatten()
+                            .and_then(|first| self.alignemnt(&first.member_type, field_size))
                             .unwrap_or(align)
                             .max(1);
                         let align_diff = sum % align;
@@ -189,7 +188,7 @@ impl<'a> TILTypeSizeSolver<'a> {
                     Typedef::Name(Some(name)) => self.section.get_name(name),
                     Typedef::Name(None) => None,
                 };
-                ty.map(|ty| self.inner_type_size_bytes(&ty.tinfo)).flatten()
+                ty.and_then(|ty| self.inner_type_size_bytes(&ty.tinfo))
             }
             TypeVariant::Typedef(ty) => {
                 let ty = match ty {
@@ -199,11 +198,10 @@ impl<'a> TILTypeSizeSolver<'a> {
                     Typedef::Name(Some(name)) => self.section.get_name(name),
                     Typedef::Name(None) => None,
                 };
-                ty.map(|ty| {
+                ty.and_then(|ty| {
                     let size = self.inner_type_size_bytes(&ty.tinfo).unwrap_or(1);
                     self.alignemnt(&ty.tinfo, size)
                 })
-                .flatten()
             }
             _ => None,
         }
@@ -219,14 +217,13 @@ fn condensate_bitfields_from_struct(
     let mut condensated_bits = first_field.width;
 
     loop {
-        let Some(TypeVariant::Bitfield(member)) = rest.get(0).map(|x| &x.member_type.type_variant)
+        let Some(TypeVariant::Bitfield(member)) = rest.first().map(|x| &x.member_type.type_variant)
         else {
             // no more bit-fields to condensate
             break;
         };
-        let member_bits = u16::from(member.width);
         // condensate the bit-field into the byte-field
-        condensated_bits += member_bits;
+        condensated_bits += member.width;
         // check if this bit start the next field
         if field_bytes != member.nbytes || condensated_bits > field_bits {
             // NOTE this don't consume the current member
@@ -236,5 +233,5 @@ fn condensate_bitfields_from_struct(
         // advance to the next member
         *rest = &rest[1..];
     }
-    return field_bytes;
+    field_bytes
 }
