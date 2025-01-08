@@ -3,7 +3,7 @@ use std::num::{NonZeroU16, NonZeroU8};
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 
 use super::{StructModifierRaw, TypeVariantRaw};
@@ -96,7 +96,10 @@ impl StructRaw {
         taudt_bits &= !0x200; // NOTE don't consume 0x4, it's used somewhere else
 
         let members = (0..mem_cnt)
-            .map(|_| StructMemberRaw::read(&mut *input, header, is_bitset, is_bitset2))
+            .map(|i| {
+                StructMemberRaw::read(&mut *input, header, is_bitset, is_bitset2)
+                    .with_context(|| format!("Member {i}"))
+            })
             .collect::<Result<_, _>>()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
