@@ -1,11 +1,14 @@
-use std::num::NonZeroU16;
+use std::num::{NonZeroU16, NonZeroU8};
+
+use anyhow::ensure;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{Type, TypeRaw};
+use crate::til::{Type, TypeAttribute, TypeRaw};
 
 #[derive(Clone, Debug)]
 pub struct Array {
+    pub align: Option<NonZeroU8>,
     pub base: u8,
     pub nelem: Option<NonZeroU16>,
     pub elem_type: Box<Type>,
@@ -17,6 +20,7 @@ impl Array {
         fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
+            align: value.align,
             base: value.base,
             nelem: value.nelem,
             elem_type: Type::new(til, *value.elem_type, fields).map(Box::new)?,
@@ -26,6 +30,7 @@ impl Array {
 
 #[derive(Clone, Debug)]
 pub(crate) struct ArrayRaw {
+    pub align: Option<NonZeroU8>,
     pub base: u8,
     pub nelem: Option<NonZeroU16>,
     pub elem_type: Box<TypeRaw>,
@@ -37,6 +42,7 @@ impl ArrayRaw {
         header: &TILSectionHeader,
         metadata: u8,
     ) -> anyhow::Result<Self> {
+        use crate::til::flag::tattr::*;
         use crate::til::flag::tf_array::*;
         let (base, nelem) = match metadata {
             BTMT_NONBASED => {
@@ -50,10 +56,25 @@ impl ArrayRaw {
             }
         };
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48078e
-        let _tah = input.read_tah()?;
+        let align = match input.read_tah()? {
+            None => None,
+            Some(TypeAttribute { tattr, extended }) => {
+                let align = (tattr & MAX_DECL_ALIGN) as u8;
+                ensure!(
+                    tattr & !MAX_DECL_ALIGN == 0,
+                    "unknown TypeAttribute {tattr:x}"
+                );
+                ensure!(
+                    extended.is_none(),
+                    "unknown TypeAttribute ext {extended:x?}"
+                );
+                NonZeroU8::new(align)
+            }
+        };
         let elem_type = TypeRaw::read(&mut *input, header)?;
         Ok(ArrayRaw {
             base,
+            align,
             nelem: NonZeroU16::new(nelem),
             elem_type: Box::new(elem_type),
         })

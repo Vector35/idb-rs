@@ -69,13 +69,13 @@ impl EnumRaw {
             return Ok(TypeVariantRaw::EnumRef(ref_type));
         };
 
-        let taenum_bits = input.read_tah()?;
-        let (is_64, is_signed, is_unsigned) = match taenum_bits {
+        let (is_64, is_signed, is_unsigned) = match input.read_tah()? {
             None => (false, false, false),
             Some(TypeAttribute {
                 tattr,
                 extended: None,
             }) => {
+                // TODO enum have an align field (MAX_DECL_ALIGN) in tattr?
                 let is_64 = tattr & TAENUM_64BIT != 0;
                 let is_signed = tattr & TAENUM_SIGNED != 0;
                 let is_unsigned = tattr & TAENUM_UNSIGNED != 0;
