@@ -89,6 +89,7 @@ impl PointerRaw {
         header: &TILSectionHeader,
         metadata: u8,
     ) -> Result<Self> {
+        use crate::til::flag::tattr::*;
         use crate::til::flag::tattr_ptr::*;
         use crate::til::flag::tf_ptr::*;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478d67
@@ -103,12 +104,11 @@ impl PointerRaw {
         };
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4804fa
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459b7e
-        let tah = input.read_tah()?;
-        let (_ta_lower, is_shifted, ptr_type_raw) = match tah {
+        let (_ta_lower, is_shifted, ptr_type_raw) = match input.read_tah()? {
             None => (0, false, 0),
             Some(TypeAttribute { tattr, extended }) => {
                 // all bits of tattr are consumed
-                let ta_lower = (tattr & 0xf) as u8;
+                let ta_lower = (tattr & MAX_DECL_ALIGN) as u8;
                 let is_shifted = tattr & TAPTR_SHIFTED != 0;
                 let ptr_type = tattr & TAPTR_RESTRICT;
                 if let Some(_extended) = extended {
