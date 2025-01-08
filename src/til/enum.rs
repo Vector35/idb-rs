@@ -2,7 +2,7 @@ use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{flag, StructModifierRaw, TypeRaw, TypeVariantRaw};
+use crate::til::{flag, TypeAttribute, TypeRaw, TypeVariantRaw};
 use anyhow::{anyhow, ensure};
 
 #[derive(Clone, Debug)]
@@ -61,6 +61,7 @@ impl EnumRaw {
             // is ref
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
+            // TODO ensure all bits from sdacl are parsed
             let _taenum_bits = input.read_sdacl()?;
             let TypeVariantRaw::Typedef(ref_type) = ref_type.variant else {
                 return Err(anyhow!("EnumRef Non Typedef"));
@@ -69,14 +70,50 @@ impl EnumRaw {
         };
 
         let taenum_bits = input.read_tah()?;
-        // TODO parse ext attr
+        let (is_64, is_signed, is_unsigned) = match taenum_bits {
+            None => (false, false, false),
+            Some(TypeAttribute {
+                tattr,
+                extended: None,
+            }) => {
+                let is_64 = tattr & TAENUM_64BIT != 0;
+                let is_signed = tattr & TAENUM_SIGNED != 0;
+                let is_unsigned = tattr & TAENUM_UNSIGNED != 0;
+                ensure!(
+                    tattr & !(TAENUM_64BIT | TAENUM_SIGNED | TAENUM_UNSIGNED) == 0,
+                    "Invalid Enum taenum_bits {tattr:x}"
+                );
+                ensure!(
+                    !(is_signed && is_unsigned),
+                    "Enum can't be signed and unsigned at the same time"
+                );
+                (is_64, is_signed, is_unsigned)
+            }
+            // TODO parse ext attr?
+            Some(TypeAttribute {
+                tattr: _,
+                extended: Some(_),
+            }) => {
+                return Err(anyhow!("Unable to parse extended attributes for enum"));
+            }
+        };
+
+        // all BTE bits are consumed
         let bte = input.read_u8()?;
+        let storage_size_raw = bte & BTE_SIZE_MASK;
+        ensure!(
+            bte & BTE_RESERVED == 0,
+            "Enum BTE including the Always off sub-field"
+        );
+        let have_subarrays = bte & BTE_BITFIELD != 0;
+        let output_format_raw = bte & BTE_OUT_MASK;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452312 deserialize_enum
         ensure!(
             bte & BTE_ALWAYS != 0,
-            "Enum BTE missing the Always sub-field"
+            "Enum BTE missing the Always on sub-field"
         );
-        let storage_size: Option<NonZeroU8> = match bte & BTE_SIZE_MASK {
+
+        let storage_size: Option<NonZeroU8> = match storage_size_raw {
             0 => None,
             emsize @ 1..=4 => Some((1 << (emsize - 1)).try_into().unwrap()),
             // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4523c8 deserialize_enum
@@ -93,7 +130,7 @@ impl EnumRaw {
             u64::MAX >> (u64::BITS - (storage_size_final as u32 * 8))
         };
 
-        let output_format = match bte & BTE_OUT_MASK {
+        let output_format = match output_format_raw {
             BTE_HEX => EnumFormat::Hex,
             BTE_CHAR => EnumFormat::Char,
             BTE_SDEC => EnumFormat::SignedDecimal,
@@ -101,18 +138,10 @@ impl EnumRaw {
             _ => unreachable!(),
         };
 
-        // TODO ensure no bits from bte or taenum_bits are unparsed
-        let taenum_bits = taenum_bits.as_ref().map(|x| x.tattr).unwrap_or(0);
-        let _modifiers = StructModifierRaw::from_value(taenum_bits);
-        let is_signed = taenum_bits & TAENUM_SIGNED != 0;
-        let is_unsigned = taenum_bits & TAENUM_UNSIGNED != 0;
-        // TODO ensure only signed/unsigned is allowed?
-        //
-        let is_64 = (taenum_bits & TAENUM_64BIT) != 0;
         let mut low_acc: u32 = 0;
         let mut high_acc: u32 = 0;
         let mut group_acc = 0;
-        let mut groups = (bte & BTE_BITFIELD != 0).then_some(vec![]);
+        let mut groups = have_subarrays.then_some(vec![]);
         let members = (0..member_num)
             .map(|_member_idx| {
                 if let Some(groups) = &mut groups {

@@ -532,6 +532,7 @@ pub trait IdaGenericUnpack: Read {
                 extended: None,
             });
         }
+        // consume this flag
         tattr &= !TAH_HASATTRS;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45289e
