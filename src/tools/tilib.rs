@@ -234,7 +234,7 @@ fn print_symbols(
         write!(fmt, " {} ", sym_kind)?;
 
         // TODO investiage this
-        let name = if symbol.ordinal == 0 && symbol.name.get(0) == Some(&b'_') {
+        let name = if symbol.ordinal == 0 && symbol.name.first() == Some(&b'_') {
             // remove the first "_", if any
             &symbol.name[1..]
         } else {
@@ -640,7 +640,7 @@ fn print_til_type_typedef(
         }
         idb_rs::til::Typedef::Name(Some(name)) => {
             // NOTE don't need to get the inner type, we already have it's name
-            fmt.write_all(&name)?;
+            fmt.write_all(name)?;
             true
         }
         // Nothing to print

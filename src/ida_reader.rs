@@ -544,10 +544,10 @@ pub trait IdaGenericUnpack: Read {
                 Ok(TypeAttributeExt { _value1, _value2 })
             })
             .collect::<Result<_>>()?;
-        return Ok(TypeAttribute {
+        Ok(TypeAttribute {
             tattr,
             extended: Some(extended),
-        });
+        })
     }
 
     fn read_bytes_len_u16(&mut self) -> Result<Vec<u8>> {

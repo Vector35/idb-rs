@@ -136,7 +136,7 @@ impl TILSection {
         let cn = CCPtrSize::from_cm_raw(header.cm, header.size_int);
         let cm = CCModel::from_cm_raw(header.cm);
 
-        let dependencies = if header.dependencies.len() != 0 {
+        let dependencies = if !header.dependencies.is_empty() {
             header
                 .dependencies
                 .split(|x| *x == b',')
