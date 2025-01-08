@@ -127,7 +127,7 @@ impl FunctionRaw {
         };
 
         // TODO InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473bf1 print_til_type
-        let (cc, mut flags, _spoiled) = read_cc(&mut *input)?;
+        let (cc, flags, _spoiled) = read_cc(&mut *input)?;
         let cc = CallingConvention::from_cm_raw(cc)?;
 
         // TODO investigate why this don't hold true
@@ -141,30 +141,28 @@ impl FunctionRaw {
 
         // consume the flags and verify if a unknown value is present
         // TODO find those in flags
-        let _have_spoiled = flags & 0x0001 != 0;
-        flags &= !1;
-        let is_noret = flags & 0x0002 != 0;
-        flags &= !0x0002;
-        let is_pure = flags & 0x0004 != 0;
-        flags &= !0x0004;
-        let is_high = flags & 0x0008 != 0;
-        flags &= !0x0008;
-        let is_static = flags & 0x0010 != 0;
-        flags &= !0x0010;
-        let is_virtual = flags & 0x0020 != 0;
-        flags &= !0x0020;
-        // TODO find this flag meaning
-        //let is_TODO = flags & 0x0200 != 0;
-        flags &= !0x0200;
-        let is_const = flags & 0x00400 != 0;
-        flags &= !0x0400;
-        let is_constructor = flags & 0x0800 != 0;
-        flags &= !0x0800;
-        let is_destructor = flags & 0x1000 != 0;
-        flags &= !0x0100;
-        ensure!(flags == 0, "unknown function attrs({flags:04X})");
+        let have_spoiled = flags & 0x0001 != 0;
+        if !have_spoiled {
+            ensure!(_spoiled.is_empty());
+        }
+        let flags_lower = ((flags & 0xFF) >> 1) as u8;
 
-        let _tah = input.read_tah()?;
+        let is_noret = flags_lower & BFA_NORET != 0;
+        let is_pure = flags_lower & BFA_PURE != 0;
+        let is_high = flags_lower & BFA_HIGH != 0;
+        let is_static = flags_lower & BFA_STATIC != 0;
+        let is_virtual = flags_lower & BFA_VIRTUAL != 0;
+        ensure!(flags_lower & !(BFA_NORET | BFA_PURE | BFA_HIGH | BFA_STATIC | BFA_VIRTUAL) == 0);
+
+        // TODO find those flags
+        const BFA_CONST: u8 = 0x4;
+        const BFA_CONSTRUCTOR: u8 = 0x8;
+        const BFA_DESTRUCTOR: u8 = 0x10;
+        let flags_upper = ((flags & 0xFF00) >> 8) as u8;
+        let is_const = flags_upper & BFA_CONST != 0;
+        let is_constructor = flags_upper & BFA_CONSTRUCTOR != 0;
+        let is_destructor = flags_upper & BFA_DESTRUCTOR != 0;
+        ensure!(flags_upper & !(BFA_CONST | BFA_CONSTRUCTOR | BFA_DESTRUCTOR) == 0);
 
         let ret = TypeRaw::read(&mut *input, header).context("Return Argument")?;
         // TODO double check documentation for [flag::tf_func::BT_FUN]
