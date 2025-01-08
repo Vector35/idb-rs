@@ -286,11 +286,10 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
         };
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477eff
-        match sdacl {
-            //NOTE: original op ((sdacl & 0xcf) ^ 0xC0) <= 0x01
-            0xd0..=0xff | 0xc0 | 0xc1 => Ok(Some(self.read_type_attribute()?)),
-            _ => Ok(None),
-        }
+        //NOTE: original op ((sdacl as u8 & 0xcf) ^ 0xC0) as i32 <= 0x01
+        matches!(sdacl, 0xC0..=0xC1 | 0xD0..=0xD1 | 0xE0..=0xE1 | 0xF0..=0xF1)
+            .then(|| self.read_type_attribute())
+            .transpose()
     }
 }
 impl<R: BufRead> IdaGenericBufUnpack for R {}
