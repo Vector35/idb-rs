@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
-use crate::til::{Type, TypeRaw};
+use crate::til::{Type, TypeAttribute, TypeRaw};
 
 #[derive(Debug, Clone)]
 pub struct Pointer {
@@ -10,8 +10,6 @@ pub struct Pointer {
     pub modifier: Option<PointerModifier>,
     pub shifted: Option<(Box<Type>, u32)>,
     pub typ: Box<Type>,
-    pub is_unknown_ta10: bool,
-    pub ta_lower: u8,
 }
 
 impl Pointer {
@@ -37,8 +35,6 @@ impl Pointer {
             modifier: raw.modifier,
             shifted,
             typ,
-            is_unknown_ta10: raw.is_unknown_ta10,
-            ta_lower: raw.ta_lower,
         })
     }
 }
@@ -83,8 +79,8 @@ pub(crate) struct PointerRaw {
     pub modifier: Option<PointerModifier>,
     pub shifted: Option<(Box<TypeRaw>, u32)>,
     pub typ: Box<TypeRaw>,
-    pub is_unknown_ta10: bool,
-    pub ta_lower: u8,
+    // TODO find meaning: normally 5 in one type at `vc10_64` and `ntddk64`
+    pub _ta_lower: u8,
 }
 
 impl PointerRaw {
@@ -108,11 +104,26 @@ impl PointerRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4804fa
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459b7e
         let tah = input.read_tah()?;
-        // TODO handle ext att
-        let tah = tah.map(|x| x.tattr).unwrap_or(0);
+        let (_ta_lower, is_shifted, ptr_type_raw) = match tah {
+            None => (0, false, 0),
+            Some(TypeAttribute { tattr, extended }) => {
+                // all bits of tattr are consumed
+                let ta_lower = (tattr & 0xf) as u8;
+                let is_shifted = tattr & TAPTR_SHIFTED != 0;
+                let ptr_type = tattr & TAPTR_RESTRICT;
+                if let Some(_extended) = extended {
+                    // TODO parse extended values, known:
+                    // "__org_arrdim" :"\xac\xXX"
+                    // "__org_typedef":...,
+                    // "__argz_create":"\xac\xac"
+                }
+                (ta_lower, is_shifted, ptr_type)
+            }
+        };
+
         let typ = TypeRaw::read(&mut *input, header)?;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6
-        let shifted = (tah & TAPTR_SHIFTED != 0)
+        let shifted = is_shifted
             .then(|| -> Result<_> {
                 // TODO allow typedef only?
                 let typ = TypeRaw::read(&mut *input, header)?;
@@ -122,25 +133,20 @@ impl PointerRaw {
             .transpose()?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459bc6 print_til_type_att
-        let modifier = match tah & TAPTR_RESTRICT {
+        let modifier = match ptr_type_raw {
             0x00 => None,
             TAPTR_PTR32 => Some(PointerModifier::Ptr32),
             TAPTR_PTR64 => Some(PointerModifier::Ptr64),
             TAPTR_RESTRICT => Some(PointerModifier::Restricted),
             _ => unreachable!(),
         };
-        // TODO find menaing: commonly set as true
-        let is_unknown_ta10 = tah & 0x10 != 0;
-        // TODO find meaning: normally 5 in one type at `vc10_64` and `ntddk64`
-        let ta_lower = (tah & 0xf) as u8;
 
         Ok(Self {
             closure,
             modifier,
             shifted,
             typ: Box::new(typ),
-            is_unknown_ta10,
-            ta_lower,
+            _ta_lower,
         })
     }
 }
