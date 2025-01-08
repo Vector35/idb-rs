@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, ensure, Context};
 
 use std::num::NonZeroU8;
 
@@ -6,15 +6,15 @@ use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw};
 
-use super::{StructModifierRaw, TypeVariantRaw};
+use super::{TypeAttribute, TypeVariantRaw};
 
 #[derive(Clone, Debug)]
 pub struct Union {
     pub effective_alignment: u16,
     pub alignment: Option<NonZeroU8>,
     pub members: Vec<(Option<Vec<u8>>, Type)>,
-    // TODO parse type attributes
-    //others: StructMemberRaw,
+
+    pub is_unaligned: bool,
 }
 impl Union {
     pub(crate) fn new(
@@ -35,6 +35,7 @@ impl Union {
             effective_alignment: value.effective_alignment,
             alignment: value.alignment,
             members,
+            is_unaligned: value.is_unaligned,
         })
     }
 }
@@ -46,6 +47,7 @@ pub(crate) struct UnionRaw {
     effective_alignment: u16,
     alignment: Option<NonZeroU8>,
     members: Vec<TypeRaw>,
+    is_unaligned: bool,
 }
 
 impl UnionRaw {
@@ -68,12 +70,27 @@ impl UnionRaw {
         let alpow = n & 7;
         let mem_cnt = n >> 3;
         let effective_alignment = if alpow == 0 { 0 } else { 1 << (alpow - 1) };
-        let taudt_bits = input.read_sdacl()?;
-        // TODO handle ext atts
-        let taudt_bits = taudt_bits.as_ref().map(|x| x.tattr).unwrap_or(0);
-        let modifiers = StructModifierRaw::from_value(taudt_bits);
-        // TODO check InnerRef to how to handle modifiers
-        let alignment = modifiers.alignment;
+
+        let mut alignment = None;
+        let mut is_unaligned = false;
+        if let Some(TypeAttribute { tattr, extended }) = input.read_sdacl()? {
+            use crate::til::flag::tattr::*;
+            use crate::til::flag::tattr_udt::*;
+
+            alignment = NonZeroU8::new((tattr & MAX_DECL_ALIGN) as u8);
+            is_unaligned = tattr & TAUDT_UNALIGNED != 0;
+
+            const ALL_FLAGS: u16 = MAX_DECL_ALIGN | TAUDT_UNALIGNED;
+            ensure!(
+                tattr & !ALL_FLAGS == 0,
+                "Invalid Union taenum_bits {tattr:x}"
+            );
+            ensure!(
+                extended.is_none(),
+                "Unable to parse extended attributes for union"
+            );
+        }
+
         let members = (0..mem_cnt)
             .map(|i| TypeRaw::read(&mut *input, header).with_context(|| format!("Member {i}")))
             .collect::<anyhow::Result<_, _>>()?;
@@ -81,6 +98,7 @@ impl UnionRaw {
             effective_alignment,
             alignment,
             members,
+            is_unaligned,
         }))
     }
 }

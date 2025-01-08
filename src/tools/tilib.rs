@@ -696,17 +696,14 @@ fn print_til_type_struct(
     if til_struct.is_msstruct {
         write!(fmt, "__attribute__((msstruct)) ")?;
     }
-    if til_struct.is_cpp_obj {
+    if til_struct.is_cppobj {
         write!(fmt, "__cppobj ")?;
     }
-    if til_struct.is_vftable {
+    if til_struct.is_vft {
         write!(fmt, "/*VFT*/ ")?;
     }
     if let Some(align) = til_struct.alignment {
         write!(fmt, "__attribute__((aligned({align}))) ")?;
-    }
-    if let Some(others) = til_struct.others {
-        write!(fmt, "__other({others:04x}) ")?;
     }
     if let Some(name) = name {
         if print_name {
@@ -1181,7 +1178,7 @@ fn is_vft(section: &TILSection, typ: &Type) -> bool {
         // propagate the search?
         //TypeVariant::Pointer(pointer) => todo!(),
         // TODO struct with only function-pointers is also vftable?
-        TypeVariant::Struct(ty) => ty.is_vftable,
+        TypeVariant::Struct(ty) => ty.is_vft,
         TypeVariant::Typedef(typedef) | TypeVariant::StructRef(typedef) => {
             let inner_type = match typedef {
                 Typedef::Ordinal(ord) => section.get_ord(Id0TilOrd { ord: (*ord).into() }),

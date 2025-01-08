@@ -13,7 +13,7 @@ mod size_calculator;
 
 pub use size_calculator::*;
 
-use std::num::{NonZeroU16, NonZeroU8};
+use std::num::NonZeroU8;
 
 use anyhow::{anyhow, ensure, Context, Result};
 
@@ -604,57 +604,4 @@ fn serialize_dt(value: u16) -> Result<Vec<u8>> {
     }
     result.push(hi as u8);
     Ok(result)
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct StructModifierRaw {
-    /// Unaligned struct
-    is_unaligned: bool,
-    /// Gcc msstruct attribute
-    is_msstruct: bool,
-    /// C++ object, not simple pod type
-    is_cpp_obj: bool,
-    /// Virtual function table
-    is_vftable: bool,
-    // TODO unknown meaning
-    is_unknown_8: bool,
-    /// Alignment in bytes
-    alignment: Option<NonZeroU8>,
-    /// other unknown value
-    others: Option<NonZeroU16>,
-}
-
-impl StructModifierRaw {
-    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46c4fc print_til_types_att
-    pub fn from_value(value: u16) -> StructModifierRaw {
-        use flag::tattr_udt::*;
-
-        // TODO 0x8 seems to be a the packed flag in structs
-        const TAUDT_ALIGN_MASK: u16 = 0x7;
-        // TODO find the flag for this and the InnerRef
-        let is_msstruct = value & TAUDT_MSSTRUCT != 0;
-        let is_cpp_obj = value & TAUDT_CPPOBJ != 0;
-        let is_unaligned = value & TAUDT_UNALIGNED != 0;
-        let is_vftable = value & TAUDT_VFTABLE != 0;
-        let alignment_raw = value & TAUDT_ALIGN_MASK;
-        let is_unknown_8 = value & 0x8 != 0;
-        let alignment =
-            (alignment_raw != 0).then(|| NonZeroU8::new(1 << (alignment_raw - 1)).unwrap());
-        let all_masks = TAUDT_MSSTRUCT
-            | TAUDT_CPPOBJ
-            | TAUDT_UNALIGNED
-            | TAUDT_VFTABLE
-            | TAUDT_ALIGN_MASK
-            | 0x8;
-        let others = NonZeroU16::new(value & !all_masks);
-        Self {
-            is_unaligned,
-            is_msstruct,
-            is_cpp_obj,
-            is_vftable,
-            alignment,
-            is_unknown_8,
-            others,
-        }
-    }
 }
