@@ -75,7 +75,7 @@ impl EnumRaw {
         if let Some(TypeAttribute {
             tattr,
             extended: _extended,
-        }) = input.read_sdacl()?
+        }) = input.read_tah()?
         {
             // TODO enum have an align field (MAX_DECL_ALIGN) in tattr?
             is_64 = tattr & TAENUM_64BIT != 0;
