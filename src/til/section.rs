@@ -285,7 +285,7 @@ impl TILSection {
         let size_long_double = header1
             .flags
             .has_size_long_double()
-            .then(|| bincode::deserialize_from::<_, u8>(&mut *input))
+            .then(|| input.read_u8())
             .transpose()?
             .map(|size| size.try_into())
             .transpose()?;
@@ -468,6 +468,7 @@ impl TILSection {
 pub struct TILSectionFlags(pub(crate) u16);
 impl TILSectionFlags {
     fn new(value: u32) -> Result<Self> {
+        #[cfg(not(feature = "permissive"))]
         ensure!(
             value < (flag::til::TIL_SLD as u32) << 1,
             "Unknown flag values for TILSectionFlags"
@@ -585,6 +586,7 @@ impl TILSection {
             next_ordinal,
             ordinal_alias,
         )?;
+        #[cfg(not(feature = "permissive"))]
         ensure!(
             compressed_input.limit() == 0,
             "TypeBucket compressed data is smaller then expected"
@@ -613,6 +615,7 @@ impl TILSection {
         let type_info = (0..ndefs)
             .map(|i| TILTypeInfo::read(&mut input, header, i == ndefs - 1))
             .collect::<Result<_>>()?;
+        #[cfg(not(feature = "permissive"))]
         ensure!(
             input.limit() == 0,
             "TypeBucket total data is smaller then expected"
@@ -637,6 +640,7 @@ impl TILSection {
         let type_info = (0..ndefs)
             .map(|_| TILMacro::read(&mut input))
             .collect::<Result<_, _>>()?;
+        #[cfg(not(feature = "permissive"))]
         ensure!(
             input.limit() == 0,
             "TypeBucket macro total data is smaller then expected"
@@ -655,10 +659,12 @@ impl TILSection {
             .map(|_| TILMacro::read(&mut decompressed_input))
             .collect::<Result<Vec<_>, _>>()?;
         // make sure the input was fully consumed
+        #[cfg(not(feature = "permissive"))]
         ensure!(
             decompressed_input.limit() == 0,
             "TypeBucket macros data is smaller then expected"
         );
+        #[cfg(not(feature = "permissive"))]
         ensure!(
             compressed_input.limit() == 0,
             "TypeBucket macros compressed data is smaller then expected"
@@ -678,10 +684,12 @@ impl TILSection {
         let inflate = flate2::read::ZlibDecoder::new(&mut compressed_input);
         let mut decompressed_input = inflate.take(len.into());
         std::io::copy(&mut decompressed_input, output)?;
+        #[cfg(not(feature = "permissive"))]
         ensure!(
             decompressed_input.limit() == 0,
             "TypeBucket data is smaller then expected"
         );
+        #[cfg(not(feature = "permissive"))]
         ensure!(
             compressed_input.limit() == 0,
             "TypeBucket compressed data is smaller then expected"

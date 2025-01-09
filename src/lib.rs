@@ -1,3 +1,4 @@
+#[forbid(unsafe_code)]
 pub mod id0;
 pub mod id1;
 pub(crate) mod ida_reader;
@@ -111,7 +112,7 @@ impl<I: IdbReader> IDBParser<I> {
         let mut input = std::io::Read::take(&mut self.input, section_header.len);
         match section_header.compress {
             IDBSectionCompression::Zlib => {
-                let mut input = flate2::read::ZlibDecoder::new(input);
+                let mut input = flate2::bufread::ZlibDecoder::new(input);
                 let _ = std::io::copy(&mut input, output)?;
             }
             IDBSectionCompression::None => {
@@ -295,15 +296,18 @@ impl IDBHeader {
     ) -> Result<Self> {
         #[derive(Debug, Deserialize)]
         struct V1Raw {
-            id2_offset: u32,
+            _id2_offset: u32,
             checksums: [u32; 3],
-            unk30_zeroed: u32,
+            _unk30_zeroed: u32,
             unk33_checksum: u32,
         }
 
         let v1_raw: V1Raw = bincode::deserialize_from(input)?;
-        ensure!(v1_raw.unk30_zeroed == 0, "unk30 not zeroed");
-        ensure!(v1_raw.id2_offset == 0, "id2 in V1 is not zeroed");
+        #[cfg(not(feature = "permissive"))]
+        {
+            ensure!(v1_raw._unk30_zeroed == 0, "unk30 not zeroed");
+            ensure!(v1_raw._id2_offset == 0, "id2 in V1 is not zeroed");
+        }
         // TODO ensure all offsets point to after the header
 
         Ok(Self {
@@ -328,20 +332,23 @@ impl IDBHeader {
     ) -> Result<Self> {
         #[derive(Debug, Deserialize)]
         struct V4Raw {
-            id2_offset: u32,
+            _id2_offset: u32,
             checksums: [u32; 3],
-            unk30_zeroed: u32,
+            _unk30_zeroed: u32,
             unk33_checksum: u32,
-            unk38_zeroed: [u8; 8],
-            unk40_v5c: u32,
+            _unk38_zeroed: [u8; 8],
+            _unk40_v5c: u32,
         }
 
         let v4_raw: V4Raw = bincode::deserialize_from(input)?;
 
-        ensure!(v4_raw.unk30_zeroed == 0, "unk30 not zeroed");
-        ensure!(v4_raw.id2_offset == 0, "id2 in V4 is not zeroed");
-        ensure!(v4_raw.unk38_zeroed == [0; 8], "unk38 is not zeroed");
-        ensure!(v4_raw.unk40_v5c == 0x5c, "unk40 is not 0x5C");
+        #[cfg(not(feature = "permissive"))]
+        {
+            ensure!(v4_raw._unk30_zeroed == 0, "unk30 not zeroed");
+            ensure!(v4_raw._id2_offset == 0, "id2 in V4 is not zeroed");
+            ensure!(v4_raw._unk38_zeroed == [0; 8], "unk38 is not zeroed");
+            ensure!(v4_raw._unk40_v5c == 0x5c, "unk40 is not 0x5C");
+        }
         // TODO ensure all offsets point to after the header
 
         Ok(Self {
@@ -367,14 +374,14 @@ impl IDBHeader {
         #[derive(Debug, Deserialize)]
         struct V5Raw {
             nam_offset: u64,
-            seg_offset_zeroed: u64,
+            _seg_offset_zeroed: u64,
             til_offset: u64,
             initial_checksums: [u32; 3],
-            unk4_zeroed: u32,
+            _unk4_zeroed: u32,
             unk_checksum: u32,
-            id2_offset_zeroed: u64,
+            _id2_offset_zeroed: u64,
             final_checksum: u32,
-            unk0_v7c: u32,
+            _unk0_v7c: u32,
         }
         let v5_raw: V5Raw = bincode::deserialize_from(input)?;
         let id0_offset =
@@ -383,11 +390,13 @@ impl IDBHeader {
             u64::from_le(u64::from(header_raw.offsets[3]) << 32 | u64::from(header_raw.offsets[2]));
 
         // TODO Final checksum is always zero on v5?
-
-        ensure!(v5_raw.unk4_zeroed == 0, "unk4 not zeroed");
-        ensure!(v5_raw.id2_offset_zeroed == 0, "id2 in V5 is not zeroed");
-        ensure!(v5_raw.seg_offset_zeroed == 0, "seg in V5 is not zeroed");
-        ensure!(v5_raw.unk0_v7c == 0x7C, "unk0 not 0x7C");
+        #[cfg(not(feature = "permissive"))]
+        {
+            ensure!(v5_raw._unk4_zeroed == 0, "unk4 not zeroed");
+            ensure!(v5_raw._id2_offset_zeroed == 0, "id2 in V5 is not zeroed");
+            ensure!(v5_raw._seg_offset_zeroed == 0, "seg in V5 is not zeroed");
+            ensure!(v5_raw._unk0_v7c == 0x7C, "unk0 not 0x7C");
+        }
         // TODO ensure all offsets point to after the header
 
         Ok(Self {
@@ -414,14 +423,14 @@ impl IDBHeader {
         #[derive(Debug, Deserialize)]
         struct V6Raw {
             nam_offset: u64,
-            seg_offset_zeroed: u64,
+            _seg_offset_zeroed: u64,
             til_offset: u64,
             initial_checksums: [u32; 3],
-            unk4_zeroed: [u8; 4],
+            _unk4_zeroed: [u8; 4],
             unk5_checksum: u32,
             id2_offset: u64,
             final_checksum: u32,
-            unk0_v7c: u32,
+            _unk0_v7c: u32,
         }
         let v6_raw: V6Raw = bincode::deserialize_from(input)?;
         let id0_offset =
@@ -429,9 +438,12 @@ impl IDBHeader {
         let id1_offset =
             u64::from_le(u64::from(header_raw.offsets[3]) << 32 | u64::from(header_raw.offsets[2]));
 
-        ensure!(v6_raw.unk4_zeroed == [0; 4], "unk4 not zeroed");
-        ensure!(v6_raw.seg_offset_zeroed == 0, "seg in V6 is not zeroed");
-        ensure!(v6_raw.unk0_v7c == 0x7C, "unk0 not 0x7C");
+        #[cfg(not(feature = "permissive"))]
+        {
+            ensure!(v6_raw._unk4_zeroed == [0; 4], "unk4 not zeroed");
+            ensure!(v6_raw._seg_offset_zeroed == 0, "seg in V6 is not zeroed");
+            ensure!(v6_raw._unk0_v7c == 0x7C, "unk0 not 0x7C");
+        }
         // TODO ensure all offsets point to after the header
 
         Ok(Self {

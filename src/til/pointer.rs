@@ -1,4 +1,4 @@
-use anyhow::{ensure, Result};
+use anyhow::Result;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
@@ -106,16 +106,20 @@ impl PointerRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459b7e
         let (_ta_lower, is_shifted, ptr_type_raw) = match input.read_tah()? {
             None => (0, false, 0),
-            Some(TypeAttribute { tattr, extended }) => {
+            Some(TypeAttribute {
+                tattr,
+                extended: _extended,
+            }) => {
                 // all bits of tattr are consumed
                 let ta_lower = (tattr & MAX_DECL_ALIGN) as u8;
                 let is_shifted = tattr & TAPTR_SHIFTED != 0;
                 let ptr_type = tattr & TAPTR_RESTRICT;
-                ensure!(
+                #[cfg(not(feature = "permissive"))]
+                anyhow::ensure!(
                     tattr & !(TAPTR_SHIFTED | TAPTR_RESTRICT | MAX_DECL_ALIGN) == 0,
                     "Invalid Pointer taenum_bits {tattr:x}"
                 );
-                if let Some(_extended) = extended {
+                if let Some(_extended) = _extended {
                     // TODO parse extended values, known:
                     // "__org_arrdim" :"\xac\xXX"
                     // "__org_typedef":...,
