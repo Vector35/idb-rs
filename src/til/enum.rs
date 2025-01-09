@@ -69,38 +69,39 @@ impl EnumRaw {
             return Ok(TypeVariantRaw::EnumRef(ref_type));
         };
 
-        let (is_64, is_signed, is_unsigned) = match input.read_tah()? {
-            None => (false, false, false),
-            Some(TypeAttribute {
-                tattr,
-                extended: None,
-            }) => {
-                // TODO enum have an align field (MAX_DECL_ALIGN) in tattr?
-                let is_64 = tattr & TAENUM_64BIT != 0;
-                let is_signed = tattr & TAENUM_SIGNED != 0;
-                let is_unsigned = tattr & TAENUM_UNSIGNED != 0;
-                ensure!(
-                    tattr & !(TAENUM_64BIT | TAENUM_SIGNED | TAENUM_UNSIGNED) == 0,
-                    "Invalid Enum taenum_bits {tattr:x}"
-                );
-                ensure!(
-                    !(is_signed && is_unsigned),
-                    "Enum can't be signed and unsigned at the same time"
-                );
-                (is_64, is_signed, is_unsigned)
-            }
-            // TODO parse ext attr?
-            Some(TypeAttribute {
-                tattr: _,
-                extended: Some(_),
-            }) => {
-                return Err(anyhow!("Unable to parse extended attributes for enum"));
-            }
-        };
+        let mut is_64 = false;
+        let mut is_signed = false;
+        let mut is_unsigned = false;
+        if let Some(TypeAttribute {
+            tattr,
+            extended: _extended,
+        }) = input.read_sdacl()?
+        {
+            // TODO enum have an align field (MAX_DECL_ALIGN) in tattr?
+            is_64 = tattr & TAENUM_64BIT != 0;
+            is_signed = tattr & TAENUM_SIGNED != 0;
+            is_unsigned = tattr & TAENUM_UNSIGNED != 0;
+            #[cfg(not(feature = "permissive"))]
+            ensure!(
+                tattr & !(TAENUM_64BIT | TAENUM_SIGNED | TAENUM_UNSIGNED) == 0,
+                "Invalid Enum taenum_bits {tattr:x}"
+            );
+            #[cfg(not(feature = "permissive"))]
+            ensure!(
+                !(is_signed && is_unsigned),
+                "Enum can't be signed and unsigned at the same time"
+            );
+            #[cfg(not(feature = "permissive"))]
+            ensure!(
+                _extended.is_none(),
+                "Unable to parse extended attributes for Enum"
+            );
+        }
 
         // all BTE bits are consumed
         let bte = input.read_u8()?;
         let storage_size_raw = bte & BTE_SIZE_MASK;
+        #[cfg(not(feature = "permissive"))]
         ensure!(
             bte & BTE_RESERVED == 0,
             "Enum BTE including the Always off sub-field"
@@ -123,9 +124,10 @@ impl EnumRaw {
         // TODO enum size defaults to 4?
         let storage_size_final = storage_size.map(NonZeroU8::get).unwrap_or(4);
         let mask: u64 = if storage_size_final >= 16 {
-            // is saturating valid?
-            //u64::MAX
+            #[cfg(not(feature = "permissive"))]
             return Err(anyhow!("Bytes size is too big"));
+            #[cfg(feature = "permissive")]
+            u64::MAX
         } else {
             u64::MAX >> (u64::BITS - (storage_size_final as u32 * 8))
         };

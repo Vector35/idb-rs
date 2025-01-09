@@ -91,6 +91,7 @@ impl TILTypeInfo {
                 .into_iter()
                 .map(|field| if field.is_empty() { None } else { Some(field) });
         let tinfo = Type::new(til, tinfo_raw, &mut fields_iter)?;
+        #[cfg(not(feature = "permissive"))]
         ensure!(
             fields_iter.next().is_none(),
             "Extra fields found for til type \"{}\"",
@@ -186,10 +187,11 @@ impl Type {
             &[b'\x00'] => {}
             // in continuations, the \x00 may be missing
             &[] => {}
-            rest => {
+            _rest => {
+                #[cfg(not(feature = "permissive"))]
                 return Err(anyhow!(
                     "Extra {} bytes after reading TIL from ID0",
-                    rest.len()
+                    _rest.len()
                 ));
             }
         }
@@ -198,6 +200,7 @@ impl Type {
                 .into_iter()
                 .map(|field| if field.is_empty() { None } else { Some(field) });
         let result = Self::new(&header, type_raw, &mut fields_iter)?;
+        #[cfg(not(feature = "permissive"))]
         ensure!(
             fields_iter.next().is_none(),
             "Extra fields found for id0 til"
@@ -514,6 +517,7 @@ impl TILMacro {
         let have_param = flag & 0x100 != 0;
         let param_num = have_param.then_some((flag & 0xFF) as u8);
         if !have_param {
+            #[cfg(not(feature = "permissive"))]
             ensure!(flag & 0xFF == 0, "Unknown/Invalid value for TILMacro flag");
         }
         // TODO find the InnerRef for this
@@ -547,12 +551,14 @@ impl TILMacro {
             (_, None) => {}
             // having params, where should not
             (None, Some(_max)) => {
+                #[cfg(not(feature = "permissive"))]
                 return Err(anyhow!(
                     "Macro value have params but it is not declared in the flag",
                 ))
             }
             // only using params that exist
             (Some(params), Some(max)) if max <= params => {
+                #[cfg(not(feature = "permissive"))]
                 ensure!(
                     max <= params,
                     "Macro value have more params then declared in the flag"

@@ -152,6 +152,7 @@ impl FunctionRaw {
         let is_high = flags_lower & BFA_HIGH != 0;
         let is_static = flags_lower & BFA_STATIC != 0;
         let is_virtual = flags_lower & BFA_VIRTUAL != 0;
+        #[cfg(not(feature = "permissive"))]
         ensure!(flags_lower & !(BFA_NORET | BFA_PURE | BFA_HIGH | BFA_STATIC | BFA_VIRTUAL) == 0);
 
         // TODO find those flags
@@ -162,6 +163,7 @@ impl FunctionRaw {
         let is_const = flags_upper & BFA_CONST != 0;
         let is_constructor = flags_upper & BFA_CONSTRUCTOR != 0;
         let is_destructor = flags_upper & BFA_DESTRUCTOR != 0;
+        #[cfg(not(feature = "permissive"))]
         ensure!(flags_upper & !(BFA_CONST | BFA_CONSTRUCTOR | BFA_DESTRUCTOR) == 0);
 
         let ret = TypeRaw::read(&mut *input, header).context("Return Argument")?;
@@ -275,7 +277,10 @@ impl ArgLoc {
                     let sval = input.read_de()?;
                     Ok(Self::Static(sval))
                 }
+                #[cfg(not(feature = "permissive"))]
                 ALOC_CUSTOM.. => Err(anyhow!("Custom implementation for ArgLoc")),
+                #[cfg(feature = "permissive")]
+                ALOC_CUSTOM.. => Ok(Self::None),
             }
         }
     }
@@ -373,19 +378,19 @@ impl CCPtrSize {
 
     pub const fn near_bytes(self) -> NonZeroU8 {
         match self {
-            CCPtrSize::N8F16 => unsafe { NonZeroU8::new_unchecked(1) },
-            CCPtrSize::N16F32 => unsafe { NonZeroU8::new_unchecked(2) },
-            CCPtrSize::N32F48 => unsafe { NonZeroU8::new_unchecked(4) },
-            CCPtrSize::N64 => unsafe { NonZeroU8::new_unchecked(8) },
+            CCPtrSize::N8F16 => NonZeroU8::new(1).unwrap(),
+            CCPtrSize::N16F32 => NonZeroU8::new(2).unwrap(),
+            CCPtrSize::N32F48 => NonZeroU8::new(4).unwrap(),
+            CCPtrSize::N64 => NonZeroU8::new(8).unwrap(),
         }
     }
 
     pub const fn far_bytes(self) -> NonZeroU8 {
         match self {
-            CCPtrSize::N8F16 => unsafe { NonZeroU8::new_unchecked(2) },
-            CCPtrSize::N16F32 => unsafe { NonZeroU8::new_unchecked(4) },
-            CCPtrSize::N32F48 => unsafe { NonZeroU8::new_unchecked(6) },
-            CCPtrSize::N64 => unsafe { NonZeroU8::new_unchecked(8) },
+            CCPtrSize::N8F16 => NonZeroU8::new(2).unwrap(),
+            CCPtrSize::N16F32 => NonZeroU8::new(4).unwrap(),
+            CCPtrSize::N32F48 => NonZeroU8::new(6).unwrap(),
+            CCPtrSize::N64 => NonZeroU8::new(8).unwrap(),
         }
     }
 }
@@ -516,9 +521,12 @@ fn read_cc_spoiled(
         } else {
             let size = (b >> 4) + 1;
             // TODO what if (b & 0xF) == 0?
+            #[cfg(not(feature = "permissive"))]
             let reg = (b & 0xF)
                 .checked_sub(1)
                 .ok_or_else(|| anyhow!("invalid spoiled reg value"))?;
+            #[cfg(feature = "permissive")]
+            let reg = (b & 0xF).saturating_sub(1);
             spoiled.push((reg.into(), size))
         }
     }

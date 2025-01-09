@@ -99,7 +99,11 @@ impl StructRaw {
         let mut is_vft = false;
         let mut is_method = false;
         let mut is_bitset2 = false;
-        if let Some(TypeAttribute { tattr, extended }) = input.read_sdacl()? {
+        if let Some(TypeAttribute {
+            tattr,
+            extended: _extended,
+        }) = input.read_sdacl()?
+        {
             use crate::til::flag::tattr::*;
             use crate::til::flag::tattr_field::*;
             use crate::til::flag::tattr_udt::*;
@@ -121,18 +125,20 @@ impl StructRaw {
             // TODO this value can't be right, it defines the alignment!
             is_bitset2 = align_raw & 0x4 != 0;
 
-            const ALL_FLAGS: u16 = MAX_DECL_ALIGN
+            const _ALL_FLAGS: u16 = MAX_DECL_ALIGN
                 | TAUDT_MSSTRUCT
                 | TAUDT_UNALIGNED
                 | TAUDT_CPPOBJ
                 | TAUDT_VFTABLE
                 | TAFLD_METHOD;
+            #[cfg(not(feature = "permissive"))]
             ensure!(
-                tattr & !ALL_FLAGS == 0,
+                tattr & !_ALL_FLAGS == 0,
                 "Invalid Struct taenum_bits {tattr:x}"
             );
+            #[cfg(not(feature = "permissive"))]
             ensure!(
-                extended.is_none(),
+                _extended.is_none(),
                 "Unable to parse extended attributes for struct"
             );
         }
@@ -223,7 +229,11 @@ impl StructMemberRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
         if !is_bit_set || att.is_some() {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
-            if let Some(TypeAttribute { tattr, extended }) = input.read_sdacl()? {
+            if let Some(TypeAttribute {
+                tattr,
+                extended: _extended,
+            }) = input.read_sdacl()?
+            {
                 use crate::til::flag::tattr::*;
                 use crate::til::flag::tattr_field::*;
 
@@ -235,17 +245,19 @@ impl StructMemberRaw {
                 is_vft = tattr & TAFLD_VFTABLE != 0;
                 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
                 is_method = tattr & TAFLD_METHOD != 0;
-                const ALL_FLAGS: u16 = MAX_DECL_ALIGN
+                const _ALL_FLAGS: u16 = MAX_DECL_ALIGN
                     | TAFLD_BASECLASS
                     | TAFLD_UNALIGNED
                     | TAFLD_VFTABLE
                     | TAFLD_METHOD;
+                #[cfg(not(feature = "permissive"))]
                 ensure!(
-                    tattr & !ALL_FLAGS == 0,
+                    tattr & !_ALL_FLAGS == 0,
                     "Invalid Struct taenum_bits {tattr:x}"
                 );
+                #[cfg(not(feature = "permissive"))]
                 ensure!(
-                    extended.is_none(),
+                    _extended.is_none(),
                     "Unable to parse extended attributes for struct member"
                 );
             }

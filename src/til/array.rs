@@ -1,7 +1,5 @@
 use std::num::{NonZeroU16, NonZeroU8};
 
-use anyhow::ensure;
-
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeAttribute, TypeRaw};
@@ -58,15 +56,20 @@ impl ArrayRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48078e
         let align = match input.read_tah()? {
             None => None,
-            Some(TypeAttribute { tattr, extended }) => {
+            Some(TypeAttribute {
+                tattr,
+                extended: _extended,
+            }) => {
                 let align = (tattr & MAX_DECL_ALIGN) as u8;
-                ensure!(
+                #[cfg(not(feature = "permissive"))]
+                anyhow::ensure!(
                     tattr & !MAX_DECL_ALIGN == 0,
                     "unknown TypeAttribute {tattr:x}"
                 );
-                ensure!(
-                    extended.is_none(),
-                    "unknown TypeAttribute ext {extended:x?}"
+                #[cfg(not(feature = "permissive"))]
+                anyhow::ensure!(
+                    _extended.is_none(),
+                    "unknown TypeAttribute ext {_extended:x?}"
                 );
                 NonZeroU8::new(align)
             }
