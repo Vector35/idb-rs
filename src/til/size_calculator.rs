@@ -93,12 +93,13 @@ impl<'a> TILTypeSizeSolver<'a> {
                 let align: u64 = 1;
                 let mut members = &til_struct.members[..];
                 loop {
-                    let first_member = members.first();
-                    let field_size = match first_member.map(|x| &x.member_type.type_variant) {
+                    let Some(first_member) = members.first() else {
                         // no more members
-                        None => break,
+                        break;
+                    };
+                    let field_size = match &first_member.member_type.type_variant {
                         // if bit-field, condensate one or more to create a byte-field
-                        Some(TypeVariant::Bitfield(bitfield)) => {
+                        TypeVariant::Bitfield(bitfield) => {
                             members = &members[1..];
                             // NOTE it skips 0..n members
                             condensate_bitfields_from_struct(*bitfield, &mut members)
@@ -106,7 +107,7 @@ impl<'a> TILTypeSizeSolver<'a> {
                                 .into()
                         }
                         // get the inner type size
-                        Some(_) => {
+                        _ => {
                             let first = &members[0];
                             members = &members[1..];
                             // next member
@@ -114,10 +115,15 @@ impl<'a> TILTypeSizeSolver<'a> {
                         }
                     };
                     if !til_struct.is_unaligned {
-                        let align = first_member
-                            .and_then(|first| self.alignemnt(&first.member_type, field_size))
-                            .unwrap_or(align)
-                            .max(1);
+                        let align = match (
+                            first_member.alignment.map(|x| x.get().into()),
+                            self.alignemnt(&first_member.member_type, field_size),
+                        ) {
+                            (Some(a), Some(b)) => a.max(b),
+                            (Some(a), None) | (None, Some(a)) => a,
+                            (None, None) => align,
+                        };
+                        let align = align.max(1);
                         let align_diff = sum % align;
                         if align_diff != 0 {
                             sum += align - align_diff;
