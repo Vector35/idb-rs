@@ -131,12 +131,12 @@ impl StructRaw {
                 | TAUDT_CPPOBJ
                 | TAUDT_VFTABLE
                 | TAFLD_METHOD;
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             ensure!(
                 tattr & !_ALL_FLAGS == 0,
                 "Invalid Struct taenum_bits {tattr:x}"
             );
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             ensure!(
                 _extended.is_none(),
                 "Unable to parse extended attributes for struct"
@@ -250,12 +250,12 @@ impl StructMemberRaw {
                     | TAFLD_UNALIGNED
                     | TAFLD_VFTABLE
                     | TAFLD_METHOD;
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 ensure!(
                     tattr & !_ALL_FLAGS == 0,
                     "Invalid Struct taenum_bits {tattr:x}"
                 );
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 ensure!(
                     _extended.is_none(),
                     "Unable to parse extended attributes for struct member"

@@ -43,11 +43,11 @@ pub trait IdaUnpack: IdaGenericUnpack {
         if self.is_64() {
             let start = self.unpack_dq()?;
             let len = self.unpack_dq()?;
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             let end = start
                 .checked_add(len)
                 .ok_or_else(|| anyhow!("Function range overflows"))?;
-            #[cfg(feature = "permissive")]
+            #[cfg(not(feature = "restrictive"))]
             let end = start.saturating_add(len);
             Ok(start..end)
         } else {
@@ -57,9 +57,9 @@ pub trait IdaUnpack: IdaGenericUnpack {
             let end = match start.checked_add(len.into()) {
                 Some(0xFFFF_FFFF) => u64::MAX,
                 Some(value) => value,
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 None => return Err(anyhow!("Function range overflows")),
-                #[cfg(feature = "permissive")]
+                #[cfg(not(feature = "restrictive"))]
                 None => u64::MAX,
             };
             Ok(start..end)
@@ -179,12 +179,12 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
         // TODO check no more then 9 bytes are read
         loop {
             let Some(typ) = self.peek_u8()? else {
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 return Err(anyhow!(std::io::Error::new(
                     std::io::ErrorKind::UnexpectedEof,
                     "Unexpected EoF on DA"
                 )));
-                #[cfg(feature = "permissive")]
+                #[cfg(not(feature = "restrictive"))]
                 return Ok((nelem, base));
             };
             if typ & 0x80 == 0 {
@@ -202,12 +202,12 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
                 nelem = (z >> 4) & 7;
                 loop {
                     let Some(y) = self.peek_u8()? else {
-                        #[cfg(not(feature = "permissive"))]
+                        #[cfg(feature = "restrictive")]
                         return Err(anyhow!(std::io::Error::new(
                             std::io::ErrorKind::UnexpectedEof,
                             "Unexpected EoF on DA"
                         )));
-                        #[cfg(feature = "permissive")]
+                        #[cfg(not(feature = "restrictive"))]
                         return Ok((nelem, base));
                     };
                     if (y & 0x80) == 0 {
@@ -234,7 +234,7 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
             let _ = buf.pop(); // remove the \x00 from the end
         } else {
             // found EOF, aka could not find the \x00 for the string end
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             return Err(anyhow!("Unexpected EoF on CStr"));
         }
         Ok(buf)
@@ -267,7 +267,7 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
             if (start_value >> bit) & 1 != 0 {
                 let value = self.read_u8()?;
                 // TODO is this an error or expect possible value?
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 ensure!(value != 0);
                 acc |= (value as u64) << byte;
             }
@@ -320,7 +320,7 @@ pub trait IdaGenericUnpack: Read {
         Ok(data[0])
     }
 
-    #[cfg(feature = "permissive")]
+    #[cfg(not(feature = "restrictive"))]
     fn read_u8_or_nothing(&mut self) -> Result<Option<u8>> {
         let mut data = [0; 1];
         let read = self.read_exact_or_nothing(&mut data)?;
@@ -365,9 +365,9 @@ pub trait IdaGenericUnpack: Read {
     // NOTE: the original implementation never fails, if input hit EoF it a partial result or 0
     /// Reads 1 to 3 bytes.
     fn unpack_dw(&mut self) -> Result<u16> {
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         let b1 = self.read_u8()?;
-        #[cfg(feature = "permissive")]
+        #[cfg(not(feature = "restrictive"))]
         let Some(b1) = self.read_u8_or_nothing()?
         else {
             return Ok(0);
@@ -379,9 +379,9 @@ pub trait IdaGenericUnpack: Read {
             // 14 bits value
             // [10xx xxxx] xxxx xxxx
             0x80..=0xBF => {
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 let lo = self.read_u8()?;
-                #[cfg(feature = "permissive")]
+                #[cfg(not(feature = "restrictive"))]
                 let lo = self.read_u8_or_nothing()?.unwrap_or(0);
                 Ok(u16::from_be_bytes([b1 & 0x3F, lo]))
             }
@@ -390,10 +390,10 @@ pub trait IdaGenericUnpack: Read {
             0xC0..=0xFF => {
                 // NOTE first byte 6 bits seems to be ignored
                 //ensure!(header != 0xC0 && header != 0xFF);
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 let (lo, hi) = (self.read_u8()?, self.read_u8()?);
 
-                #[cfg(feature = "permissive")]
+                #[cfg(not(feature = "restrictive"))]
                 let (lo, hi) = (
                     self.read_u8_or_nothing()?.unwrap_or(0),
                     self.read_u8_or_nothing()?.unwrap_or(0),
@@ -408,9 +408,9 @@ pub trait IdaGenericUnpack: Read {
     // NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
     /// Reads 1 to 5 bytes.
     fn unpack_dd(&mut self) -> Result<u32> {
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         let b1 = self.read_u8()?;
-        #[cfg(feature = "permissive")]
+        #[cfg(not(feature = "restrictive"))]
         let Some(b1) = self.read_u8_or_nothing()?
         else {
             return Ok(0);
@@ -422,9 +422,9 @@ pub trait IdaGenericUnpack: Read {
             // 14 bits value
             // [10xx xxxx] xxxx xxxx
             0x80..=0xBF => {
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 let lo = self.read_u8()?;
-                #[cfg(feature = "permissive")]
+                #[cfg(not(feature = "restrictive"))]
                 let lo = self.read_u8_or_nothing()?.unwrap_or(0);
                 Ok(u32::from_be_bytes([0, 0, b1 & 0x3F, lo]))
             }
@@ -432,9 +432,9 @@ pub trait IdaGenericUnpack: Read {
             // [110x xxxx] xxxx xxxx xxxx xxxx xxxx xxxx
             0xC0..=0xDF => {
                 let mut bytes: [u8; 3] = [0; 3];
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 self.read_exact(&mut bytes)?;
-                #[cfg(feature = "permissive")]
+                #[cfg(not(feature = "restrictive"))]
                 let _size = self.read_exact_or_nothing(&mut bytes)?;
                 Ok(u32::from_be_bytes([
                     b1 & 0x1F,
@@ -449,9 +449,9 @@ pub trait IdaGenericUnpack: Read {
                 // NOTE first byte 5 bits seems to be ignored
                 //ensure!(header != 0xE0 && header != 0xFF);
                 let mut bytes: [u8; 4] = [0; 4];
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 self.read_exact(&mut bytes)?;
-                #[cfg(feature = "permissive")]
+                #[cfg(not(feature = "restrictive"))]
                 let _size = self.read_exact_or_nothing(&mut bytes)?;
                 Ok(u32::from_be_bytes(bytes))
             }
@@ -480,9 +480,9 @@ pub trait IdaGenericUnpack: Read {
     fn unpack_ds(&mut self) -> Result<Vec<u8>> {
         let len = self.unpack_dd()?;
         let mut result = vec![0; len.try_into()?];
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         self.read_exact(&mut result)?;
-        #[cfg(feature = "permissive")]
+        #[cfg(not(feature = "restrictive"))]
         let _size = self.read_exact_or_nothing(&mut result)?;
         Ok(result)
     }
@@ -490,9 +490,9 @@ pub trait IdaGenericUnpack: Read {
     fn unpack_dt_bytes(&mut self) -> Result<Vec<u8>> {
         let buf_len = self.read_dt()?;
         let mut buf = vec![0; buf_len.into()];
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         self.read_exact(&mut buf)?;
-        #[cfg(feature = "permissive")]
+        #[cfg(not(feature = "restrictive"))]
         let _size = self.read_exact_or_nothing(&mut buf)?;
         Ok(buf)
     }
@@ -505,9 +505,9 @@ pub trait IdaGenericUnpack: Read {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cdb0
         let mut acc: u32 = 0;
         for _ in 0..5 {
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             let b = self.read_u8()?;
-            #[cfg(feature = "permissive")]
+            #[cfg(not(feature = "restrictive"))]
             let Some(b) = self.read_u8_or_nothing()?
             else {
                 return Ok(acc);
@@ -528,17 +528,17 @@ pub trait IdaGenericUnpack: Read {
     fn read_dt(&mut self) -> Result<u16> {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cd60
         let value = match self.read_u8()? {
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             0 => return Err(anyhow!("DT can't have 0 value")),
-            #[cfg(feature = "permissive")]
+            #[cfg(not(feature = "restrictive"))]
             0 => return Ok(0),
             //SEG = 2
             value @ 0x80.. => {
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 let inter = self.read_u8()?;
-                #[cfg(feature = "permissive")]
+                #[cfg(not(feature = "restrictive"))]
                 let inter = self.read_u8_or_nothing()?.unwrap_or(0);
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 ensure!(inter != 0, "DT can't have a following 0 value");
                 value as u16 & 0x7F | (inter as u16) << 7
             }
@@ -579,9 +579,9 @@ pub trait IdaGenericUnpack: Read {
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
     fn read_type_attribute(&mut self) -> Result<TypeAttribute> {
         use crate::til::flag::tattr_ext::*;
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         let byte0 = self.read_u8()?;
-        #[cfg(feature = "permissive")]
+        #[cfg(not(feature = "restrictive"))]
         let Some(byte0) = self.read_u8_or_nothing()?
         else {
             return Ok(TypeAttribute {
@@ -598,9 +598,9 @@ pub trait IdaGenericUnpack: Read {
             let mut shift = 0;
             // TODO limit the loop to only 0..n
             loop {
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 let next_byte = self.read_u8()?;
-                #[cfg(feature = "permissive")]
+                #[cfg(not(feature = "restrictive"))]
                 let Some(next_byte) = self.read_u8_or_nothing()?
                 else {
                     break;

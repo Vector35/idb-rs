@@ -114,7 +114,7 @@ impl PointerRaw {
                 let ta_lower = (tattr & MAX_DECL_ALIGN) as u8;
                 let is_shifted = tattr & TAPTR_SHIFTED != 0;
                 let ptr_type = tattr & TAPTR_RESTRICT;
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 anyhow::ensure!(
                     tattr & !(TAPTR_SHIFTED | TAPTR_RESTRICT | MAX_DECL_ALIGN) == 0,
                     "Invalid Pointer taenum_bits {tattr:x}"

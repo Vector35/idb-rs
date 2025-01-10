@@ -99,7 +99,7 @@ impl TILSection {
         match compress {
             IDBSectionCompression::None => Self::read_inner(input),
             IDBSectionCompression::Zlib => {
-                let mut input = BufReader::new(flate2::read::ZlibDecoder::new(input));
+                let mut input = BufReader::new(flate2::bufread::ZlibDecoder::new(input));
                 Self::read_inner(&mut input)
             }
         }
@@ -310,20 +310,23 @@ impl TILSection {
     }
 
     pub fn decompress(
-        input: &mut impl IdaGenericUnpack,
+        input: &mut impl IdaGenericBufUnpack,
         output: &mut impl Write,
         compress: IDBSectionCompression,
     ) -> Result<()> {
         match compress {
             IDBSectionCompression::Zlib => {
-                let mut input = flate2::read::ZlibDecoder::new(input);
+                let mut input = BufReader::new(flate2::bufread::ZlibDecoder::new(input));
                 Self::decompress_inner(&mut input, output)
             }
             IDBSectionCompression::None => Self::decompress_inner(input, output),
         }
     }
 
-    fn decompress_inner(input: &mut impl IdaGenericUnpack, output: &mut impl Write) -> Result<()> {
+    fn decompress_inner(
+        input: &mut impl IdaGenericBufUnpack,
+        output: &mut impl Write,
+    ) -> Result<()> {
         let mut header = Self::read_header(&mut *input)?;
         let og_flags = header.flags;
         // disable the zip flag
@@ -385,7 +388,7 @@ impl TILSection {
             .flags
             .has_ordinal()
             .then(|| -> Result<u32> {
-                let result: u32 = bincode::deserialize_from(&mut *input)?;
+                let result = input.read_u32()?;
                 bincode::serialize_into(&mut *output, &result)?;
                 Ok(result)
             })
@@ -468,7 +471,7 @@ impl TILSection {
 pub struct TILSectionFlags(pub(crate) u16);
 impl TILSectionFlags {
     fn new(value: u32) -> Result<Self> {
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         ensure!(
             value < (flag::til::TIL_SLD as u32) << 1,
             "Unknown flag values for TILSectionFlags"
@@ -568,7 +571,7 @@ impl TILSection {
     }
 
     fn read_bucket_zip(
-        input: &mut impl IdaGenericUnpack,
+        input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
         next_ordinal: Option<u32>,
         ordinal_alias: Option<&[(u32, u32)]>,
@@ -576,7 +579,7 @@ impl TILSection {
         let (ndefs, len, compressed_len) = Self::read_bucket_zip_header(&mut *input)?;
         // make sure the decompressor don't read out-of-bounds
         let mut compressed_input = input.take(compressed_len.into());
-        let mut inflate = BufReader::new(flate2::read::ZlibDecoder::new(&mut compressed_input));
+        let mut inflate = BufReader::new(flate2::bufread::ZlibDecoder::new(&mut compressed_input));
         // make sure only the defined size is decompressed
         let type_info = Self::read_bucket_inner(
             &mut inflate,
@@ -586,7 +589,7 @@ impl TILSection {
             next_ordinal,
             ordinal_alias,
         )?;
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         ensure!(
             compressed_input.limit() == 0,
             "TypeBucket compressed data is smaller then expected"
@@ -615,7 +618,7 @@ impl TILSection {
         let type_info = (0..ndefs)
             .map(|i| TILTypeInfo::read(&mut input, header, i == ndefs - 1))
             .collect::<Result<_>>()?;
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         ensure!(
             input.limit() == 0,
             "TypeBucket total data is smaller then expected"
@@ -640,7 +643,7 @@ impl TILSection {
         let type_info = (0..ndefs)
             .map(|_| TILMacro::read(&mut input))
             .collect::<Result<_, _>>()?;
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         ensure!(
             input.limit() == 0,
             "TypeBucket macro total data is smaller then expected"
@@ -648,23 +651,23 @@ impl TILSection {
         Ok(type_info)
     }
 
-    fn read_macros_zip(input: &mut impl IdaGenericUnpack) -> Result<Vec<TILMacro>> {
+    fn read_macros_zip(input: &mut impl IdaGenericBufUnpack) -> Result<Vec<TILMacro>> {
         let (ndefs, len, compressed_len) = Self::read_bucket_zip_header(&mut *input)?;
         // make sure the decompressor don't read out-of-bounds
         let mut compressed_input = input.take(compressed_len.into());
-        let inflate = BufReader::new(flate2::read::ZlibDecoder::new(&mut compressed_input));
+        let inflate = BufReader::new(flate2::bufread::ZlibDecoder::new(&mut compressed_input));
         // make sure only the defined size is decompressed
         let mut decompressed_input = inflate.take(len.into());
         let type_info = (0..ndefs.try_into().unwrap())
             .map(|_| TILMacro::read(&mut decompressed_input))
             .collect::<Result<Vec<_>, _>>()?;
         // make sure the input was fully consumed
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         ensure!(
             decompressed_input.limit() == 0,
             "TypeBucket macros data is smaller then expected"
         );
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         ensure!(
             compressed_input.limit() == 0,
             "TypeBucket macros compressed data is smaller then expected"
@@ -674,22 +677,22 @@ impl TILSection {
 
     #[allow(dead_code)]
     fn decompress_bucket(
-        input: &mut impl IdaGenericUnpack,
+        input: &mut impl IdaGenericBufUnpack,
         output: &mut impl std::io::Write,
     ) -> Result<()> {
         let (ndefs, len, compressed_len) = Self::read_bucket_zip_header(&mut *input)?;
         bincode::serialize_into(&mut *output, &TILBucketRaw { len, ndefs })?;
         // write the decompressed data
         let mut compressed_input = input.take(compressed_len.into());
-        let inflate = flate2::read::ZlibDecoder::new(&mut compressed_input);
+        let inflate = flate2::bufread::ZlibDecoder::new(&mut compressed_input);
         let mut decompressed_input = inflate.take(len.into());
         std::io::copy(&mut decompressed_input, output)?;
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         ensure!(
             decompressed_input.limit() == 0,
             "TypeBucket data is smaller then expected"
         );
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         ensure!(
             compressed_input.limit() == 0,
             "TypeBucket compressed data is smaller then expected"

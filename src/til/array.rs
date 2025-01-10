@@ -61,12 +61,12 @@ impl ArrayRaw {
                 extended: _extended,
             }) => {
                 let align = (tattr & MAX_DECL_ALIGN) as u8;
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 anyhow::ensure!(
                     tattr & !MAX_DECL_ALIGN == 0,
                     "unknown TypeAttribute {tattr:x}"
                 );
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 anyhow::ensure!(
                     _extended.is_none(),
                     "unknown TypeAttribute ext {_extended:x?}"

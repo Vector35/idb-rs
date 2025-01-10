@@ -45,9 +45,9 @@ impl Bitfield {
                 tattr: _tattr,
                 extended: _extended,
             }) => {
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 anyhow::ensure!(_tattr == 0, "Unknown TypeAttribute {_tattr:x}");
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 anyhow::ensure!(
                     _extended.is_none(),
                     "Unknown TypeAttribute ext {_extended:x?}"

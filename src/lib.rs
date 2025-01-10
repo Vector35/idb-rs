@@ -303,7 +303,7 @@ impl IDBHeader {
         }
 
         let v1_raw: V1Raw = bincode::deserialize_from(input)?;
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         {
             ensure!(v1_raw._unk30_zeroed == 0, "unk30 not zeroed");
             ensure!(v1_raw._id2_offset == 0, "id2 in V1 is not zeroed");
@@ -342,7 +342,7 @@ impl IDBHeader {
 
         let v4_raw: V4Raw = bincode::deserialize_from(input)?;
 
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         {
             ensure!(v4_raw._unk30_zeroed == 0, "unk30 not zeroed");
             ensure!(v4_raw._id2_offset == 0, "id2 in V4 is not zeroed");
@@ -390,7 +390,7 @@ impl IDBHeader {
             u64::from_le(u64::from(header_raw.offsets[3]) << 32 | u64::from(header_raw.offsets[2]));
 
         // TODO Final checksum is always zero on v5?
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         {
             ensure!(v5_raw._unk4_zeroed == 0, "unk4 not zeroed");
             ensure!(v5_raw._id2_offset_zeroed == 0, "id2 in V5 is not zeroed");
@@ -438,7 +438,7 @@ impl IDBHeader {
         let id1_offset =
             u64::from_le(u64::from(header_raw.offsets[3]) << 32 | u64::from(header_raw.offsets[2]));
 
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         {
             ensure!(v6_raw._unk4_zeroed == [0; 4], "unk4 not zeroed");
             ensure!(v6_raw._seg_offset_zeroed == 0, "seg in V6 is not zeroed");

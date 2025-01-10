@@ -85,12 +85,12 @@ impl UnionRaw {
             is_unaligned = tattr & TAUDT_UNALIGNED != 0;
 
             const _ALL_FLAGS: u16 = MAX_DECL_ALIGN | TAUDT_UNALIGNED;
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             anyhow::ensure!(
                 tattr & !_ALL_FLAGS == 0,
                 "Invalid Union taenum_bits {tattr:x}"
             );
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             anyhow::ensure!(
                 _extended.is_none(),
                 "Unable to parse extended attributes for union"
