@@ -203,8 +203,7 @@ impl DirTreeEntryRaw {
         let mut entries = vec![];
         for is_value in core::iter::successors(Some(false), |x| Some(!(*x))) {
             // TODO unpack_dw/u8?
-            // TODO diferenciate an error from EoF
-            let Ok(entries_len) = data.unpack_dd() else {
+            let Some(entries_len) = data.unpack_dd_or_eof()? else {
                 break;
             };
             parse_entries(&mut *data, &mut entries, entries_len, is_value)?;
@@ -264,6 +263,7 @@ impl DirTreeEntryRaw {
         // this value had known values of 0 and 4, as long it's smaller then 0x80 there no
         // much of a problem, otherwise this could be a unpack_dw/unpack_dd
         let _unknown: u8 = bincode::deserialize_from(&mut *data)?;
+        #[cfg(feature = "restrictive")]
         ensure!(_unknown < 0x80);
         // TODO unpack_dw/u8?
         let entries_len = data.unpack_dd()?;
@@ -280,11 +280,17 @@ impl DirTreeEntryRaw {
         // NOTE in case the folder have 0 elements, there will be a 0 value, but don't take that for granted
         for is_value in core::iter::successors(Some(false), |x| Some(!(*x))) {
             // TODO unpack_dw/u8?
-            let num = match data.unpack_dd() {
-                Ok(num) => num,
-                // this is an empty folder, so the last value is optional
-                Err(_) if entries_len == 0 => break,
-                Err(e) => return Err(e),
+            let Some(num) = data.unpack_dd_or_eof()? else {
+                if entries_len == 0 {
+                    // this is an empty folder, so the last value is optional
+                    break;
+                } else {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::UnexpectedEof,
+                        "Unexpected EoF while reading dirtree entries",
+                    )
+                    .into());
+                }
             };
             let num = usize::try_from(num).map_err(|_| anyhow!("Invalid number of entries"))?;
             ensure!(

@@ -16,7 +16,7 @@ num_enum = "0.7.3"
 
 [features]
 default = []
-permissive = []
+restrictive = []
 
 [[bin]]
 name = "idb-tools"
