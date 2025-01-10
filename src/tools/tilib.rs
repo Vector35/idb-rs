@@ -711,8 +711,21 @@ fn print_til_type_struct(
             write!(fmt, " ")?;
         }
     }
+    let mut members = &til_struct.members[..];
+    if til_struct.is_cppobj {
+        match members.first() {
+            Some(baseclass) if baseclass.is_baseclass /*&& x.name.is_none()*/=> {
+                members = &members[1..];
+                write!(fmt, ": ")?;
+                print_til_type(fmt, section, None, &baseclass.member_type, true, true, false)?;
+                write!(fmt, " ")?;
+            }
+            _ => {},
+        }
+    }
+
     write!(fmt, "{{")?;
-    for member in &til_struct.members {
+    for member in members {
         let member_name = member.name.as_deref();
         print_til_type_complex_member(
             fmt,
