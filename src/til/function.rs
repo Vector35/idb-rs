@@ -152,7 +152,7 @@ impl FunctionRaw {
         let is_high = flags_lower & BFA_HIGH != 0;
         let is_static = flags_lower & BFA_STATIC != 0;
         let is_virtual = flags_lower & BFA_VIRTUAL != 0;
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         ensure!(flags_lower & !(BFA_NORET | BFA_PURE | BFA_HIGH | BFA_STATIC | BFA_VIRTUAL) == 0);
 
         // TODO find those flags
@@ -163,7 +163,7 @@ impl FunctionRaw {
         let is_const = flags_upper & BFA_CONST != 0;
         let is_constructor = flags_upper & BFA_CONSTRUCTOR != 0;
         let is_destructor = flags_upper & BFA_DESTRUCTOR != 0;
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         ensure!(flags_upper & !(BFA_CONST | BFA_CONSTRUCTOR | BFA_DESTRUCTOR) == 0);
 
         let ret = TypeRaw::read(&mut *input, header).context("Return Argument")?;
@@ -277,9 +277,9 @@ impl ArgLoc {
                     let sval = input.read_de()?;
                     Ok(Self::Static(sval))
                 }
-                #[cfg(not(feature = "permissive"))]
+                #[cfg(feature = "restrictive")]
                 ALOC_CUSTOM.. => Err(anyhow!("Custom implementation for ArgLoc")),
-                #[cfg(feature = "permissive")]
+                #[cfg(not(feature = "restrictive"))]
                 ALOC_CUSTOM.. => Ok(Self::None),
             }
         }
@@ -521,11 +521,11 @@ fn read_cc_spoiled(
         } else {
             let size = (b >> 4) + 1;
             // TODO what if (b & 0xF) == 0?
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             let reg = (b & 0xF)
                 .checked_sub(1)
                 .ok_or_else(|| anyhow!("invalid spoiled reg value"))?;
-            #[cfg(feature = "permissive")]
+            #[cfg(not(feature = "restrictive"))]
             let reg = (b & 0xF).saturating_sub(1);
             spoiled.push((reg.into(), size))
         }

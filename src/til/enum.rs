@@ -81,17 +81,17 @@ impl EnumRaw {
             is_64 = tattr & TAENUM_64BIT != 0;
             is_signed = tattr & TAENUM_SIGNED != 0;
             is_unsigned = tattr & TAENUM_UNSIGNED != 0;
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             ensure!(
                 tattr & !(TAENUM_64BIT | TAENUM_SIGNED | TAENUM_UNSIGNED) == 0,
                 "Invalid Enum taenum_bits {tattr:x}"
             );
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             ensure!(
                 !(is_signed && is_unsigned),
                 "Enum can't be signed and unsigned at the same time"
             );
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             ensure!(
                 _extended.is_none(),
                 "Unable to parse extended attributes for Enum"
@@ -101,7 +101,7 @@ impl EnumRaw {
         // all BTE bits are consumed
         let bte = input.read_u8()?;
         let storage_size_raw = bte & BTE_SIZE_MASK;
-        #[cfg(not(feature = "permissive"))]
+        #[cfg(feature = "restrictive")]
         ensure!(
             bte & BTE_RESERVED == 0,
             "Enum BTE including the Always off sub-field"
@@ -124,9 +124,9 @@ impl EnumRaw {
         // TODO enum size defaults to 4?
         let storage_size_final = storage_size.map(NonZeroU8::get).unwrap_or(4);
         let mask: u64 = if storage_size_final >= 16 {
-            #[cfg(not(feature = "permissive"))]
+            #[cfg(feature = "restrictive")]
             return Err(anyhow!("Bytes size is too big"));
-            #[cfg(feature = "permissive")]
+            #[cfg(not(feature = "restrictive"))]
             u64::MAX
         } else {
             u64::MAX >> (u64::BITS - (storage_size_final as u32 * 8))
