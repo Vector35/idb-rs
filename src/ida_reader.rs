@@ -251,6 +251,17 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
         Ok(self.fill_buf()?.first().copied())
     }
 
+    // InnerRef b47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46b690 unpack_dd
+    // NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
+    /// Reads 1 to 5 bytes.
+    fn unpack_dd_or_eof(&mut self) -> Result<Option<u32>> {
+        let Some(b1) = self.peek_u8()? else {
+            return Ok(None);
+        };
+        self.consume(1);
+        self.unpack_dd_from_byte(b1).map(Option::Some)
+    }
+
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce40
     fn read_ext_att(&mut self) -> Result<u64> {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cec0
@@ -408,13 +419,11 @@ pub trait IdaGenericUnpack: Read {
     // NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
     /// Reads 1 to 5 bytes.
     fn unpack_dd(&mut self) -> Result<u32> {
-        #[cfg(feature = "restrictive")]
         let b1 = self.read_u8()?;
-        #[cfg(not(feature = "restrictive"))]
-        let Some(b1) = self.read_u8_or_nothing()?
-        else {
-            return Ok(0);
-        };
+        self.unpack_dd_from_byte(b1)
+    }
+
+    fn unpack_dd_from_byte(&mut self, b1: u8) -> Result<u32> {
         match b1 {
             // 7 bit value
             // [0xxx xxxx]
