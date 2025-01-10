@@ -15,6 +15,7 @@ pub struct Union {
     pub members: Vec<(Option<Vec<u8>>, Type)>,
 
     pub is_unaligned: bool,
+    pub is_unknown_8: bool,
 }
 impl Union {
     pub(crate) fn new(
@@ -36,6 +37,7 @@ impl Union {
             alignment: value.alignment,
             members,
             is_unaligned: value.is_unaligned,
+            is_unknown_8: value.is_unknown_8,
         })
     }
 }
@@ -48,6 +50,7 @@ pub(crate) struct UnionRaw {
     alignment: Option<NonZeroU8>,
     members: Vec<TypeRaw>,
     is_unaligned: bool,
+    is_unknown_8: bool,
 }
 
 impl UnionRaw {
@@ -73,6 +76,7 @@ impl UnionRaw {
 
         let mut alignment = None;
         let mut is_unaligned = false;
+        let mut is_unknown_8 = false;
         if let Some(TypeAttribute {
             tattr,
             extended: _extended,
@@ -81,7 +85,10 @@ impl UnionRaw {
             use crate::til::flag::tattr::*;
             use crate::til::flag::tattr_udt::*;
 
-            alignment = NonZeroU8::new((tattr & MAX_DECL_ALIGN) as u8);
+            let alignment_raw = (tattr & MAX_DECL_ALIGN) as u8;
+            is_unknown_8 = alignment_raw & 0x8 != 0;
+            alignment = ((alignment_raw & 0x7) != 0)
+                .then(|| NonZeroU8::new(1 << ((alignment_raw & 0x7) - 1)).unwrap());
             is_unaligned = tattr & TAUDT_UNALIGNED != 0;
 
             const _ALL_FLAGS: u16 = MAX_DECL_ALIGN | TAUDT_UNALIGNED;
@@ -105,6 +112,7 @@ impl UnionRaw {
             alignment,
             members,
             is_unaligned,
+            is_unknown_8,
         }))
     }
 }

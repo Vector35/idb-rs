@@ -112,7 +112,8 @@ impl StructRaw {
 
             // TODO WHY?
             is_unknown_8 = align_raw & 0x8 != 0;
-            alignment = NonZeroU8::new(align_raw & 0x7);
+            alignment = (align_raw & 0x7 != 0)
+                .then(|| NonZeroU8::new(1 << ((align_raw & 0x7) - 1)).unwrap());
 
             is_msstruct = tattr & TAUDT_MSSTRUCT != 0;
             is_unaligned = tattr & TAUDT_UNALIGNED != 0;
@@ -174,6 +175,7 @@ pub struct StructMember {
     pub is_unaligned: bool,
     pub is_vft: bool,
     pub is_method: bool,
+    pub is_unknown_8: bool,
 }
 
 impl StructMember {
@@ -192,6 +194,7 @@ impl StructMember {
             is_unaligned: m.is_unaligned,
             is_vft: m.is_vft,
             is_method: m.is_method,
+            is_unknown_8: m.is_unknown_8,
         })
     }
 }
@@ -204,6 +207,7 @@ pub(crate) struct StructMemberRaw {
     pub is_unaligned: bool,
     pub is_vft: bool,
     pub is_method: bool,
+    pub is_unknown_8: bool,
 }
 
 impl StructMemberRaw {
@@ -225,6 +229,7 @@ impl StructMemberRaw {
         let mut is_unaligned = false;
         let mut is_vft = false;
         let mut is_method = false;
+        let mut is_unknown_8 = false;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
         if !is_bit_set || att.is_some() {
@@ -237,7 +242,10 @@ impl StructMemberRaw {
                 use crate::til::flag::tattr::*;
                 use crate::til::flag::tattr_field::*;
 
-                alignment = NonZeroU8::new((tattr & MAX_DECL_ALIGN) as u8);
+                let alignment_raw = (tattr & MAX_DECL_ALIGN) as u8;
+                is_unknown_8 = alignment_raw & 0x8 != 0;
+                alignment = ((alignment_raw & 0x7) != 0)
+                    .then(|| NonZeroU8::new(1 << ((alignment_raw & 0x7) - 1)).unwrap());
                 is_baseclass = tattr & TAFLD_BASECLASS != 0;
                 is_unaligned = tattr & TAFLD_UNALIGNED != 0;
                 let is_virtbase = tattr & TAFLD_VIRTBASE != 0;
@@ -278,6 +286,7 @@ impl StructMemberRaw {
             is_unaligned,
             is_vft,
             is_method,
+            is_unknown_8,
         })
     }
 

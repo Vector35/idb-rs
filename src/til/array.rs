@@ -6,7 +6,7 @@ use crate::til::{Type, TypeAttribute, TypeRaw};
 
 #[derive(Clone, Debug)]
 pub struct Array {
-    pub align: Option<NonZeroU8>,
+    pub alignment: Option<NonZeroU8>,
     pub base: u8,
     pub nelem: Option<NonZeroU16>,
     pub elem_type: Box<Type>,
@@ -18,7 +18,7 @@ impl Array {
         fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
-            align: value.align,
+            alignment: value.alignment,
             base: value.base,
             nelem: value.nelem,
             elem_type: Type::new(til, *value.elem_type, fields).map(Box::new)?,
@@ -28,7 +28,7 @@ impl Array {
 
 #[derive(Clone, Debug)]
 pub(crate) struct ArrayRaw {
-    pub align: Option<NonZeroU8>,
+    pub alignment: Option<NonZeroU8>,
     pub base: u8,
     pub nelem: Option<NonZeroU16>,
     pub elem_type: Box<TypeRaw>,
@@ -54,30 +54,33 @@ impl ArrayRaw {
             }
         };
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48078e
-        let align = match input.read_tah()? {
-            None => None,
-            Some(TypeAttribute {
-                tattr,
-                extended: _extended,
-            }) => {
-                let align = (tattr & MAX_DECL_ALIGN) as u8;
-                #[cfg(feature = "restrictive")]
-                anyhow::ensure!(
-                    tattr & !MAX_DECL_ALIGN == 0,
-                    "unknown TypeAttribute {tattr:x}"
-                );
-                #[cfg(feature = "restrictive")]
-                anyhow::ensure!(
-                    _extended.is_none(),
-                    "unknown TypeAttribute ext {_extended:x?}"
-                );
-                NonZeroU8::new(align)
-            }
-        };
+        let mut alignment = None;
+        if let Some(TypeAttribute {
+            tattr,
+            extended: _extended,
+        }) = input.read_tah()?
+        {
+            let alignment_raw = (tattr & MAX_DECL_ALIGN) as u8;
+            let _is_unknown_8 = alignment_raw & 0x8 != 0;
+            #[cfg(feature = "restrictive")]
+            anyhow::ensure!(!_is_unknown_8, "Unknown flat 8 set on Array");
+            alignment = ((alignment_raw & 0x7) != 0)
+                .then(|| NonZeroU8::new(1 << ((alignment_raw & 0x7) - 1)).unwrap());
+            #[cfg(feature = "restrictive")]
+            anyhow::ensure!(
+                tattr & !MAX_DECL_ALIGN == 0,
+                "unknown TypeAttribute {tattr:x}"
+            );
+            #[cfg(feature = "restrictive")]
+            anyhow::ensure!(
+                _extended.is_none(),
+                "unknown TypeAttribute ext {_extended:x?}"
+            );
+        }
         let elem_type = TypeRaw::read(&mut *input, header)?;
         Ok(ArrayRaw {
             base,
-            align,
+            alignment,
             nelem: NonZeroU16::new(nelem),
             elem_type: Box::new(elem_type),
         })
