@@ -742,6 +742,11 @@ fn print_til_type_struct(
     til_struct: &Struct,
     print_name: bool,
 ) -> Result<()> {
+    // TODO check innerref, maybe baseclass don't need to be the first, nor
+    // need to only one
+    let is_cppobj = til_struct.is_cppobj
+        || matches!(til_struct.members.first(), Some(first) if first.is_baseclass);
+
     write!(fmt, "struct ")?;
     if til_struct.is_unaligned {
         if til_struct.is_uknown_8 {
@@ -753,7 +758,7 @@ fn print_til_type_struct(
     if til_struct.is_msstruct {
         write!(fmt, "__attribute__((msstruct)) ")?;
     }
-    if til_struct.is_cppobj {
+    if is_cppobj {
         write!(fmt, "__cppobj ")?;
     }
     if til_struct.is_vft {
@@ -769,15 +774,23 @@ fn print_til_type_struct(
         }
     }
     let mut members = &til_struct.members[..];
-    if til_struct.is_cppobj {
+    if is_cppobj {
         match members.first() {
-            Some(baseclass) if baseclass.is_baseclass /*&& x.name.is_none()*/=> {
+            Some(baseclass) if baseclass.is_baseclass => {
                 members = &members[1..];
                 write!(fmt, ": ")?;
-                print_til_type(fmt, section, None, &baseclass.member_type, true, true, false)?;
+                print_til_type(
+                    fmt,
+                    section,
+                    None,
+                    &baseclass.member_type,
+                    true,
+                    true,
+                    false,
+                )?;
                 write!(fmt, " ")?;
             }
-            _ => {},
+            _ => {}
         }
     }
 
