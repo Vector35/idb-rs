@@ -93,7 +93,10 @@ impl<I: Read> Read for IdaUnpacker<I> {
         self.input.read(buf)
     }
 
-    fn read_vectored(&mut self, bufs: &mut [std::io::IoSliceMut<'_>]) -> std::io::Result<usize> {
+    fn read_vectored(
+        &mut self,
+        bufs: &mut [std::io::IoSliceMut<'_>],
+    ) -> std::io::Result<usize> {
         self.input.read_vectored(bufs)
     }
 
@@ -119,7 +122,11 @@ impl<I: BufRead> BufRead for IdaUnpacker<I> {
         self.input.consume(amt);
     }
 
-    fn read_until(&mut self, byte: u8, buf: &mut Vec<u8>) -> std::io::Result<usize> {
+    fn read_until(
+        &mut self,
+        byte: u8,
+        buf: &mut Vec<u8>,
+    ) -> std::io::Result<usize> {
         self.input.read_until(byte, buf)
     }
 
@@ -148,7 +155,9 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
             // skip the ordinal number
             match (format, (flags >> 31) != 0) {
                 // formats below 0x12 doesn't have 64 bits ord
-                (0..=0x11, _) | (_, false) => data.extend(self.read_u32()?.to_le_bytes()),
+                (0..=0x11, _) | (_, false) => {
+                    data.extend(self.read_u32()?.to_le_bytes())
+                }
                 (_, true) => data.extend(self.read_u64()?.to_le_bytes()),
             }
 

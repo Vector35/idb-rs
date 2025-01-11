@@ -81,15 +81,30 @@ impl<I: IdbReader> IDBParser<I> {
     }
 
     pub fn read_id0_section(&mut self, id0: ID0Offset) -> Result<ID0Section> {
-        read_section(&mut self.input, &self.header, id0.0.get(), ID0Section::read)
+        read_section(
+            &mut self.input,
+            &self.header,
+            id0.0.get(),
+            ID0Section::read,
+        )
     }
 
     pub fn read_id1_section(&mut self, id1: ID1Offset) -> Result<ID1Section> {
-        read_section(&mut self.input, &self.header, id1.0.get(), ID1Section::read)
+        read_section(
+            &mut self.input,
+            &self.header,
+            id1.0.get(),
+            ID1Section::read,
+        )
     }
 
     pub fn read_nam_section(&mut self, nam: NamOffset) -> Result<NamSection> {
-        read_section(&mut self.input, &self.header, nam.0.get(), NamSection::read)
+        read_section(
+            &mut self.input,
+            &self.header,
+            nam.0.get(),
+            NamSection::read,
+        )
     }
 
     pub fn read_til_section(&mut self, til: TILOffset) -> Result<TILSection> {
@@ -107,9 +122,11 @@ impl<I: IdbReader> IDBParser<I> {
         output: &mut impl std::io::Write,
     ) -> Result<()> {
         self.input.seek(SeekFrom::Start(offset.idb_offset()))?;
-        let section_header = IDBSectionHeader::read(&self.header, &mut self.input)?;
+        let section_header =
+            IDBSectionHeader::read(&self.header, &mut self.input)?;
         // makes sure the reader doesn't go out-of-bounds
-        let mut input = std::io::Read::take(&mut self.input, section_header.len);
+        let mut input =
+            std::io::Read::take(&mut self.input, section_header.len);
         match section_header.compress {
             IDBSectionCompression::Zlib => {
                 let mut input = flate2::bufread::ZlibDecoder::new(input);
@@ -128,9 +145,11 @@ impl<I: IdbReader> IDBParser<I> {
         output: &mut impl std::io::Write,
     ) -> Result<()> {
         self.input.seek(SeekFrom::Start(til.0.get()))?;
-        let section_header = IDBSectionHeader::read(&self.header, &mut self.input)?;
+        let section_header =
+            IDBSectionHeader::read(&self.header, &mut self.input)?;
         // makes sure the reader doesn't go out-of-bounds
-        let mut input = std::io::Read::take(&mut self.input, section_header.len);
+        let mut input =
+            std::io::Read::take(&mut self.input, section_header.len);
         TILSection::decompress(&mut input, output, section_header.compress)
     }
 }
@@ -143,7 +162,11 @@ fn read_section<'a, I, T, F>(
 ) -> Result<T>
 where
     I: IdbReader,
-    F: FnMut(&mut std::io::Take<&'a mut I>, &IDBHeader, IDBSectionCompression) -> Result<T>,
+    F: FnMut(
+        &mut std::io::Take<&'a mut I>,
+        &IDBHeader,
+        IDBSectionCompression,
+    ) -> Result<T>,
 {
     input.seek(SeekFrom::Start(offset))?;
     let section_header = IDBSectionHeader::read(header, &mut *input)?;
@@ -384,10 +407,14 @@ impl IDBHeader {
             _unk0_v7c: u32,
         }
         let v5_raw: V5Raw = bincode::deserialize_from(input)?;
-        let id0_offset =
-            u64::from_le(u64::from(header_raw.offsets[1]) << 32 | u64::from(header_raw.offsets[0]));
-        let id1_offset =
-            u64::from_le(u64::from(header_raw.offsets[3]) << 32 | u64::from(header_raw.offsets[2]));
+        let id0_offset = u64::from_le(
+            u64::from(header_raw.offsets[1]) << 32
+                | u64::from(header_raw.offsets[0]),
+        );
+        let id1_offset = u64::from_le(
+            u64::from(header_raw.offsets[3]) << 32
+                | u64::from(header_raw.offsets[2]),
+        );
 
         // TODO Final checksum is always zero on v5?
         #[cfg(feature = "restrictive")]
@@ -433,10 +460,14 @@ impl IDBHeader {
             _unk0_v7c: u32,
         }
         let v6_raw: V6Raw = bincode::deserialize_from(input)?;
-        let id0_offset =
-            u64::from_le(u64::from(header_raw.offsets[1]) << 32 | u64::from(header_raw.offsets[0]));
-        let id1_offset =
-            u64::from_le(u64::from(header_raw.offsets[3]) << 32 | u64::from(header_raw.offsets[2]));
+        let id0_offset = u64::from_le(
+            u64::from(header_raw.offsets[1]) << 32
+                | u64::from(header_raw.offsets[0]),
+        );
+        let id1_offset = u64::from_le(
+            u64::from(header_raw.offsets[3]) << 32
+                | u64::from(header_raw.offsets[2]),
+        );
 
         #[cfg(feature = "restrictive")]
         {
@@ -465,7 +496,10 @@ impl IDBHeader {
 }
 
 impl IDBSectionHeader {
-    pub fn read(header: &IDBHeader, input: impl IdaGenericUnpack) -> Result<Self> {
+    pub fn read(
+        header: &IDBHeader,
+        input: impl IdaGenericUnpack,
+    ) -> Result<Self> {
         match header.version {
             IDBVersion::V1 | IDBVersion::V4 => {
                 #[derive(Debug, Deserialize)]
@@ -527,7 +561,10 @@ impl VaVersion {
     }
 }
 
-fn write_string_len_u8<O: std::io::Write>(mut output: O, value: &[u8]) -> Result<()> {
+fn write_string_len_u8<O: std::io::Write>(
+    mut output: O,
+    value: &[u8],
+) -> Result<()> {
     output.write_all(&[u8::try_from(value.len()).unwrap()])?;
     Ok(output.write_all(value)?)
 }
@@ -548,8 +585,8 @@ mod test {
             0xaf, 0x81, 0x42, 0x01, 0x53, // TODO
             0x01, // void ret
             0x03, //n args
-            0x3d, 0x08, 0x48, 0x4d, 0x4f, 0x44, 0x55, 0x4c, 0x45, 0x3d, 0x06, 0x44, 0x57, 0x4f,
-            0x52, 0x44, 0x00,
+            0x3d, 0x08, 0x48, 0x4d, 0x4f, 0x44, 0x55, 0x4c, 0x45, 0x3d, 0x06,
+            0x44, 0x57, 0x4f, 0x52, 0x44, 0x00,
         ];
         let _til = til::Type::new_from_id0(&function, vec![]).unwrap();
     }
@@ -608,13 +645,13 @@ mod test {
             0x0a, // arg1 type pointer
             0xfe, 0x10, // TypeAttribute val
             0x02, // dt len 1
-            0x0d, 0x5f, 0x5f, 0x6f, 0x72, 0x67, 0x5f, 0x61, 0x72, 0x72, 0x64, 0x69,
-            0x6d, // TODO some _string: "__org_arrdim"
+            0x0d, 0x5f, 0x5f, 0x6f, 0x72, 0x67, 0x5f, 0x61, 0x72, 0x72, 0x64,
+            0x69, 0x6d, // TODO some _string: "__org_arrdim"
             0x03, 0xac, 0x01, // TODO _other_thing
             0x0d, // arg1 pointer type struct
             0x01, // struct ref
-            0x0e, 0x5f, 0x5f, 0x6a, 0x6d, 0x70, 0x5f, 0x62, 0x75, 0x66, 0x5f, 0x74, 0x61,
-            0x67, // "__jmp_buf_tag"
+            0x0e, 0x5f, 0x5f, 0x6a, 0x6d, 0x70, 0x5f, 0x62, 0x75, 0x66, 0x5f,
+            0x74, 0x61, 0x67, // "__jmp_buf_tag"
             0x00, // end of type
         ];
         let _til = til::Type::new_from_id0(&function, vec![]).unwrap();
@@ -648,14 +685,15 @@ mod test {
             // arg4 ...
             0x0a, // pointer
             0x7d, // const typedef
-            0x08, 0x41, 0x45, 0x53, 0x5f, 0x4b, 0x45, 0x59, // ordinal "AES_KEY"
+            0x08, 0x41, 0x45, 0x53, 0x5f, 0x4b, 0x45,
+            0x59, // ordinal "AES_KEY"
             // arg5
             0xff, 0x48, // some flag in function arg
             0x0a, // pointer
             0xfe, 0x10, // TypeAttribute val
             0x02, // TypeAttribute loop once
-            0x0d, 0x5f, 0x5f, 0x6f, 0x72, 0x67, 0x5f, 0x61, 0x72, 0x72, 0x64, 0x69,
-            0x6d, // string "__org_arrdim"
+            0x0d, 0x5f, 0x5f, 0x6f, 0x72, 0x67, 0x5f, 0x61, 0x72, 0x72, 0x64,
+            0x69, 0x6d, // string "__org_arrdim"
             0x03, 0xac, 0x10, // ???? some other TypeAttribute field
             0x22, // type unsigned __int8
             // arg6
@@ -663,8 +701,8 @@ mod test {
             0x0a, // pointer
             0xfe, 0x10, // TypeAttribute val
             0x02, // TypeAttribute loop once
-            0x0d, 0x5f, 0x5f, 0x6f, 0x72, 0x67, 0x5f, 0x61, 0x72, 0x72, 0x64, 0x69,
-            0x6d, // string "__org_arrdim"
+            0x0d, 0x5f, 0x5f, 0x6f, 0x72, 0x67, 0x5f, 0x61, 0x72, 0x72, 0x64,
+            0x69, 0x6d, // string "__org_arrdim"
             0x03, 0xac, 0x10, // ???? some other TypeAttribute field
             0x22, // type unsigned __int8
             // arg7 ...
@@ -748,7 +786,11 @@ mod test {
 
     #[test]
     fn parse_idbs() {
-        let files = find_all("resources/idbs".as_ref(), &["idb".as_ref(), "i64".as_ref()]).unwrap();
+        let files = find_all(
+            "resources/idbs".as_ref(),
+            &["idb".as_ref(), "i64".as_ref()],
+        )
+        .unwrap();
         for filename in files {
             parse_idb(filename)
         }
@@ -781,7 +823,8 @@ mod test {
         };
 
         let _: Vec<_> = id0.segments().unwrap().map(Result::unwrap).collect();
-        let _: Vec<_> = id0.loader_name().unwrap().map(Result::unwrap).collect();
+        let _: Vec<_> =
+            id0.loader_name().unwrap().map(Result::unwrap).collect();
         let _: Vec<_> = id0.root_info().unwrap().map(Result::unwrap).collect();
         let _: Vec<_> = id0
             .file_regions(version)
@@ -822,7 +865,8 @@ mod test {
 
     #[test]
     fn parse_tils() {
-        let files = find_all("resources/tils".as_ref(), &["til".as_ref()]).unwrap();
+        let files =
+            find_all("resources/tils".as_ref(), &["til".as_ref()]).unwrap();
         let _results = files
             .into_iter()
             .map(|file| {
@@ -845,7 +889,11 @@ mod test {
     }
 
     fn find_all(path: &Path, exts: &[&OsStr]) -> Result<Vec<PathBuf>> {
-        fn inner_find_all(path: &Path, exts: &[&OsStr], buf: &mut Vec<PathBuf>) -> Result<()> {
+        fn inner_find_all(
+            path: &Path,
+            exts: &[&OsStr],
+            buf: &mut Vec<PathBuf>,
+        ) -> Result<()> {
             for entry in std::fs::read_dir(path)?.map(Result::unwrap) {
                 let entry_type = entry.metadata()?.file_type();
                 if entry_type.is_dir() {

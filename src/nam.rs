@@ -38,13 +38,18 @@ impl NamSection {
         let version = VaVersion::read(&mut header_page)?;
 
         let (npages, nnames, pagesize) = match version {
-            VaVersion::Va0 | VaVersion::Va1 | VaVersion::Va2 | VaVersion::Va3 | VaVersion::Va4 => {
+            VaVersion::Va0
+            | VaVersion::Va1
+            | VaVersion::Va2
+            | VaVersion::Va3
+            | VaVersion::Va4 => {
                 let always1: u16 = bincode::deserialize_from(&mut header_page)?;
                 ensure!(always1 == 1);
                 let npages: u64 = if header.magic_version.is_64() {
                     bincode::deserialize_from(&mut header_page)?
                 } else {
-                    bincode::deserialize_from::<_, u32>(&mut header_page)?.into()
+                    bincode::deserialize_from::<_, u32>(&mut header_page)?
+                        .into()
                 };
                 let always0: u16 = bincode::deserialize_from(&mut header_page)?;
                 ensure!(always0 == 0);
@@ -52,24 +57,29 @@ impl NamSection {
                     // TODO nnames / 2? Why?
                     bincode::deserialize_from::<_, u64>(&mut header_page)? / 2
                 } else {
-                    bincode::deserialize_from::<_, u32>(&mut header_page)?.into()
+                    bincode::deserialize_from::<_, u32>(&mut header_page)?
+                        .into()
                 };
-                let pagesize: u32 = bincode::deserialize_from(&mut header_page)?;
+                let pagesize: u32 =
+                    bincode::deserialize_from(&mut header_page)?;
                 ensure!(pagesize >= 64);
                 (npages, nnames, pagesize)
             }
             VaVersion::VaX => {
                 let always3: u32 = bincode::deserialize_from(&mut header_page)?;
                 ensure!(always3 == 3);
-                let one_or_zero: u32 = bincode::deserialize_from(&mut header_page)?;
+                let one_or_zero: u32 =
+                    bincode::deserialize_from(&mut header_page)?;
                 ensure!([0, 1].contains(&one_or_zero));
                 // TODO always2048 have some relation to pagesize?
-                let always2048: u32 = bincode::deserialize_from(&mut header_page)?;
+                let always2048: u32 =
+                    bincode::deserialize_from(&mut header_page)?;
                 ensure!(always2048 == 2048);
                 let npages: u64 = if header.magic_version.is_64() {
                     bincode::deserialize_from(&mut header_page)?
                 } else {
-                    bincode::deserialize_from::<_, u32>(&mut header_page)?.into()
+                    bincode::deserialize_from::<_, u32>(&mut header_page)?
+                        .into()
                 };
                 let always0: u32 = bincode::deserialize_from(&mut header_page)?;
                 ensure!(always0 == 0);
@@ -77,7 +87,8 @@ impl NamSection {
                     // TODO nnames / 2? Why?
                     bincode::deserialize_from::<_, u64>(&mut header_page)? / 2
                 } else {
-                    bincode::deserialize_from::<_, u32>(&mut header_page)?.into()
+                    bincode::deserialize_from::<_, u32>(&mut header_page)?
+                        .into()
                 };
                 (npages, nnames, DEFAULT_PAGE_SIZE.try_into().unwrap())
             }
@@ -115,7 +126,8 @@ impl NamSection {
                 let name = if header.magic_version.is_64() {
                     bincode::deserialize_from::<_, u64>(&mut input)
                 } else {
-                    bincode::deserialize_from::<_, u32>(&mut input).map(u64::from)
+                    bincode::deserialize_from::<_, u32>(&mut input)
+                        .map(u64::from)
                 };
                 let Ok(name) = name else {
                     break;

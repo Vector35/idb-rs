@@ -74,22 +74,26 @@ impl TILTypeInfo {
             (0..=0x11, _) | (_, false) => cursor.read_u32()?.into(),
             (_, true) => cursor.read_u64()?,
         };
-        let tinfo_raw = TypeRaw::read(&mut *cursor, til).with_context(|| {
-            format!(
-                "parsing `TILTypeInfo::tiinfo` for type \"{}\"",
-                String::from_utf8_lossy(&name)
-            )
-        })?;
+        let tinfo_raw =
+            TypeRaw::read(&mut *cursor, til).with_context(|| {
+                format!(
+                    "parsing `TILTypeInfo::tiinfo` for type \"{}\"",
+                    String::from_utf8_lossy(&name)
+                )
+            })?;
         let _info = cursor.read_c_string_raw()?;
         let cmt = cursor.read_c_string_raw()?;
         let fields = cursor.read_c_string_vec()?;
         let fieldcmts = cursor.read_c_string_raw()?;
         let sclass: u8 = cursor.read_u8()?;
 
-        let mut fields_iter =
-            fields
-                .into_iter()
-                .map(|field| if field.is_empty() { None } else { Some(field) });
+        let mut fields_iter = fields.into_iter().map(|field| {
+            if field.is_empty() {
+                None
+            } else {
+                Some(field)
+            }
+        });
         let tinfo = Type::new(til, tinfo_raw, &mut fields_iter)?;
         #[cfg(feature = "restrictive")]
         ensure!(
@@ -143,15 +147,27 @@ impl Type {
             TypeVariantRaw::Basic(x) => TypeVariant::Basic(x),
             TypeVariantRaw::Bitfield(x) => TypeVariant::Bitfield(x),
             TypeVariantRaw::Typedef(x) => TypeVariant::Typedef(x),
-            TypeVariantRaw::Pointer(x) => Pointer::new(til, x, fields).map(TypeVariant::Pointer)?,
+            TypeVariantRaw::Pointer(x) => {
+                Pointer::new(til, x, fields).map(TypeVariant::Pointer)?
+            }
             TypeVariantRaw::Function(x) => {
                 Function::new(til, x, fields).map(TypeVariant::Function)?
             }
-            TypeVariantRaw::Array(x) => Array::new(til, x, fields).map(TypeVariant::Array)?,
-            TypeVariantRaw::Struct(x) => Struct::new(til, x, fields).map(TypeVariant::Struct)?,
-            TypeVariantRaw::Union(x) => Union::new(til, x, fields).map(TypeVariant::Union)?,
-            TypeVariantRaw::Enum(x) => Enum::new(til, x, fields).map(TypeVariant::Enum)?,
-            TypeVariantRaw::StructRef(typedef) => TypeVariant::StructRef(typedef),
+            TypeVariantRaw::Array(x) => {
+                Array::new(til, x, fields).map(TypeVariant::Array)?
+            }
+            TypeVariantRaw::Struct(x) => {
+                Struct::new(til, x, fields).map(TypeVariant::Struct)?
+            }
+            TypeVariantRaw::Union(x) => {
+                Union::new(til, x, fields).map(TypeVariant::Union)?
+            }
+            TypeVariantRaw::Enum(x) => {
+                Enum::new(til, x, fields).map(TypeVariant::Enum)?
+            }
+            TypeVariantRaw::StructRef(typedef) => {
+                TypeVariant::StructRef(typedef)
+            }
             TypeVariantRaw::UnionRef(typedef) => TypeVariant::UnionRef(typedef),
             TypeVariantRaw::EnumRef(typedef) => TypeVariant::EnumRef(typedef),
         };
@@ -162,7 +178,10 @@ impl Type {
         })
     }
     // TODO find the best way to handle type parsing from id0
-    pub(crate) fn new_from_id0(data: &[u8], fields: Vec<Vec<u8>>) -> Result<Self> {
+    pub(crate) fn new_from_id0(
+        data: &[u8],
+        fields: Vec<Vec<u8>>,
+    ) -> Result<Self> {
         // TODO it's unclear what header information id0 types use to parse tils
         // maybe it just use the til sector header, or more likelly it's from
         // IDBParam  in the `Root Node`
@@ -195,10 +214,13 @@ impl Type {
                 ));
             }
         }
-        let mut fields_iter =
-            fields
-                .into_iter()
-                .map(|field| if field.is_empty() { None } else { Some(field) });
+        let mut fields_iter = fields.into_iter().map(|field| {
+            if field.is_empty() {
+                None
+            } else {
+                Some(field)
+            }
+        });
         let result = Self::new(&header, type_raw, &mut fields_iter)?;
         #[cfg(feature = "restrictive")]
         ensure!(
@@ -233,7 +255,10 @@ pub(crate) enum TypeVariantRaw {
 }
 
 impl TypeRaw {
-    pub fn read(input: &mut impl IdaGenericBufUnpack, til: &TILSectionHeader) -> Result<Self> {
+    pub fn read(
+        input: &mut impl IdaGenericBufUnpack,
+        til: &TILSectionHeader,
+    ) -> Result<Self> {
         let metadata: u8 = input.read_u8()?;
         let type_base = metadata & flag::tf_mask::TYPE_BASE_MASK;
         let type_flags = metadata & flag::tf_mask::TYPE_FLAGS_MASK;
@@ -247,32 +272,42 @@ impl TypeRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480335
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x472e13 print_til_type
         let variant = match (type_base, type_flags) {
-            (..=flag::tf_last_basic::BT_LAST_BASIC, _) => Basic::new(til, type_base, type_flags)
-                .context("Type::Basic")
-                .map(TypeVariantRaw::Basic)?,
+            (..=flag::tf_last_basic::BT_LAST_BASIC, _) => {
+                Basic::new(til, type_base, type_flags)
+                    .context("Type::Basic")
+                    .map(TypeVariantRaw::Basic)?
+            }
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4804d7
-            (flag::tf_ptr::BT_PTR, _) => PointerRaw::read(input, til, type_flags)
-                .context("Type::Pointer")
-                .map(TypeVariantRaw::Pointer)?,
+            (flag::tf_ptr::BT_PTR, _) => {
+                PointerRaw::read(input, til, type_flags)
+                    .context("Type::Pointer")
+                    .map(TypeVariantRaw::Pointer)?
+            }
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48075a
-            (flag::tf_array::BT_ARRAY, _) => ArrayRaw::read(input, til, type_flags)
-                .context("Type::Array")
-                .map(TypeVariantRaw::Array)?,
+            (flag::tf_array::BT_ARRAY, _) => {
+                ArrayRaw::read(input, til, type_flags)
+                    .context("Type::Array")
+                    .map(TypeVariantRaw::Array)?
+            }
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48055d
-            (flag::tf_func::BT_FUNC, _) => FunctionRaw::read(input, til, type_flags)
-                .context("Type::Function")
-                .map(TypeVariantRaw::Function)?,
+            (flag::tf_func::BT_FUNC, _) => {
+                FunctionRaw::read(input, til, type_flags)
+                    .context("Type::Function")
+                    .map(TypeVariantRaw::Function)?
+            }
 
             (flag::tf_complex::BT_BITFIELD, _) => TypeVariantRaw::Bitfield(
                 Bitfield::read(input, type_flags).context("Type::Bitfield")?,
             ),
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480369
-            (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_TYPEDEF) => Typedef::read(input)
-                .context("Type::Typedef")
-                .map(TypeVariantRaw::Typedef)?,
+            (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_TYPEDEF) => {
+                Typedef::read(input)
+                    .context("Type::Typedef")
+                    .map(TypeVariantRaw::Typedef)?
+            }
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480378
 
@@ -296,7 +331,9 @@ impl TypeRaw {
             (flag::tf_complex::BT_COMPLEX, _) => unreachable!(),
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47395d print_til_type
-            (flag::BT_RESERVED, _) => return Err(anyhow!("Wrong/Unknown type: {metadata:02x}")),
+            (flag::BT_RESERVED, _) => {
+                return Err(anyhow!("Wrong/Unknown type: {metadata:02x}"))
+            }
 
             (flag::BT_RESERVED.., _) => unreachable!(),
         };
@@ -307,7 +344,10 @@ impl TypeRaw {
         })
     }
 
-    pub fn read_ref(input: &mut impl IdaGenericUnpack, header: &TILSectionHeader) -> Result<Self> {
+    pub fn read_ref(
+        input: &mut impl IdaGenericUnpack,
+        header: &TILSectionHeader,
+    ) -> Result<Self> {
         let mut bytes = input.unpack_dt_bytes()?;
 
         if !bytes.starts_with(b"=") {
@@ -375,7 +415,9 @@ impl Basic {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480874
             BT_UNK => {
                 let bytes = match btmt {
-                    BTMT_SIZE0 => return Err(anyhow!("forbidden use of BT_UNK")),
+                    BTMT_SIZE0 => {
+                        return Err(anyhow!("forbidden use of BT_UNK"))
+                    }
                     BTMT_SIZE12 => 2,  // BT_UNK_WORD
                     BTMT_SIZE48 => 8,  // BT_UNK_QWORD
                     BTMT_SIZE128 => 0, // BT_UNKNOWN
@@ -409,7 +451,10 @@ impl Basic {
                         return match bt_int {
                             BT_INT8 => Ok(Self::Char),
                             BT_INT => Ok(Self::SegReg), // BT_SEGREG
-                            _ => Err(anyhow!("Reserved use of tf_int::BTMT_CHAR {:x}", btmt)),
+                            _ => Err(anyhow!(
+                                "Reserved use of tf_int::BTMT_CHAR {:x}",
+                                btmt
+                            )),
                         };
                     }
                     _ => unreachable!(),
@@ -478,11 +523,15 @@ impl Typedef {
                 let mut tmp = data;
                 let de = tmp.read_de()?;
                 if !tmp.is_empty() {
-                    return Err(anyhow!("Typedef Ordinal with more data then expected"));
+                    return Err(anyhow!(
+                        "Typedef Ordinal with more data then expected"
+                    ));
                 }
                 Ok(Typedef::Ordinal(de))
             }
-            _ => Ok(Typedef::Name(if buf.is_empty() { None } else { Some(buf) })),
+            _ => {
+                Ok(Typedef::Name(if buf.is_empty() { None } else { Some(buf) }))
+            }
         }
     }
 }
@@ -518,7 +567,10 @@ impl TILMacro {
         let param_num = have_param.then_some((flag & 0xFF) as u8);
         if !have_param {
             #[cfg(feature = "restrictive")]
-            ensure!(flag & 0xFF == 0, "Unknown/Invalid value for TILMacro flag");
+            ensure!(
+                flag & 0xFF == 0,
+                "Unknown/Invalid value for TILMacro flag"
+            );
         }
         // TODO find the InnerRef for this
         let value = input.read_c_string_raw()?;
@@ -539,7 +591,9 @@ impl TILMacro {
                     }
                     match (max_param, param_idx) {
                         (None, _) => max_param = Some(param_idx),
-                        (Some(max), param_idx) if param_idx > max => max_param = Some(param_idx),
+                        (Some(max), param_idx) if param_idx > max => {
+                            max_param = Some(param_idx)
+                        }
                         (Some(_), _) => {}
                     }
                     Some(TILMacroValue::Param(param_idx))

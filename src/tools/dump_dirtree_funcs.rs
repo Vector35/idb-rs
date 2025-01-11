@@ -19,7 +19,8 @@ pub fn print_function(id0: &ID0Section, address: Id0Address) -> Result<()> {
     let mut ty = None;
     for info in infos {
         match info? {
-            idb_rs::id0::AddressInfo::Comment(_) | idb_rs::id0::AddressInfo::Other { .. } => {}
+            idb_rs::id0::AddressInfo::Comment(_)
+            | idb_rs::id0::AddressInfo::Other { .. } => {}
             idb_rs::id0::AddressInfo::Label(label) => {
                 if let Some(_old) = name.replace(label) {
                     panic!("Multiple labels can't be return for address")
@@ -27,7 +28,10 @@ pub fn print_function(id0: &ID0Section, address: Id0Address) -> Result<()> {
             }
             idb_rs::id0::AddressInfo::TilType(addr_ty) => {
                 ensure!(
-                    matches!(&addr_ty.type_variant, idb_rs::til::TypeVariant::Function(_)),
+                    matches!(
+                        &addr_ty.type_variant,
+                        idb_rs::til::TypeVariant::Function(_)
+                    ),
                     "Type for function at {address:#?} is invalid"
                 );
                 if let Some(_old) = ty.replace(addr_ty) {

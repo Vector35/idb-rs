@@ -87,8 +87,9 @@ impl UnionRaw {
 
             let alignment_raw = (tattr & MAX_DECL_ALIGN) as u8;
             is_unknown_8 = alignment_raw & 0x8 != 0;
-            alignment = ((alignment_raw & 0x7) != 0)
-                .then(|| NonZeroU8::new(1 << ((alignment_raw & 0x7) - 1)).unwrap());
+            alignment = ((alignment_raw & 0x7) != 0).then(|| {
+                NonZeroU8::new(1 << ((alignment_raw & 0x7) - 1)).unwrap()
+            });
             is_unaligned = tattr & TAUDT_UNALIGNED != 0;
 
             const _ALL_FLAGS: u16 = MAX_DECL_ALIGN | TAUDT_UNALIGNED;
@@ -105,7 +106,10 @@ impl UnionRaw {
         }
 
         let members = (0..mem_cnt)
-            .map(|i| TypeRaw::read(&mut *input, header).with_context(|| format!("Member {i}")))
+            .map(|i| {
+                TypeRaw::read(&mut *input, header)
+                    .with_context(|| format!("Member {i}"))
+            })
             .collect::<Result<_, _>>()?;
         Ok(TypeVariantRaw::Union(Self {
             effective_alignment,

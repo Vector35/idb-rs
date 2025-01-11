@@ -59,10 +59,9 @@ impl Segment {
             .map(|name_id| {
                 // TODO I think this is dependent on the version, and not on availability
                 if let Some(names) = names {
-                    names
-                        .get(&name_id)
-                        .map(Vec::to_owned)
-                        .ok_or_else(|| anyhow!("Not found name for segment {name_id}"))
+                    names.get(&name_id).map(Vec::to_owned).ok_or_else(|| {
+                        anyhow!("Not found name for segment {name_id}")
+                    })
                 } else {
                     // if there is no names, AKA `$ segstrings`, search for the key directly
                     id0.name_by_index(name_id.get().into()).map(<[u8]>::to_vec)

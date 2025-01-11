@@ -26,7 +26,12 @@ pub struct IDBFileRegions {
 }
 
 impl IDBFileRegions {
-    fn read(_key: &[u8], data: &[u8], version: u16, is_64: bool) -> Result<Self> {
+    fn read(
+        _key: &[u8],
+        data: &[u8],
+        version: u16,
+        is_64: bool,
+    ) -> Result<Self> {
         let mut input = IdaUnpacker::new(data, is_64);
         // TODO detect versions with more accuracy
         let (start, end, eva) = match version {
@@ -38,9 +43,9 @@ impl IDBFileRegions {
             }
             700.. => {
                 let start = input.unpack_usize()?;
-                let end = start
-                    .checked_add(input.unpack_usize()?)
-                    .ok_or_else(|| anyhow!("Overflow address in File Regions"))?;
+                let end = start.checked_add(input.unpack_usize()?).ok_or_else(
+                    || anyhow!("Overflow address in File Regions"),
+                )?;
                 let rva = input.unpack_usize()?;
                 // TODO some may include an extra 0 byte at the end?
                 if let Ok(_unknown) = input.unpack_usize() {
@@ -73,9 +78,13 @@ impl<'a> FunctionsAndComments<'a> {
                 ensure!(parse_maybe_cstr(value) == Some(&b"$ funcs"[..]));
                 Ok(Self::Name)
             }
-            b'S' => IDBFunction::read(sub_key, value, is_64).map(Self::Function),
+            b'S' => {
+                IDBFunction::read(sub_key, value, is_64).map(Self::Function)
+            }
             // some kind of style setting, maybe setting font and background color
-            b'R' | b'C' if value.starts_with(&[4, 3, 2, 1]) => Ok(Self::Unknown { key, value }),
+            b'R' | b'C' if value.starts_with(&[4, 3, 2, 1]) => {
+                Ok(Self::Unknown { key, value })
+            }
             b'C' => {
                 let address = parse_number(sub_key, true, is_64)
                     .ok_or_else(|| anyhow!("Invalid Comment address"))?;
@@ -87,8 +96,10 @@ impl<'a> FunctionsAndComments<'a> {
                     .ok_or_else(|| anyhow!("Invalid Comment string"))
             }
             b'R' => {
-                let address = parse_number(sub_key, true, is_64)
-                    .ok_or_else(|| anyhow!("Invalid Repetable Comment address"))?;
+                let address =
+                    parse_number(sub_key, true, is_64).ok_or_else(|| {
+                        anyhow!("Invalid Repetable Comment address")
+                    })?;
                 parse_maybe_cstr(value)
                     .map(|value| Self::Comment {
                         address,
@@ -145,7 +156,9 @@ impl IDBFunction {
         })
     }
 
-    fn read_extra_regular(mut input: impl IdaUnpack) -> Result<IDBFunctionExtra> {
+    fn read_extra_regular(
+        mut input: impl IdaUnpack,
+    ) -> Result<IDBFunctionExtra> {
         // TODO Undertand the sub operation at InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f98f
         let frame = input.unpack_usize_ext_max()?;
         let _unknown4 = input.unpack_dw()?;
@@ -155,7 +168,10 @@ impl IDBFunction {
         Ok(IDBFunctionExtra::NonTail { frame })
     }
 
-    fn read_extra_tail(mut input: impl IdaUnpack, address_start: u64) -> Result<IDBFunctionExtra> {
+    fn read_extra_tail(
+        mut input: impl IdaUnpack,
+        address_start: u64,
+    ) -> Result<IDBFunctionExtra> {
         // offset of the function owner in relation to the function start
         let owner_offset = input.unpack_usize()? as i64;
         let owner = match address_start.checked_add_signed(owner_offset) {
@@ -240,12 +256,18 @@ pub struct EntryPoint {
     pub entry_type: Option<til::Type>,
 }
 
-pub(crate) fn parse_number(data: &[u8], big_endian: bool, is_64: bool) -> Option<u64> {
+pub(crate) fn parse_number(
+    data: &[u8],
+    big_endian: bool,
+    is_64: bool,
+) -> Option<u64> {
     Some(match (data.len(), is_64, big_endian) {
         (8, true, true) => u64::from_be_bytes(data.try_into().unwrap()),
         (8, true, false) => u64::from_le_bytes(data.try_into().unwrap()),
         (4, false, true) => u32::from_be_bytes(data.try_into().unwrap()).into(),
-        (4, false, false) => u32::from_le_bytes(data.try_into().unwrap()).into(),
+        (4, false, false) => {
+            u32::from_le_bytes(data.try_into().unwrap()).into()
+        }
         _ => return None,
     })
 }

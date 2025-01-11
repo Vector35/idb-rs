@@ -1,6 +1,9 @@
 use idb_rs::id0::{DirTreeEntry, DirTreeRoot};
 
-pub fn print_dirtree<T>(mut handle_print: impl FnMut(&T), dirtree: &DirTreeRoot<T>) {
+pub fn print_dirtree<T>(
+    mut handle_print: impl FnMut(&T),
+    dirtree: &DirTreeRoot<T>,
+) {
     inner_print_dirtree(&mut handle_print, &dirtree.entries, 0);
 }
 

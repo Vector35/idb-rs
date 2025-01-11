@@ -27,7 +27,11 @@ impl<'a> TILTypeSizeSolver<'a> {
 
     // TODO make a type for type_idx and symbol_idx, accept both here
     /// NOTE that type_idx need to be specified if not a symbol
-    pub fn type_size_bytes(&mut self, type_idx: Option<usize>, ty: &Type) -> Option<u64> {
+    pub fn type_size_bytes(
+        &mut self,
+        type_idx: Option<usize>,
+        ty: &Type,
+    ) -> Option<u64> {
         assert!(self.solving.is_empty());
         if let Some(idx) = type_idx {
             // if cached return it
@@ -58,15 +62,27 @@ impl<'a> TILTypeSizeSolver<'a> {
             TypeVariant::Basic(Basic::SegReg) => 1,
             TypeVariant::Basic(Basic::Void) => 0,
             TypeVariant::Basic(Basic::Unknown { bytes }) => (*bytes).into(),
-            TypeVariant::Basic(Basic::Bool) => self.section.size_bool.get().into(),
-            TypeVariant::Basic(Basic::Short { .. }) => self.section.sizeof_short().get().into(),
-            TypeVariant::Basic(Basic::Int { .. }) => self.section.size_int.get().into(),
-            TypeVariant::Basic(Basic::Long { .. }) => self.section.sizeof_long().get().into(),
+            TypeVariant::Basic(Basic::Bool) => {
+                self.section.size_bool.get().into()
+            }
+            TypeVariant::Basic(Basic::Short { .. }) => {
+                self.section.sizeof_short().get().into()
+            }
+            TypeVariant::Basic(Basic::Int { .. }) => {
+                self.section.size_int.get().into()
+            }
+            TypeVariant::Basic(Basic::Long { .. }) => {
+                self.section.sizeof_long().get().into()
+            }
             TypeVariant::Basic(Basic::LongLong { .. }) => {
                 self.section.sizeof_long_long().get().into()
             }
-            TypeVariant::Basic(Basic::IntSized { bytes, .. }) => bytes.get().into(),
-            TypeVariant::Basic(Basic::BoolSized { bytes }) => bytes.get().into(),
+            TypeVariant::Basic(Basic::IntSized { bytes, .. }) => {
+                bytes.get().into()
+            }
+            TypeVariant::Basic(Basic::BoolSized { bytes }) => {
+                bytes.get().into()
+            }
             // TODO what's the long double default size if it's not defined?
             TypeVariant::Basic(Basic::LongDouble) => self
                 .section
@@ -79,7 +95,8 @@ impl<'a> TILTypeSizeSolver<'a> {
             TypeVariant::Pointer(_) => self.section.addr_size().get().into(),
             TypeVariant::Function(_) => 0, // function type dont have a size, only a pointer to it
             TypeVariant::Array(array) => {
-                let element_len = self.inner_type_size_bytes(&array.elem_type)?;
+                let element_len =
+                    self.inner_type_size_bytes(&array.elem_type)?;
                 let nelem = array.nelem.map(|x| x.get()).unwrap_or(0) as u64;
                 element_len * nelem
             }
@@ -97,27 +114,34 @@ impl<'a> TILTypeSizeSolver<'a> {
                         // no more members
                         break;
                     };
-                    let field_size = match &first_member.member_type.type_variant {
-                        // if bit-field, condensate one or more to create a byte-field
-                        TypeVariant::Bitfield(bitfield) => {
-                            members = &members[1..];
-                            // NOTE it skips 0..n members
-                            condensate_bitfields_from_struct(*bitfield, &mut members)
+                    let field_size =
+                        match &first_member.member_type.type_variant {
+                            // if bit-field, condensate one or more to create a byte-field
+                            TypeVariant::Bitfield(bitfield) => {
+                                members = &members[1..];
+                                // NOTE it skips 0..n members
+                                condensate_bitfields_from_struct(
+                                    *bitfield,
+                                    &mut members,
+                                )
                                 .get()
                                 .into()
-                        }
-                        // get the inner type size
-                        _ => {
-                            let first = &members[0];
-                            members = &members[1..];
-                            // next member
-                            self.inner_type_size_bytes(&first.member_type)?
-                        }
-                    };
+                            }
+                            // get the inner type size
+                            _ => {
+                                let first = &members[0];
+                                members = &members[1..];
+                                // next member
+                                self.inner_type_size_bytes(&first.member_type)?
+                            }
+                        };
                     if !til_struct.is_unaligned {
                         let align = match (
                             first_member.alignment.map(|x| x.get().into()),
-                            self.alignemnt(&first_member.member_type, field_size),
+                            self.alignemnt(
+                                &first_member.member_type,
+                                field_size,
+                            ),
                         ) {
                             (Some(a), Some(b)) => a.max(b),
                             (Some(a), None) | (None, Some(a)) => a,
@@ -179,9 +203,9 @@ impl<'a> TILTypeSizeSolver<'a> {
     fn alignemnt(&mut self, til: &Type, til_size: u64) -> Option<u64> {
         match &til.type_variant {
             // TODO basic types have a inherited alignment?
-            TypeVariant::Basic(_) | TypeVariant::Enum(_) | TypeVariant::Pointer(_) => {
-                Some(til_size)
-            }
+            TypeVariant::Basic(_)
+            | TypeVariant::Enum(_)
+            | TypeVariant::Pointer(_) => Some(til_size),
             TypeVariant::Array(array) => {
                 let size = self.inner_type_size_bytes(&array.elem_type);
                 self.alignemnt(&array.elem_type, size.unwrap_or(1))
@@ -205,7 +229,8 @@ impl<'a> TILTypeSizeSolver<'a> {
                     Typedef::Name(None) => None,
                 };
                 ty.and_then(|ty| {
-                    let size = self.inner_type_size_bytes(&ty.tinfo).unwrap_or(1);
+                    let size =
+                        self.inner_type_size_bytes(&ty.tinfo).unwrap_or(1);
                     self.alignemnt(&ty.tinfo, size)
                 })
             }
@@ -223,7 +248,8 @@ fn condensate_bitfields_from_struct(
     let mut condensated_bits = first_field.width;
 
     loop {
-        let Some(TypeVariant::Bitfield(member)) = rest.first().map(|x| &x.member_type.type_variant)
+        let Some(TypeVariant::Bitfield(member)) =
+            rest.first().map(|x| &x.member_type.type_variant)
         else {
             // no more bit-fields to condensate
             break;

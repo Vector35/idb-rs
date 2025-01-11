@@ -42,7 +42,10 @@ struct ID0Header {
 }
 
 impl ID0Header {
-    pub(crate) fn read(input: &mut impl IdaGenericUnpack, buf: &mut Vec<u8>) -> Result<Self> {
+    pub(crate) fn read(
+        input: &mut impl IdaGenericUnpack,
+        buf: &mut Vec<u8>,
+    ) -> Result<Self> {
         buf.resize(64, 0);
         input.read_exact(buf)?;
         // TODO handle the 15 version of the header:
@@ -57,7 +60,8 @@ impl ID0Header {
         // }
 
         let mut buf_current = &buf[..];
-        let next_free_offset: u32 = bincode::deserialize_from(&mut buf_current)?;
+        let next_free_offset: u32 =
+            bincode::deserialize_from(&mut buf_current)?;
         let page_size: u16 = bincode::deserialize_from(&mut buf_current)?;
         let root_page: u32 = bincode::deserialize_from(&mut buf_current)?;
         let record_count: u32 = bincode::deserialize_from(&mut buf_current)?;
@@ -141,7 +145,8 @@ impl ID0Section {
         };
 
         buf.resize(header.page_size.into(), 0);
-        let mut pages = HashMap::with_capacity(header.page_count.try_into().unwrap());
+        let mut pages =
+            HashMap::with_capacity(header.page_count.try_into().unwrap());
         let mut pending_pages = vec![root_page];
         loop {
             if pending_pages.is_empty() {
@@ -154,8 +159,10 @@ impl ID0Section {
             }
             // read the full page
             ensure!((page_idx.get() as usize) < pages_in_section);
-            let page_offset = page_idx.get() as usize * header.page_size as usize;
-            let page_raw = &input[page_offset..page_offset + header.page_size as usize];
+            let page_offset =
+                page_idx.get() as usize * header.page_size as usize;
+            let page_raw =
+                &input[page_offset..page_offset + header.page_size as usize];
             let page = ID0Page::read(page_raw, &header)?;
             // put in the queue the pages that need parsing, AKA children of this page
             match &page {
@@ -179,7 +186,8 @@ impl ID0Section {
         ensure!(pages.len() <= header.page_count.try_into().unwrap());
 
         // put it all in order on the vector
-        let mut entries = Vec::with_capacity(header.record_count.try_into().unwrap());
+        let mut entries =
+            Vec::with_capacity(header.record_count.try_into().unwrap());
         Self::tree_to_vec(root_page, &mut pages, &mut entries);
 
         // make sure the vector is sorted
@@ -223,7 +231,10 @@ impl ID0Section {
         self.entries.iter()
     }
 
-    pub(crate) fn binary_search(&self, key: impl AsRef<[u8]>) -> Result<usize, usize> {
+    pub(crate) fn binary_search(
+        &self,
+        key: impl AsRef<[u8]>,
+    ) -> Result<usize, usize> {
         let key = key.as_ref();
         self.entries.binary_search_by_key(&key, |b| &b.key[..])
     }
@@ -255,7 +266,10 @@ impl ID0Section {
         self.entries[start..end].iter()
     }
 
-    pub fn sub_values(&self, key: impl AsRef<[u8]>) -> impl Iterator<Item = &ID0Entry> {
+    pub fn sub_values(
+        &self,
+        key: impl AsRef<[u8]>,
+    ) -> impl Iterator<Item = &ID0Entry> {
         let key = key.as_ref();
         let start = self.binary_search(key).unwrap_or_else(|start| start);
         let end = self.binary_search_end(key).unwrap_or_else(|end| end);
@@ -264,7 +278,9 @@ impl ID0Section {
     }
 
     /// read the `$ segs` entries of the database
-    pub fn segments(&self) -> Result<impl Iterator<Item = Result<Segment>> + '_> {
+    pub fn segments(
+        &self,
+    ) -> Result<impl Iterator<Item = Result<Segment>> + '_> {
         let entry = self
             .get("N$ segs")
             .ok_or_else(|| anyhow!("Unable to find entry segs"))?;
@@ -275,9 +291,9 @@ impl ID0Section {
             .copied()
             .collect();
         let names = self.segment_strings()?;
-        Ok(self
-            .sub_values(key)
-            .map(move |e| Segment::read(&e.value, self.is_64, names.as_ref(), self)))
+        Ok(self.sub_values(key).map(move |e| {
+            Segment::read(&e.value, self.is_64, names.as_ref(), self)
+        }))
     }
 
     /// read the `$ segstrings` entries of the database
@@ -301,7 +317,8 @@ impl ID0Section {
             ensure!(start <= end);
             for i in start..end {
                 let name = value_current.unpack_ds()?;
-                if let Some(_old) = entries.insert(i.try_into().unwrap(), name) {
+                if let Some(_old) = entries.insert(i.try_into().unwrap(), name)
+                {
                     return Err(anyhow!("Duplicated id in segstrings {start}"));
                 }
             }
@@ -332,7 +349,8 @@ impl ID0Section {
         let name = self
             .get(key)
             .ok_or_else(|| anyhow!("Not found name for segment {idx}"))?;
-        parse_maybe_cstr(&name.value).ok_or_else(|| anyhow!("Invalid segment name {idx}"))
+        parse_maybe_cstr(&name.value)
+            .ok_or_else(|| anyhow!("Invalid segment name {idx}"))
     }
 
     /// read the `$ loader name` entries of the database
@@ -353,7 +371,9 @@ impl ID0Section {
     }
 
     /// read the `Root Node` entries of the database
-    pub fn root_info(&self) -> Result<impl Iterator<Item = Result<IDBRootInfo>>> {
+    pub fn root_info(
+        &self,
+    ) -> Result<impl Iterator<Item = Result<IDBRootInfo>>> {
         let entry = self
             .get("NRoot Node")
             .ok_or_else(|| anyhow!("Unable to find entry Root Node"))?;
@@ -371,7 +391,8 @@ impl ID0Section {
             match (sub_type, sub_key.len()) {
                 (b'N', 1) => {
                     ensure!(
-                        parse_maybe_cstr(&entry.value) == Some(&b"Root Node"[..]),
+                        parse_maybe_cstr(&entry.value)
+                            == Some(&b"Root Node"[..]),
                         "Invalid Root Node Name"
                     );
                     return Ok(IDBRootInfo::RootNodeName);
@@ -380,7 +401,8 @@ impl ID0Section {
                 (b'V', 1) => return Ok(IDBRootInfo::InputFile(&entry.value)),
                 _ => {}
             }
-            let Some(value) = parse_number(&sub_key[1..], true, self.is_64) else {
+            let Some(value) = parse_number(&sub_key[1..], true, self.is_64)
+            else {
                 return Ok(IDBRootInfo::Unknown(entry));
             };
             match (sub_type, value as i64) {
@@ -407,7 +429,9 @@ impl ID0Section {
                     .map_err(|_| anyhow!("Value Md5 with invalid len")),
                 (b'S', 1303) => parse_maybe_cstr(&entry.value)
                     .and_then(|version| core::str::from_utf8(version).ok())
-                    .ok_or_else(|| anyhow!("Unable to parse VersionString string"))
+                    .ok_or_else(|| {
+                        anyhow!("Unable to parse VersionString string")
+                    })
                     .map(IDBRootInfo::VersionString),
                 (b'S', 1349) => entry
                     .value
@@ -441,10 +465,9 @@ impl ID0Section {
             .chain(sub_key.iter())
             .copied()
             .collect();
-        let description = self
-            .sub_values(key)
-            .next()
-            .ok_or_else(|| anyhow!("Unable to find id_params inside Root Node"))?;
+        let description = self.sub_values(key).next().ok_or_else(|| {
+            anyhow!("Unable to find id_params inside Root Node")
+        })?;
         IDBParam::read(&description.value, self.is_64)
     }
 
@@ -498,7 +521,9 @@ impl ID0Section {
     // TODO implement $ hidden_ranges
     // TODO the address_info for 0xff00_00XX (or 0xff00_0000__0000_00XX for 64bits) seesm to be reserved, what happens if there is data at that page?
 
-    fn entry_points_raw(&self) -> Result<impl Iterator<Item = Result<EntryPointRaw>>> {
+    fn entry_points_raw(
+        &self,
+    ) -> Result<impl Iterator<Item = Result<EntryPointRaw>>> {
         let entry = self
             .get("N$ entry points")
             .ok_or_else(|| anyhow!("Unable to find functions"))?;
@@ -516,7 +541,8 @@ impl ID0Section {
 
     /// read the `$ entry points` entries of the database
     pub fn entry_points(&self) -> Result<Vec<EntryPoint>> {
-        type RawEntryPoint<'a> = HashMap<u64, (Option<u64>, Option<&'a str>, Option<&'a str>)>;
+        type RawEntryPoint<'a> =
+            HashMap<u64, (Option<u64>, Option<&'a str>, Option<&'a str>)>;
         let mut entry_points: RawEntryPoint = HashMap::new();
         for entry_point in self.entry_points_raw()? {
             match entry_point? {
@@ -524,34 +550,49 @@ impl ID0Section {
                 | EntryPointRaw::Name
                 | EntryPointRaw::Ordinal { .. } => {}
                 EntryPointRaw::Address { key, address } => {
-                    if let Some(_old) = entry_points.entry(key).or_default().0.replace(address) {
-                        return Err(anyhow!("Duplicated function address for {key}"));
+                    if let Some(_old) =
+                        entry_points.entry(key).or_default().0.replace(address)
+                    {
+                        return Err(anyhow!(
+                            "Duplicated function address for {key}"
+                        ));
                     }
                 }
                 EntryPointRaw::ForwardedSymbol { key, symbol } => {
-                    if let Some(_old) = entry_points.entry(key).or_default().1.replace(symbol) {
-                        return Err(anyhow!("Duplicated function symbol for {key}"));
+                    if let Some(_old) =
+                        entry_points.entry(key).or_default().1.replace(symbol)
+                    {
+                        return Err(anyhow!(
+                            "Duplicated function symbol for {key}"
+                        ));
                     }
                 }
                 EntryPointRaw::FunctionName { key, name } => {
-                    if let Some(_old) = entry_points.entry(key).or_default().2.replace(name) {
-                        return Err(anyhow!("Duplicated function name for {key}"));
+                    if let Some(_old) =
+                        entry_points.entry(key).or_default().2.replace(name)
+                    {
+                        return Err(anyhow!(
+                            "Duplicated function name for {key}"
+                        ));
                     }
                 }
             }
         }
         let mut result: Vec<_> = entry_points
             .into_iter()
-            .filter_map(
-                |(key, (address, symbol, name))| match (address, symbol, name) {
+            .filter_map(|(key, (address, symbol, name))| {
+                match (address, symbol, name) {
                     // Function without name or address is possible, this is
                     // probably some label that got deleted
-                    (Some(_), _, None) | (None, _, Some(_)) | (None, _, None) => None,
+                    (Some(_), _, None)
+                    | (None, _, Some(_))
+                    | (None, _, None) => None,
                     (Some(address), forwarded, Some(name)) => {
-                        let entry = match self.find_entry_point_type(key, address) {
-                            Ok(entry) => entry,
-                            Err(error) => return Some(Err(error)),
-                        };
+                        let entry =
+                            match self.find_entry_point_type(key, address) {
+                                Ok(entry) => entry,
+                                Err(error) => return Some(Err(error)),
+                            };
                         Some(Ok(EntryPoint {
                             name: name.to_owned(),
                             address,
@@ -559,25 +600,37 @@ impl ID0Section {
                             entry_type: entry,
                         }))
                     }
-                },
-            )
+                }
+            })
             .collect::<Result<_, _>>()?;
         result.sort_by_key(|entry| entry.address);
         Ok(result)
     }
 
-    fn find_entry_point_type(&self, key: u64, address: u64) -> Result<Option<til::Type>> {
-        if let Some(key_entry) = self.find_entry_point_type_value(key, 0x3000)? {
+    fn find_entry_point_type(
+        &self,
+        key: u64,
+        address: u64,
+    ) -> Result<Option<til::Type>> {
+        if let Some(key_entry) =
+            self.find_entry_point_type_value(key, 0x3000)?
+        {
             return Ok(Some(key_entry));
         }
         // TODO some times it uses the address as key, it's based on the version?
-        if let Some(key_entry) = self.find_entry_point_type_value(address, 0x3000)? {
+        if let Some(key_entry) =
+            self.find_entry_point_type_value(address, 0x3000)?
+        {
             return Ok(Some(key_entry));
         }
         Ok(None)
     }
 
-    fn find_entry_point_type_value(&self, value: u64, key_find: u64) -> Result<Option<til::Type>> {
+    fn find_entry_point_type_value(
+        &self,
+        value: u64,
+        key_find: u64,
+    ) -> Result<Option<til::Type>> {
         let key: Vec<u8> = b"."
             .iter()
             .copied()
@@ -594,7 +647,8 @@ impl ID0Section {
             let key = parse_number(key, true, self.is_64).unwrap();
             // TODO handle other values for the key
             if key == key_find {
-                return til::Type::new_from_id0(&entry.value, vec![]).map(Option::Some);
+                return til::Type::new_from_id0(&entry.value, vec![])
+                    .map(Option::Some);
             }
         }
         Ok(None)
@@ -631,7 +685,10 @@ impl ID0Section {
     }
 
     /// read the label set at address, if any
-    pub fn label_at(&self, id0_addr: impl Id0AddressKey) -> Result<Option<&[u8]>> {
+    pub fn label_at(
+        &self,
+        id0_addr: impl Id0AddressKey,
+    ) -> Result<Option<&[u8]>> {
         let key: Vec<u8> = key_from_address(id0_addr.as_u64(), self.is_64)
             .chain(Some(b'N'))
             .collect();
@@ -643,8 +700,8 @@ impl ID0Section {
         let key_len = key.len();
         let key = &entry.key[key_len..];
         ensure!(key.is_empty(), "Label ID0 entry with key");
-        let label =
-            parse_maybe_cstr(&entry.value).ok_or_else(|| anyhow!("Label is not valid CStr"))?;
+        let label = parse_maybe_cstr(&entry.value)
+            .ok_or_else(|| anyhow!("Label is not valid CStr"))?;
         Ok(Some(label))
     }
 
@@ -863,7 +920,8 @@ impl ID0Page {
                     let reused_key = last_key
                         .get(..indent.into())
                         .ok_or_else(|| anyhow!("key indent is too small"))?;
-                    let key: Vec<u8> = reused_key.iter().copied().chain(ext_key).collect();
+                    let key: Vec<u8> =
+                        reused_key.iter().copied().chain(ext_key).collect();
 
                     // update the last key
                     last_key.clear();
@@ -967,7 +1025,10 @@ impl ID0Page {
     }
 }
 
-pub(crate) fn key_from_address(address: u64, is_64: bool) -> impl Iterator<Item = u8> {
+pub(crate) fn key_from_address(
+    address: u64,
+    is_64: bool,
+) -> impl Iterator<Item = u8> {
     b".".iter().copied().chain(if is_64 {
         address.to_be_bytes().to_vec()
     } else {
