@@ -391,7 +391,9 @@ pub mod tf_conv_unk {
 
 /// Convenience definitions: shortcuts
 pub mod tf_shortcuts {
-    use super::{tf_bool, tf_complex, tf_conv_unk, tf_float, tf_int, tf_unk, TypeT};
+    use super::{
+        tf_bool, tf_complex, tf_conv_unk, tf_float, tf_int, tf_unk, TypeT,
+    };
     /// byte
     pub const BTF_BYTE: TypeT = tf_conv_unk::BT_UNK_BYTE;
     /// unknown
@@ -448,13 +450,16 @@ pub mod tf_shortcuts {
     pub const BTF_TBYTE: TypeT = tf_float::BT_FLOAT | tf_float::BTMT_SPECFLT;
 
     /// struct
-    pub const BTF_STRUCT: TypeT = tf_complex::BT_COMPLEX | tf_complex::BTMT_STRUCT;
+    pub const BTF_STRUCT: TypeT =
+        tf_complex::BT_COMPLEX | tf_complex::BTMT_STRUCT;
     /// union
-    pub const BTF_UNION: TypeT = tf_complex::BT_COMPLEX | tf_complex::BTMT_UNION;
+    pub const BTF_UNION: TypeT =
+        tf_complex::BT_COMPLEX | tf_complex::BTMT_UNION;
     /// enum
     pub const BTF_ENUM: TypeT = tf_complex::BT_COMPLEX | tf_complex::BTMT_ENUM;
     /// typedef
-    pub const BTF_TYPEDEF: TypeT = tf_complex::BT_COMPLEX | tf_complex::BTMT_TYPEDEF;
+    pub const BTF_TYPEDEF: TypeT =
+        tf_complex::BT_COMPLEX | tf_complex::BTMT_TYPEDEF;
 }
 
 /// Type attributes

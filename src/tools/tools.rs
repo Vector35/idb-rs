@@ -148,9 +148,9 @@ fn get_id0_section(args: &Args) -> Result<ID0Section> {
         FileType::Idb => {
             let input = BufReader::new(File::open(&args.input)?);
             let mut parser = IDBParser::new(input)?;
-            let id0_offset = parser
-                .id0_section_offset()
-                .ok_or_else(|| anyhow!("IDB file don't contains a TIL sector"))?;
+            let id0_offset = parser.id0_section_offset().ok_or_else(|| {
+                anyhow!("IDB file don't contains a TIL sector")
+            })?;
             parser.read_id0_section(id0_offset)
         }
     }
@@ -163,7 +163,9 @@ fn main() -> Result<()> {
         Operation::DumpTil => dump_til(&args),
         Operation::DumpID0 => dump_id0(&args),
         //Operation::SplitIDB(split_idbargs) => split_idb(&args, split_idbargs),
-        Operation::DecompressTil(decompress_til_args) => decompress_til(&args, decompress_til_args),
+        Operation::DecompressTil(decompress_til_args) => {
+            decompress_til(&args, decompress_til_args)
+        }
         Operation::DumpFunctions => dump_functions(&args),
         Operation::DumpSegments => dump_segments(&args),
         Operation::DumpLoaderNames => dump_loader_name(&args),
@@ -176,9 +178,15 @@ fn main() -> Result<()> {
         Operation::DumpDirtreeNames => dump_dirtree_names(&args),
         Operation::DumpDirtreeImports => dump_dirtree_imports(&args),
         Operation::DumpDirtreeBpts => dump_dirtree_bpts(&args),
-        Operation::DumpDirtreeBookmarksIdaplace => dump_dirtree_bookmarks_idaplace(&args),
-        Operation::DumpDirtreeBookmarksStructplace => dump_dirtree_bookmarks_structplace(&args),
-        Operation::DumpDirtreeBookmarksTiplace => dump_dirtree_bookmarks_tiplace(&args),
+        Operation::DumpDirtreeBookmarksIdaplace => {
+            dump_dirtree_bookmarks_idaplace(&args)
+        }
+        Operation::DumpDirtreeBookmarksStructplace => {
+            dump_dirtree_bookmarks_structplace(&args)
+        }
+        Operation::DumpDirtreeBookmarksTiplace => {
+            dump_dirtree_bookmarks_tiplace(&args)
+        }
         Operation::PrintTilib => tilib_print(&args),
     }
 }

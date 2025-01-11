@@ -7,7 +7,9 @@ use idb_rs::til::r#enum::Enum;
 use idb_rs::til::r#struct::{Struct, StructMemberAtt};
 use idb_rs::til::section::TILSection;
 use idb_rs::til::union::Union;
-use idb_rs::til::{Basic, TILTypeInfo, TILTypeSizeSolver, Type, TypeVariant, Typedef};
+use idb_rs::til::{
+    Basic, TILTypeInfo, TILTypeSizeSolver, Type, TypeVariant, Typedef,
+};
 use idb_rs::IDBParser;
 
 use std::fs::File;
@@ -26,9 +28,9 @@ pub fn tilib_print(args: &Args) -> anyhow::Result<()> {
         }
         FileType::Idb => {
             let mut parser = IDBParser::new(input)?;
-            let til_offset = parser
-                .til_section_offset()
-                .ok_or_else(|| anyhow::anyhow!("IDB file don't contains a TIL sector"))?;
+            let til_offset = parser.til_section_offset().ok_or_else(|| {
+                anyhow::anyhow!("IDB file don't contains a TIL sector")
+            })?;
             let section = parser.read_til_section(til_offset)?;
             print_til_section(std::io::stdout(), &section)?;
         }
@@ -159,7 +161,10 @@ fn print_header(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     Ok(())
 }
 
-fn print_section_flags(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
+fn print_section_flags(
+    fmt: &mut impl Write,
+    section: &TILSection,
+) -> Result<()> {
     write!(fmt, "Flags      : {:04X}", section.flags.as_raw())?;
     if section.flags.is_zip() {
         write!(fmt, " compressed")?;
@@ -212,9 +217,11 @@ fn print_symbols(
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a80
         match len.and_then(|b| u32::try_from(b).ok()) {
             Some(8) => write!(fmt, " {:016X}", symbol.ordinal)?,
-            Some(bytes @ 0..=7) => {
-                write!(fmt, " {:08X}", symbol.ordinal & !(u64::MAX << (bytes * 8)))?
-            }
+            Some(bytes @ 0..=7) => write!(
+                fmt,
+                " {:08X}",
+                symbol.ordinal & !(u64::MAX << (bytes * 8))
+            )?,
             _ => write!(fmt, " {:08X}", symbol.ordinal)?,
         }
 
@@ -234,14 +241,23 @@ fn print_symbols(
         write!(fmt, " {} ", sym_kind)?;
 
         // TODO investiage this
-        let name = if symbol.ordinal == 0 && symbol.name.first() == Some(&b'_') {
+        let name = if symbol.ordinal == 0 && symbol.name.first() == Some(&b'_')
+        {
             // remove the first "_", if any
             &symbol.name[1..]
         } else {
             &symbol.name
         };
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a3a
-        print_til_type(fmt, section, Some(name), &symbol.tinfo, true, false, true)?;
+        print_til_type(
+            fmt,
+            section,
+            Some(name),
+            &symbol.tinfo,
+            true,
+            false,
+            true,
+        )?;
         writeln!(fmt, ";")?;
     }
     Ok(())
@@ -310,7 +326,12 @@ fn print_types_by_ordinals(
         if let OrdType::Alias((_alias_ord, type_ord)) = ord_type {
             write!(fmt, "(aliased to {type_ord}) ")?;
         }
-        print_til_type_root(fmt, section, Some(&final_type.name), &final_type.tinfo)?;
+        print_til_type_root(
+            fmt,
+            section,
+            Some(&final_type.name),
+            &final_type.tinfo,
+        )?;
         writeln!(fmt, ";")?;
     }
     Ok(())
@@ -342,7 +363,9 @@ fn print_til_type_root(
     // TODO: InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4438d1
     // TODO: if a is a typedef and ComplexRef or something like it, also print typedef
     match &til_type.type_variant {
-        TypeVariant::Struct(_) | TypeVariant::Union(_) | TypeVariant::Enum(_) => {}
+        TypeVariant::Struct(_)
+        | TypeVariant::Union(_)
+        | TypeVariant::Enum(_) => {}
         TypeVariant::StructRef(Typedef::Name(None))
         | TypeVariant::UnionRef(Typedef::Name(None))
         | TypeVariant::EnumRef(Typedef::Name(None)) => {}
@@ -374,9 +397,9 @@ fn print_til_type(
             print_pointer_space,
             print_type_prefix,
         ),
-        TypeVariant::Function(function) => {
-            print_til_type_function(fmt, section, name, til_type, function, false)
-        }
+        TypeVariant::Function(function) => print_til_type_function(
+            fmt, section, name, til_type, function, false,
+        ),
         TypeVariant::Array(array) => print_til_type_array(
             fmt,
             section,
@@ -386,26 +409,45 @@ fn print_til_type(
             print_pointer_space,
             print_type_prefix,
         ),
-        TypeVariant::Typedef(ref_type) => {
-            print_til_type_typedef(fmt, section, name, til_type, ref_type, false)
+        TypeVariant::Typedef(ref_type) => print_til_type_typedef(
+            fmt, section, name, til_type, ref_type, false,
+        ),
+        TypeVariant::UnionRef(ref_type) => print_til_type_complex_ref(
+            fmt,
+            section,
+            name,
+            til_type,
+            ref_type,
+            print_type_prefix,
+        ),
+        TypeVariant::EnumRef(ref_type) => print_til_type_complex_ref(
+            fmt,
+            section,
+            name,
+            til_type,
+            ref_type,
+            print_type_prefix,
+        ),
+        TypeVariant::StructRef(ref_type) => print_til_type_complex_ref(
+            fmt,
+            section,
+            name,
+            til_type,
+            ref_type,
+            print_type_prefix,
+        ),
+        TypeVariant::Struct(til_struct) => print_til_type_struct(
+            fmt, section, name, til_type, til_struct, print_name,
+        ),
+        TypeVariant::Union(til_union) => print_til_type_union(
+            fmt, section, name, til_type, til_union, print_name,
+        ),
+        TypeVariant::Enum(til_enum) => {
+            print_til_type_enum(fmt, section, name, til_type, til_enum)
         }
-        TypeVariant::UnionRef(ref_type) => {
-            print_til_type_complex_ref(fmt, section, name, til_type, ref_type, print_type_prefix)
+        TypeVariant::Bitfield(bitfield) => {
+            print_til_type_bitfield(fmt, name, til_type, bitfield)
         }
-        TypeVariant::EnumRef(ref_type) => {
-            print_til_type_complex_ref(fmt, section, name, til_type, ref_type, print_type_prefix)
-        }
-        TypeVariant::StructRef(ref_type) => {
-            print_til_type_complex_ref(fmt, section, name, til_type, ref_type, print_type_prefix)
-        }
-        TypeVariant::Struct(til_struct) => {
-            print_til_type_struct(fmt, section, name, til_type, til_struct, print_name)
-        }
-        TypeVariant::Union(til_union) => {
-            print_til_type_union(fmt, section, name, til_type, til_union, print_name)
-        }
-        TypeVariant::Enum(til_enum) => print_til_type_enum(fmt, section, name, til_type, til_enum),
-        TypeVariant::Bitfield(bitfield) => print_til_type_bitfield(fmt, name, til_type, bitfield),
     }
 }
 
@@ -454,7 +496,9 @@ fn print_til_type_pointer(
             true,
         )?;
         // if the innertype is also a pointer, don't print the space
-        if print_pointer_space && !matches!(&pointer.typ.type_variant, TypeVariant::Pointer(_)) {
+        if print_pointer_space
+            && !matches!(&pointer.typ.type_variant, TypeVariant::Pointer(_))
+        {
             write!(fmt, " ")?;
         }
         write!(fmt, "*")?;
@@ -466,8 +510,12 @@ fn print_til_type_pointer(
         }
         match pointer.modifier {
             None => {}
-            Some(idb_rs::til::pointer::PointerModifier::Ptr32) => write!(fmt, "__ptr32 ")?,
-            Some(idb_rs::til::pointer::PointerModifier::Ptr64) => write!(fmt, "__ptr64 ")?,
+            Some(idb_rs::til::pointer::PointerModifier::Ptr32) => {
+                write!(fmt, "__ptr32 ")?
+            }
+            Some(idb_rs::til::pointer::PointerModifier::Ptr64) => {
+                write!(fmt, "__ptr64 ")?
+            }
             Some(idb_rs::til::pointer::PointerModifier::Restricted) => {
                 write!(fmt, "__restricted ")?
             }
@@ -552,7 +600,9 @@ fn print_til_type_function(
     }
 
     write!(fmt, "(")?;
-    for (i, (param_name, param, _argloc)) in til_function.args.iter().enumerate() {
+    for (i, (param_name, param, _argloc)) in
+        til_function.args.iter().enumerate()
+    {
         if i != 0 {
             write!(fmt, ", ")?;
         }
@@ -672,7 +722,14 @@ fn print_til_type_complex_ref(
             fmt.write_all(name)?;
         }
     } else {
-        print_til_type_typedef(fmt, section, name, til_type, typedef, print_prefix)?;
+        print_til_type_typedef(
+            fmt,
+            section,
+            name,
+            til_type,
+            typedef,
+            print_prefix,
+        )?;
     }
     Ok(())
 }
@@ -765,7 +822,15 @@ fn print_til_type_union(
     write!(fmt, "{{")?;
     for (member_name, member) in &til_union.members {
         let member_name = member_name.as_deref();
-        print_til_type_complex_member(fmt, section, name, member_name, member, true, true)?;
+        print_til_type_complex_member(
+            fmt,
+            section,
+            name,
+            member_name,
+            member,
+            true,
+            true,
+        )?;
         write!(fmt, ";")?;
     }
     write!(fmt, "}}")
@@ -794,7 +859,8 @@ fn print_til_type_complex_member(
             print_name,
         );
     };
-    let qualified_parent_name: Vec<_> = parent_name.iter().chain(b"::").copied().collect();
+    let qualified_parent_name: Vec<_> =
+        parent_name.iter().chain(b"::").copied().collect();
 
     // TODO if the field is named, don't embeded it?
     if name.is_some() {
@@ -830,7 +896,9 @@ fn print_til_type_complex_member(
     };
 
     let inner_type = match typedef {
-        Typedef::Ordinal(ord) => section.get_ord(Id0TilOrd { ord: (*ord).into() }).unwrap(),
+        Typedef::Ordinal(ord) => {
+            section.get_ord(Id0TilOrd { ord: (*ord).into() }).unwrap()
+        }
         Typedef::Name(None) => {
             return print_til_type(
                 fmt,
@@ -891,7 +959,10 @@ fn print_til_type_enum(
         write!(fmt, " ")?;
     }
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4443b0
-    if til_enum.storage_size.is_some() || til_enum.is_signed || til_enum.is_unsigned {
+    if til_enum.storage_size.is_some()
+        || til_enum.is_signed
+        || til_enum.is_unsigned
+    {
         let bytes = til_enum.storage_size.or(section.size_enum).unwrap();
         let signed = if til_enum.is_unsigned {
             "unsigned "
@@ -907,7 +978,9 @@ fn print_til_type_enum(
         }
         write!(fmt, " = ")?;
         match til_enum.output_format {
-            Char if *value <= 0xFF => write!(fmt, "'{}'", (*value) as u8 as char)?,
+            Char if *value <= 0xFF => {
+                write!(fmt, "'{}'", (*value) as u8 as char)?
+            }
             Char => write!(fmt, "'\\xu{value:X}'")?,
             Hex => write!(fmt, "{value:#X}")?,
             SignedDecimal => write!(fmt, "{}", (*value) as i64)?,
@@ -952,13 +1025,19 @@ fn print_til_struct_member_att(
     match &tinfo.type_variant {
         TypeVariant::Basic(_) => print_til_struct_member_basic_att(fmt, att)?,
         TypeVariant::Pointer(pointer) => match &pointer.typ.type_variant {
-            TypeVariant::Basic(Basic::Char) => print_til_struct_member_string_att(fmt, att)?,
+            TypeVariant::Basic(Basic::Char) => {
+                print_til_struct_member_string_att(fmt, att)?
+            }
             // TODO is valid for other then void?
-            TypeVariant::Basic(Basic::Void) => print_til_struct_member_void_pointer_att(fmt, att)?,
+            TypeVariant::Basic(Basic::Void) => {
+                print_til_struct_member_void_pointer_att(fmt, att)?
+            }
             _ => {}
         },
         TypeVariant::Array(array) => match &array.elem_type.type_variant {
-            TypeVariant::Basic(Basic::Char) => print_til_struct_member_string_att(fmt, att)?,
+            TypeVariant::Basic(Basic::Char) => {
+                print_til_struct_member_string_att(fmt, att)?
+            }
             _ => {}
         },
         _ => {}
@@ -967,7 +1046,10 @@ fn print_til_struct_member_att(
 }
 
 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4872f0
-fn print_til_struct_member_string_att(fmt: &mut impl Write, att: &StructMemberAtt) -> Result<()> {
+fn print_til_struct_member_string_att(
+    fmt: &mut impl Write,
+    att: &StructMemberAtt,
+) -> Result<()> {
     let Some(value) = att.str_type() else {
         // TODO don't ignore errors
         return Ok(());
@@ -1014,7 +1096,10 @@ fn print_til_struct_member_void_pointer_att(
     Ok(())
 }
 
-fn print_til_struct_member_basic_att(fmt: &mut impl Write, att: &StructMemberAtt) -> Result<()> {
+fn print_til_struct_member_basic_att(
+    fmt: &mut impl Write,
+    att: &StructMemberAtt,
+) -> Result<()> {
     // TODO incomplete implementation
     if let Some((val, is_auto)) = att.basic_offset_type() {
         write!(
@@ -1075,10 +1160,18 @@ fn print_til_struct_member_basic_att(fmt: &mut impl Write, att: &StructMemberAtt
     Ok(())
 }
 
-fn print_til_type_prefix(fmt: &mut impl Write, tinfo: &Type, with_space: bool) -> Result<()> {
+fn print_til_type_prefix(
+    fmt: &mut impl Write,
+    tinfo: &Type,
+    with_space: bool,
+) -> Result<()> {
     match &tinfo.type_variant {
-        TypeVariant::UnionRef(_) | TypeVariant::Union(_) => write!(fmt, "union")?,
-        TypeVariant::StructRef(_) | TypeVariant::Struct(_) => write!(fmt, "struct")?,
+        TypeVariant::UnionRef(_) | TypeVariant::Union(_) => {
+            write!(fmt, "union")?
+        }
+        TypeVariant::StructRef(_) | TypeVariant::Struct(_) => {
+            write!(fmt, "struct")?
+        }
         TypeVariant::EnumRef(_) | TypeVariant::Enum(_) => write!(fmt, "enum")?,
         _ => return Ok(()),
     }
@@ -1088,7 +1181,11 @@ fn print_til_type_prefix(fmt: &mut impl Write, tinfo: &Type, with_space: bool) -
     Ok(())
 }
 
-fn print_til_type_only(fmt: &mut impl Write, section: &TILSection, tinfo: &Type) -> Result<()> {
+fn print_til_type_only(
+    fmt: &mut impl Write,
+    section: &TILSection,
+    tinfo: &Type,
+) -> Result<()> {
     match &tinfo.type_variant {
         TypeVariant::Typedef(Typedef::Name(Some(name))) => {
             fmt.write_all(name)?;
@@ -1194,7 +1291,9 @@ fn is_vft(section: &TILSection, typ: &Type) -> bool {
         TypeVariant::Struct(ty) => ty.is_vft,
         TypeVariant::Typedef(typedef) | TypeVariant::StructRef(typedef) => {
             let inner_type = match typedef {
-                Typedef::Ordinal(ord) => section.get_ord(Id0TilOrd { ord: (*ord).into() }),
+                Typedef::Ordinal(ord) => {
+                    section.get_ord(Id0TilOrd { ord: (*ord).into() })
+                }
                 Typedef::Name(None) => return false,
                 Typedef::Name(Some(name)) => section.get_name(name),
             };
@@ -1218,7 +1317,9 @@ fn print_basic_type(fmt: &mut impl Write, til_basic: &Basic) -> Result<()> {
     match til_basic {
         Basic::Bool => write!(fmt, "bool")?,
         Basic::Char => write!(fmt, "char")?,
-        Basic::Short { is_signed } => write!(fmt, "{}short", signed_name(*is_signed))?,
+        Basic::Short { is_signed } => {
+            write!(fmt, "{}short", signed_name(*is_signed))?
+        }
         Basic::Void => write!(fmt, "void")?,
         Basic::SegReg => write!(fmt, "SegReg")?,
         Basic::Unknown { bytes: 1 } => write!(fmt, "_BYTE")?,
@@ -1226,9 +1327,15 @@ fn print_basic_type(fmt: &mut impl Write, til_basic: &Basic) -> Result<()> {
         Basic::Unknown { bytes: 4 } => write!(fmt, "_DWORD")?,
         Basic::Unknown { bytes: 8 } => write!(fmt, "_QWORD")?,
         Basic::Unknown { bytes } => write!(fmt, "unknown{bytes}")?,
-        Basic::Int { is_signed } => write!(fmt, "{}int", signed_name(*is_signed))?,
-        Basic::Long { is_signed } => write!(fmt, "{}long", signed_name(*is_signed))?,
-        Basic::LongLong { is_signed } => write!(fmt, "{}longlong", signed_name(*is_signed))?,
+        Basic::Int { is_signed } => {
+            write!(fmt, "{}int", signed_name(*is_signed))?
+        }
+        Basic::Long { is_signed } => {
+            write!(fmt, "{}long", signed_name(*is_signed))?
+        }
+        Basic::LongLong { is_signed } => {
+            write!(fmt, "{}longlong", signed_name(*is_signed))?
+        }
         Basic::IntSized { bytes, is_signed } => {
             if let Some(false) = is_signed {
                 write!(fmt, "unsigned ")?;

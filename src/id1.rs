@@ -33,7 +33,10 @@ impl ID1Section {
         }
     }
 
-    fn read_inner(input: &mut impl IdaGenericUnpack, header: &IDBHeader) -> Result<Self> {
+    fn read_inner(
+        input: &mut impl IdaGenericUnpack,
+        header: &IDBHeader,
+    ) -> Result<Self> {
         // TODO pages are always 0x2000?
         const PAGE_SIZE: usize = 0x2000;
         let mut buf = vec![0; PAGE_SIZE];
@@ -41,8 +44,13 @@ impl ID1Section {
         let mut header_page = &buf[..];
         let version = VaVersion::read(&mut header_page)?;
         let (npages, seglist_raw) = match version {
-            VaVersion::Va0 | VaVersion::Va1 | VaVersion::Va2 | VaVersion::Va3 | VaVersion::Va4 => {
-                let nsegments: u16 = bincode::deserialize_from(&mut header_page)?;
+            VaVersion::Va0
+            | VaVersion::Va1
+            | VaVersion::Va2
+            | VaVersion::Va3
+            | VaVersion::Va4 => {
+                let nsegments: u16 =
+                    bincode::deserialize_from(&mut header_page)?;
                 let npages: u16 = bincode::deserialize_from(&mut header_page)?;
                 ensure!(
                     npages > 0,
@@ -52,13 +60,19 @@ impl ID1Section {
 
                 // TODO the reference code uses the magic version, should it use
                 // the version itself instead?
-                let seglist: Vec<SegInfoVaNRaw> = if header.magic_version.is_64() {
+                let seglist: Vec<SegInfoVaNRaw> = if header
+                    .magic_version
+                    .is_64()
+                {
                     (0..nsegments)
                         .map(|_| {
-                            let start: u64 = bincode::deserialize_from(&mut header_page)?;
-                            let end: u64 = bincode::deserialize_from(&mut header_page)?;
+                            let start: u64 =
+                                bincode::deserialize_from(&mut header_page)?;
+                            let end: u64 =
+                                bincode::deserialize_from(&mut header_page)?;
                             ensure!(start <= end);
-                            let offset: u64 = bincode::deserialize_from(&mut header_page)?;
+                            let offset: u64 =
+                                bincode::deserialize_from(&mut header_page)?;
                             Ok(SegInfoVaNRaw {
                                 address: start..end,
                                 offset,
@@ -68,10 +82,13 @@ impl ID1Section {
                 } else {
                     (0..nsegments)
                         .map(|_| {
-                            let start: u32 = bincode::deserialize_from(&mut header_page)?;
-                            let end: u32 = bincode::deserialize_from(&mut header_page)?;
+                            let start: u32 =
+                                bincode::deserialize_from(&mut header_page)?;
+                            let end: u32 =
+                                bincode::deserialize_from(&mut header_page)?;
                             ensure!(start <= end);
-                            let offset: u32 = bincode::deserialize_from(&mut header_page)?;
+                            let offset: u32 =
+                                bincode::deserialize_from(&mut header_page)?;
                             Ok(SegInfoVaNRaw {
                                 address: start.into()..end.into(),
                                 offset: offset.into(),
@@ -82,10 +99,13 @@ impl ID1Section {
                 (u32::from(npages), SegInfoRaw::VaN(seglist))
             }
             VaVersion::VaX => {
-                let unknown_always3: u32 = bincode::deserialize_from(&mut header_page)?;
+                let unknown_always3: u32 =
+                    bincode::deserialize_from(&mut header_page)?;
                 ensure!(unknown_always3 == 3);
-                let nsegments: u32 = bincode::deserialize_from(&mut header_page)?;
-                let unknown_always2048: u32 = bincode::deserialize_from(&mut header_page)?;
+                let nsegments: u32 =
+                    bincode::deserialize_from(&mut header_page)?;
+                let unknown_always2048: u32 =
+                    bincode::deserialize_from(&mut header_page)?;
                 ensure!(unknown_always2048 == 2048);
                 let npages: u32 = bincode::deserialize_from(&mut header_page)?;
 
@@ -95,8 +115,12 @@ impl ID1Section {
                     .map(|_| {
                         let (start, end) = match header.magic_version {
                             crate::IDBMagic::IDA0 | crate::IDBMagic::IDA1 => {
-                                let startea: u32 = bincode::deserialize_from(&mut header_page)?;
-                                let endea: u32 = bincode::deserialize_from(&mut header_page)?;
+                                let startea: u32 = bincode::deserialize_from(
+                                    &mut header_page,
+                                )?;
+                                let endea: u32 = bincode::deserialize_from(
+                                    &mut header_page,
+                                )?;
                                 (startea.into(), endea.into())
                             }
                             crate::IDBMagic::IDA2 => (
@@ -116,7 +140,9 @@ impl ID1Section {
 
         // sort segments by address
         let mut overlay_check = match &seglist_raw {
-            SegInfoRaw::VaN(segs) => segs.iter().map(|s| s.address.clone()).collect(),
+            SegInfoRaw::VaN(segs) => {
+                segs.iter().map(|s| s.address.clone()).collect()
+            }
             SegInfoRaw::VaX(segs) => segs.clone(),
         };
         overlay_check.sort_unstable_by_key(|s| s.start);
@@ -129,8 +155,10 @@ impl ID1Section {
         ensure!(!overlap);
 
         // make sure the data fits the available pages
-        let required_size: u64 = overlay_check.iter().map(|s| (s.end - s.start) * 4).sum();
-        let required_pages = required_size.div_ceil(u64::try_from(PAGE_SIZE).unwrap());
+        let required_size: u64 =
+            overlay_check.iter().map(|s| (s.end - s.start) * 4).sum();
+        let required_pages =
+            required_size.div_ceil(u64::try_from(PAGE_SIZE).unwrap());
         // TODO if the extra data at the end of the section is identified, review replacing <= with ==
         // -1 because the first page is always the header
         ensure!(required_pages <= u64::from(npages - 1));
@@ -145,12 +173,17 @@ impl ID1Section {
                     .map(|seg| {
                         // skip any gaps
                         match seg.offset.cmp(&current_offset) {
-                            std::cmp::Ordering::Less => return Err(anyhow!("invalid offset")),
+                            std::cmp::Ordering::Less => {
+                                return Err(anyhow!("invalid offset"))
+                            }
                             std::cmp::Ordering::Greater => {
                                 // TODO can be any deleted sector contains randon data?
                                 // skip intermidiate bytes, also ensuring they are all zeros
                                 ensure_all_bytes_are_zero(
-                                    std::io::Read::take(&mut *input, seg.offset - current_offset),
+                                    std::io::Read::take(
+                                        &mut *input,
+                                        seg.offset - current_offset,
+                                    ),
                                     &mut buf,
                                 )?;
                                 current_offset = seg.offset;
@@ -158,7 +191,8 @@ impl ID1Section {
                             std::cmp::Ordering::Equal => {}
                         }
                         let len = seg.address.end - seg.address.start;
-                        let (data, _flags) = split_flags_data(&mut *input, len)?;
+                        let (data, _flags) =
+                            split_flags_data(&mut *input, len)?;
                         current_offset += len * 4;
                         Ok(SegInfo {
                             offset: seg.address.start,
@@ -172,8 +206,10 @@ impl ID1Section {
                 // the data for the segments are stored sequentialy in disk
                 segs.into_iter()
                     .map(|address| {
-                        let (data, _flags) =
-                            split_flags_data(&mut *input, address.end - address.start)?;
+                        let (data, _flags) = split_flags_data(
+                            &mut *input,
+                            address.end - address.start,
+                        )?;
                         Ok(SegInfo {
                             offset: address.start,
                             data,
@@ -206,7 +242,10 @@ struct SegInfoVaNRaw {
     offset: u64,
 }
 
-fn ensure_all_bytes_are_zero(mut input: impl IdaGenericUnpack, buf: &mut [u8]) -> Result<()> {
+fn ensure_all_bytes_are_zero(
+    mut input: impl IdaGenericUnpack,
+    buf: &mut [u8],
+) -> Result<()> {
     loop {
         match input.read(buf) {
             // found EoF
@@ -214,14 +253,18 @@ fn ensure_all_bytes_are_zero(mut input: impl IdaGenericUnpack, buf: &mut [u8]) -
             // read something
             Ok(n) => ensure!(&buf[..n].iter().all(|b| *b == 0)),
             // ignore interrupts
-            Err(ref e) if matches!(e.kind(), std::io::ErrorKind::Interrupted) => {}
+            Err(ref e)
+                if matches!(e.kind(), std::io::ErrorKind::Interrupted) => {}
             Err(e) => return Err(e.into()),
         };
     }
     Ok(())
 }
 
-fn ignore_bytes(mut input: impl IdaGenericUnpack, buf: &mut [u8]) -> Result<()> {
+fn ignore_bytes(
+    mut input: impl IdaGenericUnpack,
+    buf: &mut [u8],
+) -> Result<()> {
     loop {
         match input.read(buf) {
             // found EoF
@@ -229,19 +272,26 @@ fn ignore_bytes(mut input: impl IdaGenericUnpack, buf: &mut [u8]) -> Result<()> 
             // read something
             Ok(_n) => {}
             // ignore interrupts
-            Err(ref e) if matches!(e.kind(), std::io::ErrorKind::Interrupted) => {}
+            Err(ref e)
+                if matches!(e.kind(), std::io::ErrorKind::Interrupted) => {}
             Err(e) => return Err(e.into()),
         };
     }
     Ok(())
 }
 
-fn split_flags_data(mut input: impl IdaGenericUnpack, len: u64) -> Result<(Vec<u8>, Vec<u32>)> {
+fn split_flags_data(
+    mut input: impl IdaGenericUnpack,
+    len: u64,
+) -> Result<(Vec<u8>, Vec<u32>)> {
     let len = usize::try_from(len).unwrap();
     let mut flags = vec![0u32; len];
     // SAFETY: don't worry &mut[u32] is compatible with &mut[u8] with len * 4
     input.read_exact(unsafe {
-        &mut *core::slice::from_raw_parts_mut(flags.as_mut_ptr() as *mut u8, len * 4)
+        &mut *core::slice::from_raw_parts_mut(
+            flags.as_mut_ptr() as *mut u8,
+            len * 4,
+        )
     })?;
     // extract the bytes into other vector and leave the flags there
     let data = flags

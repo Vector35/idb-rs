@@ -14,9 +14,9 @@ pub fn dump_til(args: &Args) -> Result<()> {
         FileType::Idb => {
             let input = BufReader::new(File::open(&args.input)?);
             let mut parser = IDBParser::new(input)?;
-            let til_offset = parser
-                .til_section_offset()
-                .ok_or_else(|| anyhow!("IDB file don't contains a TIL sector"))?;
+            let til_offset = parser.til_section_offset().ok_or_else(|| {
+                anyhow!("IDB file don't contains a TIL sector")
+            })?;
             parser.read_til_section(til_offset)?
         }
         FileType::Til => {
@@ -94,8 +94,12 @@ pub fn dump_til(args: &Args) -> Result<()> {
             let value: String = value
                 .iter()
                 .map(|c| match c {
-                    idb_rs::til::TILMacroValue::Char(c) => format!("{}", *c as char),
-                    idb_rs::til::TILMacroValue::Param(param) => format!("{{P{}}}", *param),
+                    idb_rs::til::TILMacroValue::Char(c) => {
+                        format!("{}", *c as char)
+                    }
+                    idb_rs::til::TILMacroValue::Param(param) => {
+                        format!("{{P{}}}", *param)
+                    }
                 })
                 .collect();
             println!("------------------------------`{name}`------------------------------");

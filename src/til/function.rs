@@ -153,7 +153,11 @@ impl FunctionRaw {
         let is_static = flags_lower & BFA_STATIC != 0;
         let is_virtual = flags_lower & BFA_VIRTUAL != 0;
         #[cfg(feature = "restrictive")]
-        ensure!(flags_lower & !(BFA_NORET | BFA_PURE | BFA_HIGH | BFA_STATIC | BFA_VIRTUAL) == 0);
+        ensure!(
+            flags_lower
+                & !(BFA_NORET | BFA_PURE | BFA_HIGH | BFA_STATIC | BFA_VIRTUAL)
+                == 0
+        );
 
         // TODO find those flags
         const BFA_CONST: u8 = 0x4;
@@ -164,13 +168,17 @@ impl FunctionRaw {
         let is_constructor = flags_upper & BFA_CONSTRUCTOR != 0;
         let is_destructor = flags_upper & BFA_DESTRUCTOR != 0;
         #[cfg(feature = "restrictive")]
-        ensure!(flags_upper & !(BFA_CONST | BFA_CONSTRUCTOR | BFA_DESTRUCTOR) == 0);
+        ensure!(
+            flags_upper & !(BFA_CONST | BFA_CONSTRUCTOR | BFA_DESTRUCTOR) == 0
+        );
 
-        let ret = TypeRaw::read(&mut *input, header).context("Return Argument")?;
+        let ret =
+            TypeRaw::read(&mut *input, header).context("Return Argument")?;
         // TODO double check documentation for [flag::tf_func::BT_FUN]
-        let is_special_pe = cc.map(CallingConvention::is_special_pe).unwrap_or(false);
-        let have_retloc =
-            is_special_pe && !matches!(&ret.variant, TypeVariantRaw::Basic(Basic::Void));
+        let is_special_pe =
+            cc.map(CallingConvention::is_special_pe).unwrap_or(false);
+        let have_retloc = is_special_pe
+            && !matches!(&ret.variant, TypeVariantRaw::Basic(Basic::Void));
         let retloc = have_retloc
             .then(|| ArgLoc::read(&mut *input))
             .transpose()
@@ -278,7 +286,9 @@ impl ArgLoc {
                     Ok(Self::Static(sval))
                 }
                 #[cfg(feature = "restrictive")]
-                ALOC_CUSTOM.. => Err(anyhow!("Custom implementation for ArgLoc")),
+                ALOC_CUSTOM.. => {
+                    Err(anyhow!("Custom implementation for ArgLoc"))
+                }
                 #[cfg(not(feature = "restrictive"))]
                 ALOC_CUSTOM.. => Ok(Self::None),
             }
@@ -323,9 +333,15 @@ impl CallingConvention {
 
         Ok(Some(match cm & CM_CC_MASK {
             // !ERR(spoil)!
-            CM_CC_SPOILED => return Err(anyhow!("Unexpected Spoiled Function Calling Convention")),
+            CM_CC_SPOILED => {
+                return Err(anyhow!(
+                    "Unexpected Spoiled Function Calling Convention"
+                ))
+            }
             // this is an invalid value
-            CM_CC_INVALID => return Err(anyhow!("Invalid Function Calling Convention")),
+            CM_CC_INVALID => {
+                return Err(anyhow!("Invalid Function Calling Convention"))
+            }
             CM_CC_UNKNOWN => return Ok(None),
             CM_CC_VOIDARG => Self::Voidarg,
             CM_CC_CDECL => Self::Cdecl,
@@ -457,7 +473,9 @@ pub enum CallMethod {
 
 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x476e60
 /// [BT_FUNC](https://hex-rays.com/products/ida/support/sdkdoc/group__tf__func.html#ga7b7fee21f21237beb6d91e854410e0fa)
-fn read_cc(input: &mut impl IdaGenericBufUnpack) -> Result<(u8, u16, Vec<(u16, u8)>)> {
+fn read_cc(
+    input: &mut impl IdaGenericBufUnpack,
+) -> Result<(u8, u16, Vec<(u16, u8)>)> {
     let mut cc = input.read_u8()?;
     // TODO find the flag for that
     if cc & 0xF0 != 0xA0 {

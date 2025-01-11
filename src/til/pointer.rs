@@ -23,7 +23,8 @@ impl Pointer {
             .map(|(t, v)| -> Result<_> {
                 Ok((
                     // TODO if this type allow non typedef, this may consume fields
-                    Type::new(til, *t, &mut vec![].into_iter()).map(Box::new)?,
+                    Type::new(til, *t, &mut vec![].into_iter())
+                        .map(Box::new)?,
                     v,
                 ))
             })
@@ -116,7 +117,8 @@ impl PointerRaw {
                 let ptr_type = tattr & TAPTR_RESTRICT;
                 #[cfg(feature = "restrictive")]
                 anyhow::ensure!(
-                    tattr & !(TAPTR_SHIFTED | TAPTR_RESTRICT | MAX_DECL_ALIGN) == 0,
+                    tattr & !(TAPTR_SHIFTED | TAPTR_RESTRICT | MAX_DECL_ALIGN)
+                        == 0,
                     "Invalid Pointer taenum_bits {tattr:x}"
                 );
                 if let Some(_extended) = _extended {
@@ -170,7 +172,10 @@ pub(crate) enum PointerTypeRaw {
 }
 
 impl PointerTypeRaw {
-    fn read(input: &mut impl IdaGenericBufUnpack, header: &TILSectionHeader) -> Result<Self> {
+    fn read(
+        input: &mut impl IdaGenericBufUnpack,
+        header: &TILSectionHeader,
+    ) -> Result<Self> {
         let closure_type = input.read_u8()?;
         if closure_type == 0xFF {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473b5a

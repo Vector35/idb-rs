@@ -32,13 +32,18 @@ impl<'a> Comments<'a> {
     }
 }
 
-pub(crate) struct SectionAddressInfoIter<'a, I: Iterator<Item = Result<IDBFileRegions>>> {
+pub(crate) struct SectionAddressInfoIter<
+    'a,
+    I: Iterator<Item = Result<IDBFileRegions>>,
+> {
     all_entries: &'a [ID0Entry],
     regions: I,
     current_region: AddressInfoIter<'a>,
 }
 
-impl<'a, I: Iterator<Item = Result<IDBFileRegions>>> SectionAddressInfoIter<'a, I> {
+impl<'a, I: Iterator<Item = Result<IDBFileRegions>>>
+    SectionAddressInfoIter<'a, I>
+{
     pub fn new(all_entries: &'a [ID0Entry], regions: I, is_64: bool) -> Self {
         Self {
             all_entries,
@@ -64,8 +69,10 @@ impl<'a, I: Iterator<Item = Result<IDBFileRegions>> + 'a> Iterator
                 Some(Err(err)) => return Some(Err(err)),
             };
             let is_64 = self.current_region.is_64;
-            let start_key: Vec<u8> = crate::id0::key_from_address(region.start, is_64).collect();
-            let end_key: Vec<u8> = crate::id0::key_from_address(region.end, is_64).collect();
+            let start_key: Vec<u8> =
+                crate::id0::key_from_address(region.start, is_64).collect();
+            let end_key: Vec<u8> =
+                crate::id0::key_from_address(region.end, is_64).collect();
             let start = self
                 .all_entries
                 .binary_search_by_key(&&start_key[..], |b| &b.key[..])
@@ -105,9 +112,12 @@ impl<'a> Iterator for AddressInfoIter<'a> {
         // 1.. because it starts with '.'
         let addr_len = if self.is_64 { 8 } else { 4 };
         let key_start = addr_len + 1;
-        let address = super::parse_number(&current.key[1..key_start], true, self.is_64).unwrap();
+        let address =
+            super::parse_number(&current.key[1..key_start], true, self.is_64)
+                .unwrap();
         let key = &current.key[key_start..];
-        let Some((sub_type, id_value)) = id_subkey_from_idx(key, self.is_64) else {
+        let Some((sub_type, id_value)) = id_subkey_from_idx(key, self.is_64)
+        else {
             return Some(Err(anyhow!("Missing SubType")));
         };
 

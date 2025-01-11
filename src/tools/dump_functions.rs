@@ -75,7 +75,9 @@ pub fn dump_functions(args: &Args) -> Result<()> {
                 print!("  {:#x}:", address.as_u64());
                 print_function(&id0, address)?
             }
-            idb_rs::id0::DirTreeEntry::Directory { name: _, entries } => buffer.extend(entries),
+            idb_rs::id0::DirTreeEntry::Directory { name: _, entries } => {
+                buffer.extend(entries)
+            }
         }
     }
 

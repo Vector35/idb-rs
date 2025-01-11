@@ -211,8 +211,8 @@ impl IDBParam {
         let mut cpu = vec![0; cpu_len];
         input.read_exact(&mut cpu)?;
         // remove any \x00 that marks the end of the str
-        let cpu_str_part =
-            parse_maybe_cstr(&cpu[..]).ok_or_else(|| anyhow!("Invalid RootInfo CStr cpu name"))?;
+        let cpu_str_part = parse_maybe_cstr(&cpu[..])
+            .ok_or_else(|| anyhow!("Invalid RootInfo CStr cpu name"))?;
         cpu.truncate(cpu_str_part.len());
 
         // TODO tight those ranges up
@@ -223,7 +223,10 @@ impl IDBParam {
         match version {
             // TODO old version may contain extra data at the end with unknown purpose
             ..=699 => {}
-            700.. => ensure!(input.inner().is_empty(), "Data left after the IDBParam",),
+            700.. => ensure!(
+                input.inner().is_empty(),
+                "Data left after the IDBParam",
+            ),
         }
         Ok(param)
     }
@@ -449,7 +452,8 @@ impl IDBParam {
         }
 
         let nametype = input.read_u8()?;
-        let nametype = NameType::new(nametype).ok_or_else(|| anyhow!("Invalid NameType value"))?;
+        let nametype = NameType::new(nametype)
+            .ok_or_else(|| anyhow!("Invalid NameType value"))?;
         let short_demnames = input.unpack_dd()?;
         let long_demnames = input.unpack_dd()?;
         let demnames = DemName::new(input.read_u8()?)?;

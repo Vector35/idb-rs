@@ -34,7 +34,14 @@ impl Struct {
         let members = value
             .members
             .into_iter()
-            .map(|member| StructMember::new(til, fields.next().flatten(), member, &mut *fields))
+            .map(|member| {
+                StructMember::new(
+                    til,
+                    fields.next().flatten(),
+                    member,
+                    &mut *fields,
+                )
+            })
             .collect::<Result<_>>()?;
         Ok(Struct {
             effective_alignment: value.effective_alignment,
@@ -89,7 +96,8 @@ impl StructRaw {
         let mem_cnt = n >> 3;
         // TODO what is effective_alignment and how it's diferent from Modifier alignment?
         let alpow = n & 7;
-        let effective_alignment = (alpow != 0).then(|| NonZeroU8::new(1 << (alpow - 1)).unwrap());
+        let effective_alignment =
+            (alpow != 0).then(|| NonZeroU8::new(1 << (alpow - 1)).unwrap());
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459c97
         let mut alignment = None;
         let mut is_unknown_8 = false;
@@ -146,8 +154,13 @@ impl StructRaw {
 
         let members = (0..mem_cnt)
             .map(|i| {
-                StructMemberRaw::read(&mut *input, header, is_method, is_bitset2)
-                    .with_context(|| format!("Member {i}"))
+                StructMemberRaw::read(
+                    &mut *input,
+                    header,
+                    is_method,
+                    is_bitset2,
+                )
+                .with_context(|| format!("Member {i}"))
             })
             .collect::<Result<_, _>>()?;
 
@@ -244,12 +257,16 @@ impl StructMemberRaw {
 
                 let alignment_raw = (tattr & MAX_DECL_ALIGN) as u8;
                 is_unknown_8 = alignment_raw & 0x8 != 0;
-                alignment = ((alignment_raw & 0x7) != 0)
-                    .then(|| NonZeroU8::new(1 << ((alignment_raw & 0x7) - 1)).unwrap());
+                alignment = ((alignment_raw & 0x7) != 0).then(|| {
+                    NonZeroU8::new(1 << ((alignment_raw & 0x7) - 1)).unwrap()
+                });
                 is_baseclass = tattr & TAFLD_BASECLASS != 0;
                 is_unaligned = tattr & TAFLD_UNALIGNED != 0;
                 let is_virtbase = tattr & TAFLD_VIRTBASE != 0;
-                ensure!(!is_virtbase, "UDT Member virtual base is not supported yet");
+                ensure!(
+                    !is_virtbase,
+                    "UDT Member virtual base is not supported yet"
+                );
                 is_vft = tattr & TAFLD_VFTABLE != 0;
                 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
                 is_method = tattr & TAFLD_METHOD != 0;
@@ -298,7 +315,9 @@ impl StructMemberRaw {
         let att = input.read_ext_att()?;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486d0d
         match att & 0xf {
-            0xd..=0xf => Err(anyhow!("Invalid value for member attribute {att:#x}")),
+            0xd..=0xf => {
+                Err(anyhow!("Invalid value for member attribute {att:#x}"))
+            }
             0..=7 => Ok(StructMemberAtt::Var0to7(Self::basic_att(input, att)?)),
             8 | 0xb => todo!(),
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486d3f
@@ -329,7 +348,10 @@ impl StructMemberRaw {
         }
     }
 
-    fn basic_att(input: &mut impl IdaGenericBufUnpack, att: u64) -> Result<StructMemberAttBasic> {
+    fn basic_att(
+        input: &mut impl IdaGenericBufUnpack,
+        att: u64,
+    ) -> Result<StructMemberAttBasic> {
         if (att >> 8) & 0x10 != 0 {
             // TODO this is diferent from the implementation, double check the read_de and this code
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486df0
@@ -413,7 +435,9 @@ impl StructMemberAtt {
                 val1,
                 val2,
                 val3: u32::MAX,
-            }) if att & 0x1000 != 0 => ExtAttBasic::from_raw(att & !0x1000, Some((val1, val2))),
+            }) if att & 0x1000 != 0 => {
+                ExtAttBasic::from_raw(att & !0x1000, Some((val1, val2)))
+            }
             _ => None,
         }
     }
@@ -513,7 +537,10 @@ impl ExtAttBasic {
         let is_lzero = value & 0x800 != 0;
 
         let tabform = val1.map(|(val1, val2)| {
-            let val1 = ExtAttBasicTabformVal1::try_from_primitive(val1.try_into().ok()?).ok()?;
+            let val1 = ExtAttBasicTabformVal1::try_from_primitive(
+                val1.try_into().ok()?,
+            )
+            .ok()?;
             Some(ExtAttBasicTabform { val1, val2 })
         });
         let tabform = match tabform {

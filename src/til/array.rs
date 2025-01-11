@@ -21,7 +21,8 @@ impl Array {
             alignment: value.alignment,
             base: value.base,
             nelem: value.nelem,
-            elem_type: Type::new(til, *value.elem_type, fields).map(Box::new)?,
+            elem_type: Type::new(til, *value.elem_type, fields)
+                .map(Box::new)?,
         })
     }
 }
@@ -64,8 +65,9 @@ impl ArrayRaw {
             let _is_unknown_8 = alignment_raw & 0x8 != 0;
             #[cfg(feature = "restrictive")]
             anyhow::ensure!(!_is_unknown_8, "Unknown flat 8 set on Array");
-            alignment = ((alignment_raw & 0x7) != 0)
-                .then(|| NonZeroU8::new(1 << ((alignment_raw & 0x7) - 1)).unwrap());
+            alignment = ((alignment_raw & 0x7) != 0).then(|| {
+                NonZeroU8::new(1 << ((alignment_raw & 0x7) - 1)).unwrap()
+            });
             #[cfg(feature = "restrictive")]
             anyhow::ensure!(
                 tattr & !MAX_DECL_ALIGN == 0,

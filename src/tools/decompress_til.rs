@@ -14,16 +14,20 @@ pub fn decompress_til(args: &Args, til_args: &DecompressTilArgs) -> Result<()> {
         FileType::Idb => {
             let input = BufReader::new(File::open(&args.input)?);
             let mut parser = IDBParser::new(input)?;
-            let til_offset = parser
-                .til_section_offset()
-                .ok_or_else(|| anyhow!("IDB file don't contains a TIL sector"))?;
+            let til_offset = parser.til_section_offset().ok_or_else(|| {
+                anyhow!("IDB file don't contains a TIL sector")
+            })?;
             // TODO make decompress til public
             parser.decompress_til_section(til_offset, &mut output)
         }
         FileType::Til => {
             let mut input = BufReader::new(File::open(&args.input)?);
             // TODO make decompress til public
-            TILSection::decompress(&mut input, &mut output, idb_rs::IDBSectionCompression::None)
+            TILSection::decompress(
+                &mut input,
+                &mut output,
+                idb_rs::IDBSectionCompression::None,
+            )
         }
     }
 }

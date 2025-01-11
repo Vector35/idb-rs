@@ -27,7 +27,10 @@ pub struct Bitfield {
 }
 
 impl Bitfield {
-    pub(crate) fn read(input: &mut impl IdaGenericBufUnpack, metadata: u8) -> Result<Self> {
+    pub(crate) fn read(
+        input: &mut impl IdaGenericBufUnpack,
+        metadata: u8,
+    ) -> Result<Self> {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x472f3c print_til_type
         let nbytes = match metadata {
             super::flag::tf_complex::BTMT_BFLDI8 => 1,
@@ -46,7 +49,10 @@ impl Bitfield {
                 extended: _extended,
             }) => {
                 #[cfg(feature = "restrictive")]
-                anyhow::ensure!(_tattr == 0, "Unknown TypeAttribute {_tattr:x}");
+                anyhow::ensure!(
+                    _tattr == 0,
+                    "Unknown TypeAttribute {_tattr:x}"
+                );
                 #[cfg(feature = "restrictive")]
                 anyhow::ensure!(
                     _extended.is_none(),
