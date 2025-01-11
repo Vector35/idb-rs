@@ -254,6 +254,7 @@ fn print_symbols(
             section,
             Some(name),
             &symbol.tinfo,
+            false,
             true,
             false,
             true,
@@ -372,7 +373,7 @@ fn print_til_type_root(
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x443906
         _ => write!(fmt, "typedef ")?,
     }
-    print_til_type(fmt, section, name, til_type, true, true, true)
+    print_til_type(fmt, section, name, til_type, false, true, true, true)
 }
 
 fn print_til_type(
@@ -380,6 +381,7 @@ fn print_til_type(
     section: &TILSection,
     name: Option<&[u8]>,
     til_type: &Type,
+    is_vft: bool,
     print_pointer_space: bool,
     print_type_prefix: bool,
     print_name: bool,
@@ -394,6 +396,7 @@ fn print_til_type(
             name,
             til_type,
             pointer,
+            is_vft,
             print_pointer_space,
             print_type_prefix,
         ),
@@ -478,6 +481,7 @@ fn print_til_type_pointer(
     name: Option<&[u8]>,
     til_type: &Type,
     pointer: &Pointer,
+    is_vft_parent: bool,
     print_pointer_space: bool,
     print_type_prefix: bool,
 ) -> Result<()> {
@@ -491,6 +495,7 @@ fn print_til_type_pointer(
             section,
             None,
             &pointer.typ,
+            is_vft_parent,
             print_pointer_space,
             print_type_prefix,
             true,
@@ -530,7 +535,9 @@ fn print_til_type_pointer(
         }
 
         // if the pointed type itself is a VFT then the pointer need to print that
-        if is_vft(section, &pointer.typ) {
+        // TODO maybe the above is not ture, it it was inheritec from the
+        // struct member att
+        if is_vft_parent || is_vft(section, &pointer.typ) {
             write!(fmt, " /*VFT*/")?;
         }
     }
@@ -552,7 +559,16 @@ fn print_til_type_function(
         write!(fmt, "const ")?;
     }
     // return type
-    print_til_type(fmt, section, None, &til_function.ret, true, true, true)?;
+    print_til_type(
+        fmt,
+        section,
+        None,
+        &til_function.ret,
+        false,
+        true,
+        true,
+        true,
+    )?;
     if !matches!(&til_function.ret.type_variant, TypeVariant::Pointer(_)) {
         write!(fmt, " ")?;
     }
@@ -607,7 +623,9 @@ fn print_til_type_function(
             write!(fmt, ", ")?;
         }
         let param_name = param_name.as_ref().map(Vec::as_slice);
-        print_til_type(fmt, section, param_name, param, true, false, true)?;
+        print_til_type(
+            fmt, section, param_name, param, false, true, false, true,
+        )?;
     }
     match til_function.calling_convention {
         Some(CallingConvention::Voidarg) => write!(fmt, "void")?,
@@ -642,6 +660,7 @@ fn print_til_type_array(
         section,
         None,
         &til_array.elem_type,
+        false,
         print_pointer_space,
         print_type_prefix,
         true,
@@ -784,6 +803,7 @@ fn print_til_type_struct(
                     section,
                     None,
                     &baseclass.member_type,
+                    baseclass.is_vft,
                     true,
                     true,
                     false,
@@ -803,6 +823,7 @@ fn print_til_type_struct(
             name,
             member_name,
             &member.member_type,
+            member.is_vft,
             true,
             true,
         )?;
@@ -841,6 +862,7 @@ fn print_til_type_union(
             name,
             member_name,
             member,
+            false,
             true,
             true,
         )?;
@@ -856,6 +878,7 @@ fn print_til_type_complex_member(
     parent_name: Option<&[u8]>,
     name: Option<&[u8]>,
     til: &Type,
+    is_vft: bool,
     print_pointer_space: bool,
     print_name: bool,
 ) -> Result<()> {
@@ -867,6 +890,7 @@ fn print_til_type_complex_member(
             section,
             name,
             til,
+            is_vft,
             print_pointer_space,
             true,
             print_name,
@@ -882,6 +906,7 @@ fn print_til_type_complex_member(
             section,
             name,
             til,
+            is_vft,
             print_pointer_space,
             true,
             print_name,
@@ -901,6 +926,7 @@ fn print_til_type_complex_member(
                 section,
                 name,
                 til,
+                is_vft,
                 print_pointer_space,
                 true,
                 print_name,
@@ -918,6 +944,7 @@ fn print_til_type_complex_member(
                 section,
                 name,
                 til,
+                is_vft,
                 print_pointer_space,
                 true,
                 print_name,
@@ -934,6 +961,7 @@ fn print_til_type_complex_member(
             section,
             name,
             til,
+            is_vft,
             print_pointer_space,
             true,
             print_name,
@@ -945,6 +973,7 @@ fn print_til_type_complex_member(
         section,
         Some(&inner_type.name),
         &inner_type.tinfo,
+        is_vft,
         print_pointer_space,
         true,
         false,
