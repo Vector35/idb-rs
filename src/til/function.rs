@@ -1,10 +1,11 @@
+use std::collections::HashMap;
 use std::num::NonZeroU8;
 
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
-use crate::til::section::TILSectionHeader;
 use crate::til::{Basic, Type, TypeRaw};
 use anyhow::{anyhow, ensure, Context, Result};
 
+use super::section::TILSectionHeader;
 use super::TypeVariantRaw;
 
 #[derive(Debug, Clone)]
@@ -28,14 +29,28 @@ pub struct Function {
 impl Function {
     pub(crate) fn new(
         til: &TILSectionHeader,
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
         value: FunctionRaw,
         fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
-        let ret = Type::new(til, *value.ret, &mut *fields)?;
+        let ret = Type::new(
+            til,
+            type_by_name,
+            type_by_ord,
+            *value.ret,
+            &mut *fields,
+        )?;
         let mut args = Vec::with_capacity(value.args.len());
         for (arg_type, arg_loc) in value.args {
             let field_name = fields.next().flatten();
-            let new_member = Type::new(til, arg_type, &mut *fields)?;
+            let new_member = Type::new(
+                til,
+                type_by_name,
+                type_by_ord,
+                arg_type,
+                &mut *fields,
+            )?;
             args.push((field_name, new_member, arg_loc));
         }
         Ok(Self {

@@ -1,11 +1,12 @@
 use anyhow::{anyhow, Context, Result};
 
+use std::collections::HashMap;
 use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
-use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw};
 
+use super::section::TILSectionHeader;
 use super::{TypeAttribute, TypeVariantRaw};
 
 #[derive(Clone, Debug)]
@@ -20,6 +21,8 @@ pub struct Union {
 impl Union {
     pub(crate) fn new(
         til: &TILSectionHeader,
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
         value: UnionRaw,
         fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
@@ -28,7 +31,13 @@ impl Union {
             .into_iter()
             .map(|member| {
                 let field_name = fields.next().flatten();
-                let new_member = Type::new(til, member, &mut *fields)?;
+                let new_member = Type::new(
+                    til,
+                    type_by_name,
+                    type_by_ord,
+                    member,
+                    &mut *fields,
+                )?;
                 Ok((field_name, new_member))
             })
             .collect::<Result<_>>()?;

@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::BufReader;
 
 use anyhow::{anyhow, Result};
-use idb_rs::til::section::TILSection;
+use idb_rs::til::section::{TILSection, TILSectionExtendedSizeofInfo};
 use idb_rs::til::TILMacro;
 use idb_rs::IDBParser;
 
@@ -20,37 +20,43 @@ pub fn dump_til(args: &Args) -> Result<()> {
             parser.read_til_section(til_offset)?
         }
         FileType::Til => {
-            let input = BufReader::new(File::open(&args.input)?);
-            idb_rs::til::section::TILSection::parse(input)?
+            let mut input = BufReader::new(File::open(&args.input)?);
+            idb_rs::til::section::TILSection::read(
+                &mut input,
+                idb_rs::IDBSectionCompression::None,
+            )?
         }
     };
 
     // this deconstruction is to changes on TILSection to force a review on this code
     let TILSection {
-        format,
-        description: title,
-        flags: _,
-        dependencies: dependency,
-        compiler_id,
-        cc,
-        cm,
-        cn,
-        def_align,
-        type_ordinal_alias,
-        size_int,
-        size_enum,
-        size_bool,
-        extended_sizeof_info: _,
-        size_long_double,
-        is_universal,
         symbols,
         types,
         macros,
+        header:
+            idb_rs::til::section::TILSectionHeader {
+                flags: _,
+                format,
+                description,
+                dependencies,
+                compiler_id,
+                cc,
+                cn,
+                cm,
+                def_align,
+                type_ordinal_alias,
+                size_int,
+                size_bool,
+                size_enum,
+                extended_sizeof_info,
+                size_long_double,
+                is_universal,
+            },
     } = &til;
     // write the header info
     println!("format: {format}");
-    println!("title: {}", String::from_utf8_lossy(title));
-    for (i, dependency) in dependency.iter().enumerate() {
+    println!("description: {}", String::from_utf8_lossy(description));
+    for (i, dependency) in dependencies.iter().enumerate() {
         println!("dependency-{i}: {}", String::from_utf8_lossy(dependency));
     }
     println!("id: {compiler_id:?}");
@@ -61,6 +67,16 @@ pub fn dump_til(args: &Args) -> Result<()> {
     println!("size_int: {size_int}");
     println!("size_bool: {size_bool}");
     println!("size_enum: {size_enum:?}");
+    if let Some(TILSectionExtendedSizeofInfo {
+        size_short,
+        size_long,
+        size_long_long,
+    }) = extended_sizeof_info
+    {
+        println!("size_short: {size_short}");
+        println!("size_long: {size_long}");
+        println!("size_long_long: {size_long_long}");
+    }
     println!("is_universal: {is_universal}");
     if let Some(type_ordinal_numbers) = type_ordinal_alias {
         println!("type_ordinal_numbers: {type_ordinal_numbers:?}");
