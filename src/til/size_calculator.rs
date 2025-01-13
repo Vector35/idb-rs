@@ -7,7 +7,7 @@ use super::r#enum::Enum;
 use super::r#struct::StructMember;
 use super::section::TILSection;
 use super::union::Union;
-use super::{Basic, Type, TypeVariant, Typeref};
+use super::{Basic, Type, TypeVariant, Typeref, TyperefValue};
 
 pub struct TILTypeSizeSolver<'a> {
     section: &'a TILSection,
@@ -173,7 +173,7 @@ impl<'a> TILTypeSizeSolver<'a> {
     }
 
     fn solve_typedef(&mut self, typedef: &Typeref) -> Option<u64> {
-        let Typeref::Ref(idx) = typedef else {
+        let TyperefValue::Ref(idx) = &typedef.typeref_value else {
             return None;
         };
         // if cached return it
@@ -203,7 +203,7 @@ impl<'a> TILTypeSizeSolver<'a> {
                 self.alignemnt(&array.elem_type, size.unwrap_or(1))
             }
             TypeVariant::Typeref(ty) => {
-                let Typeref::Ref(idx) = ty else {
+                let TyperefValue::Ref(idx) = &ty.typeref_value else {
                     return None;
                 };
                 let ty = &self.section.types[*idx].tinfo;

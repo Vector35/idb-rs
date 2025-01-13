@@ -586,16 +586,16 @@ impl TypedefRaw {
 }
 
 #[derive(Clone, Debug)]
-pub enum Typeref {
+pub struct Typeref {
+    pub ref_type: Option<TyperefType>,
+    pub typeref_value: TyperefValue,
+}
+
+#[derive(Clone, Debug)]
+pub enum TyperefValue {
     Ref(usize),
-    UnresolvedName {
-        name: Option<Vec<u8>>,
-        ref_type: Option<TyperefType>,
-    },
-    UnresolvedOrd {
-        ord: u32,
-        ref_type: Option<TyperefType>,
-    },
+    UnsolvedName(Option<Vec<u8>>),
+    UnsolvedOrd(u32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -615,30 +615,33 @@ impl Typeref {
             // TODO check is ord is set on the header
             TypedefRaw::Ordinal(ord) => {
                 let Some(pos) = type_by_ord.get(&(ord.into())) else {
-                    return Ok(Self::UnresolvedOrd {
-                        ord,
+                    return Ok(Self {
                         ref_type: None,
+                        typeref_value: TyperefValue::UnsolvedOrd(ord),
                     });
                 };
                 pos
             }
             TypedefRaw::Name(None) => {
-                return Ok(Self::UnresolvedName {
-                    name: None,
+                return Ok(Self {
                     ref_type: None,
+                    typeref_value: TyperefValue::UnsolvedName(None),
                 })
             }
             TypedefRaw::Name(Some(name)) => {
                 let Some(pos) = type_by_name.get(&name[..]) else {
-                    return Ok(Self::UnresolvedName {
-                        name: Some(name),
+                    return Ok(Self {
                         ref_type: None,
+                        typeref_value: TyperefValue::UnsolvedName(Some(name)),
                     });
                 };
                 pos
             }
         };
-        Ok(Self::Ref(*pos))
+        Ok(Self {
+            ref_type: None,
+            typeref_value: TyperefValue::Ref(*pos),
+        })
     }
 
     fn new_struct(
@@ -647,9 +650,7 @@ impl Typeref {
         x: TypedefRaw,
     ) -> Result<Self> {
         let mut result = Self::new(type_by_name, type_by_ord, x)?;
-        if let Typeref::UnresolvedName { name: _, ref_type } = &mut result {
-            *ref_type = Some(TyperefType::Struct)
-        }
+        result.ref_type = Some(TyperefType::Struct);
         // TODO check the inner type is in fact a struct
         Ok(result)
     }
@@ -660,9 +661,7 @@ impl Typeref {
         x: TypedefRaw,
     ) -> Result<Self> {
         let mut result = Self::new(type_by_name, type_by_ord, x)?;
-        if let Typeref::UnresolvedName { name: _, ref_type } = &mut result {
-            *ref_type = Some(TyperefType::Union)
-        }
+        result.ref_type = Some(TyperefType::Union);
         // TODO check the inner type is in fact a union
         Ok(result)
     }
@@ -673,9 +672,7 @@ impl Typeref {
         x: TypedefRaw,
     ) -> Result<Self> {
         let mut result = Self::new(type_by_name, type_by_ord, x)?;
-        if let Typeref::UnresolvedName { name: _, ref_type } = &mut result {
-            *ref_type = Some(TyperefType::Enum)
-        }
+        result.ref_type = Some(TyperefType::Enum);
         // TODO check the inner type is in fact a enum
         Ok(result)
     }

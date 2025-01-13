@@ -9,7 +9,7 @@ use idb_rs::til::section::TILSection;
 use idb_rs::til::union::Union;
 use idb_rs::til::{
     Basic, TILTypeInfo, TILTypeSizeSolver, Type, TypeVariant, Typeref,
-    TyperefType,
+    TyperefType, TyperefValue,
 };
 use idb_rs::{IDBParser, IDBSectionCompression};
 
@@ -375,9 +375,9 @@ fn print_til_type_root(
         TypeVariant::Struct(_)
         | TypeVariant::Union(_)
         | TypeVariant::Enum(_) => {}
-        TypeVariant::Typeref(Typeref::UnresolvedName {
-            name: _,
-            ref_type: Some(_),
+        TypeVariant::Typeref(Typeref {
+            typeref_value: TyperefValue::UnsolvedName(Some(_)),
+            ref_type: _,
         }) => {}
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x443906
         _ => write!(fmt, "typedef ")?,
@@ -685,36 +685,38 @@ fn print_til_type_typedef(
     if til_type.is_const {
         write!(fmt, "const ")?;
     }
+    let mut need_prefix_space = false;
     if print_prefix {
-        print_til_type_prefix(fmt, section, til_type, true)?;
+        if let Some(ref_prefix) = typedef.ref_type {
+            print_typeref_type_prefix(fmt, ref_prefix)?;
+            need_prefix_space = true;
+        }
     }
     // get the type referenced by the typdef
-    let need_space = match typedef {
-        Typeref::Ref(idx) => {
+    let need_type_space = match &typedef.typeref_value {
+        TyperefValue::Ref(idx) => {
+            if need_prefix_space {
+                write!(fmt, " ")?;
+            }
             let inner_ty = &section.types[*idx];
             fmt.write_all(&inner_ty.name)?;
             true
         }
-        Typeref::UnresolvedName {
-            name: Some(name),
-            ref_type: _,
-        } => {
+        TyperefValue::UnsolvedName(Some(name)) => {
+            if need_prefix_space {
+                write!(fmt, " ")?;
+            }
             fmt.write_all(name)?;
             true
         }
         // Nothing to print
-        Typeref::UnresolvedName {
-            name: None,
-            ref_type: _,
+        TyperefValue::UnsolvedName(None) | TyperefValue::UnsolvedOrd(_) => {
+            false
         }
-        | Typeref::UnresolvedOrd {
-            ord: _,
-            ref_type: _,
-        } => false,
     };
     // print the type name, if some
     if let Some(name) = name {
-        if need_space {
+        if need_type_space {
             write!(fmt, " ")?;
         }
         fmt.write_all(name)?;
@@ -861,7 +863,7 @@ fn print_til_type_complex_member(
             til,
             is_vft,
             print_pointer_space,
-            false,
+            true,
             print_name,
         );
     };
@@ -875,7 +877,7 @@ fn print_til_type_complex_member(
             til,
             is_vft,
             print_pointer_space,
-            false,
+            true,
             print_name,
         );
     }
@@ -892,32 +894,22 @@ fn print_til_type_complex_member(
                 til,
                 is_vft,
                 print_pointer_space,
-                false,
+                true,
                 print_name,
             );
         }
     };
 
-    let inner_type = match typedef {
-        Typeref::Ref(idx) => &section.types[*idx],
-        Typeref::UnresolvedName {
-            name: Some(name),
-            ref_type,
-        } => {
-            if let Some(ref_type) = ref_type {
+    let inner_type = match &typedef.typeref_value {
+        TyperefValue::Ref(idx) => &section.types[*idx],
+        TyperefValue::UnsolvedName(Some(name)) => {
+            if let Some(ref_type) = &typedef.ref_type {
                 print_typeref_type_prefix(fmt, *ref_type)?;
             }
             fmt.write_all(&name)?;
             return Ok(());
         }
-        Typeref::UnresolvedOrd {
-            ord: _,
-            ref_type: _,
-        }
-        | Typeref::UnresolvedName {
-            name: None,
-            ref_type: _,
-        } => {
+        TyperefValue::UnsolvedOrd(_) | TyperefValue::UnsolvedName(None) => {
             return print_til_type(
                 fmt,
                 section,
@@ -925,7 +917,7 @@ fn print_til_type_complex_member(
                 til,
                 is_vft,
                 print_pointer_space,
-                false,
+                true,
                 print_name,
             );
         }
@@ -943,7 +935,7 @@ fn print_til_type_complex_member(
             til,
             is_vft,
             print_pointer_space,
-            false,
+            true,
             print_name,
         );
     }
@@ -1182,54 +1174,26 @@ fn print_til_struct_member_basic_att(
     Ok(())
 }
 
-fn print_til_type_prefix(
-    fmt: &mut impl Write,
-    section: &TILSection,
-    tinfo: &Type,
-    with_space: bool,
-) -> Result<()> {
-    match &tinfo.type_variant {
-        TypeVariant::Typeref(Typeref::Ref(idx)) => {
-            // NOTE don't go other level down
-            match &section.types[*idx].tinfo.type_variant {
-                TypeVariant::Union(_) => write!(fmt, "union")?,
-                TypeVariant::Struct(_) => write!(fmt, "struct")?,
-                TypeVariant::Enum(_) => write!(fmt, "enum")?,
-                _ => return Ok(()),
-            }
-        }
-        TypeVariant::Typeref(Typeref::UnresolvedName {
-            name: _,
-            ref_type: Some(ref_type),
-        }) => print_typeref_type_prefix(fmt, *ref_type)?,
-        TypeVariant::Union(_) => write!(fmt, "union")?,
-        TypeVariant::Struct(_) => write!(fmt, "struct")?,
-        TypeVariant::Enum(_) => write!(fmt, "enum")?,
-        _ => return Ok(()),
-    }
-    if with_space {
-        write!(fmt, " ")?;
-    }
-    Ok(())
-}
-
 fn print_til_type_only(
     fmt: &mut impl Write,
     section: &TILSection,
     tinfo: &Type,
 ) -> Result<()> {
     match &tinfo.type_variant {
-        TypeVariant::Typeref(Typeref::UnresolvedName {
-            name: Some(name),
+        TypeVariant::Typeref(Typeref {
+            typeref_value: TyperefValue::UnsolvedName(Some(name)),
             ref_type: _,
         }) => {
             fmt.write_all(name)?;
         }
-        TypeVariant::Typeref(Typeref::UnresolvedName {
-            name: None,
+        TypeVariant::Typeref(Typeref {
+            typeref_value: TyperefValue::UnsolvedName(None),
             ref_type: _,
         }) => {}
-        TypeVariant::Typeref(Typeref::Ref(idx)) => {
+        TypeVariant::Typeref(Typeref {
+            typeref_value: TyperefValue::Ref(idx),
+            ref_type: _,
+        }) => {
             //TypeVariant::Typeref(Typeref::Ordinal(ord)) => {
             let ty = &section.types[*idx];
             fmt.write_all(&ty.name)?;
@@ -1331,10 +1295,10 @@ fn is_vft(section: &TILSection, typ: &Type) -> bool {
         // TODO struct with only function-pointers is also vftable?
         TypeVariant::Struct(ty) => ty.is_vft,
         TypeVariant::Typeref(typedef) => {
-            let inner_type = match typedef {
-                Typeref::Ref(idx) => &section.types[*idx],
-                Typeref::UnresolvedOrd { .. }
-                | Typeref::UnresolvedName { .. } => return false,
+            let inner_type = match &typedef.typeref_value {
+                TyperefValue::Ref(idx) => &section.types[*idx],
+                TyperefValue::UnsolvedOrd(_)
+                | TyperefValue::UnsolvedName(_) => return false,
             };
             is_vft(section, &inner_type.tinfo)
         }
