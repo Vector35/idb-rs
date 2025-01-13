@@ -112,7 +112,7 @@ impl<I: IdbReader> IDBParser<I> {
             &mut self.input,
             &self.header,
             til.0.get(),
-            |input, _, compress| TILSection::read(input, compress),
+            |input, _header, compressed| TILSection::read(input, compressed),
         )
     }
 

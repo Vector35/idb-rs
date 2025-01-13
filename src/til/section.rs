@@ -1,6 +1,6 @@
 use crate::id0::{Compiler, Id0TilOrd};
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
-use crate::til::{flag, TILMacro, TILTypeInfo};
+use crate::til::{flag, TILMacro, TILTypeInfo, TILTypeInfoRaw};
 use crate::IDBSectionCompression;
 use anyhow::{anyhow, ensure, Result};
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,22 @@ pub const TIL_SECTION_MAGIC: &[u8; 6] = b"IDATIL";
 
 #[derive(Debug, Clone)]
 pub struct TILSection {
+    pub header: TILSectionHeader,
+    pub symbols: Vec<TILTypeInfo>,
+    pub types: Vec<TILTypeInfo>,
+    pub macros: Option<Vec<TILMacro>>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct TILSectionRaw {
+    pub header: TILSectionHeader,
+    pub symbols: Vec<TILTypeInfoRaw>,
+    pub types: Vec<TILTypeInfoRaw>,
+    pub macros: Option<Vec<TILMacro>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TILSectionHeader {
     pub format: u32,
     /// short file name (without path and extension)
     pub description: Vec<u8>,
@@ -34,16 +50,13 @@ pub struct TILSection {
     //pub cc: CallingConvention,
     //pub cm: CCPtrSize,
     pub def_align: Option<NonZeroU8>,
-    pub symbols: Vec<TILTypeInfo>,
     // TODO create a struct for ordinal aliases
     pub type_ordinal_alias: Option<Vec<(u32, u32)>>,
-    pub types: Vec<TILTypeInfo>,
     pub size_int: NonZeroU8,
     pub size_bool: NonZeroU8,
     pub size_enum: Option<NonZeroU8>,
     pub extended_sizeof_info: Option<TILSectionExtendedSizeofInfo>,
     pub size_long_double: Option<NonZeroU8>,
-    pub macros: Option<Vec<TILMacro>>,
     pub is_universal: bool,
 }
 
@@ -55,7 +68,7 @@ pub struct TILSectionExtendedSizeofInfo {
 }
 
 #[derive(Debug, Clone)]
-pub struct TILSectionHeader {
+pub struct TILSectionHeaderRaw {
     pub format: u32,
     pub flags: TILSectionFlags,
     pub description: Vec<u8>,
@@ -87,11 +100,7 @@ pub struct TILSectionHeader2 {
     pub def_align: u8,
 }
 
-impl TILSection {
-    pub fn parse(mut input: impl IdaGenericBufUnpack) -> Result<Self> {
-        Self::read_inner(&mut input)
-    }
-
+impl TILSectionRaw {
     pub(crate) fn read(
         input: &mut impl IdaGenericBufUnpack,
         compress: IDBSectionCompression,
@@ -107,38 +116,21 @@ impl TILSection {
     }
 
     fn read_inner(input: &mut impl IdaGenericBufUnpack) -> Result<Self> {
-        let header = Self::read_header(&mut *input)?;
-        let symbols = Self::read_bucket(&mut *input, &header, None, None)?;
-
-        // TODO create an ordinal -> type mapping, to make sure the ordinals are not duplicated
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42e292
-        let (next_ordinal, type_ordinal_alias) =
-            Self::read_next_ordinal_and_alias(&mut *input, &header)?;
-        let types = Self::read_bucket(
-            &mut *input,
-            &header,
-            next_ordinal,
-            type_ordinal_alias.as_deref(),
-        )?;
-        let macros = header
-            .flags
-            .has_macro_table()
-            .then(|| Self::read_macros(&mut *input, &header))
-            .transpose()?;
+        let header_raw = Self::read_header(&mut *input)?;
 
         // TODO verify that is always false?
-        let _mod = header.flags.is_mod();
-        let _uni = header.flags.is_universal();
-        let _ord = header.flags.has_ordinal();
-        let _ali = header.flags.has_type_aliases();
-        let _stm = header.flags.has_extra_stream();
+        let _mod = header_raw.flags.is_mod();
+        let _uni = header_raw.flags.is_universal();
+        let _ord = header_raw.flags.has_ordinal();
+        let _ali = header_raw.flags.has_type_aliases();
+        let _stm = header_raw.flags.has_extra_stream();
 
-        let cc = CallingConvention::from_cm_raw(header.cm)?;
-        let cn = CCPtrSize::from_cm_raw(header.cm, header.size_int);
-        let cm = CCModel::from_cm_raw(header.cm);
+        let cc = CallingConvention::from_cm_raw(header_raw.cm)?;
+        let cn = CCPtrSize::from_cm_raw(header_raw.cm, header_raw.size_int);
+        let cm = CCModel::from_cm_raw(header_raw.cm);
 
-        let dependencies = if !header.dependencies.is_empty() {
-            header
+        let dependencies = if !header_raw.dependencies.is_empty() {
+            header_raw
                 .dependencies
                 .split(|x| *x == b',')
                 .map(<[_]>::to_vec)
@@ -146,27 +138,44 @@ impl TILSection {
         } else {
             vec![]
         };
-
-        Ok(TILSection {
-            format: header.format,
-            description: header.description,
-            flags: header.flags,
+        let mut header = TILSectionHeader {
+            format: header_raw.format,
+            description: header_raw.description,
+            flags: header_raw.flags,
             dependencies,
-            compiler_id: Compiler::from_value(header.compiler_id),
+            compiler_id: Compiler::from_value(header_raw.compiler_id),
             cc,
             cn,
             cm,
-            def_align: header.def_align,
-            size_long_double: header.size_long_double,
-            is_universal: header.flags.is_universal(),
-            size_bool: header.size_bool,
-            size_int: header.size_int,
-            size_enum: header.size_enum,
-            extended_sizeof_info: header.extended_sizeof_info,
+            def_align: header_raw.def_align,
+            size_long_double: header_raw.size_long_double,
+            is_universal: header_raw.flags.is_universal(),
+            size_bool: header_raw.size_bool,
+            size_int: header_raw.size_int,
+            size_enum: header_raw.size_enum,
+            extended_sizeof_info: header_raw.extended_sizeof_info,
+            type_ordinal_alias: None,
+        };
+
+        let symbols = Self::read_bucket(&mut *input, &header, None)?;
+
+        // TODO create an ordinal -> type mapping, to make sure the ordinals are not duplicated
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42e292
+        let (next_ordinal, type_ordinal_alias) =
+            Self::read_next_ordinal_and_alias(&mut *input, &header)?;
+        header.type_ordinal_alias = type_ordinal_alias;
+        let types = Self::read_bucket(&mut *input, &header, next_ordinal)?;
+        let macros = header
+            .flags
+            .has_macro_table()
+            .then(|| Self::read_macros(&mut *input, &header))
+            .transpose()?;
+
+        Ok(Self {
             symbols,
-            type_ordinal_alias,
             types,
             macros,
+            header,
         })
     }
 
@@ -224,7 +233,7 @@ impl TILSection {
 
     fn read_header(
         input: &mut impl IdaGenericUnpack,
-    ) -> Result<TILSectionHeader> {
+    ) -> Result<TILSectionHeaderRaw> {
         // TODO this break a few files
         let signature: [u8; 6] = bincode::deserialize_from(&mut *input)?;
         ensure!(signature == *TIL_SECTION_MAGIC, "Invalid TIL Signature");
@@ -300,7 +309,7 @@ impl TILSection {
         let def_align = (header2.def_align != 0)
             .then(|| NonZeroU8::new(1 << (header2.def_align - 1)).unwrap());
 
-        Ok(TILSectionHeader {
+        Ok(TILSectionHeaderRaw {
             format: header1.format,
             flags: header1.flags,
             description,
@@ -317,6 +326,162 @@ impl TILSection {
         })
     }
 
+    fn read_bucket_header(
+        input: &mut impl IdaGenericUnpack,
+    ) -> Result<(u32, u32)> {
+        let ndefs = bincode::deserialize_from(&mut *input)?;
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42e3e0
+        //ensure!(ndefs < 0x55555555);
+        let len = bincode::deserialize_from(&mut *input)?;
+        Ok((ndefs, len))
+    }
+
+    fn read_bucket_zip_header(
+        input: &mut impl IdaGenericUnpack,
+    ) -> Result<(u32, u32, u32)> {
+        let (ndefs, len) = Self::read_bucket_header(&mut *input)?;
+        let compressed_len = bincode::deserialize_from(&mut *input)?;
+        Ok((ndefs, len, compressed_len))
+    }
+
+    fn read_bucket(
+        input: &mut impl IdaGenericBufUnpack,
+        header: &TILSectionHeader,
+        next_ordinal: Option<u32>,
+    ) -> Result<Vec<TILTypeInfoRaw>> {
+        if header.flags.is_zip() {
+            Self::read_bucket_zip(&mut *input, header, next_ordinal)
+        } else {
+            Self::read_bucket_normal(&mut *input, header, next_ordinal)
+        }
+    }
+
+    fn read_bucket_normal(
+        input: &mut impl IdaGenericBufUnpack,
+        header: &TILSectionHeader,
+        next_ordinal: Option<u32>,
+    ) -> Result<Vec<TILTypeInfoRaw>> {
+        let (ndefs, len) = Self::read_bucket_header(&mut *input)?;
+        Self::read_bucket_inner(&mut *input, header, ndefs, len, next_ordinal)
+    }
+
+    fn read_bucket_zip(
+        input: &mut impl IdaGenericBufUnpack,
+        header: &TILSectionHeader,
+        next_ordinal: Option<u32>,
+    ) -> Result<Vec<TILTypeInfoRaw>> {
+        let (ndefs, len, compressed_len) =
+            Self::read_bucket_zip_header(&mut *input)?;
+        // make sure the decompressor don't read out-of-bounds
+        let mut compressed_input = input.take(compressed_len.into());
+        let mut inflate = BufReader::new(flate2::bufread::ZlibDecoder::new(
+            &mut compressed_input,
+        ));
+        // make sure only the defined size is decompressed
+        let type_info = Self::read_bucket_inner(
+            &mut inflate,
+            header,
+            ndefs,
+            len,
+            next_ordinal,
+        )?;
+        #[cfg(feature = "restrictive")]
+        ensure!(
+            compressed_input.limit() == 0,
+            "TypeBucket compressed data is smaller then expected"
+        );
+        Ok(type_info)
+    }
+
+    fn read_bucket_inner(
+        input: &mut impl IdaGenericBufUnpack,
+        header: &TILSectionHeader,
+        ndefs: u32,
+        len: u32,
+        next_ord: Option<u32>,
+    ) -> Result<Vec<TILTypeInfoRaw>> {
+        if let Some(next_ord) = next_ord {
+            let alias: u32 = header
+                .type_ordinal_alias
+                .as_ref()
+                .map(|x| x.len())
+                .unwrap_or(0)
+                .try_into()
+                .unwrap();
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42e3e0
+            ensure!(ndefs + alias + 1 <= next_ord);
+        }
+        let mut input = input.take(len.into());
+        let type_info_raw: Vec<_> = (0..ndefs)
+            .map(|i| TILTypeInfoRaw::read(&mut input, header, i == ndefs - 1))
+            .collect::<Result<_>>()?;
+        #[cfg(feature = "restrictive")]
+        ensure!(
+            input.limit() == 0,
+            "TypeBucket total data is smaller then expected"
+        );
+        Ok(type_info_raw)
+    }
+
+    fn read_macros(
+        input: &mut impl IdaGenericBufUnpack,
+        header: &TILSectionHeader,
+    ) -> Result<Vec<TILMacro>> {
+        if header.flags.is_zip() {
+            Self::read_macros_zip(&mut *input)
+        } else {
+            Self::read_macros_normal(&mut *input)
+        }
+    }
+
+    fn read_macros_normal(
+        input: &mut impl IdaGenericBufUnpack,
+    ) -> Result<Vec<TILMacro>> {
+        let (ndefs, len) = Self::read_bucket_header(&mut *input)?;
+        let mut input = input.take(len.into());
+        let type_info = (0..ndefs)
+            .map(|_| TILMacro::read(&mut input))
+            .collect::<Result<_, _>>()?;
+        #[cfg(feature = "restrictive")]
+        ensure!(
+            input.limit() == 0,
+            "TypeBucket macro total data is smaller then expected"
+        );
+        Ok(type_info)
+    }
+
+    fn read_macros_zip(
+        input: &mut impl IdaGenericBufUnpack,
+    ) -> Result<Vec<TILMacro>> {
+        let (ndefs, len, compressed_len) =
+            Self::read_bucket_zip_header(&mut *input)?;
+        // make sure the decompressor don't read out-of-bounds
+        let mut compressed_input = input.take(compressed_len.into());
+        let inflate = BufReader::new(flate2::bufread::ZlibDecoder::new(
+            &mut compressed_input,
+        ));
+        // make sure only the defined size is decompressed
+        let mut decompressed_input = inflate.take(len.into());
+        let type_info = (0..ndefs.try_into().unwrap())
+            .map(|_| TILMacro::read(&mut decompressed_input))
+            .collect::<Result<Vec<_>, _>>()?;
+        // make sure the input was fully consumed
+        #[cfg(feature = "restrictive")]
+        ensure!(
+            decompressed_input.limit() == 0,
+            "TypeBucket macros data is smaller then expected"
+        );
+        #[cfg(feature = "restrictive")]
+        ensure!(
+            compressed_input.limit() == 0,
+            "TypeBucket macros compressed data is smaller then expected"
+        );
+        Ok(type_info)
+    }
+    // TODO replace usize with a IDTypeIdx type
+}
+
+impl TILSection {
     pub fn decompress(
         input: &mut impl IdaGenericBufUnpack,
         output: &mut impl Write,
@@ -338,7 +503,7 @@ impl TILSection {
         input: &mut impl IdaGenericBufUnpack,
         output: &mut impl Write,
     ) -> Result<()> {
-        let mut header = Self::read_header(&mut *input)?;
+        let mut header = TILSectionRaw::read_header(&mut *input)?;
         let og_flags = header.flags;
         // disable the zip flag
         header.flags.set_zip(false);
@@ -419,7 +584,32 @@ impl TILSection {
         Ok(())
     }
 
-    // TODO replace usize with a IDTypeIdx type
+    #[allow(dead_code)]
+    fn decompress_bucket(
+        input: &mut impl IdaGenericBufUnpack,
+        output: &mut impl std::io::Write,
+    ) -> Result<()> {
+        let (ndefs, len, compressed_len) =
+            TILSectionRaw::read_bucket_zip_header(&mut *input)?;
+        bincode::serialize_into(&mut *output, &TILBucketRaw { len, ndefs })?;
+        // write the decompressed data
+        let mut compressed_input = input.take(compressed_len.into());
+        let inflate = flate2::bufread::ZlibDecoder::new(&mut compressed_input);
+        let mut decompressed_input = inflate.take(len.into());
+        std::io::copy(&mut decompressed_input, output)?;
+        #[cfg(feature = "restrictive")]
+        ensure!(
+            decompressed_input.limit() == 0,
+            "TypeBucket data is smaller then expected"
+        );
+        #[cfg(feature = "restrictive")]
+        ensure!(
+            compressed_input.limit() == 0,
+            "TypeBucket compressed data is smaller then expected"
+        );
+        Ok(())
+    }
+
     pub fn get_type_by_idx(&self, idx: usize) -> &TILTypeInfo {
         &self.types[idx]
     }
@@ -434,7 +624,7 @@ impl TILSection {
 
     pub fn get_ord_idx(&self, id0_ord: Id0TilOrd) -> Option<usize> {
         // first search the ordinal alias
-        if let Some(ordinals) = &self.type_ordinal_alias {
+        if let Some(ordinals) = &self.header.type_ordinal_alias {
             // it's unclear what is the first value
             if let Some((_src, dst)) = ordinals
                 .iter()
@@ -452,21 +642,24 @@ impl TILSection {
     }
 
     pub fn sizeof_short(&self) -> NonZeroU8 {
-        self.extended_sizeof_info
+        self.header
+            .extended_sizeof_info
             .as_ref()
             .map(|x| x.size_short)
             .unwrap_or(2.try_into().unwrap())
     }
 
     pub fn sizeof_long(&self) -> NonZeroU8 {
-        self.extended_sizeof_info
+        self.header
+            .extended_sizeof_info
             .as_ref()
             .map(|x| x.size_long)
             .unwrap_or(4.try_into().unwrap())
     }
 
     pub fn sizeof_long_long(&self) -> NonZeroU8 {
-        self.extended_sizeof_info
+        self.header
+            .extended_sizeof_info
             .as_ref()
             .map(|x| x.size_long_long)
             .unwrap_or(8.try_into().unwrap())
@@ -474,9 +667,69 @@ impl TILSection {
 
     // TODO check this impl in InnerRef
     pub fn addr_size(&self) -> NonZeroU8 {
-        self.cn
+        self.header
+            .cn
             .map(CCPtrSize::near_bytes)
             .unwrap_or(NonZeroU8::new(4).unwrap())
+    }
+}
+
+impl TILSection {
+    pub fn read(
+        input: &mut impl IdaGenericBufUnpack,
+        compress: IDBSectionCompression,
+    ) -> Result<TILSection> {
+        let type_info_raw = TILSectionRaw::read(input, compress)?;
+        // TODO check for dups?
+        let type_by_name = type_info_raw
+            .types
+            .iter()
+            .enumerate()
+            .map(|(i, til)| (til.name.to_vec(), i))
+            .collect();
+        let type_by_ord = type_info_raw
+            .types
+            .iter()
+            .enumerate()
+            .map(|(i, til)| (til.ordinal, i))
+            .collect();
+        let symbols = type_info_raw
+            .symbols
+            .into_iter()
+            .map(|ty| {
+                TILTypeInfo::new(
+                    &type_info_raw.header,
+                    &type_by_name,
+                    &type_by_ord,
+                    ty.name,
+                    ty.ordinal,
+                    ty.tinfo,
+                    ty.fields,
+                )
+            })
+            .collect::<Result<_>>()?;
+        let types = type_info_raw
+            .types
+            .into_iter()
+            .map(|ty| {
+                TILTypeInfo::new(
+                    &type_info_raw.header,
+                    &type_by_name,
+                    &type_by_ord,
+                    ty.name,
+                    ty.ordinal,
+                    ty.tinfo,
+                    ty.fields,
+                )
+            })
+            .collect::<Result<_>>()?;
+
+        Ok(Self {
+            header: type_info_raw.header,
+            symbols,
+            types,
+            macros: type_info_raw.macros,
+        })
     }
 }
 
@@ -544,205 +797,4 @@ impl TILSectionFlags {
 pub(crate) struct TILBucketRaw {
     ndefs: u32,
     len: u32,
-}
-
-impl TILSection {
-    fn read_bucket_header(
-        input: &mut impl IdaGenericUnpack,
-    ) -> Result<(u32, u32)> {
-        let ndefs = bincode::deserialize_from(&mut *input)?;
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42e3e0
-        //ensure!(ndefs < 0x55555555);
-        let len = bincode::deserialize_from(&mut *input)?;
-        Ok((ndefs, len))
-    }
-
-    fn read_bucket_zip_header(
-        input: &mut impl IdaGenericUnpack,
-    ) -> Result<(u32, u32, u32)> {
-        let (ndefs, len) = Self::read_bucket_header(&mut *input)?;
-        let compressed_len = bincode::deserialize_from(&mut *input)?;
-        Ok((ndefs, len, compressed_len))
-    }
-
-    fn read_bucket(
-        input: &mut impl IdaGenericBufUnpack,
-        header: &TILSectionHeader,
-        next_ordinal: Option<u32>,
-        ordinal_alias: Option<&[(u32, u32)]>,
-    ) -> Result<Vec<TILTypeInfo>> {
-        if header.flags.is_zip() {
-            Self::read_bucket_zip(
-                &mut *input,
-                header,
-                next_ordinal,
-                ordinal_alias,
-            )
-        } else {
-            Self::read_bucket_normal(
-                &mut *input,
-                header,
-                next_ordinal,
-                ordinal_alias,
-            )
-        }
-    }
-
-    fn read_bucket_normal(
-        input: &mut impl IdaGenericBufUnpack,
-        header: &TILSectionHeader,
-        next_ordinal: Option<u32>,
-        ordinal_alias: Option<&[(u32, u32)]>,
-    ) -> Result<Vec<TILTypeInfo>> {
-        let (ndefs, len) = Self::read_bucket_header(&mut *input)?;
-        Self::read_bucket_inner(
-            &mut *input,
-            header,
-            ndefs,
-            len,
-            next_ordinal,
-            ordinal_alias,
-        )
-    }
-
-    fn read_bucket_zip(
-        input: &mut impl IdaGenericBufUnpack,
-        header: &TILSectionHeader,
-        next_ordinal: Option<u32>,
-        ordinal_alias: Option<&[(u32, u32)]>,
-    ) -> Result<Vec<TILTypeInfo>> {
-        let (ndefs, len, compressed_len) =
-            Self::read_bucket_zip_header(&mut *input)?;
-        // make sure the decompressor don't read out-of-bounds
-        let mut compressed_input = input.take(compressed_len.into());
-        let mut inflate = BufReader::new(flate2::bufread::ZlibDecoder::new(
-            &mut compressed_input,
-        ));
-        // make sure only the defined size is decompressed
-        let type_info = Self::read_bucket_inner(
-            &mut inflate,
-            header,
-            ndefs,
-            len,
-            next_ordinal,
-            ordinal_alias,
-        )?;
-        #[cfg(feature = "restrictive")]
-        ensure!(
-            compressed_input.limit() == 0,
-            "TypeBucket compressed data is smaller then expected"
-        );
-        Ok(type_info)
-    }
-
-    fn read_bucket_inner(
-        input: &mut impl IdaGenericBufUnpack,
-        header: &TILSectionHeader,
-        ndefs: u32,
-        len: u32,
-        next_ord: Option<u32>,
-        ordinal_alias: Option<&[(u32, u32)]>,
-    ) -> Result<Vec<TILTypeInfo>> {
-        if let Some(next_ord) = next_ord {
-            let alias: u32 = ordinal_alias
-                .map(|x| x.len())
-                .unwrap_or(0)
-                .try_into()
-                .unwrap();
-            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42e3e0
-            ensure!(ndefs + alias + 1 <= next_ord);
-        }
-        let mut input = input.take(len.into());
-        let type_info = (0..ndefs)
-            .map(|i| TILTypeInfo::read(&mut input, header, i == ndefs - 1))
-            .collect::<Result<_>>()?;
-        #[cfg(feature = "restrictive")]
-        ensure!(
-            input.limit() == 0,
-            "TypeBucket total data is smaller then expected"
-        );
-        Ok(type_info)
-    }
-
-    fn read_macros(
-        input: &mut impl IdaGenericBufUnpack,
-        header: &TILSectionHeader,
-    ) -> Result<Vec<TILMacro>> {
-        if header.flags.is_zip() {
-            Self::read_macros_zip(&mut *input)
-        } else {
-            Self::read_macros_normal(&mut *input)
-        }
-    }
-
-    fn read_macros_normal(
-        input: &mut impl IdaGenericBufUnpack,
-    ) -> Result<Vec<TILMacro>> {
-        let (ndefs, len) = Self::read_bucket_header(&mut *input)?;
-        let mut input = input.take(len.into());
-        let type_info = (0..ndefs)
-            .map(|_| TILMacro::read(&mut input))
-            .collect::<Result<_, _>>()?;
-        #[cfg(feature = "restrictive")]
-        ensure!(
-            input.limit() == 0,
-            "TypeBucket macro total data is smaller then expected"
-        );
-        Ok(type_info)
-    }
-
-    fn read_macros_zip(
-        input: &mut impl IdaGenericBufUnpack,
-    ) -> Result<Vec<TILMacro>> {
-        let (ndefs, len, compressed_len) =
-            Self::read_bucket_zip_header(&mut *input)?;
-        // make sure the decompressor don't read out-of-bounds
-        let mut compressed_input = input.take(compressed_len.into());
-        let inflate = BufReader::new(flate2::bufread::ZlibDecoder::new(
-            &mut compressed_input,
-        ));
-        // make sure only the defined size is decompressed
-        let mut decompressed_input = inflate.take(len.into());
-        let type_info = (0..ndefs.try_into().unwrap())
-            .map(|_| TILMacro::read(&mut decompressed_input))
-            .collect::<Result<Vec<_>, _>>()?;
-        // make sure the input was fully consumed
-        #[cfg(feature = "restrictive")]
-        ensure!(
-            decompressed_input.limit() == 0,
-            "TypeBucket macros data is smaller then expected"
-        );
-        #[cfg(feature = "restrictive")]
-        ensure!(
-            compressed_input.limit() == 0,
-            "TypeBucket macros compressed data is smaller then expected"
-        );
-        Ok(type_info)
-    }
-
-    #[allow(dead_code)]
-    fn decompress_bucket(
-        input: &mut impl IdaGenericBufUnpack,
-        output: &mut impl std::io::Write,
-    ) -> Result<()> {
-        let (ndefs, len, compressed_len) =
-            Self::read_bucket_zip_header(&mut *input)?;
-        bincode::serialize_into(&mut *output, &TILBucketRaw { len, ndefs })?;
-        // write the decompressed data
-        let mut compressed_input = input.take(compressed_len.into());
-        let inflate = flate2::bufread::ZlibDecoder::new(&mut compressed_input);
-        let mut decompressed_input = inflate.take(len.into());
-        std::io::copy(&mut decompressed_input, output)?;
-        #[cfg(feature = "restrictive")]
-        ensure!(
-            decompressed_input.limit() == 0,
-            "TypeBucket data is smaller then expected"
-        );
-        #[cfg(feature = "restrictive")]
-        ensure!(
-            compressed_input.limit() == 0,
-            "TypeBucket compressed data is smaller then expected"
-        );
-        Ok(())
-    }
 }

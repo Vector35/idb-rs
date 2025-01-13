@@ -1,9 +1,10 @@
 use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
-use crate::til::section::TILSectionHeader;
 use crate::til::{flag, TypeAttribute, TypeRaw, TypeVariantRaw};
 use anyhow::{anyhow, ensure};
+
+use super::section::TILSectionHeader;
 
 #[derive(Clone, Debug)]
 pub struct Enum {

@@ -11,8 +11,10 @@ pub mod union;
 
 mod size_calculator;
 
+use section::TILSectionHeader;
 pub use size_calculator::*;
 
+use std::collections::HashMap;
 use std::num::NonZeroU8;
 
 use anyhow::{anyhow, ensure, Context, Result};
@@ -25,21 +27,62 @@ use crate::til::function::{Function, FunctionRaw};
 use crate::til::pointer::{Pointer, PointerRaw};
 use crate::til::r#enum::{Enum, EnumRaw};
 use crate::til::r#struct::{Struct, StructRaw};
-use crate::til::section::TILSectionHeader;
 use crate::til::union::{Union, UnionRaw};
 
 #[derive(Debug, Clone)]
 pub struct TILTypeInfo {
-    _flags: u32,
     pub name: Vec<u8>,
     pub ordinal: u64,
     pub tinfo: Type,
-    _cmt: Vec<u8>,
-    _fieldcmts: Vec<u8>,
-    _sclass: u8,
 }
 
 impl TILTypeInfo {
+    pub(crate) fn new(
+        til: &TILSectionHeader,
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
+        name: Vec<u8>,
+        ordinal: u64,
+        tinfo_raw: TypeRaw,
+        fields: Vec<Vec<u8>>,
+    ) -> Result<Self> {
+        let mut fields_iter = fields
+            .into_iter()
+            .map(|field| (!field.is_empty()).then_some(field));
+        let tinfo = Type::new(
+            til,
+            type_by_name,
+            type_by_ord,
+            tinfo_raw,
+            &mut fields_iter,
+        )?;
+        #[cfg(feature = "restrictive")]
+        ensure!(
+            fields_iter.next().is_none(),
+            "Extra fields found for til type \"{}\"",
+            String::from_utf8_lossy(&name)
+        );
+        Ok(Self {
+            name,
+            ordinal,
+            tinfo,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct TILTypeInfoRaw {
+    _flags: u32,
+    pub name: Vec<u8>,
+    pub ordinal: u64,
+    pub tinfo: TypeRaw,
+    _cmt: Vec<u8>,
+    _fieldcmts: Vec<u8>,
+    fields: Vec<Vec<u8>>,
+    _sclass: u8,
+}
+
+impl TILTypeInfoRaw {
     pub(crate) fn read(
         input: &mut impl IdaGenericBufUnpack,
         til: &TILSectionHeader,
@@ -55,7 +98,8 @@ impl TILTypeInfo {
             input.read_raw_til_type(til.format)?
         };
         let mut cursor = &data[..];
-        let result = TILTypeInfo::read_inner(&mut cursor, til)?;
+        let result = Self::read_inner(&mut cursor, til)?;
+        #[cfg(feature = "restrictive")]
         ensure!(
             cursor.is_empty(),
             "Unable to parse til type fully, left {} bytes",
@@ -74,33 +118,17 @@ impl TILTypeInfo {
             (0..=0x11, _) | (_, false) => cursor.read_u32()?.into(),
             (_, true) => cursor.read_u64()?,
         };
-        let tinfo_raw =
-            TypeRaw::read(&mut *cursor, til).with_context(|| {
-                format!(
-                    "parsing `TILTypeInfo::tiinfo` for type \"{}\"",
-                    String::from_utf8_lossy(&name)
-                )
-            })?;
+        let tinfo = TypeRaw::read(&mut *cursor, til).with_context(|| {
+            format!(
+                "parsing `TILTypeInfo::tiinfo` for type \"{}\"",
+                String::from_utf8_lossy(&name)
+            )
+        })?;
         let _info = cursor.read_c_string_raw()?;
         let cmt = cursor.read_c_string_raw()?;
         let fields = cursor.read_c_string_vec()?;
         let fieldcmts = cursor.read_c_string_raw()?;
         let sclass: u8 = cursor.read_u8()?;
-
-        let mut fields_iter = fields.into_iter().map(|field| {
-            if field.is_empty() {
-                None
-            } else {
-                Some(field)
-            }
-        });
-        let tinfo = Type::new(til, tinfo_raw, &mut fields_iter)?;
-        #[cfg(feature = "restrictive")]
-        ensure!(
-            fields_iter.next().is_none(),
-            "Extra fields found for til type \"{}\"",
-            String::from_utf8_lossy(&name)
-        );
 
         Ok(Self {
             _flags: flags,
@@ -108,6 +136,7 @@ impl TILTypeInfo {
             ordinal,
             tinfo,
             _cmt: cmt,
+            fields,
             _fieldcmts: fieldcmts,
             _sclass: sclass,
         })
@@ -127,49 +156,63 @@ pub enum TypeVariant {
     Pointer(Pointer),
     Function(Function),
     Array(Array),
-    Typedef(Typedef),
+    Typeref(Typeref),
     Struct(Struct),
     Union(Union),
     Enum(Enum),
-    StructRef(Typedef),
-    UnionRef(Typedef),
-    EnumRef(Typedef),
     Bitfield(Bitfield),
 }
 
 impl Type {
     pub(crate) fn new(
         til: &TILSectionHeader,
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
         tinfo_raw: TypeRaw,
         fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
         let type_variant = match tinfo_raw.variant {
             TypeVariantRaw::Basic(x) => TypeVariant::Basic(x),
             TypeVariantRaw::Bitfield(x) => TypeVariant::Bitfield(x),
-            TypeVariantRaw::Typedef(x) => TypeVariant::Typedef(x),
+            TypeVariantRaw::Typedef(x) => {
+                Typeref::new(type_by_name, type_by_ord, x)
+                    .map(TypeVariant::Typeref)?
+            }
             TypeVariantRaw::Pointer(x) => {
-                Pointer::new(til, x, fields).map(TypeVariant::Pointer)?
+                Pointer::new(til, type_by_name, type_by_ord, x, fields)
+                    .map(TypeVariant::Pointer)?
             }
             TypeVariantRaw::Function(x) => {
-                Function::new(til, x, fields).map(TypeVariant::Function)?
+                Function::new(til, type_by_name, type_by_ord, x, fields)
+                    .map(TypeVariant::Function)?
             }
             TypeVariantRaw::Array(x) => {
-                Array::new(til, x, fields).map(TypeVariant::Array)?
+                Array::new(til, type_by_name, type_by_ord, x, fields)
+                    .map(TypeVariant::Array)?
             }
             TypeVariantRaw::Struct(x) => {
-                Struct::new(til, x, fields).map(TypeVariant::Struct)?
+                Struct::new(til, type_by_name, type_by_ord, x, fields)
+                    .map(TypeVariant::Struct)?
             }
             TypeVariantRaw::Union(x) => {
-                Union::new(til, x, fields).map(TypeVariant::Union)?
+                Union::new(til, type_by_name, type_by_ord, x, fields)
+                    .map(TypeVariant::Union)?
             }
             TypeVariantRaw::Enum(x) => {
                 Enum::new(til, x, fields).map(TypeVariant::Enum)?
             }
-            TypeVariantRaw::StructRef(typedef) => {
-                TypeVariant::StructRef(typedef)
+            TypeVariantRaw::StructRef(x) => {
+                Typeref::new_struct(type_by_name, type_by_ord, x)
+                    .map(TypeVariant::Typeref)?
             }
-            TypeVariantRaw::UnionRef(typedef) => TypeVariant::UnionRef(typedef),
-            TypeVariantRaw::EnumRef(typedef) => TypeVariant::EnumRef(typedef),
+            TypeVariantRaw::UnionRef(x) => {
+                Typeref::new_union(type_by_name, type_by_ord, x)
+                    .map(TypeVariant::Typeref)?
+            }
+            TypeVariantRaw::EnumRef(x) => {
+                Typeref::new_enum(type_by_name, type_by_ord, x)
+                    .map(TypeVariant::Typeref)?
+            }
         };
         Ok(Self {
             is_const: tinfo_raw.is_const,
@@ -190,14 +233,18 @@ impl Type {
             flags: section::TILSectionFlags(0),
             description: Vec::new(),
             dependencies: Vec::new(),
-            compiler_id: 0,
-            cm: 0,
             size_enum: None,
             size_int: 4.try_into().unwrap(),
             size_bool: 1.try_into().unwrap(),
             def_align: None,
             size_long_double: None,
             extended_sizeof_info: None,
+            cc: None,
+            cn: None,
+            type_ordinal_alias: None,
+            is_universal: true,
+            compiler_id: crate::id0::Compiler::Unknown,
+            cm: None,
         };
         let mut reader = data;
         let type_raw = TypeRaw::read(&mut reader, &header)?;
@@ -221,7 +268,13 @@ impl Type {
                 Some(field)
             }
         });
-        let result = Self::new(&header, type_raw, &mut fields_iter)?;
+        let result = Self::new(
+            &header,
+            &HashMap::new(),
+            &HashMap::new(),
+            type_raw,
+            &mut fields_iter,
+        )?;
         #[cfg(feature = "restrictive")]
         ensure!(
             fields_iter.next().is_none(),
@@ -244,13 +297,13 @@ pub(crate) enum TypeVariantRaw {
     Pointer(PointerRaw),
     Function(FunctionRaw),
     Array(ArrayRaw),
-    Typedef(Typedef),
+    Typedef(TypedefRaw),
     Struct(StructRaw),
     Union(UnionRaw),
     Enum(EnumRaw),
-    StructRef(Typedef),
-    UnionRef(Typedef),
-    EnumRef(Typedef),
+    StructRef(TypedefRaw),
+    UnionRef(TypedefRaw),
+    EnumRef(TypedefRaw),
     Bitfield(Bitfield),
 }
 
@@ -304,7 +357,7 @@ impl TypeRaw {
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480369
             (flag::tf_complex::BT_COMPLEX, flag::tf_complex::BTMT_TYPEDEF) => {
-                Typedef::read(input)
+                TypedefRaw::read(input)
                     .context("Type::Typedef")
                     .map(TypeVariantRaw::Typedef)?
             }
@@ -357,9 +410,8 @@ impl TypeRaw {
 
         let mut bytes = &bytes[..];
         let result = TypeRaw::read(&mut bytes, header)?;
-        if !bytes.is_empty() {
-            return Err(anyhow!("Unable to fully parser Type ref"));
-        }
+        #[cfg(feature = "restrictive")]
+        ensure!(bytes.is_empty(), "Unable to fully parser Type ref");
         Ok(result)
     }
 }
@@ -509,13 +561,12 @@ impl Basic {
 }
 
 #[derive(Clone, Debug)]
-pub enum Typedef {
-    // TODO make this a `Id0TilOrd`
+pub enum TypedefRaw {
     Ordinal(u32),
     Name(Option<Vec<u8>>),
 }
 
-impl Typedef {
+impl TypedefRaw {
     fn read(input: &mut impl IdaGenericUnpack) -> Result<Self> {
         let buf = input.unpack_dt_bytes()?;
         match &buf[..] {
@@ -527,12 +578,106 @@ impl Typedef {
                         "Typedef Ordinal with more data then expected"
                     ));
                 }
-                Ok(Typedef::Ordinal(de))
+                Ok(Self::Ordinal(de))
             }
-            _ => {
-                Ok(Typedef::Name(if buf.is_empty() { None } else { Some(buf) }))
-            }
+            _ => Ok(Self::Name(if buf.is_empty() { None } else { Some(buf) })),
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum Typeref {
+    Ref(usize),
+    UnresolvedName {
+        name: Option<Vec<u8>>,
+        ref_type: Option<TyperefType>,
+    },
+    UnresolvedOrd {
+        ord: u32,
+        ref_type: Option<TyperefType>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TyperefType {
+    Struct,
+    Union,
+    Enum,
+}
+
+impl Typeref {
+    pub(crate) fn new(
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
+        tyref: TypedefRaw,
+    ) -> Result<Self> {
+        let pos = match tyref {
+            // TODO check is ord is set on the header
+            TypedefRaw::Ordinal(ord) => {
+                let Some(pos) = type_by_ord.get(&(ord.into())) else {
+                    return Ok(Self::UnresolvedOrd {
+                        ord,
+                        ref_type: None,
+                    });
+                };
+                pos
+            }
+            TypedefRaw::Name(None) => {
+                return Ok(Self::UnresolvedName {
+                    name: None,
+                    ref_type: None,
+                })
+            }
+            TypedefRaw::Name(Some(name)) => {
+                let Some(pos) = type_by_name.get(&name[..]) else {
+                    return Ok(Self::UnresolvedName {
+                        name: Some(name),
+                        ref_type: None,
+                    });
+                };
+                pos
+            }
+        };
+        Ok(Self::Ref(*pos))
+    }
+
+    fn new_struct(
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
+        x: TypedefRaw,
+    ) -> Result<Self> {
+        let mut result = Self::new(type_by_name, type_by_ord, x)?;
+        if let Typeref::UnresolvedName { name: _, ref_type } = &mut result {
+            *ref_type = Some(TyperefType::Struct)
+        }
+        // TODO check the inner type is in fact a struct
+        Ok(result)
+    }
+
+    fn new_union(
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
+        x: TypedefRaw,
+    ) -> Result<Self> {
+        let mut result = Self::new(type_by_name, type_by_ord, x)?;
+        if let Typeref::UnresolvedName { name: _, ref_type } = &mut result {
+            *ref_type = Some(TyperefType::Union)
+        }
+        // TODO check the inner type is in fact a union
+        Ok(result)
+    }
+
+    fn new_enum(
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
+        x: TypedefRaw,
+    ) -> Result<Self> {
+        let mut result = Self::new(type_by_name, type_by_ord, x)?;
+        if let Typeref::UnresolvedName { name: _, ref_type } = &mut result {
+            *ref_type = Some(TyperefType::Enum)
+        }
+        // TODO check the inner type is in fact a enum
+        Ok(result)
     }
 }
 

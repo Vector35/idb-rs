@@ -1,11 +1,12 @@
+use std::collections::HashMap;
 use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
-use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeRaw};
 use anyhow::{anyhow, ensure, Context, Result};
 use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 
+use super::section::TILSectionHeader;
 use super::{TypeAttribute, TypeVariantRaw};
 
 #[derive(Clone, Debug)]
@@ -28,6 +29,8 @@ pub struct Struct {
 impl Struct {
     pub(crate) fn new(
         til: &TILSectionHeader,
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
         value: StructRaw,
         fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
@@ -38,6 +41,8 @@ impl Struct {
                 StructMember::new(
                     til,
                     fields.next().flatten(),
+                    type_by_name,
+                    type_by_ord,
                     member,
                     &mut *fields,
                 )
@@ -195,12 +200,20 @@ impl StructMember {
     fn new(
         til: &TILSectionHeader,
         name: Option<Vec<u8>>,
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
         m: StructMemberRaw,
         fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
         Ok(Self {
             name,
-            member_type: Type::new(til, m.ty, fields)?,
+            member_type: Type::new(
+                til,
+                type_by_name,
+                type_by_ord,
+                m.ty,
+                fields,
+            )?,
             att: m.att,
             alignment: m.alignment,
             is_baseclass: m.is_baseclass,

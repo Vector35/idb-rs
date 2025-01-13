@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use std::num::{NonZeroU16, NonZeroU8};
 
 use crate::ida_reader::IdaGenericBufUnpack;
-use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeAttribute, TypeRaw};
+
+use super::section::TILSectionHeader;
 
 #[derive(Clone, Debug)]
 pub struct Array {
@@ -14,6 +16,8 @@ pub struct Array {
 impl Array {
     pub(crate) fn new(
         til: &TILSectionHeader,
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
         value: ArrayRaw,
         fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> anyhow::Result<Self> {
@@ -21,8 +25,14 @@ impl Array {
             alignment: value.alignment,
             base: value.base,
             nelem: value.nelem,
-            elem_type: Type::new(til, *value.elem_type, fields)
-                .map(Box::new)?,
+            elem_type: Type::new(
+                til,
+                type_by_name,
+                type_by_ord,
+                *value.elem_type,
+                fields,
+            )
+            .map(Box::new)?,
         })
     }
 }

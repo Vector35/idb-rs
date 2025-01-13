@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 
 use crate::ida_reader::IdaGenericBufUnpack;
-use crate::til::section::TILSectionHeader;
 use crate::til::{Type, TypeAttribute, TypeRaw};
+
+use super::section::TILSectionHeader;
 
 #[derive(Debug, Clone)]
 pub struct Pointer {
@@ -15,6 +18,8 @@ pub struct Pointer {
 impl Pointer {
     pub(crate) fn new(
         til: &TILSectionHeader,
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
         raw: PointerRaw,
         fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
     ) -> Result<Self> {
@@ -23,16 +28,28 @@ impl Pointer {
             .map(|(t, v)| -> Result<_> {
                 Ok((
                     // TODO if this type allow non typedef, this may consume fields
-                    Type::new(til, *t, &mut vec![].into_iter())
-                        .map(Box::new)?,
+                    Type::new(
+                        til,
+                        type_by_name,
+                        type_by_ord,
+                        *t,
+                        &mut vec![].into_iter(),
+                    )
+                    .map(Box::new)?,
                     v,
                 ))
             })
             .transpose()?;
-        let typ = Type::new(til, *raw.typ, fields).map(Box::new)?;
+        let typ = Type::new(til, type_by_name, type_by_ord, *raw.typ, fields)
+            .map(Box::new)?;
         Ok(Self {
             // TODO forward fields to closure?
-            closure: PointerType::new(til, raw.closure)?,
+            closure: PointerType::new(
+                til,
+                type_by_name,
+                type_by_ord,
+                raw.closure,
+            )?,
             modifier: raw.modifier,
             shifted,
             typ,
@@ -50,12 +67,17 @@ pub enum PointerType {
 }
 
 impl PointerType {
-    fn new(til: &TILSectionHeader, raw: PointerTypeRaw) -> Result<Self> {
+    fn new(
+        til: &TILSectionHeader,
+        type_by_name: &HashMap<Vec<u8>, usize>,
+        type_by_ord: &HashMap<u64, usize>,
+        raw: PointerTypeRaw,
+    ) -> Result<Self> {
         match raw {
             PointerTypeRaw::Closure(c) => {
                 // TODO subtype get the fields?
                 let mut sub_fields = vec![].into_iter();
-                Type::new(til, *c, &mut sub_fields)
+                Type::new(til, type_by_name, type_by_ord, *c, &mut sub_fields)
                     .map(Box::new)
                     .map(Self::Closure)
             }

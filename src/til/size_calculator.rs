@@ -7,7 +7,7 @@ use super::r#enum::Enum;
 use super::r#struct::StructMember;
 use super::section::TILSection;
 use super::union::Union;
-use super::{Basic, Type, TypeVariant, Typedef};
+use super::{Basic, Type, TypeVariant, Typeref};
 
 pub struct TILTypeSizeSolver<'a> {
     section: &'a TILSection,
@@ -63,13 +63,13 @@ impl<'a> TILTypeSizeSolver<'a> {
             TypeVariant::Basic(Basic::Void) => 0,
             TypeVariant::Basic(Basic::Unknown { bytes }) => (*bytes).into(),
             TypeVariant::Basic(Basic::Bool) => {
-                self.section.size_bool.get().into()
+                self.section.header.size_bool.get().into()
             }
             TypeVariant::Basic(Basic::Short { .. }) => {
                 self.section.sizeof_short().get().into()
             }
             TypeVariant::Basic(Basic::Int { .. }) => {
-                self.section.size_int.get().into()
+                self.section.header.size_int.get().into()
             }
             TypeVariant::Basic(Basic::Long { .. }) => {
                 self.section.sizeof_long().get().into()
@@ -86,6 +86,7 @@ impl<'a> TILTypeSizeSolver<'a> {
             // TODO what's the long double default size if it's not defined?
             TypeVariant::Basic(Basic::LongDouble) => self
                 .section
+                .header
                 .size_long_double
                 .map(|x| x.get())
                 .unwrap_or(8)
@@ -100,10 +101,7 @@ impl<'a> TILTypeSizeSolver<'a> {
                 let nelem = array.nelem.map(|x| x.get()).unwrap_or(0) as u64;
                 element_len * nelem
             }
-            TypeVariant::StructRef(ref_type)
-            | TypeVariant::UnionRef(ref_type)
-            | TypeVariant::EnumRef(ref_type)
-            | TypeVariant::Typedef(ref_type) => self.solve_typedef(ref_type)?,
+            TypeVariant::Typeref(ref_type) => self.solve_typedef(ref_type)?,
             TypeVariant::Struct(til_struct) => {
                 let mut sum = 0u64;
                 // TODO default alignment, seems like default alignemnt is the field size
@@ -166,7 +164,7 @@ impl<'a> TILTypeSizeSolver<'a> {
                 max
             }
             TypeVariant::Enum(Enum { storage_size, .. }) => storage_size
-                .or(self.section.size_enum)
+                .or(self.section.header.size_enum)
                 .map(|x| x.get())
                 .unwrap_or(4)
                 .into(),
@@ -174,28 +172,22 @@ impl<'a> TILTypeSizeSolver<'a> {
         })
     }
 
-    fn solve_typedef(&mut self, typedef: &Typedef) -> Option<u64> {
-        let idx = match typedef {
-            Typedef::Name(name) => {
-                // NOTE missing names may indicate a external type, just return no size
-                self.section.get_name_idx(name.as_ref()?)?
-            }
-            Typedef::Ordinal(ord) => self
-                .section
-                .get_ord_idx(crate::id0::Id0TilOrd { ord: (*ord).into() })?,
+    fn solve_typedef(&mut self, typedef: &Typeref) -> Option<u64> {
+        let Typeref::Ref(idx) = typedef else {
+            return None;
         };
         // if cached return it
-        if let Some(solved) = self.cached(idx) {
+        if let Some(solved) = self.cached(*idx) {
             return Some(solved);
         }
-        if !self.solving.insert(idx) {
+        if !self.solving.insert(*idx) {
             return None;
         }
-        let inner_type = self.section.get_type_by_idx(idx);
+        let inner_type = self.section.get_type_by_idx(*idx);
         let result = self.inner_type_size_bytes(&inner_type.tinfo);
         self.solving.remove(&idx);
         if let Some(result) = result {
-            assert!(self.solved.insert(idx, result).is_none());
+            assert!(self.solved.insert(*idx, result).is_none());
         }
         result
     }
@@ -210,29 +202,13 @@ impl<'a> TILTypeSizeSolver<'a> {
                 let size = self.inner_type_size_bytes(&array.elem_type);
                 self.alignemnt(&array.elem_type, size.unwrap_or(1))
             }
-            TypeVariant::EnumRef(ty) => {
-                let ty = match ty {
-                    Typedef::Ordinal(ord) => self
-                        .section
-                        .get_ord(crate::id0::Id0TilOrd { ord: (*ord).into() }),
-                    Typedef::Name(Some(name)) => self.section.get_name(name),
-                    Typedef::Name(None) => None,
+            TypeVariant::Typeref(ty) => {
+                let Typeref::Ref(idx) = ty else {
+                    return None;
                 };
-                ty.and_then(|ty| self.inner_type_size_bytes(&ty.tinfo))
-            }
-            TypeVariant::Typedef(ty) => {
-                let ty = match ty {
-                    Typedef::Ordinal(ord) => self
-                        .section
-                        .get_ord(crate::id0::Id0TilOrd { ord: (*ord).into() }),
-                    Typedef::Name(Some(name)) => self.section.get_name(name),
-                    Typedef::Name(None) => None,
-                };
-                ty.and_then(|ty| {
-                    let size =
-                        self.inner_type_size_bytes(&ty.tinfo).unwrap_or(1);
-                    self.alignemnt(&ty.tinfo, size)
-                })
+                let ty = &self.section.types[*idx].tinfo;
+                let size = self.inner_type_size_bytes(ty).unwrap_or(1);
+                self.alignemnt(ty, size)
             }
             _ => None,
         }
