@@ -376,8 +376,8 @@ fn print_til_type_root(
         | TypeVariant::Union(_)
         | TypeVariant::Enum(_) => {}
         TypeVariant::Typeref(Typeref {
-            typeref_value: TyperefValue::UnsolvedName(Some(_)),
-            ref_type: _,
+            typeref_value: TyperefValue::UnsolvedName(None),
+            ref_type: Some(_),
         }) => {}
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x443906
         _ => write!(fmt, "typedef ")?,
@@ -652,7 +652,7 @@ fn print_til_type_array(
         &til_array.elem_type,
         false,
         print_pointer_space,
-        false,
+        true,
         true,
     )?;
     if let Some(name) = name {
@@ -685,38 +685,36 @@ fn print_til_type_typedef(
     if til_type.is_const {
         write!(fmt, "const ")?;
     }
-    let mut need_prefix_space = false;
+    let mut need_space = false;
     if print_prefix {
         if let Some(ref_prefix) = typedef.ref_type {
             print_typeref_type_prefix(fmt, ref_prefix)?;
-            need_prefix_space = true;
+            need_space = true;
         }
     }
     // get the type referenced by the typdef
-    let need_type_space = match &typedef.typeref_value {
+    match &typedef.typeref_value {
         TyperefValue::Ref(idx) => {
-            if need_prefix_space {
+            if need_space {
                 write!(fmt, " ")?;
             }
             let inner_ty = &section.types[*idx];
             fmt.write_all(&inner_ty.name)?;
-            true
+            need_space = true;
         }
         TyperefValue::UnsolvedName(Some(name)) => {
-            if need_prefix_space {
+            if need_space {
                 write!(fmt, " ")?;
             }
             fmt.write_all(name)?;
-            true
+            need_space = true;
         }
         // Nothing to print
-        TyperefValue::UnsolvedName(None) | TyperefValue::UnsolvedOrd(_) => {
-            false
-        }
+        TyperefValue::UnsolvedName(None) | TyperefValue::UnsolvedOrd(_) => {}
     };
     // print the type name, if some
     if let Some(name) = name {
-        if need_type_space {
+        if need_space {
             write!(fmt, " ")?;
         }
         fmt.write_all(name)?;
@@ -853,6 +851,7 @@ fn print_til_type_complex_member(
     print_pointer_space: bool,
     print_name: bool,
 ) -> Result<()> {
+    // TODO make closure that print member atts: VFT, align, unaligned, packed, etc
     // if parent is not named, don't embeded it, because we can verify if it's part
     // of the parent
     let Some(parent_name) = parent_name else {
