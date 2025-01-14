@@ -229,24 +229,7 @@ impl Type {
         // TODO it's unclear what header information id0 types use to parse tils
         // maybe it just use the til sector header, or more likelly it's from
         // IDBParam  in the `Root Node`
-        let header = section::TILSectionHeader {
-            format: 12,
-            flags: section::TILSectionFlags(0),
-            description: IDBString::new(Vec::new()),
-            dependencies: Vec::new(),
-            size_enum: None,
-            size_int: 4.try_into().unwrap(),
-            size_bool: 1.try_into().unwrap(),
-            def_align: None,
-            size_long_double: None,
-            extended_sizeof_info: None,
-            cc: None,
-            cn: None,
-            type_ordinal_alias: None,
-            is_universal: true,
-            compiler_id: crate::id0::Compiler::Unknown,
-            cm: None,
-        };
+        let header = ephemeral_til_header();
         let mut reader = data;
         let type_raw = TypeRaw::read(&mut reader, &header)?;
         match reader {
@@ -811,4 +794,25 @@ fn serialize_dt(value: u16) -> Result<Vec<u8>> {
     }
     result.push(hi as u8);
     Ok(result)
+}
+
+pub fn ephemeral_til_header() -> TILSectionHeader {
+    section::TILSectionHeader {
+        format: 12,
+        flags: section::TILSectionFlags(0),
+        description: IDBString::new(Vec::new()),
+        dependencies: Vec::new(),
+        size_enum: None,
+        size_int: 4.try_into().unwrap(),
+        size_bool: 1.try_into().unwrap(),
+        def_align: None,
+        size_long_double: None,
+        extended_sizeof_info: None,
+        cc: None,
+        cn: None,
+        type_ordinal_alias: None,
+        is_universal: true,
+        compiler_id: crate::id0::Compiler::Unknown,
+        cm: None,
+    }
 }
