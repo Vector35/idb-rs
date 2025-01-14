@@ -4,6 +4,7 @@ use anyhow::Result;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::{Type, TypeAttribute, TypeRaw};
+use crate::IDBString;
 
 use super::section::TILSectionHeader;
 
@@ -21,7 +22,7 @@ impl Pointer {
         type_by_name: &HashMap<Vec<u8>, usize>,
         type_by_ord: &HashMap<u64, usize>,
         raw: PointerRaw,
-        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
         let shifted = raw
             .shifted

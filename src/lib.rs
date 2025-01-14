@@ -5,7 +5,9 @@ pub(crate) mod ida_reader;
 pub mod nam;
 pub mod til;
 
+use std::borrow::Cow;
 use std::fmt::Debug;
+use std::fmt::Write;
 use std::io::SeekFrom;
 use std::num::NonZeroU64;
 
@@ -558,6 +560,36 @@ impl VaVersion {
             b"VA*\x00" => Ok(Self::VaX),
             other_magic => Err(anyhow!("Invalid Va magic: {other_magic:?}")),
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct IDBString(Vec<u8>);
+
+impl IDBString {
+    pub fn new(data: Vec<u8>) -> Self {
+        Self(data)
+    }
+
+    pub fn as_utf8_lossy(&self) -> Cow<str> {
+        String::from_utf8_lossy(&self.0)
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+
+    pub fn into_inner(self) -> Vec<u8> {
+        self.0
+    }
+}
+
+impl std::fmt::Debug for IDBString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_char('"')?;
+        f.write_str(&self.as_utf8_lossy())?;
+        f.write_char('"')?;
+        Ok(())
     }
 }
 
