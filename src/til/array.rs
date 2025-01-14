@@ -3,6 +3,7 @@ use std::num::{NonZeroU16, NonZeroU8};
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::{Type, TypeAttribute, TypeRaw};
+use crate::IDBString;
 
 use super::section::TILSectionHeader;
 
@@ -19,7 +20,7 @@ impl Array {
         type_by_name: &HashMap<Vec<u8>, usize>,
         type_by_ord: &HashMap<u64, usize>,
         value: ArrayRaw,
-        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             alignment: value.alignment,

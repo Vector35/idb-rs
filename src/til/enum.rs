@@ -2,6 +2,7 @@ use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::{flag, TypeAttribute, TypeRaw, TypeVariantRaw};
+use crate::IDBString;
 use anyhow::{anyhow, ensure};
 
 use super::section::TILSectionHeader;
@@ -11,7 +12,7 @@ pub struct Enum {
     pub is_signed: bool,
     pub is_unsigned: bool,
     pub output_format: EnumFormat,
-    pub members: Vec<(Option<Vec<u8>>, u64)>,
+    pub members: Vec<(Option<IDBString>, u64)>,
     pub groups: Option<Vec<u16>>,
     pub storage_size: Option<NonZeroU8>,
     // TODO parse type attributes
@@ -21,7 +22,7 @@ impl Enum {
     pub(crate) fn new(
         _til: &TILSectionHeader,
         value: EnumRaw,
-        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> anyhow::Result<Self> {
         let members = value
             .members

@@ -28,10 +28,11 @@ use crate::til::pointer::{Pointer, PointerRaw};
 use crate::til::r#enum::{Enum, EnumRaw};
 use crate::til::r#struct::{Struct, StructRaw};
 use crate::til::union::{Union, UnionRaw};
+use crate::IDBString;
 
 #[derive(Debug, Clone)]
 pub struct TILTypeInfo {
-    pub name: Vec<u8>,
+    pub name: IDBString,
     pub ordinal: u64,
     pub tinfo: Type,
 }
@@ -41,14 +42,14 @@ impl TILTypeInfo {
         til: &TILSectionHeader,
         type_by_name: &HashMap<Vec<u8>, usize>,
         type_by_ord: &HashMap<u64, usize>,
-        name: Vec<u8>,
+        name: IDBString,
         ordinal: u64,
         tinfo_raw: TypeRaw,
         fields: Vec<Vec<u8>>,
     ) -> Result<Self> {
         let mut fields_iter = fields
             .into_iter()
-            .map(|field| (!field.is_empty()).then_some(field));
+            .map(|field| (!field.is_empty()).then_some(IDBString::new(field)));
         let tinfo = Type::new(
             til,
             type_by_name,
@@ -60,7 +61,7 @@ impl TILTypeInfo {
         ensure!(
             fields_iter.next().is_none(),
             "Extra fields found for til type \"{}\"",
-            String::from_utf8_lossy(&name)
+            name.as_utf8_lossy()
         );
         Ok(Self {
             name,
@@ -73,7 +74,7 @@ impl TILTypeInfo {
 #[derive(Debug, Clone)]
 pub(crate) struct TILTypeInfoRaw {
     _flags: u32,
-    pub name: Vec<u8>,
+    pub name: IDBString,
     pub ordinal: u64,
     pub tinfo: TypeRaw,
     _cmt: Vec<u8>,
@@ -111,7 +112,7 @@ impl TILTypeInfoRaw {
     fn read_inner(cursor: &mut &[u8], til: &TILSectionHeader) -> Result<Self> {
         let flags: u32 = cursor.read_u32()?;
         // TODO verify if flags equal to 0x7fff_fffe?
-        let name = cursor.read_c_string_raw()?;
+        let name = IDBString::new(cursor.read_c_string_raw()?);
         let is_u64 = (flags >> 31) != 0;
         let ordinal = match (til.format, is_u64) {
             // formats below 0x12 doesn't have 64 bits ord
@@ -121,7 +122,7 @@ impl TILTypeInfoRaw {
         let tinfo = TypeRaw::read(&mut *cursor, til).with_context(|| {
             format!(
                 "parsing `TILTypeInfo::tiinfo` for type \"{}\"",
-                String::from_utf8_lossy(&name)
+                name.as_utf8_lossy()
             )
         })?;
         let _info = cursor.read_c_string_raw()?;
@@ -169,7 +170,7 @@ impl Type {
         type_by_name: &HashMap<Vec<u8>, usize>,
         type_by_ord: &HashMap<u64, usize>,
         tinfo_raw: TypeRaw,
-        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
         let type_variant = match tinfo_raw.variant {
             TypeVariantRaw::Basic(x) => TypeVariant::Basic(x),
@@ -231,7 +232,7 @@ impl Type {
         let header = section::TILSectionHeader {
             format: 12,
             flags: section::TILSectionFlags(0),
-            description: Vec::new(),
+            description: IDBString::new(Vec::new()),
             dependencies: Vec::new(),
             size_enum: None,
             size_int: 4.try_into().unwrap(),
@@ -265,7 +266,7 @@ impl Type {
             if field.is_empty() {
                 None
             } else {
-                Some(field)
+                Some(IDBString::new(field))
             }
         });
         let result = Self::new(
@@ -563,7 +564,7 @@ impl Basic {
 #[derive(Clone, Debug)]
 pub enum TypedefRaw {
     Ordinal(u32),
-    Name(Option<Vec<u8>>),
+    Name(Option<IDBString>),
 }
 
 impl TypedefRaw {
@@ -580,7 +581,11 @@ impl TypedefRaw {
                 }
                 Ok(Self::Ordinal(de))
             }
-            _ => Ok(Self::Name(if buf.is_empty() { None } else { Some(buf) })),
+            _ => Ok(Self::Name(if buf.is_empty() {
+                None
+            } else {
+                Some(IDBString::new(buf))
+            })),
         }
     }
 }
@@ -594,7 +599,7 @@ pub struct Typeref {
 #[derive(Clone, Debug)]
 pub enum TyperefValue {
     Ref(usize),
-    UnsolvedName(Option<Vec<u8>>),
+    UnsolvedName(Option<IDBString>),
     UnsolvedOrd(u32),
 }
 
@@ -629,7 +634,7 @@ impl Typeref {
                 })
             }
             TypedefRaw::Name(Some(name)) => {
-                let Some(pos) = type_by_name.get(&name[..]) else {
+                let Some(pos) = type_by_name.get(name.as_bytes()) else {
                     return Ok(Self {
                         ref_type: None,
                         typeref_value: TyperefValue::UnsolvedName(Some(name)),

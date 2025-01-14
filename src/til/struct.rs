@@ -3,6 +3,7 @@ use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::{Type, TypeRaw};
+use crate::IDBString;
 use anyhow::{anyhow, ensure, Context, Result};
 use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 
@@ -32,7 +33,7 @@ impl Struct {
         type_by_name: &HashMap<Vec<u8>, usize>,
         type_by_ord: &HashMap<u64, usize>,
         value: StructRaw,
-        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
         let members = value
             .members
@@ -184,7 +185,7 @@ impl StructRaw {
 
 #[derive(Clone, Debug)]
 pub struct StructMember {
-    pub name: Option<Vec<u8>>,
+    pub name: Option<IDBString>,
     pub member_type: Type,
     pub att: Option<StructMemberAtt>,
 
@@ -199,11 +200,11 @@ pub struct StructMember {
 impl StructMember {
     fn new(
         til: &TILSectionHeader,
-        name: Option<Vec<u8>>,
+        name: Option<IDBString>,
         type_by_name: &HashMap<Vec<u8>, usize>,
         type_by_ord: &HashMap<u64, usize>,
         m: StructMemberRaw,
-        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
         Ok(Self {
             name,

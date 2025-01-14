@@ -1,7 +1,7 @@
 use crate::id0::{Compiler, Id0TilOrd};
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::{flag, TILMacro, TILTypeInfo, TILTypeInfoRaw};
-use crate::IDBSectionCompression;
+use crate::{IDBSectionCompression, IDBString};
 use anyhow::{anyhow, ensure, Result};
 use serde::{Deserialize, Serialize};
 
@@ -34,11 +34,11 @@ pub(crate) struct TILSectionRaw {
 pub struct TILSectionHeader {
     pub format: u32,
     /// short file name (without path and extension)
-    pub description: Vec<u8>,
+    pub description: IDBString,
     pub flags: TILSectionFlags,
     // TODO unclear what exacly dependency is for
     /// module required
-    pub dependencies: Vec<Vec<u8>>,
+    pub dependencies: Vec<IDBString>,
     /// the compiler used to generated types
     pub compiler_id: Compiler,
     /// default calling convention
@@ -134,13 +134,14 @@ impl TILSectionRaw {
                 .dependencies
                 .split(|x| *x == b',')
                 .map(<[_]>::to_vec)
+                .map(IDBString::new)
                 .collect()
         } else {
             vec![]
         };
         let mut header = TILSectionHeader {
             format: header_raw.format,
-            description: header_raw.description,
+            description: IDBString::new(header_raw.description),
             flags: header_raw.flags,
             dependencies,
             compiler_id: Compiler::from_value(header_raw.compiler_id),
@@ -615,7 +616,7 @@ impl TILSection {
     }
 
     pub fn get_name_idx(&self, name: &[u8]) -> Option<usize> {
-        self.types.iter().position(|ty| ty.name.as_slice() == name)
+        self.types.iter().position(|ty| ty.name.as_bytes() == name)
     }
 
     pub fn get_name(&self, name: &[u8]) -> Option<&TILTypeInfo> {
@@ -685,7 +686,7 @@ impl TILSection {
             .types
             .iter()
             .enumerate()
-            .map(|(i, til)| (til.name.to_vec(), i))
+            .map(|(i, til)| (til.name.clone().into_inner(), i))
             .collect();
         let type_by_ord = type_info_raw
             .types

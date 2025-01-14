@@ -11,7 +11,7 @@ use idb_rs::til::{
     Basic, TILTypeInfo, TILTypeSizeSolver, Type, TypeVariant, Typeref,
     TyperefType, TyperefValue,
 };
-use idb_rs::{IDBParser, IDBSectionCompression};
+use idb_rs::{IDBParser, IDBSectionCompression, IDBString};
 
 use std::fs::File;
 use std::io::{BufReader, Result, Write};
@@ -45,7 +45,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> Result<()> {
         // TODO open those files? What todo with then?
         write!(fmt, "Warning: ")?;
         for dependency in &section.header.dependencies {
-            fmt.write_all(dependency)?;
+            fmt.write_all(dependency.as_bytes())?;
             writeln!(fmt, ": No such file or directory")?;
         }
     }
@@ -83,7 +83,7 @@ fn print_header(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     // the description of the file
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b710
     write!(fmt, "Description: ")?;
-    fmt.write_all(&section.header.description)?;
+    fmt.write_all(&section.header.description.as_bytes())?;
     writeln!(fmt)?;
 
     // flags from the section header
@@ -248,12 +248,13 @@ fn print_symbols(
         write!(fmt, " {} ", sym_kind)?;
 
         // TODO investiage this
-        let name = if symbol.ordinal == 0 && symbol.name.first() == Some(&b'_')
+        let symbol_name = symbol.name.as_bytes();
+        let name = if symbol.ordinal == 0 && symbol_name.first() == Some(&b'_')
         {
             // remove the first "_", if any
-            &symbol.name[1..]
+            &symbol.name.as_bytes()[1..]
         } else {
-            &symbol.name
+            symbol.name.as_bytes()
         };
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a3a
         print_til_type(
@@ -338,7 +339,7 @@ fn print_types_by_ordinals(
         print_til_type_root(
             fmt,
             section,
-            Some(&final_type.name),
+            Some(final_type.name.as_bytes()),
             &final_type.tinfo,
         )?;
         writeln!(fmt, ";")?;
@@ -352,12 +353,17 @@ fn print_types_by_name(
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     for (idx, symbol) in section.types.iter().enumerate() {
-        if symbol.name.is_empty() {
+        if symbol.name.as_bytes().is_empty() {
             continue;
         }
         print_til_type_len(fmt, Some(idx), &symbol.tinfo, solver).unwrap();
         write!(fmt, " ")?;
-        print_til_type_root(fmt, section, Some(&symbol.name), &symbol.tinfo)?;
+        print_til_type_root(
+            fmt,
+            section,
+            Some(symbol.name.as_bytes()),
+            &symbol.tinfo,
+        )?;
         writeln!(fmt, ";")?;
     }
     Ok(())
@@ -612,7 +618,7 @@ fn print_til_type_function(
         if i != 0 {
             write!(fmt, ", ")?;
         }
-        let param_name = param_name.as_ref().map(Vec::as_slice);
+        let param_name = param_name.as_ref().map(IDBString::as_bytes);
         print_til_type(
             fmt, section, param_name, param, false, true, false, true,
         )?;
@@ -699,14 +705,14 @@ fn print_til_type_typedef(
                 write!(fmt, " ")?;
             }
             let inner_ty = &section.types[*idx];
-            fmt.write_all(&inner_ty.name)?;
+            fmt.write_all(inner_ty.name.as_bytes())?;
             need_space = true;
         }
         TyperefValue::UnsolvedName(Some(name)) => {
             if need_space {
                 write!(fmt, " ")?;
             }
-            fmt.write_all(name)?;
+            fmt.write_all(name.as_bytes())?;
             need_space = true;
         }
         // Nothing to print
@@ -785,7 +791,7 @@ fn print_til_type_struct(
 
     write!(fmt, "{{")?;
     for member in members {
-        let member_name = member.name.as_deref();
+        let member_name = member.name.as_ref().map(IDBString::as_bytes);
         print_til_type_complex_member(
             fmt,
             section,
@@ -816,7 +822,7 @@ fn print_til_type_union(
     if let Some(align) = til_union.alignment {
         write!(fmt, "__attribute__((aligned({align}))) ")?;
     }
-    if let Some(name) = name {
+    if let Some(name) = &name {
         if print_name {
             fmt.write_all(name)?;
             write!(fmt, " ")?;
@@ -824,7 +830,7 @@ fn print_til_type_union(
     }
     write!(fmt, "{{")?;
     for (member_name, member) in &til_union.members {
-        let member_name = member_name.as_deref();
+        let member_name = member_name.as_ref().map(IDBString::as_bytes);
         print_til_type_complex_member(
             fmt,
             section,
@@ -905,7 +911,7 @@ fn print_til_type_complex_member(
             if let Some(ref_type) = &typedef.ref_type {
                 print_typeref_type_prefix(fmt, *ref_type)?;
             }
-            fmt.write_all(&name)?;
+            fmt.write_all(name.as_bytes())?;
             return Ok(());
         }
         TyperefValue::UnsolvedOrd(_) | TyperefValue::UnsolvedName(None) => {
@@ -926,7 +932,11 @@ fn print_til_type_complex_member(
     // we embed it
     let qualified_parent_name: Vec<_> =
         parent_name.iter().chain(b"::").copied().collect();
-    if !inner_type.name.starts_with(&qualified_parent_name) {
+    if !inner_type
+        .name
+        .as_bytes()
+        .starts_with(&qualified_parent_name)
+    {
         return print_til_type(
             fmt,
             section,
@@ -942,7 +952,7 @@ fn print_til_type_complex_member(
     print_til_type(
         fmt,
         section,
-        Some(&inner_type.name),
+        Some(inner_type.name.as_bytes()),
         &inner_type.tinfo,
         is_vft,
         print_pointer_space,
@@ -987,7 +997,7 @@ fn print_til_type_enum(
     write!(fmt, "{{")?;
     for (member_name, value) in &til_enum.members {
         if let Some(member_name) = member_name {
-            fmt.write_all(member_name)?;
+            fmt.write_all(member_name.as_bytes())?;
         }
         write!(fmt, " = ")?;
         match til_enum.output_format {
@@ -1183,7 +1193,7 @@ fn print_til_type_only(
             typeref_value: TyperefValue::UnsolvedName(Some(name)),
             ref_type: _,
         }) => {
-            fmt.write_all(name)?;
+            fmt.write_all(name.as_bytes())?;
         }
         TypeVariant::Typeref(Typeref {
             typeref_value: TyperefValue::UnsolvedName(None),
@@ -1195,7 +1205,7 @@ fn print_til_type_only(
         }) => {
             //TypeVariant::Typeref(Typeref::Ordinal(ord)) => {
             let ty = &section.types[*idx];
-            fmt.write_all(&ty.name)?;
+            fmt.write_all(ty.name.as_bytes())?;
         }
         _ => {}
     };

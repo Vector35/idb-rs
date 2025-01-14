@@ -55,9 +55,9 @@ pub fn dump_til(args: &Args) -> Result<()> {
     } = &til;
     // write the header info
     println!("format: {format}");
-    println!("description: {}", String::from_utf8_lossy(description));
+    println!("description: {}", description.as_utf8_lossy());
     for (i, dependency) in dependencies.iter().enumerate() {
-        println!("dependency-{i}: {}", String::from_utf8_lossy(dependency));
+        println!("dependency-{i}: {}", dependency.as_utf8_lossy());
     }
     println!("id: {compiler_id:?}");
     println!("cc: {cc:?}");

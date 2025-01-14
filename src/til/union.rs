@@ -5,6 +5,7 @@ use std::num::NonZeroU8;
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::{Type, TypeRaw};
+use crate::IDBString;
 
 use super::section::TILSectionHeader;
 use super::{TypeAttribute, TypeVariantRaw};
@@ -13,7 +14,7 @@ use super::{TypeAttribute, TypeVariantRaw};
 pub struct Union {
     pub effective_alignment: u16,
     pub alignment: Option<NonZeroU8>,
-    pub members: Vec<(Option<Vec<u8>>, Type)>,
+    pub members: Vec<(Option<IDBString>, Type)>,
 
     pub is_unaligned: bool,
     pub is_unknown_8: bool,
@@ -24,7 +25,7 @@ impl Union {
         type_by_name: &HashMap<Vec<u8>, usize>,
         type_by_ord: &HashMap<u64, usize>,
         value: UnionRaw,
-        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
         let members = value
             .members

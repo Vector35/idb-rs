@@ -3,6 +3,7 @@ use std::num::NonZeroU8;
 
 use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
 use crate::til::{Basic, Type, TypeRaw};
+use crate::IDBString;
 use anyhow::{anyhow, ensure, Context, Result};
 
 use super::section::TILSectionHeader;
@@ -12,7 +13,7 @@ use super::TypeVariantRaw;
 pub struct Function {
     pub calling_convention: Option<CallingConvention>,
     pub ret: Box<Type>,
-    pub args: Vec<(Option<Vec<u8>>, Type, Option<ArgLoc>)>,
+    pub args: Vec<(Option<IDBString>, Type, Option<ArgLoc>)>,
     pub retloc: Option<ArgLoc>,
 
     pub method: Option<CallMethod>,
@@ -32,7 +33,7 @@ impl Function {
         type_by_name: &HashMap<Vec<u8>, usize>,
         type_by_ord: &HashMap<u64, usize>,
         value: FunctionRaw,
-        fields: &mut impl Iterator<Item = Option<Vec<u8>>>,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
         let ret = Type::new(
             til,
