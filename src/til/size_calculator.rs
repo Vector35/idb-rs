@@ -136,7 +136,7 @@ impl<'a> TILTypeSizeSolver<'a> {
                     if !til_struct.is_unaligned {
                         let align = match (
                             first_member.alignment.map(|x| x.get().into()),
-                            self.alignemnt(
+                            self.type_align_bytes(
                                 &first_member.member_type,
                                 field_size,
                             ),
@@ -185,14 +185,17 @@ impl<'a> TILTypeSizeSolver<'a> {
         }
         let inner_type = self.section.get_type_by_idx(*idx);
         let result = self.inner_type_size_bytes(&inner_type.tinfo);
-        self.solving.remove(&idx);
+        self.solving.remove(idx);
         if let Some(result) = result {
             assert!(self.solved.insert(*idx, result).is_none());
         }
         result
     }
-
-    fn alignemnt(&mut self, til: &Type, til_size: u64) -> Option<u64> {
+    pub fn type_align_bytes(
+        &mut self,
+        til: &Type,
+        til_size: u64,
+    ) -> Option<u64> {
         match &til.type_variant {
             // TODO basic types have a inherited alignment?
             TypeVariant::Basic(_)
@@ -200,7 +203,7 @@ impl<'a> TILTypeSizeSolver<'a> {
             | TypeVariant::Pointer(_) => Some(til_size),
             TypeVariant::Array(array) => {
                 let size = self.inner_type_size_bytes(&array.elem_type);
-                self.alignemnt(&array.elem_type, size.unwrap_or(1))
+                self.type_align_bytes(&array.elem_type, size.unwrap_or(1))
             }
             TypeVariant::Typeref(ty) => {
                 let TyperefValue::Ref(idx) = &ty.typeref_value else {
@@ -208,7 +211,7 @@ impl<'a> TILTypeSizeSolver<'a> {
                 };
                 let ty = &self.section.types[*idx].tinfo;
                 let size = self.inner_type_size_bytes(ty).unwrap_or(1);
-                self.alignemnt(ty, size)
+                self.type_align_bytes(ty, size)
             }
             _ => None,
         }
