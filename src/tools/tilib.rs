@@ -13,20 +13,30 @@ use idb_rs::til::{
 };
 use idb_rs::{IDBParser, IDBSectionCompression, IDBString};
 
+use std::borrow::Cow;
 use std::fs::File;
 use std::io::{BufReader, Result, Write};
 use std::num::NonZeroU8;
 
-use crate::{Args, FileType};
+use crate::{Args, FileType, PrintTilibArgs};
 
-pub fn tilib_print(args: &Args) -> anyhow::Result<()> {
+const SPACE: &str = "";
+const INDENT_LEN: usize = 2;
+const DEFAULT_TILIB_ARGS: PrintTilibArgs = PrintTilibArgs {
+    dump_struct_layout: Some(false),
+};
+
+pub fn tilib_print(
+    args: &Args,
+    tilib_args: &PrintTilibArgs,
+) -> anyhow::Result<()> {
     // parse the id0 sector/file
     let mut input = BufReader::new(File::open(&args.input)?);
     match args.input_type() {
         FileType::Til => {
             let section =
                 TILSection::read(&mut input, IDBSectionCompression::None)?;
-            print_til_section(std::io::stdout(), &section)?;
+            print_til_section(std::io::stdout(), &section, tilib_args)?;
         }
         FileType::Idb => {
             let mut parser = IDBParser::new(input)?;
@@ -34,13 +44,17 @@ pub fn tilib_print(args: &Args) -> anyhow::Result<()> {
                 anyhow::anyhow!("IDB file don't contains a TIL sector")
             })?;
             let section = parser.read_til_section(til_offset)?;
-            print_til_section(std::io::stdout(), &section)?;
+            print_til_section(std::io::stdout(), &section, tilib_args)?;
         }
     }
     Ok(())
 }
 
-fn print_til_section(mut fmt: impl Write, section: &TILSection) -> Result<()> {
+fn print_til_section(
+    mut fmt: impl Write,
+    section: &TILSection,
+    tilib_args: &PrintTilibArgs,
+) -> Result<()> {
     if !section.header.dependencies.is_empty() {
         // TODO open those files? What todo with then?
         write!(fmt, "Warning: ")?;
@@ -65,7 +79,7 @@ fn print_til_section(mut fmt: impl Write, section: &TILSection) -> Result<()> {
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b94d
     writeln!(fmt, "TYPES")?;
-    print_types(&mut fmt, section, &mut size_solver)?;
+    print_types(&mut fmt, tilib_args, section, &mut size_solver)?;
     writeln!(fmt)?;
 
     // TODO streams
@@ -83,7 +97,7 @@ fn print_header(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     // the description of the file
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b710
     write!(fmt, "Description: ")?;
-    fmt.write_all(&section.header.description.as_bytes())?;
+    fmt.write_all(section.header.description.as_bytes())?;
     writeln!(fmt)?;
 
     // flags from the section header
@@ -259,6 +273,8 @@ fn print_symbols(
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a3a
         print_til_type(
             fmt,
+            &DEFAULT_TILIB_ARGS,
+            0,
             section,
             Some(name),
             &symbol.tinfo,
@@ -274,21 +290,23 @@ fn print_symbols(
 
 fn print_types(
     fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
     section: &TILSection,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     // TODO only print by ordinals if there are ordinals
     if section.header.flags.has_ordinal() {
         writeln!(fmt, "(enumerated by ordinals)")?;
-        print_types_by_ordinals(fmt, section, solver)?;
+        print_types_by_ordinals(fmt, tilib_args, section, solver)?;
         writeln!(fmt, "(enumerated by names)")?;
     }
-    print_types_by_name(fmt, section, solver)?;
+    print_types_by_name(fmt, tilib_args, section, solver)?;
     Ok(())
 }
 
 fn print_types_by_ordinals(
     fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
     section: &TILSection,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
@@ -338,17 +356,20 @@ fn print_types_by_ordinals(
         }
         print_til_type_root(
             fmt,
+            tilib_args,
             section,
             Some(final_type.name.as_bytes()),
+            idx,
             &final_type.tinfo,
+            solver,
         )?;
-        writeln!(fmt, ";")?;
     }
     Ok(())
 }
 
 fn print_types_by_name(
     fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
     section: &TILSection,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
@@ -360,20 +381,26 @@ fn print_types_by_name(
         write!(fmt, " ")?;
         print_til_type_root(
             fmt,
+            tilib_args,
             section,
             Some(symbol.name.as_bytes()),
+            idx,
             &symbol.tinfo,
+            solver,
         )?;
-        writeln!(fmt, ";")?;
     }
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_til_type_root(
     fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
     section: &TILSection,
     name: Option<&[u8]>,
+    til_type_idx: usize,
     til_type: &Type,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     // TODO: InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4438d1
     // TODO: if a is a typedef and ComplexRef or something like it, also print typedef
@@ -388,11 +415,50 @@ fn print_til_type_root(
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x443906
         _ => write!(fmt, "typedef ")?,
     }
-    print_til_type(fmt, section, name, til_type, false, true, true, true)
+    print_til_type(
+        fmt, tilib_args, 0, section, name, til_type, false, true, true, true,
+    )?;
+    write!(fmt, ";")?;
+    if tilib_args.dump_struct_layout == Some(true) {
+        match &til_type.type_variant {
+            TypeVariant::Struct(til_struct) => {
+                writeln!(fmt)?;
+                print_til_type_struct_layout(
+                    fmt,
+                    tilib_args,
+                    section,
+                    name,
+                    til_type_idx,
+                    til_type,
+                    til_struct,
+                    solver,
+                )?;
+            }
+            TypeVariant::Union(til_union) => {
+                writeln!(fmt)?;
+                print_til_type_union_layout(
+                    fmt,
+                    tilib_args,
+                    section,
+                    name,
+                    til_type_idx,
+                    til_type,
+                    til_union,
+                    solver,
+                )?;
+            }
+            _ => {}
+        }
+    }
+    writeln!(fmt)?;
+    Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_til_type(
     fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
+    indent: usize,
     section: &TILSection,
     name: Option<&[u8]>,
     til_type: &Type,
@@ -436,20 +502,23 @@ fn print_til_type(
             print_type_prefix,
         ),
         TypeVariant::Struct(til_struct) => print_til_type_struct(
-            fmt, section, name, til_type, til_struct, print_name,
+            fmt, tilib_args, indent, section, name, til_type, til_struct,
+            print_name,
         ),
         TypeVariant::Union(til_union) => print_til_type_union(
-            fmt, section, name, til_type, til_union, print_name,
+            fmt, tilib_args, indent, section, name, til_type, til_union,
+            print_name,
         ),
-        TypeVariant::Enum(til_enum) => {
-            print_til_type_enum(fmt, section, name, til_type, til_enum)
-        }
+        TypeVariant::Enum(til_enum) => print_til_type_enum(
+            fmt, tilib_args, indent, section, name, til_type, til_enum,
+        ),
         TypeVariant::Bitfield(bitfield) => {
             print_til_type_bitfield(fmt, name, til_type, bitfield)
         }
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_til_type_basic(
     fmt: &mut impl Write,
     _section: &TILSection,
@@ -471,6 +540,7 @@ fn print_til_type_basic(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_til_type_pointer(
     fmt: &mut impl Write,
     section: &TILSection,
@@ -488,6 +558,8 @@ fn print_til_type_pointer(
         // TODO name
         print_til_type(
             fmt,
+            &DEFAULT_TILIB_ARGS,
+            0,
             section,
             None,
             &pointer.typ,
@@ -503,43 +575,69 @@ fn print_til_type_pointer(
             write!(fmt, " ")?;
         }
         write!(fmt, "*")?;
+        let mut add_space = false;
         if til_type.is_volatile {
-            write!(fmt, "volatile ")?;
+            if add_space {
+                write!(fmt, " ")?;
+            }
+            write!(fmt, "volatile")?;
+            add_space = true;
         }
         if til_type.is_const {
-            write!(fmt, "const ")?;
+            if add_space {
+                write!(fmt, " ")?;
+            }
+            write!(fmt, "const")?;
+            add_space = true;
         }
-        match pointer.modifier {
-            None => {}
-            Some(idb_rs::til::pointer::PointerModifier::Ptr32) => {
-                write!(fmt, "__ptr32 ")?
+        if let Some(modifier) = pointer.modifier {
+            if add_space {
+                write!(fmt, " ")?;
             }
-            Some(idb_rs::til::pointer::PointerModifier::Ptr64) => {
-                write!(fmt, "__ptr64 ")?
+            match modifier {
+                idb_rs::til::pointer::PointerModifier::Ptr32 => {
+                    write!(fmt, "__ptr32")?
+                }
+                idb_rs::til::pointer::PointerModifier::Ptr64 => {
+                    write!(fmt, "__ptr64")?
+                }
+                idb_rs::til::pointer::PointerModifier::Restricted => {
+                    write!(fmt, "__restricted")?
+                }
             }
-            Some(idb_rs::til::pointer::PointerModifier::Restricted) => {
-                write!(fmt, "__restricted ")?
-            }
+            add_space = true;
         }
         if let Some((ty, value)) = &pointer.shifted {
+            if add_space {
+                write!(fmt, " ")?;
+            }
             write!(fmt, "__shifted(")?;
             print_til_type_only(fmt, section, ty)?;
-            write!(fmt, ",{value:#X}) ")?;
+            write!(fmt, ",{value:#X})")?;
+            add_space = true;
         }
         if let Some(name) = name {
+            if add_space {
+                write!(fmt, " ")?;
+            }
             fmt.write_all(name)?;
+            add_space = true;
         }
 
         // if the pointed type itself is a VFT then the pointer need to print that
         // TODO maybe the above is not ture, it it was inheritec from the
         // struct member att
         if is_vft_parent || is_vft(section, &pointer.typ) {
-            write!(fmt, " /*VFT*/")?;
+            if add_space {
+                write!(fmt, " ")?;
+            }
+            write!(fmt, "/*VFT*/")?;
         }
     }
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_til_type_function(
     fmt: &mut impl Write,
     section: &TILSection,
@@ -557,6 +655,8 @@ fn print_til_type_function(
     // return type
     print_til_type(
         fmt,
+        &DEFAULT_TILIB_ARGS,
+        0,
         section,
         None,
         &til_function.ret,
@@ -620,7 +720,16 @@ fn print_til_type_function(
         }
         let param_name = param_name.as_ref().map(IDBString::as_bytes);
         print_til_type(
-            fmt, section, param_name, param, false, true, false, true,
+            fmt,
+            &DEFAULT_TILIB_ARGS,
+            0,
+            section,
+            param_name,
+            param,
+            false,
+            true,
+            false,
+            true,
         )?;
     }
     match til_function.calling_convention {
@@ -636,6 +745,7 @@ fn print_til_type_function(
     write!(fmt, ")")
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_til_type_array(
     fmt: &mut impl Write,
     section: &TILSection,
@@ -653,6 +763,8 @@ fn print_til_type_array(
     }
     print_til_type(
         fmt,
+        &DEFAULT_TILIB_ARGS,
+        0,
         section,
         None,
         &til_array.elem_type,
@@ -677,6 +789,7 @@ fn print_til_type_array(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_til_type_typedef(
     fmt: &mut impl Write,
     section: &TILSection,
@@ -728,8 +841,11 @@ fn print_til_type_typedef(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_til_type_struct(
     fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
+    indent: usize,
     section: &TILSection,
     name: Option<&[u8]>,
     _til_type: &Type,
@@ -741,30 +857,30 @@ fn print_til_type_struct(
     let is_cppobj = til_struct.is_cppobj
         || matches!(til_struct.members.first(), Some(first) if first.is_baseclass);
 
-    write!(fmt, "struct ")?;
+    write!(fmt, "struct")?;
     if til_struct.is_unaligned {
         if til_struct.is_uknown_8 {
-            write!(fmt, "__attribute__((packed)) ")?;
+            write!(fmt, " __attribute__((packed))")?;
         } else {
-            write!(fmt, "__unaligned ")?;
+            write!(fmt, " __unaligned")?;
         }
     }
     if til_struct.is_msstruct {
-        write!(fmt, "__attribute__((msstruct)) ")?;
+        write!(fmt, " __attribute__((msstruct))")?;
     }
     if is_cppobj {
-        write!(fmt, "__cppobj ")?;
+        write!(fmt, " __cppobj")?;
     }
     if til_struct.is_vft {
-        write!(fmt, "/*VFT*/ ")?;
+        write!(fmt, " /*VFT*/")?;
     }
     if let Some(align) = til_struct.alignment {
-        write!(fmt, "__attribute__((aligned({align}))) ")?;
+        write!(fmt, " __attribute__((aligned({align})))")?;
     }
     if let Some(name) = name {
         if print_name {
-            fmt.write_all(name)?;
             write!(fmt, " ")?;
+            fmt.write_all(name)?;
         }
     }
     let mut members = &til_struct.members[..];
@@ -772,9 +888,11 @@ fn print_til_type_struct(
         match members.first() {
             Some(baseclass) if baseclass.is_baseclass => {
                 members = &members[1..];
-                write!(fmt, ": ")?;
+                write!(fmt, " : ")?;
                 print_til_type(
                     fmt,
+                    tilib_args,
+                    indent,
                     section,
                     None,
                     &baseclass.member_type,
@@ -783,17 +901,26 @@ fn print_til_type_struct(
                     true,
                     false,
                 )?;
-                write!(fmt, " ")?;
             }
             _ => {}
         }
     }
 
-    write!(fmt, "{{")?;
+    if tilib_args.dump_struct_layout == Some(true) {
+        writeln!(fmt, "\n{SPACE:>indent$}{{")?;
+    } else {
+        write!(fmt, " {{")?;
+    }
+    let indent = indent + INDENT_LEN;
     for member in members {
+        if tilib_args.dump_struct_layout == Some(true) {
+            write!(fmt, "{SPACE:>indent$}")?;
+        }
         let member_name = member.name.as_ref().map(IDBString::as_bytes);
         print_til_type_complex_member(
             fmt,
+            tilib_args,
+            indent,
             section,
             name,
             member_name,
@@ -806,33 +933,55 @@ fn print_til_type_struct(
             print_til_struct_member_att(fmt, &member.member_type, att)?;
         }
         write!(fmt, ";")?;
+        if tilib_args.dump_struct_layout == Some(true) {
+            writeln!(fmt)?;
+        }
     }
-    write!(fmt, "}}")
+    let indent = indent - INDENT_LEN;
+    if tilib_args.dump_struct_layout == Some(true) {
+        write!(fmt, "{SPACE:>indent$}}}")?;
+    } else {
+        write!(fmt, "}}")?;
+    }
+    Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_til_type_union(
     fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
+    indent: usize,
     section: &TILSection,
     name: Option<&[u8]>,
     _til_type: &Type,
     til_union: &Union,
     print_name: bool,
 ) -> Result<()> {
-    write!(fmt, "union ")?;
+    write!(fmt, "union")?;
     if let Some(align) = til_union.alignment {
-        write!(fmt, "__attribute__((aligned({align}))) ")?;
+        write!(fmt, " __attribute__((aligned({align})))")?;
     }
     if let Some(name) = &name {
         if print_name {
-            fmt.write_all(name)?;
             write!(fmt, " ")?;
+            fmt.write_all(name)?;
         }
     }
-    write!(fmt, "{{")?;
+    if tilib_args.dump_struct_layout == Some(true) {
+        writeln!(fmt, "\n{SPACE:>indent$}{{")?;
+    } else {
+        write!(fmt, " {{")?;
+    }
+    let indent = indent + INDENT_LEN;
     for (member_name, member) in &til_union.members {
+        if tilib_args.dump_struct_layout == Some(true) {
+            write!(fmt, "{SPACE:>indent$}")?;
+        }
         let member_name = member_name.as_ref().map(IDBString::as_bytes);
         print_til_type_complex_member(
             fmt,
+            tilib_args,
+            indent,
             section,
             name,
             member_name,
@@ -842,13 +991,25 @@ fn print_til_type_union(
             true,
         )?;
         write!(fmt, ";")?;
+        if tilib_args.dump_struct_layout == Some(true) {
+            writeln!(fmt)?;
+        }
     }
-    write!(fmt, "}}")
+    let indent = indent - INDENT_LEN;
+    if tilib_args.dump_struct_layout == Some(true) {
+        write!(fmt, "{SPACE:>indent$}}}")?;
+    } else {
+        write!(fmt, "}}")?;
+    }
+    Ok(())
 }
 
 // just print the type, unless we want to embed it
+#[allow(clippy::too_many_arguments)]
 fn print_til_type_complex_member(
     fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
+    indent: usize,
     section: &TILSection,
     parent_name: Option<&[u8]>,
     name: Option<&[u8]>,
@@ -857,34 +1018,30 @@ fn print_til_type_complex_member(
     print_pointer_space: bool,
     print_name: bool,
 ) -> Result<()> {
+    let mut print_default = || {
+        print_til_type(
+            fmt,
+            tilib_args,
+            indent,
+            section,
+            name,
+            til,
+            is_vft,
+            print_pointer_space,
+            true,
+            print_name,
+        )
+    };
     // TODO make closure that print member atts: VFT, align, unaligned, packed, etc
     // if parent is not named, don't embeded it, because we can verify if it's part
     // of the parent
     let Some(parent_name) = parent_name else {
-        return print_til_type(
-            fmt,
-            section,
-            name,
-            til,
-            is_vft,
-            print_pointer_space,
-            true,
-            print_name,
-        );
+        return print_default();
     };
 
     // TODO if the field is named, don't embeded it?
     if name.is_some() {
-        return print_til_type(
-            fmt,
-            section,
-            name,
-            til,
-            is_vft,
-            print_pointer_space,
-            true,
-            print_name,
-        );
+        return print_default();
     }
 
     // if typedef of complex ref, we may want to embed the definition inside the type
@@ -892,16 +1049,7 @@ fn print_til_type_complex_member(
     let typedef = match &til.type_variant {
         TypeVariant::Typeref(typedef) => typedef,
         _ => {
-            return print_til_type(
-                fmt,
-                section,
-                name,
-                til,
-                is_vft,
-                print_pointer_space,
-                true,
-                print_name,
-            );
+            return print_default();
         }
     };
 
@@ -915,16 +1063,7 @@ fn print_til_type_complex_member(
             return Ok(());
         }
         TyperefValue::UnsolvedOrd(_) | TyperefValue::UnsolvedName(None) => {
-            return print_til_type(
-                fmt,
-                section,
-                name,
-                til,
-                is_vft,
-                print_pointer_space,
-                true,
-                print_name,
-            );
+            return print_default();
         }
     };
 
@@ -939,6 +1078,8 @@ fn print_til_type_complex_member(
     {
         return print_til_type(
             fmt,
+            tilib_args,
+            indent,
             section,
             name,
             til,
@@ -951,6 +1092,8 @@ fn print_til_type_complex_member(
 
     print_til_type(
         fmt,
+        tilib_args,
+        indent + INDENT_LEN,
         section,
         Some(inner_type.name.as_bytes()),
         &inner_type.tinfo,
@@ -961,8 +1104,11 @@ fn print_til_type_complex_member(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_til_type_enum(
     fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
+    indent: usize,
     section: &TILSection,
     name: Option<&[u8]>,
     _til_type: &Type,
@@ -971,15 +1117,15 @@ fn print_til_type_enum(
     use idb_rs::til::r#enum::EnumFormat::*;
 
     let output_fmt_name = match til_enum.output_format {
-        Char => "__char ",
         Hex => "",
-        SignedDecimal => "__dec ",
-        UnsignedDecimal => "__udec ",
+        Char => " __char",
+        SignedDecimal => " __dec",
+        UnsignedDecimal => " __udec",
     };
-    write!(fmt, "enum {output_fmt_name}")?;
+    write!(fmt, "enum{output_fmt_name}")?;
     if let Some(name) = name {
-        fmt.write_all(name)?;
         write!(fmt, " ")?;
+        fmt.write_all(name)?;
     }
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4443b0
     if til_enum.storage_size.is_some()
@@ -988,14 +1134,22 @@ fn print_til_type_enum(
     {
         let bytes = til_enum.storage_size.or(section.header.size_enum).unwrap();
         let signed = if til_enum.is_unsigned {
-            "unsigned "
+            " unsigned"
         } else {
             ""
         };
-        write!(fmt, ": {signed}__int{} ", bytes.get() as usize * 8)?;
+        write!(fmt, " : {signed}__int{}", bytes.get() as usize * 8)?;
     }
-    write!(fmt, "{{")?;
+    if tilib_args.dump_struct_layout == Some(true) {
+        writeln!(fmt, "\n{SPACE:>indent$}{{")?;
+    } else {
+        write!(fmt, " {{")?;
+    }
+    let indent = indent + INDENT_LEN;
     for (member_name, value) in &til_enum.members {
+        if tilib_args.dump_struct_layout == Some(true) {
+            write!(fmt, "{SPACE:>indent$}")?;
+        }
         if let Some(member_name) = member_name {
             fmt.write_all(member_name.as_bytes())?;
         }
@@ -1014,10 +1168,20 @@ fn print_til_type_enum(
             write!(fmt, "LL")?;
         }
         write!(fmt, ",")?;
+        if tilib_args.dump_struct_layout == Some(true) {
+            writeln!(fmt)?;
+        }
     }
-    write!(fmt, "}}")
+    let indent = indent - INDENT_LEN;
+    if tilib_args.dump_struct_layout == Some(true) {
+        write!(fmt, "{SPACE:>indent$}}}")?;
+    } else {
+        write!(fmt, "}}")?;
+    }
+    Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn print_til_type_bitfield(
     fmt: &mut impl Write,
     name: Option<&[u8]>,
@@ -1370,4 +1534,94 @@ fn print_typeref_type_prefix(
         idb_rs::til::TyperefType::Struct => write!(fmt, "struct"),
         idb_rs::til::TyperefType::Enum => write!(fmt, "enum"),
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn print_til_type_struct_layout(
+    fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
+    section: &TILSection,
+    name: Option<&[u8]>,
+    type_idx: usize,
+    til_type: &Type,
+    til_struct: &Struct,
+    solver: &mut TILTypeSizeSolver<'_>,
+) -> Result<()> {
+    let name = name
+        .map(String::from_utf8_lossy)
+        .unwrap_or(std::borrow::Cow::Owned(String::new()));
+    let total_size = solver
+        .type_size_bytes(Some(type_idx), til_type)
+        .unwrap_or(0xFFFF);
+    let struct_align = til_struct.alignment.map(NonZeroU8::get).unwrap_or(1);
+    let mut offset = 0;
+    for (i, member) in til_struct.members.iter().enumerate() {
+        let member_size = solver
+            .type_size_bytes(None, &member.member_type)
+            .unwrap_or(0);
+        let member_align = solver
+            .type_align_bytes(&member.member_type, member_size)
+            .or(member.alignment.map(NonZeroU8::get).map(u64::from))
+            .unwrap_or(1);
+        let member_name = member
+            .name
+            .as_ref()
+            .map(IDBString::as_utf8_lossy)
+            .unwrap_or(Cow::Owned(String::new()));
+        write!(fmt, "//{i:>3}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 {name}.{member_name} ")?;
+        print_til_type(
+            fmt,
+            tilib_args,
+            0,
+            section,
+            None,
+            &member.member_type,
+            member.is_vft,
+            true,
+            false,
+            false,
+        )?;
+        writeln!(fmt, ";")?;
+        offset += member_size;
+    }
+    writeln!(fmt, "//          {total_size:04X} effalign({struct_align}) sda=0 bits=0000 {name} struct packalign=0")?;
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn print_til_type_union_layout(
+    fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
+    section: &TILSection,
+    name: Option<&[u8]>,
+    type_idx: usize,
+    til_type: &Type,
+    til_union: &Union,
+    solver: &mut TILTypeSizeSolver<'_>,
+) -> Result<()> {
+    let name = name
+        .map(String::from_utf8_lossy)
+        .unwrap_or(std::borrow::Cow::Owned(String::new()));
+    let total_size = solver
+        .type_size_bytes(Some(type_idx), til_type)
+        .unwrap_or(0xFFFF);
+    let union_align = til_union.effective_alignment;
+    let offset = 0;
+    for (i, (member_name, member)) in til_union.members.iter().enumerate() {
+        let member_size = solver.type_size_bytes(None, member).unwrap_or(0);
+        let member_align =
+            solver.type_align_bytes(member, member_size).unwrap_or(1);
+        let member_name = member_name
+            .as_ref()
+            .map(IDBString::as_utf8_lossy)
+            .unwrap_or(Cow::Owned(String::new()));
+        write!(fmt, "//{i:>3}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 {name}.{member_name} ")?;
+        print_til_type(
+            fmt, tilib_args, 0, section, None, member, false, true, false,
+            false,
+        )?;
+        writeln!(fmt, ";")?;
+    }
+    writeln!(fmt, "//          {total_size:04X} effalign({union_align}) sda=0 bits=0000 {name} union packalign=0")?;
+    Ok(())
 }
