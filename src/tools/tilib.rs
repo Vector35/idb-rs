@@ -20,7 +20,7 @@ use std::num::NonZeroU8;
 
 use crate::{Args, FileType, PrintTilibArgs};
 
-const SPACE: &str = "";
+const AFTER_SPACE: &str = "";
 const INDENT_LEN: usize = 2;
 const DEFAULT_TILIB_ARGS: PrintTilibArgs = PrintTilibArgs {
     dump_struct_layout: Some(false),
@@ -907,14 +907,14 @@ fn print_til_type_struct(
     }
 
     if tilib_args.dump_struct_layout == Some(true) {
-        writeln!(fmt, "\n{SPACE:>indent$}{{")?;
+        writeln!(fmt, "\n{AFTER_SPACE:>indent$}{{")?;
     } else {
         write!(fmt, " {{")?;
     }
     let indent = indent + INDENT_LEN;
     for member in members {
         if tilib_args.dump_struct_layout == Some(true) {
-            write!(fmt, "{SPACE:>indent$}")?;
+            write!(fmt, "{AFTER_SPACE:>indent$}")?;
         }
         let member_name = member.name.as_ref().map(IDBString::as_bytes);
         print_til_type_complex_member(
@@ -939,7 +939,7 @@ fn print_til_type_struct(
     }
     let indent = indent - INDENT_LEN;
     if tilib_args.dump_struct_layout == Some(true) {
-        write!(fmt, "{SPACE:>indent$}}}")?;
+        write!(fmt, "{AFTER_SPACE:>indent$}}}")?;
     } else {
         write!(fmt, "}}")?;
     }
@@ -968,14 +968,14 @@ fn print_til_type_union(
         }
     }
     if tilib_args.dump_struct_layout == Some(true) {
-        writeln!(fmt, "\n{SPACE:>indent$}{{")?;
+        writeln!(fmt, "\n{AFTER_SPACE:>indent$}{{")?;
     } else {
         write!(fmt, " {{")?;
     }
     let indent = indent + INDENT_LEN;
     for (member_name, member) in &til_union.members {
         if tilib_args.dump_struct_layout == Some(true) {
-            write!(fmt, "{SPACE:>indent$}")?;
+            write!(fmt, "{AFTER_SPACE:>indent$}")?;
         }
         let member_name = member_name.as_ref().map(IDBString::as_bytes);
         print_til_type_complex_member(
@@ -997,7 +997,7 @@ fn print_til_type_union(
     }
     let indent = indent - INDENT_LEN;
     if tilib_args.dump_struct_layout == Some(true) {
-        write!(fmt, "{SPACE:>indent$}}}")?;
+        write!(fmt, "{AFTER_SPACE:>indent$}}}")?;
     } else {
         write!(fmt, "}}")?;
     }
@@ -1093,7 +1093,7 @@ fn print_til_type_complex_member(
     print_til_type(
         fmt,
         tilib_args,
-        indent + INDENT_LEN,
+        indent,
         section,
         Some(inner_type.name.as_bytes()),
         &inner_type.tinfo,
@@ -1141,14 +1141,14 @@ fn print_til_type_enum(
         write!(fmt, " : {signed}__int{}", bytes.get() as usize * 8)?;
     }
     if tilib_args.dump_struct_layout == Some(true) {
-        writeln!(fmt, "\n{SPACE:>indent$}{{")?;
+        writeln!(fmt, "\n{AFTER_SPACE:>indent$}{{")?;
     } else {
         write!(fmt, " {{")?;
     }
     let indent = indent + INDENT_LEN;
     for (member_name, value) in &til_enum.members {
         if tilib_args.dump_struct_layout == Some(true) {
-            write!(fmt, "{SPACE:>indent$}")?;
+            write!(fmt, "{AFTER_SPACE:>indent$}")?;
         }
         if let Some(member_name) = member_name {
             fmt.write_all(member_name.as_bytes())?;
@@ -1174,7 +1174,7 @@ fn print_til_type_enum(
     }
     let indent = indent - INDENT_LEN;
     if tilib_args.dump_struct_layout == Some(true) {
-        write!(fmt, "{SPACE:>indent$}}}")?;
+        write!(fmt, "{AFTER_SPACE:>indent$}}}")?;
     } else {
         write!(fmt, "}}")?;
     }
@@ -1553,14 +1553,16 @@ fn print_til_type_struct_layout(
     let total_size = solver
         .type_size_bytes(Some(type_idx), til_type)
         .unwrap_or(0xFFFF);
-    let struct_align = til_struct.alignment.map(NonZeroU8::get).unwrap_or(1);
+    let struct_align = solver
+        .type_align_bytes(Some(type_idx), &til_type, total_size)
+        .unwrap_or(1);
     let mut offset = 0;
     for (i, member) in til_struct.members.iter().enumerate() {
         let member_size = solver
             .type_size_bytes(None, &member.member_type)
             .unwrap_or(0);
         let member_align = solver
-            .type_align_bytes(&member.member_type, member_size)
+            .type_align_bytes(None, &member.member_type, member_size)
             .or(member.alignment.map(NonZeroU8::get).map(u64::from))
             .unwrap_or(1);
         let member_name = member
@@ -1605,12 +1607,15 @@ fn print_til_type_union_layout(
     let total_size = solver
         .type_size_bytes(Some(type_idx), til_type)
         .unwrap_or(0xFFFF);
-    let union_align = til_union.effective_alignment;
+    let union_align = solver
+        .type_align_bytes(Some(type_idx), &til_type, total_size)
+        .unwrap_or(1);
     let offset = 0;
     for (i, (member_name, member)) in til_union.members.iter().enumerate() {
         let member_size = solver.type_size_bytes(None, member).unwrap_or(0);
-        let member_align =
-            solver.type_align_bytes(member, member_size).unwrap_or(1);
+        let member_align = solver
+            .type_align_bytes(None, member, member_size)
+            .unwrap_or(1);
         let member_name = member_name
             .as_ref()
             .map(IDBString::as_utf8_lossy)
