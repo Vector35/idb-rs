@@ -1570,7 +1570,13 @@ fn print_til_type_struct_layout(
             .as_ref()
             .map(IDBString::as_utf8_lossy)
             .unwrap_or(Cow::Owned(String::new()));
-        write!(fmt, "//{i:>3}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 {name}.{member_name} ")?;
+        write!(fmt, "//{i:>3}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 {name}.")?;
+        if !member_name.as_bytes().is_empty() {
+            fmt.write_all(member_name.as_bytes())?;
+            write!(fmt, " ")?;
+        }
+        // this is probably a bug, but we have not choice but implement it
+        print_name_first_time(fmt, section, &member.member_type.type_variant)?;
         print_til_type(
             fmt,
             tilib_args,
@@ -1580,7 +1586,7 @@ fn print_til_type_struct_layout(
             &member.member_type,
             member.is_vft,
             true,
-            false,
+            true,
             false,
         )?;
         writeln!(fmt, ";")?;
@@ -1620,13 +1626,41 @@ fn print_til_type_union_layout(
             .as_ref()
             .map(IDBString::as_utf8_lossy)
             .unwrap_or(Cow::Owned(String::new()));
-        write!(fmt, "//{i:>3}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 {name}.{member_name} ")?;
+        write!(fmt, "//{i:>3}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 {name}.")?;
+        if !member_name.as_bytes().is_empty() {
+            fmt.write_all(member_name.as_bytes())?;
+            write!(fmt, " ")?;
+        }
+        // this is probably a bug, but we have not choice but implement it
+        print_name_first_time(fmt, section, &member.type_variant)?;
         print_til_type(
-            fmt, tilib_args, 0, section, None, member, false, true, false,
-            false,
+            fmt, tilib_args, 0, section, None, member, false, true, true, false,
         )?;
         writeln!(fmt, ";")?;
     }
     writeln!(fmt, "//          {total_size:04X} effalign({union_align}) sda=0 bits=0000 {name} union packalign=0")?;
+    Ok(())
+}
+
+fn print_name_first_time(
+    fmt: &mut impl Write,
+    section: &TILSection,
+    ty: &TypeVariant,
+) -> Result<()> {
+    match ty {
+        TypeVariant::Typeref(typeref) => {
+            if let TyperefValue::Ref(idx) = &typeref.typeref_value {
+                let ty = section.get_type_by_idx(*idx);
+                if let TypeVariant::Struct(_)
+                | TypeVariant::Enum(_)
+                | TypeVariant::Union(_) = &ty.tinfo.type_variant
+                {
+                    fmt.write_all(ty.name.as_bytes())?;
+                    write!(fmt, " ")?;
+                }
+            }
+        }
+        _ => {}
+    }
     Ok(())
 }
