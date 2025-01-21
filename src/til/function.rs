@@ -13,7 +13,7 @@ use super::TypeVariantRaw;
 pub struct Function {
     pub calling_convention: Option<CallingConvention>,
     pub ret: Box<Type>,
-    pub args: Vec<(Option<IDBString>, Type, Option<ArgLoc>)>,
+    pub args: Vec<FunctionArg>,
     pub retloc: Option<ArgLoc>,
 
     pub method: Option<CallMethod>,
@@ -34,6 +34,7 @@ impl Function {
         type_by_ord: &HashMap<u64, usize>,
         value: FunctionRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
         let ret = Type::new(
             til,
@@ -41,19 +42,30 @@ impl Function {
             type_by_ord,
             *value.ret,
             &mut *fields,
+            &mut *comments,
         )?;
-        let mut args = Vec::with_capacity(value.args.len());
-        for (arg_type, arg_loc) in value.args {
-            let field_name = fields.next().flatten();
-            let new_member = Type::new(
-                til,
-                type_by_name,
-                type_by_ord,
-                arg_type,
-                &mut *fields,
-            )?;
-            args.push((field_name, new_member, arg_loc));
-        }
+        let args = value
+            .args
+            .into_iter()
+            .map(|(ty, loc)| {
+                let name = fields.next().flatten();
+                let comment = fields.next().flatten();
+                let ty = Type::new(
+                    til,
+                    type_by_name,
+                    type_by_ord,
+                    ty,
+                    &mut *fields,
+                    &mut *comments,
+                )?;
+                Ok(FunctionArg {
+                    name,
+                    comment,
+                    ty,
+                    loc,
+                })
+            })
+            .collect::<Result<_>>()?;
         Ok(Self {
             calling_convention: value.calling_convention,
             ret: Box::new(ret),
@@ -70,6 +82,14 @@ impl Function {
             is_destructor: value.is_destructor,
         })
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionArg {
+    pub name: Option<IDBString>,
+    pub comment: Option<IDBString>,
+    pub ty: Type,
+    pub loc: Option<ArgLoc>,
 }
 
 #[derive(Debug, Clone)]

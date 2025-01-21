@@ -687,21 +687,19 @@ pub fn split_strings_from_array(buf: &[u8]) -> Option<Vec<Vec<u8>>> {
     }
 
     let mut result = vec![];
-    // NOTE never 0 because this came from a CStr
-    let mut len = buf[0] - 1;
-    // NOTE zero len (buf[0] == 1) string is allowed
-    let mut current = &buf[1..];
+    let mut cursor = buf;
     loop {
-        if current.len() < len.into() {
+        // TODO check innerref, maybe this is read_de
+        let len = cursor.read_dt().ok()?;
+        if cursor.len() < len.into() {
             return None;
         }
-        let (value, rest) = current.split_at(len.into());
+        let (value, rest) = cursor.split_at(len.into());
         result.push(value.to_owned());
         if rest.is_empty() {
             break;
         }
-        len = rest[0] - 1;
-        current = &rest[1..];
+        cursor = rest;
     }
     Some(result)
 }

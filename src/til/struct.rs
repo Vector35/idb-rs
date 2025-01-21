@@ -34,6 +34,7 @@ impl Struct {
         type_by_ord: &HashMap<u64, usize>,
         value: StructRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
         let members = value
             .members
@@ -41,11 +42,11 @@ impl Struct {
             .map(|member| {
                 StructMember::new(
                     til,
-                    fields.next().flatten(),
                     type_by_name,
                     type_by_ord,
                     member,
-                    &mut *fields,
+                    fields,
+                    comments,
                 )
             })
             .collect::<Result<_>>()?;
@@ -186,6 +187,7 @@ impl StructRaw {
 #[derive(Clone, Debug)]
 pub struct StructMember {
     pub name: Option<IDBString>,
+    pub comment: Option<IDBString>,
     pub member_type: Type,
     pub att: Option<StructMemberAtt>,
 
@@ -200,20 +202,24 @@ pub struct StructMember {
 impl StructMember {
     fn new(
         til: &TILSectionHeader,
-        name: Option<IDBString>,
         type_by_name: &HashMap<Vec<u8>, usize>,
         type_by_ord: &HashMap<u64, usize>,
         m: StructMemberRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
+        let name = fields.next().flatten();
+        let comment = comments.next().flatten();
         Ok(Self {
             name,
+            comment,
             member_type: Type::new(
                 til,
                 type_by_name,
                 type_by_ord,
                 m.ty,
                 fields,
+                comments,
             )?,
             att: m.att,
             alignment: m.alignment,

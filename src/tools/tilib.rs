@@ -444,7 +444,7 @@ fn print_til_type_root(
             }
             TypeVariant::Union(til_union)
                 if members_solvable(
-                    til_union.members.iter().map(|(_, m)| m),
+                    til_union.members.iter().map(|m| &m.ty),
                     solver,
                 ) =>
             {
@@ -480,6 +480,11 @@ fn print_til_type(
     print_type_prefix: bool,
     print_name: bool,
 ) -> Result<()> {
+    if let Some(comment) = &til_type.comment {
+        write!(fmt, "/// ")?;
+        fmt.write_all(comment.as_bytes())?;
+        writeln!(fmt)?;
+    }
     match &til_type.type_variant {
         TypeVariant::Basic(til_basic) => {
             print_til_type_basic(fmt, section, name, til_type, til_basic)
@@ -725,20 +730,18 @@ fn print_til_type_function(
     }
 
     write!(fmt, "(")?;
-    for (i, (param_name, param, _argloc)) in
-        til_function.args.iter().enumerate()
-    {
+    for (i, arg) in til_function.args.iter().enumerate() {
         if i != 0 {
             write!(fmt, ", ")?;
         }
-        let param_name = param_name.as_ref().map(IDBString::as_bytes);
+        let param_name = arg.name.as_ref().map(IDBString::as_bytes);
         print_til_type(
             fmt,
             &DEFAULT_TILIB_ARGS,
             0,
             section,
             param_name,
-            param,
+            &arg.ty,
             false,
             true,
             false,
@@ -952,6 +955,10 @@ fn print_til_type_struct(
         }
         write!(fmt, ";")?;
         if tilib_args.dump_struct_layout == Some(true) {
+            if let Some(comment) = &member.comment {
+                write!(fmt, " ///< ")?;
+                fmt.write_all(comment.as_bytes())?;
+            }
             writeln!(fmt)?;
         }
     }
@@ -991,11 +998,11 @@ fn print_til_type_union(
         write!(fmt, " {{")?;
     }
     let indent = indent + INDENT_LEN;
-    for (member_name, member) in &til_union.members {
+    for member in &til_union.members {
         if tilib_args.dump_struct_layout == Some(true) {
             write!(fmt, "{AFTER_SPACE:>indent$}")?;
         }
-        let member_name = member_name.as_ref().map(IDBString::as_bytes);
+        let member_name = member.name.as_ref().map(IDBString::as_bytes);
         print_til_type_complex_member(
             fmt,
             tilib_args,
@@ -1003,13 +1010,17 @@ fn print_til_type_union(
             section,
             name,
             member_name,
-            member,
+            &member.ty,
             false,
             true,
             true,
         )?;
         write!(fmt, ";")?;
         if tilib_args.dump_struct_layout == Some(true) {
+            if let Some(comment) = &member.comment {
+                write!(fmt, " ///< ")?;
+                fmt.write_all(comment.as_bytes())?;
+            }
             writeln!(fmt)?;
         }
     }
@@ -1164,22 +1175,22 @@ fn print_til_type_enum(
         write!(fmt, " {{")?;
     }
     let indent = indent + INDENT_LEN;
-    for (member_name, value) in &til_enum.members {
+    for member in &til_enum.members {
         if tilib_args.dump_struct_layout == Some(true) {
             write!(fmt, "{AFTER_SPACE:>indent$}")?;
         }
-        if let Some(member_name) = member_name {
+        if let Some(member_name) = &member.name {
             fmt.write_all(member_name.as_bytes())?;
         }
         write!(fmt, " = ")?;
         match til_enum.output_format {
-            Char if *value <= 0xFF => {
-                write!(fmt, "'{}'", (*value) as u8 as char)?
+            Char if member.value <= 0xFF => {
+                write!(fmt, "'{}'", (member.value) as u8 as char)?
             }
-            Char => write!(fmt, "'\\xu{value:X}'")?,
-            Hex => write!(fmt, "{value:#X}")?,
-            SignedDecimal => write!(fmt, "{}", (*value) as i64)?,
-            UnsignedDecimal => write!(fmt, "{value:X}")?,
+            Char => write!(fmt, "'\\xu{:X}'", member.value)?,
+            Hex => write!(fmt, "{:#X}", member.value)?,
+            SignedDecimal => write!(fmt, "{}", member.value as i64)?,
+            UnsignedDecimal => write!(fmt, "{:X}", member.value)?,
         }
         // TODO find this in InnerRef
         if let Some(8) = til_enum.storage_size.map(NonZeroU8::get) {
@@ -1572,7 +1583,7 @@ fn print_til_type_struct_layout(
         .type_size_bytes(Some(type_idx), til_type)
         .unwrap_or(0xFFFF);
     let struct_align = solver
-        .type_align_bytes(Some(type_idx), &til_type, total_size)
+        .type_align_bytes(Some(type_idx), til_type, total_size)
         .unwrap_or(1);
     let mut offset = 0;
     for (i, member) in til_struct.members.iter().enumerate() {
@@ -1640,15 +1651,16 @@ fn print_til_type_union_layout(
         .type_size_bytes(Some(type_idx), til_type)
         .unwrap_or(0xFFFF);
     let union_align = solver
-        .type_align_bytes(Some(type_idx), &til_type, total_size)
+        .type_align_bytes(Some(type_idx), til_type, total_size)
         .unwrap_or(1);
     let offset = 0;
-    for (i, (member_name, member)) in til_union.members.iter().enumerate() {
-        let member_size = solver.type_size_bytes(None, member).unwrap_or(0);
+    for (i, member) in til_union.members.iter().enumerate() {
+        let member_size = solver.type_size_bytes(None, &member.ty).unwrap_or(0);
         let member_align = solver
-            .type_align_bytes(None, member, member_size)
+            .type_align_bytes(None, &member.ty, member_size)
             .unwrap_or(1);
-        let member_name = member_name
+        let member_name = member
+            .name
             .as_ref()
             .map(IDBString::as_utf8_lossy)
             .unwrap_or(Cow::Owned(String::new()));
@@ -1658,9 +1670,10 @@ fn print_til_type_union_layout(
             write!(fmt, " ")?;
         }
         // this is probably a bug, but we have not choice but implement it
-        print_name_first_time(fmt, section, &member.type_variant)?;
+        print_name_first_time(fmt, section, &member.ty.type_variant)?;
         print_til_type(
-            fmt, tilib_args, 0, section, None, member, false, true, true, false,
+            fmt, tilib_args, 0, section, None, &member.ty, false, true, true,
+            false,
         )?;
         writeln!(fmt, ";")?;
     }

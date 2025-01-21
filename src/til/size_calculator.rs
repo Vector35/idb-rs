@@ -155,8 +155,8 @@ impl<'a> TILTypeSizeSolver<'a> {
             }
             TypeVariant::Union(Union { members, .. }) => {
                 let mut max = 0;
-                for (_, member) in members {
-                    let size = self.inner_type_size_bytes(member)?;
+                for member in members {
+                    let size = self.inner_type_size_bytes(&member.ty)?;
                     max = max.max(size);
                 }
                 max
@@ -242,17 +242,17 @@ impl<'a> TILTypeSizeSolver<'a> {
                         .alignment
                         .map(|x| u64::from(x.get()))
                         .unwrap_or(1)
-                        .max(max_member_align.into()),
+                        .max(max_member_align),
                 )
             }
             TypeVariant::Union(ty_union) => {
                 let max_member_align = ty_union
                     .members
                     .iter()
-                    .filter_map(|(_, m)| {
+                    .filter_map(|member| {
                         let type_bytes =
-                            self.type_size_bytes(None, m).unwrap_or(0);
-                        self.inner_type_align_bytes(m, type_bytes)
+                            self.type_size_bytes(None, &member.ty).unwrap_or(0);
+                        self.inner_type_align_bytes(&member.ty, type_bytes)
                     })
                     .max()
                     .unwrap_or(1);
@@ -261,7 +261,7 @@ impl<'a> TILTypeSizeSolver<'a> {
                         .alignment
                         .map(|x| u64::from(x.get()))
                         .unwrap_or(1)
-                        .max(max_member_align.into()),
+                        .max(max_member_align),
                 )
             }
             TypeVariant::Function(_) | TypeVariant::Bitfield(_) => Some(1),
