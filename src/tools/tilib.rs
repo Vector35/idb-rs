@@ -1592,7 +1592,11 @@ fn print_til_type_struct_layout(
         writeln!(fmt, ";")?;
         offset += member_size;
     }
-    writeln!(fmt, "//          {total_size:04X} effalign({struct_align}) sda=0 bits=0000 {name} struct packalign=0")?;
+    let align_normalized = til_struct
+        .alignment
+        .map(|x| x.trailing_zeros() + 1) // 1 => 1, 2 => 2, 4 => 3, 8 => 4, etc
+        .unwrap_or(0);
+    writeln!(fmt, "//          {total_size:04X} effalign({struct_align}) sda={align_normalized} bits=0000 {name} struct packalign=0")?;
     Ok(())
 }
 

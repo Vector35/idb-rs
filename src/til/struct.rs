@@ -101,9 +101,9 @@ impl StructRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
         let mem_cnt = n >> 3;
         // TODO what is effective_alignment and how it's diferent from Modifier alignment?
-        let alpow = n & 7;
-        let effective_alignment =
-            (alpow != 0).then(|| NonZeroU8::new(1 << (alpow - 1)).unwrap());
+        let packalig = n & 7;
+        let effective_alignment = (packalig != 0)
+            .then(|| NonZeroU8::new(1 << (packalig - 1)).unwrap());
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459c97
         let mut alignment = None;
         let mut is_unknown_8 = false;
