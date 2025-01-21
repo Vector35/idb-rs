@@ -421,7 +421,12 @@ fn print_til_type_root(
     write!(fmt, ";")?;
     if tilib_args.dump_struct_layout == Some(true) {
         match &til_type.type_variant {
-            TypeVariant::Struct(til_struct) => {
+            TypeVariant::Struct(til_struct)
+                if members_solvable(
+                    til_struct.members.iter().map(|m| &m.member_type),
+                    solver,
+                ) =>
+            {
                 writeln!(fmt)?;
                 print_til_type_struct_layout(
                     fmt,
@@ -434,7 +439,12 @@ fn print_til_type_root(
                     solver,
                 )?;
             }
-            TypeVariant::Union(til_union) => {
+            TypeVariant::Union(til_union)
+                if members_solvable(
+                    til_union.members.iter().map(|(_, m)| m),
+                    solver,
+                ) =>
+            {
                 writeln!(fmt)?;
                 print_til_type_union_layout(
                     fmt,
@@ -1575,8 +1585,8 @@ fn print_til_type_struct_layout(
             fmt.write_all(member_name.as_bytes())?;
             write!(fmt, " ")?;
         }
-        // this is probably a bug, but we have not choice but implement it
-        print_name_first_time(fmt, section, &member.member_type.type_variant)?;
+        //// this is probably a bug, but we have not choice but implement it
+        //print_name_first_time(fmt, section, &member.member_type.type_variant)?;
         print_til_type(
             fmt,
             tilib_args,
@@ -1667,4 +1677,14 @@ fn print_name_first_time(
         _ => {}
     }
     Ok(())
+}
+
+fn members_solvable<'a>(
+    members: impl IntoIterator<Item = &'a Type>,
+    solver: &mut TILTypeSizeSolver<'_>,
+) -> bool {
+    // only solvable if we can solve the size of each member
+    members
+        .into_iter()
+        .all(|m| solver.type_size_bytes(None, m).is_some())
 }
