@@ -1599,6 +1599,11 @@ fn print_til_type_struct_layout(
             .as_ref()
             .map(IDBString::as_utf8_lossy)
             .unwrap_or(Cow::Owned(String::new()));
+        // offset alignment
+        let align_diff = offset % member_align;
+        if align_diff != 0 {
+            offset += member_align - align_diff;
+        }
         write!(fmt, "//{i:>3}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 {name}.")?;
         if !member_name.as_bytes().is_empty() {
             fmt.write_all(member_name.as_bytes())?;
