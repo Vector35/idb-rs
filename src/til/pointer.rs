@@ -23,6 +23,7 @@ impl Pointer {
         type_by_ord: &HashMap<u64, usize>,
         raw: PointerRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
         let shifted = raw
             .shifted
@@ -35,14 +36,22 @@ impl Pointer {
                         type_by_ord,
                         *t,
                         &mut vec![].into_iter(),
+                        &mut vec![].into_iter(),
                     )
                     .map(Box::new)?,
                     v,
                 ))
             })
             .transpose()?;
-        let typ = Type::new(til, type_by_name, type_by_ord, *raw.typ, fields)
-            .map(Box::new)?;
+        let typ = Type::new(
+            til,
+            type_by_name,
+            type_by_ord,
+            *raw.typ,
+            fields,
+            comments,
+        )
+        .map(Box::new)?;
         Ok(Self {
             // TODO forward fields to closure?
             closure: PointerType::new(
@@ -78,9 +87,17 @@ impl PointerType {
             PointerTypeRaw::Closure(c) => {
                 // TODO subtype get the fields?
                 let mut sub_fields = vec![].into_iter();
-                Type::new(til, type_by_name, type_by_ord, *c, &mut sub_fields)
-                    .map(Box::new)
-                    .map(Self::Closure)
+                let mut sub_comments = vec![].into_iter();
+                Type::new(
+                    til,
+                    type_by_name,
+                    type_by_ord,
+                    *c,
+                    &mut sub_fields,
+                    &mut sub_comments,
+                )
+                .map(Box::new)
+                .map(Self::Closure)
             }
             PointerTypeRaw::PointerBased(p) => Ok(Self::PointerBased(p)),
             PointerTypeRaw::Default => Ok(Self::Default),

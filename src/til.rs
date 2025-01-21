@@ -38,6 +38,7 @@ pub struct TILTypeInfo {
 }
 
 impl TILTypeInfo {
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         til: &TILSectionHeader,
         type_by_name: &HashMap<Vec<u8>, usize>,
@@ -45,10 +46,16 @@ impl TILTypeInfo {
         name: IDBString,
         ordinal: u64,
         tinfo_raw: TypeRaw,
+        comment: Vec<u8>,
         fields: Vec<Vec<u8>>,
+        comments: Vec<Vec<u8>>,
     ) -> Result<Self> {
         let mut fields_iter = fields
             .into_iter()
+            .map(|field| (!field.is_empty()).then_some(IDBString::new(field)));
+        let mut comments_iter = [comment]
+            .into_iter()
+            .chain(comments)
             .map(|field| (!field.is_empty()).then_some(IDBString::new(field)));
         let tinfo = Type::new(
             til,
@@ -56,10 +63,17 @@ impl TILTypeInfo {
             type_by_ord,
             tinfo_raw,
             &mut fields_iter,
+            &mut comments_iter,
         )?;
         #[cfg(feature = "restrictive")]
         ensure!(
             fields_iter.next().is_none(),
+            "Extra fields found for til type \"{}\"",
+            name.as_utf8_lossy()
+        );
+        #[cfg(feature = "restrictive")]
+        ensure!(
+            comments_iter.next().is_none(),
             "Extra fields found for til type \"{}\"",
             name.as_utf8_lossy()
         );
@@ -77,8 +91,8 @@ pub(crate) struct TILTypeInfoRaw {
     pub name: IDBString,
     pub ordinal: u64,
     pub tinfo: TypeRaw,
-    _cmt: Vec<u8>,
-    _fieldcmts: Vec<u8>,
+    cmt: Vec<u8>,
+    fieldcmts: Vec<Vec<u8>>,
     fields: Vec<Vec<u8>>,
     _sclass: u8,
 }
@@ -128,7 +142,7 @@ impl TILTypeInfoRaw {
         let _info = cursor.read_c_string_raw()?;
         let cmt = cursor.read_c_string_raw()?;
         let fields = cursor.read_c_string_vec()?;
-        let fieldcmts = cursor.read_c_string_raw()?;
+        let fieldcmts = cursor.read_c_string_vec()?;
         let sclass: u8 = cursor.read_u8()?;
 
         Ok(Self {
@@ -136,9 +150,9 @@ impl TILTypeInfoRaw {
             name,
             ordinal,
             tinfo,
-            _cmt: cmt,
+            cmt,
             fields,
-            _fieldcmts: fieldcmts,
+            fieldcmts,
             _sclass: sclass,
         })
     }
@@ -146,6 +160,7 @@ impl TILTypeInfoRaw {
 
 #[derive(Debug, Clone)]
 pub struct Type {
+    pub comment: Option<IDBString>,
     pub is_const: bool,
     pub is_volatile: bool,
     pub type_variant: TypeVariant,
@@ -171,7 +186,9 @@ impl Type {
         type_by_ord: &HashMap<u64, usize>,
         tinfo_raw: TypeRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
+        let comment = comments.next().flatten();
         let type_variant = match tinfo_raw.variant {
             TypeVariantRaw::Basic(x) => TypeVariant::Basic(x),
             TypeVariantRaw::Bitfield(x) => TypeVariant::Bitfield(x),
@@ -179,28 +196,38 @@ impl Type {
                 Typeref::new(type_by_name, type_by_ord, x)
                     .map(TypeVariant::Typeref)?
             }
-            TypeVariantRaw::Pointer(x) => {
-                Pointer::new(til, type_by_name, type_by_ord, x, fields)
-                    .map(TypeVariant::Pointer)?
-            }
-            TypeVariantRaw::Function(x) => {
-                Function::new(til, type_by_name, type_by_ord, x, fields)
-                    .map(TypeVariant::Function)?
-            }
+            TypeVariantRaw::Pointer(x) => Pointer::new(
+                til,
+                type_by_name,
+                type_by_ord,
+                x,
+                fields,
+                comments,
+            )
+            .map(TypeVariant::Pointer)?,
+            TypeVariantRaw::Function(x) => Function::new(
+                til,
+                type_by_name,
+                type_by_ord,
+                x,
+                fields,
+                comments,
+            )
+            .map(TypeVariant::Function)?,
             TypeVariantRaw::Array(x) => {
-                Array::new(til, type_by_name, type_by_ord, x, fields)
+                Array::new(til, type_by_name, type_by_ord, x, fields, comments)
                     .map(TypeVariant::Array)?
             }
             TypeVariantRaw::Struct(x) => {
-                Struct::new(til, type_by_name, type_by_ord, x, fields)
+                Struct::new(til, type_by_name, type_by_ord, x, fields, comments)
                     .map(TypeVariant::Struct)?
             }
             TypeVariantRaw::Union(x) => {
-                Union::new(til, type_by_name, type_by_ord, x, fields)
+                Union::new(til, type_by_name, type_by_ord, x, fields, comments)
                     .map(TypeVariant::Union)?
             }
             TypeVariantRaw::Enum(x) => {
-                Enum::new(til, x, fields).map(TypeVariant::Enum)?
+                Enum::new(til, x, fields, comments).map(TypeVariant::Enum)?
             }
             TypeVariantRaw::StructRef(x) => {
                 Typeref::new_struct(type_by_name, type_by_ord, x)
@@ -216,6 +243,7 @@ impl Type {
             }
         };
         Ok(Self {
+            comment,
             is_const: tinfo_raw.is_const,
             is_volatile: tinfo_raw.is_volatile,
             type_variant,
@@ -258,6 +286,7 @@ impl Type {
             &HashMap::new(),
             type_raw,
             &mut fields_iter,
+            &mut vec![].into_iter(),
         )?;
         #[cfg(feature = "restrictive")]
         ensure!(

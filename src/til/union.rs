@@ -14,7 +14,7 @@ use super::{TypeAttribute, TypeVariantRaw};
 pub struct Union {
     pub effective_alignment: u16,
     pub alignment: Option<NonZeroU8>,
-    pub members: Vec<(Option<IDBString>, Type)>,
+    pub members: Vec<UnionMember>,
 
     pub is_unaligned: bool,
     pub is_unknown_8: bool,
@@ -26,20 +26,23 @@ impl Union {
         type_by_ord: &HashMap<u64, usize>,
         value: UnionRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
         let members = value
             .members
             .into_iter()
             .map(|member| {
-                let field_name = fields.next().flatten();
-                let new_member = Type::new(
+                let comment = comments.next().flatten();
+                let name = fields.next().flatten();
+                let ty = Type::new(
                     til,
                     type_by_name,
                     type_by_ord,
                     member,
-                    &mut *fields,
+                    fields,
+                    comments,
                 )?;
-                Ok((field_name, new_member))
+                Ok(UnionMember { name, comment, ty })
             })
             .collect::<Result<_>>()?;
         Ok(Union {
@@ -50,6 +53,13 @@ impl Union {
             is_unknown_8: value.is_unknown_8,
         })
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct UnionMember {
+    pub name: Option<IDBString>,
+    pub comment: Option<IDBString>,
+    pub ty: Type,
 }
 
 // TODO struct and union are basically identical, the diff is that member in union don't have SDACL,
