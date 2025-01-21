@@ -428,6 +428,9 @@ fn print_til_type_root(
                 ) =>
             {
                 writeln!(fmt)?;
+                if til_struct.effective_alignment.is_some() {
+                    writeln!(fmt, "#pragma pack(pop)")?;
+                }
                 print_til_type_struct_layout(
                     fmt,
                     tilib_args,
@@ -867,6 +870,11 @@ fn print_til_type_struct(
     let is_cppobj = til_struct.is_cppobj
         || matches!(til_struct.members.first(), Some(first) if first.is_baseclass);
 
+    if tilib_args.dump_struct_layout == Some(true) {
+        if let Some(packalign) = til_struct.effective_alignment {
+            writeln!(fmt, "#pragma pack(push, {packalign})")?;
+        }
+    }
     write!(fmt, "struct")?;
     if til_struct.is_unaligned {
         if til_struct.is_uknown_8 {
@@ -1602,11 +1610,15 @@ fn print_til_type_struct_layout(
         writeln!(fmt, ";")?;
         offset += member_size;
     }
-    let align_normalized = til_struct
+    let sda = til_struct
         .alignment
         .map(|x| x.trailing_zeros() + 1) // 1 => 1, 2 => 2, 4 => 3, 8 => 4, etc
         .unwrap_or(0);
-    writeln!(fmt, "//          {total_size:04X} effalign({struct_align}) sda={align_normalized} bits=0000 {name} struct packalign=0")?;
+    let packalign = til_struct
+        .effective_alignment
+        .map(|x| x.trailing_zeros() + 1)
+        .unwrap_or(0);
+    writeln!(fmt, "//          {total_size:04X} effalign({struct_align}) sda={sda} bits=0000 {name} struct packalign={packalign}")?;
     Ok(())
 }
 
