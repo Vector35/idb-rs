@@ -867,11 +867,6 @@ fn print_til_type_struct(
     til_struct: &Struct,
     print_name: bool,
 ) -> Result<()> {
-    // TODO check innerref, maybe baseclass don't need to be the first, nor
-    // need to only one
-    let is_cppobj = til_struct.is_cppobj
-        || matches!(til_struct.members.first(), Some(first) if first.is_baseclass);
-
     if tilib_args.dump_struct_layout == Some(true) {
         if let Some(packalign) = til_struct.effective_alignment {
             writeln!(fmt, "#pragma pack(push, {packalign})")?;
@@ -888,7 +883,7 @@ fn print_til_type_struct(
     if til_struct.is_msstruct {
         write!(fmt, " __attribute__((msstruct))")?;
     }
-    if is_cppobj {
+    if til_struct.is_cppobj() {
         write!(fmt, " __cppobj")?;
     }
     if til_struct.is_vft {
@@ -904,7 +899,7 @@ fn print_til_type_struct(
         }
     }
     let mut members = &til_struct.members[..];
-    if is_cppobj {
+    if til_struct.is_cppobj() {
         match members.first() {
             Some(baseclass) if baseclass.is_baseclass => {
                 members = &members[1..];
@@ -1625,7 +1620,11 @@ fn print_til_type_struct_layout(
             let offset = offset_calc.next_field(member_size, member_align);
             write!(fmt, "{offset:04X} {member_size:04X}")?;
         }
-        write!(fmt, " effalign({member_align}) fda=0 bits=0000 ")?;
+        use idb_rs::til::flag::tattr_field::*;
+        let bits = (member.is_vft as u16) << TAFLD_VFTABLE.trailing_zeros()
+            | (member.is_method as u16) << TAFLD_METHOD.trailing_zeros()
+            | (member.is_baseclass as u16) << TAFLD_BASECLASS.trailing_zeros();
+        write!(fmt, " effalign({member_align}) fda=0 bits={bits:04X} ")?;
         if let Some(name) = name {
             fmt.write_all(name)?;
             write!(fmt, ".")?;
@@ -1684,7 +1683,7 @@ fn print_til_type_struct_layout(
     let bits = (til_struct.is_msstruct as u16)
         << TAUDT_MSSTRUCT.trailing_zeros()
         | (til_struct.is_unaligned as u16) << TAUDT_UNALIGNED.trailing_zeros()
-        | (til_struct.is_cppobj as u16) << TAUDT_CPPOBJ.trailing_zeros()
+        | (til_struct.is_cppobj() as u16) << TAUDT_CPPOBJ.trailing_zeros()
         | (til_struct.is_vft as u16) << TAUDT_VFTABLE.trailing_zeros();
     write!(fmt, "//          {total_size:04X} effalign({struct_align}) sda={sda} bits={bits:04X} ")?;
     if let Some(name) = name {

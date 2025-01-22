@@ -19,7 +19,7 @@ pub struct Struct {
     /// Gcc msstruct attribute
     pub is_msstruct: bool,
     /// C++ object, not simple pod type
-    pub is_cppobj: bool,
+    is_cppobj: bool,
     /// Virtual function table
     pub is_vft: bool,
     /// Unknown meaning, use at your own risk
@@ -60,6 +60,13 @@ impl Struct {
             is_uknown_8: value.is_unknown_8,
             alignment: value.alignment,
         })
+    }
+
+    pub fn is_cppobj(&self) -> bool {
+        // TODO check innerref, maybe baseclass don't need to be the first, nor
+        // need to only one
+        self.is_cppobj
+            || matches!(self.members.first(), Some(first) if first.is_baseclass)
     }
 }
 
