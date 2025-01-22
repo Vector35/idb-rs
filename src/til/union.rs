@@ -8,7 +8,7 @@ use crate::til::{Type, TypeRaw};
 use crate::IDBString;
 
 use super::section::TILSectionHeader;
-use super::{TypeAttribute, TypeVariantRaw};
+use super::{CommentType, TypeAttribute, TypeVariantRaw};
 
 #[derive(Clone, Debug)]
 pub struct Union {
@@ -26,7 +26,7 @@ impl Union {
         type_by_ord: &HashMap<u64, usize>,
         value: UnionRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> Result<Self> {
         let members = value
             .members
@@ -59,7 +59,7 @@ impl Union {
 #[derive(Clone, Debug)]
 pub struct UnionMember {
     pub name: Option<IDBString>,
-    pub comment: Option<IDBString>,
+    pub comment: Option<CommentType>,
     pub ty: Type,
 }
 

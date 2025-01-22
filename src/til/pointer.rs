@@ -7,6 +7,7 @@ use crate::til::{Type, TypeAttribute, TypeRaw};
 use crate::IDBString;
 
 use super::section::TILSectionHeader;
+use super::CommentType;
 
 #[derive(Debug, Clone)]
 pub struct Pointer {
@@ -23,7 +24,7 @@ impl Pointer {
         type_by_ord: &HashMap<u64, usize>,
         raw: PointerRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> Result<Self> {
         let shifted = raw
             .shifted

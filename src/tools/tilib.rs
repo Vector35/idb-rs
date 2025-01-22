@@ -949,7 +949,9 @@ fn print_til_type_struct(
         }
         write!(fmt, ";")?;
         if tilib_args.dump_struct_layout == Some(true) {
-            if let Some(comment) = &member.comment {
+            if let Some(idb_rs::til::CommentType::Comment(comment)) =
+                &member.comment
+            {
                 write!(fmt, " ///< ")?;
                 fmt.write_all(comment.as_bytes())?;
             }
@@ -1011,7 +1013,9 @@ fn print_til_type_union(
         )?;
         write!(fmt, ";")?;
         if tilib_args.dump_struct_layout == Some(true) {
-            if let Some(comment) = &member.comment {
+            if let Some(idb_rs::til::CommentType::Comment(comment)) =
+                &member.comment
+            {
                 write!(fmt, " ///< ")?;
                 fmt.write_all(comment.as_bytes())?;
             }

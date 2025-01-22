@@ -7,7 +7,7 @@ use crate::IDBString;
 use anyhow::{anyhow, ensure, Context, Result};
 
 use super::section::TILSectionHeader;
-use super::TypeVariantRaw;
+use super::{CommentType, TypeVariantRaw};
 
 #[derive(Debug, Clone)]
 pub struct Function {
@@ -34,7 +34,7 @@ impl Function {
         type_by_ord: &HashMap<u64, usize>,
         value: FunctionRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> Result<Self> {
         let ret = Type::new(
             til,
@@ -89,7 +89,7 @@ impl Function {
 #[derive(Debug, Clone)]
 pub struct FunctionArg {
     pub name: Option<IDBString>,
-    pub comment: Option<IDBString>,
+    pub comment: Option<CommentType>,
     pub ty: Type,
     pub loc: Option<ArgLoc>,
 }

@@ -6,6 +6,7 @@ use crate::IDBString;
 use anyhow::{anyhow, ensure};
 
 use super::section::TILSectionHeader;
+use super::CommentType;
 
 #[derive(Clone, Debug)]
 pub struct Enum {
@@ -23,7 +24,7 @@ impl Enum {
         _til: &TILSectionHeader,
         value: EnumRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> anyhow::Result<Self> {
         let members = value
             .members
@@ -48,7 +49,7 @@ impl Enum {
 #[derive(Clone, Debug)]
 pub struct EnumMember {
     pub name: Option<IDBString>,
-    pub comment: Option<IDBString>,
+    pub comment: Option<CommentType>,
     pub value: u64,
 }
 

@@ -56,7 +56,9 @@ impl TILTypeInfo {
         let comment = (!comment.is_empty()).then_some(IDBString::new(comment));
         let mut comments_iter = comments
             .into_iter()
-            .map(|field| (!field.is_empty()).then_some(IDBString::new(field)));
+            .map(|field| CommentType::from_raw(field))
+            .collect::<Result<Vec<Option<CommentType>>>>()?
+            .into_iter();
         let tinfo = Type::new(
             til,
             type_by_name,
@@ -188,7 +190,7 @@ impl Type {
         tinfo_raw: TypeRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
         comment: Option<IDBString>,
-        comments: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> Result<Self> {
         let type_variant = match tinfo_raw.variant {
             TypeVariantRaw::Basic(x) => TypeVariant::Basic(x),
@@ -845,5 +847,31 @@ pub fn ephemeral_til_header() -> TILSectionHeader {
         is_universal: true,
         compiler_id: crate::id0::Compiler::Unknown,
         cm: None,
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum CommentType {
+    Unknown5(u32),
+    Comment(IDBString),
+}
+impl CommentType {
+    fn from_raw(field: Vec<u8>) -> Result<Option<CommentType>> {
+        if field.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(match field[0] {
+            5 if *field.last().unwrap() == b'.' => {
+                Self::Unknown5(u32::from_str_radix(
+                    std::str::from_utf8(&field[1..field.len() - 1])?,
+                    // TODO 10 or 16?
+                    10,
+                )?)
+            }
+            cmt_type @ 0..=0x1F => {
+                return Err(anyhow!("Unknown comment type {cmt_type:#X}"))
+            }
+            _ => Self::Comment(IDBString::new(field)),
+        }))
     }
 }

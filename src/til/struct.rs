@@ -8,7 +8,7 @@ use anyhow::{anyhow, ensure, Context, Result};
 use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 
 use super::section::TILSectionHeader;
-use super::{TypeAttribute, TypeVariantRaw};
+use super::{CommentType, TypeAttribute, TypeVariantRaw};
 
 #[derive(Clone, Debug)]
 pub struct Struct {
@@ -34,7 +34,7 @@ impl Struct {
         type_by_ord: &HashMap<u64, usize>,
         value: StructRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> Result<Self> {
         let members = value
             .members
@@ -194,7 +194,7 @@ impl StructRaw {
 #[derive(Clone, Debug)]
 pub struct StructMember {
     pub name: Option<IDBString>,
-    pub comment: Option<IDBString>,
+    pub comment: Option<CommentType>,
     pub member_type: Type,
     pub att: Option<StructMemberAtt>,
 
@@ -213,7 +213,7 @@ impl StructMember {
         type_by_ord: &HashMap<u64, usize>,
         m: StructMemberRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> Result<Self> {
         let name = fields.next().flatten();
         let comment = comments.next().flatten();
