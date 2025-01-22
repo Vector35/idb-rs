@@ -13,7 +13,6 @@ use idb_rs::til::{
 };
 use idb_rs::{IDBParser, IDBSectionCompression, IDBString};
 
-use std::borrow::Cow;
 use std::fs::File;
 use std::io::{BufReader, Result, Write};
 use std::num::NonZeroU8;
@@ -1232,6 +1231,18 @@ fn print_til_type_bitfield(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
+fn print_til_type_udt_bitfield(
+    fmt: &mut impl Write,
+    bitfield: &Bitfield,
+) -> Result<()> {
+    write!(fmt, "bi.nbytes={}", bitfield.nbytes)?;
+    if bitfield.unsigned {
+        write!(fmt, " U")?;
+    }
+    Ok(())
+}
+
 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x423c20
 fn print_til_struct_member_att(
     fmt: &mut impl Write,
@@ -1576,56 +1587,89 @@ fn print_til_type_struct_layout(
     til_struct: &Struct,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
-    let name = name
-        .map(String::from_utf8_lossy)
-        .unwrap_or(std::borrow::Cow::Owned(String::new()));
     let total_size = solver
         .type_size_bytes(Some(type_idx), til_type)
         .unwrap_or(0xFFFF);
-    let struct_align = solver
-        .type_align_bytes(Some(type_idx), til_type, total_size)
-        .unwrap_or(1);
-    let mut offset = 0;
+    let struct_align = if til_struct.is_unaligned {
+        1
+    } else {
+        solver
+            .type_align_bytes(Some(type_idx), til_type, total_size)
+            .unwrap_or(1)
+    };
+    let mut offset_calc = StructOffset::default();
     for (i, member) in til_struct.members.iter().enumerate() {
+        write!(fmt, "//{i:>3}. ")?;
         let member_size = solver
             .type_size_bytes(None, &member.member_type)
             .unwrap_or(0);
-        let member_align = solver
-            .type_align_bytes(None, &member.member_type, member_size)
-            .or(member.alignment.map(NonZeroU8::get).map(u64::from))
-            .unwrap_or(1);
-        let member_name = member
-            .name
-            .as_ref()
-            .map(IDBString::as_utf8_lossy)
-            .unwrap_or(Cow::Owned(String::new()));
-        // offset alignment
-        let calc_align = member_align.max(1);
-        let align_diff = offset % calc_align;
-        if align_diff != 0 {
-            offset += calc_align - align_diff;
+        let member_align = if til_struct.is_unaligned {
+            1
+        } else {
+            solver
+                .type_align_bytes(None, &member.member_type, member_size)
+                .or(member.alignment.map(NonZeroU8::get).map(u64::from))
+                .unwrap_or(1)
+        };
+        if let TypeVariant::Bitfield(bitfield) =
+            &member.member_type.type_variant
+        {
+            let (bit_offset, byte_offset) =
+                offset_calc.bitfield_offset(bitfield);
+            write!(
+                fmt,
+                "{byte_offset:04X}.{bit_offset:>2} {}",
+                bitfield.width
+            )?;
+        } else {
+            let offset = offset_calc.next_field(member_size, member_align);
+            write!(fmt, "{offset:04X} {member_size:04X}")?;
         }
-        write!(fmt, "//{i:>3}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 {name}.")?;
-        if !member_name.as_bytes().is_empty() {
-            fmt.write_all(member_name.as_bytes())?;
-            write!(fmt, " ")?;
+        write!(fmt, " effalign({member_align}) fda=0 bits=0000 ")?;
+        if let Some(name) = name {
+            fmt.write_all(name)?;
+            write!(fmt, ".")?;
         }
-        //// this is probably a bug, but we have not choice but implement it
-        //print_name_first_time(fmt, section, &member.member_type.type_variant)?;
-        print_til_type(
-            fmt,
-            tilib_args,
-            0,
-            section,
-            None,
-            &member.member_type,
-            member.is_vft,
-            true,
-            true,
-            false,
-        )?;
-        writeln!(fmt, ";")?;
-        offset += member_size;
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x448a76
+        match &member.name {
+            None if member.is_vft => {
+                // TODO
+                write!(fmt, "TODO_VFT_NAME")?;
+                write!(fmt, " ")?;
+            }
+            Some(name) => {
+                fmt.write_all(name.as_bytes())?;
+                write!(fmt, " ")?;
+            }
+            None => {
+                print_name_first_time(
+                    fmt,
+                    section,
+                    &member.member_type.type_variant,
+                )?;
+            }
+        }
+
+        if let TypeVariant::Bitfield(bitfield) =
+            &member.member_type.type_variant
+        {
+            print_til_type_udt_bitfield(fmt, bitfield)?;
+            writeln!(fmt)?;
+        } else {
+            print_til_type(
+                fmt,
+                tilib_args,
+                0,
+                section,
+                None,
+                &member.member_type,
+                member.is_vft,
+                true,
+                true,
+                false,
+            )?;
+            writeln!(fmt, ";")?;
+        }
     }
     let sda = til_struct
         .alignment
@@ -1635,7 +1679,19 @@ fn print_til_type_struct_layout(
         .effective_alignment
         .map(|x| x.trailing_zeros() + 1)
         .unwrap_or(0);
-    writeln!(fmt, "//          {total_size:04X} effalign({struct_align}) sda={sda} bits=0000 {name} struct packalign={packalign}")?;
+
+    use idb_rs::til::flag::tattr_udt::*;
+    let bits = (til_struct.is_msstruct as u16)
+        << TAUDT_MSSTRUCT.trailing_zeros()
+        | (til_struct.is_unaligned as u16) << TAUDT_UNALIGNED.trailing_zeros()
+        | (til_struct.is_cppobj as u16) << TAUDT_CPPOBJ.trailing_zeros()
+        | (til_struct.is_vft as u16) << TAUDT_VFTABLE.trailing_zeros();
+    write!(fmt, "//          {total_size:04X} effalign({struct_align}) sda={sda} bits={bits:04X} ")?;
+    if let Some(name) = name {
+        fmt.write_all(name)?;
+        write!(fmt, " ")?;
+    }
+    writeln!(fmt, "struct packalign={packalign}")?;
     Ok(())
 }
 
@@ -1650,9 +1706,6 @@ fn print_til_type_union_layout(
     til_union: &Union,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
-    let name = name
-        .map(String::from_utf8_lossy)
-        .unwrap_or(std::borrow::Cow::Owned(String::new()));
     let total_size = solver
         .type_size_bytes(Some(type_idx), til_type)
         .unwrap_or(0xFFFF);
@@ -1665,25 +1718,40 @@ fn print_til_type_union_layout(
         let member_align = solver
             .type_align_bytes(None, &member.ty, member_size)
             .unwrap_or(1);
-        let member_name = member
-            .name
-            .as_ref()
-            .map(IDBString::as_utf8_lossy)
-            .unwrap_or(Cow::Owned(String::new()));
-        write!(fmt, "//{i:>3}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 {name}.")?;
-        if !member_name.as_bytes().is_empty() {
-            fmt.write_all(member_name.as_bytes())?;
-            write!(fmt, " ")?;
+        write!(fmt, "//{i:>3}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 ")?;
+        if let Some(name) = name {
+            fmt.write_all(name)?;
+            write!(fmt, ".")?;
         }
-        // this is probably a bug, but we have not choice but implement it
-        print_name_first_time(fmt, section, &member.ty.type_variant)?;
+        match &member.name {
+            // TODO
+            //None if member.is_vft => {
+            //    write!(fmt, "TODO_VFT_NAME")?;
+            //    write!(fmt, " ")?;
+            //}
+            Some(name) => {
+                fmt.write_all(name.as_bytes())?;
+                write!(fmt, " ")?;
+            }
+            None => {
+                print_name_first_time(fmt, section, &member.ty.type_variant)?;
+            }
+        }
         print_til_type(
             fmt, tilib_args, 0, section, None, &member.ty, false, true, true,
             false,
         )?;
         writeln!(fmt, ";")?;
     }
-    writeln!(fmt, "//          {total_size:04X} effalign({union_align}) sda=0 bits=0000 {name} union packalign=0")?;
+    write!(
+        fmt,
+        "//          {total_size:04X} effalign({union_align}) sda=0 bits=0000 "
+    )?;
+    if let Some(name) = name {
+        fmt.write_all(name)?;
+        write!(fmt, " ")?;
+    }
+    writeln!(fmt, "union packalign=0")?;
     Ok(())
 }
 
@@ -1705,6 +1773,9 @@ fn print_name_first_time(
                 }
             }
         }
+        TypeVariant::Bitfield(_) => {
+            write!(fmt, "(null) ")?;
+        }
         _ => {}
     }
     Ok(())
@@ -1718,4 +1789,79 @@ fn members_solvable<'a>(
     members
         .into_iter()
         .all(|m| solver.type_size_bytes(None, m).is_some())
+}
+
+#[derive(Default)]
+struct StructOffset {
+    offset: u64,
+    bit_offset: u16,
+    bit_field: Option<NonZeroU8>,
+}
+
+impl StructOffset {
+    fn align_byte(&mut self, align: u64) {
+        // offset alignment
+        let calc_align = align.max(1);
+        let align_diff = self.offset % calc_align;
+        if align_diff != 0 {
+            self.offset += calc_align - align_diff;
+        }
+    }
+
+    fn next_field(&mut self, size: u64, align: u64) -> u64 {
+        // if any bitfield left, advance to the next field
+        if let Some(bit_field) = self.bit_field {
+            self.offset += u64::from(bit_field.get());
+        }
+        self.bit_field = None;
+        self.bit_offset = 0;
+
+        self.align_byte(align);
+
+        let current_offset = self.offset;
+        self.offset += size;
+        current_offset
+    }
+
+    fn bitfield_offset(&mut self, bitfield: &Bitfield) -> (u64, u64) {
+        let start_bit_offset;
+        match (self.bit_field, bitfield.nbytes) {
+            // not in a bitfield, start one
+            (None, bytes) => {
+                self.align_byte(bytes.get().into());
+
+                self.bit_field = Some(bytes);
+                start_bit_offset = 0;
+                self.bit_offset = bitfield.width;
+            }
+            (Some(bytes), nbytes) if bytes == nbytes => {
+                // check if bits fit the current byte_field
+                if self.bit_offset + bitfield.width > (bytes.get() * 8).into() {
+                    // don't fit, start a new byte_field
+                    self.offset += u64::from(bytes.get());
+                    self.align_byte(bytes.get().into());
+
+                    self.bit_field = Some(bytes);
+                    start_bit_offset = 0;
+                    self.bit_offset = bitfield.width;
+                } else {
+                    // just put in the current byte_field
+                    start_bit_offset = u64::from(self.bit_offset);
+                    self.bit_offset += bitfield.width;
+                }
+            }
+            // start other bitfield
+            (Some(old_bit_field), bytes) => {
+                // skip the previous byte-field
+                self.offset += u64::from(old_bit_field.get());
+                self.align_byte(bytes.get().into());
+
+                // start this bitfield
+                self.bit_field = Some(bytes);
+                start_bit_offset = 0;
+                self.bit_offset = bitfield.width;
+            }
+        }
+        (start_bit_offset, self.offset)
+    }
 }

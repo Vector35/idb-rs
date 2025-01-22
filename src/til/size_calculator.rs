@@ -264,7 +264,8 @@ impl<'a> TILTypeSizeSolver<'a> {
                         .max(max_member_align),
                 )
             }
-            TypeVariant::Function(_) | TypeVariant::Bitfield(_) => Some(1),
+            TypeVariant::Function(_) => Some(1),
+            TypeVariant::Bitfield(bit) => Some(bit.nbytes.get().into()),
         }
     }
 }
