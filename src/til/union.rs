@@ -40,7 +40,8 @@ impl Union {
                     type_by_ord,
                     member,
                     fields,
-                    comments,
+                    None,
+                    &mut *comments,
                 )?;
                 Ok(UnionMember { name, comment, ty })
             })

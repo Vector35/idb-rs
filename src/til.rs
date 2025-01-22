@@ -53,9 +53,9 @@ impl TILTypeInfo {
         let mut fields_iter = fields
             .into_iter()
             .map(|field| (!field.is_empty()).then_some(IDBString::new(field)));
-        let mut comments_iter = [comment]
+        let comment = (!comment.is_empty()).then_some(IDBString::new(comment));
+        let mut comments_iter = comments
             .into_iter()
-            .chain(comments)
             .map(|field| (!field.is_empty()).then_some(IDBString::new(field)));
         let tinfo = Type::new(
             til,
@@ -63,6 +63,7 @@ impl TILTypeInfo {
             type_by_ord,
             tinfo_raw,
             &mut fields_iter,
+            comment,
             &mut comments_iter,
         )?;
         #[cfg(feature = "restrictive")]
@@ -74,7 +75,7 @@ impl TILTypeInfo {
         #[cfg(feature = "restrictive")]
         ensure!(
             comments_iter.next().is_none(),
-            "Extra fields found for til type \"{}\"",
+            "Extra field_comments found for til type \"{}\"",
             name.as_utf8_lossy()
         );
         Ok(Self {
@@ -186,9 +187,9 @@ impl Type {
         type_by_ord: &HashMap<u64, usize>,
         tinfo_raw: TypeRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comment: Option<IDBString>,
         comments: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> Result<Self> {
-        let comment = comments.next().flatten();
         let type_variant = match tinfo_raw.variant {
             TypeVariantRaw::Basic(x) => TypeVariant::Basic(x),
             TypeVariantRaw::Bitfield(x) => TypeVariant::Bitfield(x),
@@ -215,7 +216,7 @@ impl Type {
             )
             .map(TypeVariant::Function)?,
             TypeVariantRaw::Array(x) => {
-                Array::new(til, type_by_name, type_by_ord, x, fields, comments)
+                Array::new(til, type_by_name, type_by_ord, x, fields)
                     .map(TypeVariant::Array)?
             }
             TypeVariantRaw::Struct(x) => {
@@ -286,6 +287,7 @@ impl Type {
             &HashMap::new(),
             type_raw,
             &mut fields_iter,
+            None,
             &mut vec![].into_iter(),
         )?;
         #[cfg(feature = "restrictive")]

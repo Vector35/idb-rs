@@ -36,6 +36,7 @@ impl Pointer {
                         type_by_ord,
                         *t,
                         &mut vec![].into_iter(),
+                        None,
                         &mut vec![].into_iter(),
                     )
                     .map(Box::new)?,
@@ -49,6 +50,7 @@ impl Pointer {
             type_by_ord,
             *raw.typ,
             fields,
+            None,
             comments,
         )
         .map(Box::new)?;
@@ -94,6 +96,7 @@ impl PointerType {
                     type_by_ord,
                     *c,
                     &mut sub_fields,
+                    None,
                     &mut sub_comments,
                 )
                 .map(Box::new)
