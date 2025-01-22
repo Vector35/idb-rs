@@ -11,7 +11,8 @@ use super::{Basic, Type, TypeVariant, Typeref, TyperefValue};
 
 pub struct TILTypeSizeSolver<'a> {
     section: &'a TILSection,
-    solved: HashMap<usize, u64>,
+    solved_size: HashMap<usize, u64>,
+    solved_align: HashMap<usize, u64>,
     // HACK used to avoid infinte lopping during recursive solving
     solving: HashSet<usize>,
 }
@@ -20,7 +21,8 @@ impl<'a> TILTypeSizeSolver<'a> {
     pub fn new(section: &'a TILSection) -> Self {
         Self {
             section,
-            solved: Default::default(),
+            solved_size: Default::default(),
+            solved_align: Default::default(),
             solving: Default::default(),
         }
     }
@@ -32,27 +34,23 @@ impl<'a> TILTypeSizeSolver<'a> {
         type_idx: Option<usize>,
         ty: &Type,
     ) -> Option<u64> {
-        assert!(self.solving.is_empty());
         if let Some(idx) = type_idx {
             // if cached return it
-            if let Some(solved) = self.cached(idx) {
-                return Some(solved);
+            if let Some(solved) = self.solved_size.get(&idx) {
+                return Some(*solved);
             }
-            self.solving.insert(idx);
+            if !self.solving.insert(idx) {
+                return None;
+            }
         }
         let result = self.inner_type_size_bytes(ty);
         if let Some(idx) = type_idx {
             assert!(self.solving.remove(&idx));
         }
-        assert!(self.solving.is_empty());
         if let (Some(idx), Some(result)) = (type_idx, result) {
-            assert!(self.solved.insert(idx, result).is_none());
+            assert!(self.solved_size.insert(idx, result).is_none());
         }
         result
-    }
-
-    fn cached(&self, idx: usize) -> Option<u64> {
-        self.solved.get(&idx).copied()
     }
 
     fn inner_type_size_bytes(&mut self, ty: &Type) -> Option<u64> {
@@ -133,10 +131,10 @@ impl<'a> TILTypeSizeSolver<'a> {
                                 self.inner_type_size_bytes(&first.member_type)?
                             }
                         };
-                    if !til_struct.is_unaligned {
-                        let align = match (
+                    let align = if !til_struct.is_unaligned {
+                        match (
                             first_member.alignment.map(|x| x.get().into()),
-                            self.alignemnt(
+                            self.inner_type_align_bytes(
                                 &first_member.member_type,
                                 field_size,
                             ),
@@ -144,21 +142,23 @@ impl<'a> TILTypeSizeSolver<'a> {
                             (Some(a), Some(b)) => a.max(b),
                             (Some(a), None) | (None, Some(a)) => a,
                             (None, None) => align,
-                        };
-                        let align = align.max(1);
-                        let align_diff = sum % align;
-                        if align_diff != 0 {
-                            sum += align - align_diff;
                         }
-                    }
-                    sum += field_size;
+                    } else {
+                        1
+                    };
+                    // align the current offset
+                    sum = align_mem(sum, align);
+                    // get the type size with padding
+                    let field_size_padded = align_mem(field_size, align);
+                    // add the size to the current offset, and do the next udt member
+                    sum += field_size_padded;
                 }
                 sum
             }
             TypeVariant::Union(Union { members, .. }) => {
                 let mut max = 0;
-                for (_, member) in members {
-                    let size = self.inner_type_size_bytes(member)?;
+                for member in members {
+                    let size = self.inner_type_size_bytes(&member.ty)?;
                     max = max.max(size);
                 }
                 max
@@ -176,23 +176,40 @@ impl<'a> TILTypeSizeSolver<'a> {
         let TyperefValue::Ref(idx) = &typedef.typeref_value else {
             return None;
         };
-        // if cached return it
-        if let Some(solved) = self.cached(*idx) {
-            return Some(solved);
+        let ty = self.section.get_type_by_idx(*idx);
+        self.type_size_bytes(Some(*idx), &ty.tinfo)
+    }
+
+    pub fn type_align_bytes(
+        &mut self,
+        type_idx: Option<usize>,
+        ty: &Type,
+        til_size: u64,
+    ) -> Option<u64> {
+        if let Some(idx) = type_idx {
+            // if cached return it
+            if let Some(solved) = self.solved_align.get(&idx) {
+                return Some(*solved);
+            }
+            if !self.solving.insert(idx) {
+                return None;
+            }
         }
-        if !self.solving.insert(*idx) {
-            return None;
+        let result = self.inner_type_align_bytes(ty, til_size);
+        if let Some(idx) = type_idx {
+            assert!(self.solving.remove(&idx));
         }
-        let inner_type = self.section.get_type_by_idx(*idx);
-        let result = self.inner_type_size_bytes(&inner_type.tinfo);
-        self.solving.remove(&idx);
-        if let Some(result) = result {
-            assert!(self.solved.insert(*idx, result).is_none());
+        if let (Some(idx), Some(result)) = (type_idx, result) {
+            assert!(self.solved_align.insert(idx, result).is_none());
         }
         result
     }
 
-    fn alignemnt(&mut self, til: &Type, til_size: u64) -> Option<u64> {
+    fn inner_type_align_bytes(
+        &mut self,
+        til: &Type,
+        til_size: u64,
+    ) -> Option<u64> {
         match &til.type_variant {
             // TODO basic types have a inherited alignment?
             TypeVariant::Basic(_)
@@ -200,7 +217,7 @@ impl<'a> TILTypeSizeSolver<'a> {
             | TypeVariant::Pointer(_) => Some(til_size),
             TypeVariant::Array(array) => {
                 let size = self.inner_type_size_bytes(&array.elem_type);
-                self.alignemnt(&array.elem_type, size.unwrap_or(1))
+                self.inner_type_align_bytes(&array.elem_type, size.unwrap_or(1))
             }
             TypeVariant::Typeref(ty) => {
                 let TyperefValue::Ref(idx) = &ty.typeref_value else {
@@ -208,9 +225,49 @@ impl<'a> TILTypeSizeSolver<'a> {
                 };
                 let ty = &self.section.types[*idx].tinfo;
                 let size = self.inner_type_size_bytes(ty).unwrap_or(1);
-                self.alignemnt(ty, size)
+                self.inner_type_align_bytes(ty, size)
             }
-            _ => None,
+            TypeVariant::Struct(ty_struct) => {
+                let max_member_align = ty_struct
+                    .members
+                    .iter()
+                    .filter_map(|m| {
+                        let type_bytes = self
+                            .type_size_bytes(None, &m.member_type)
+                            .unwrap_or(0);
+                        self.inner_type_align_bytes(&m.member_type, type_bytes)
+                    })
+                    .max()
+                    .unwrap_or(1);
+                Some(
+                    ty_struct
+                        .alignment
+                        .map(|x| u64::from(x.get()))
+                        .unwrap_or(1)
+                        .max(max_member_align),
+                )
+            }
+            TypeVariant::Union(ty_union) => {
+                let max_member_align = ty_union
+                    .members
+                    .iter()
+                    .filter_map(|member| {
+                        let type_bytes =
+                            self.type_size_bytes(None, &member.ty).unwrap_or(0);
+                        self.inner_type_align_bytes(&member.ty, type_bytes)
+                    })
+                    .max()
+                    .unwrap_or(1);
+                Some(
+                    ty_union
+                        .alignment
+                        .map(|x| u64::from(x.get()))
+                        .unwrap_or(1)
+                        .max(max_member_align),
+                )
+            }
+            TypeVariant::Function(_) => Some(1),
+            TypeVariant::Bitfield(bit) => Some(bit.nbytes.get().into()),
         }
     }
 }
@@ -242,4 +299,14 @@ fn condensate_bitfields_from_struct(
         *rest = &rest[1..];
     }
     field_bytes
+}
+
+pub fn align_mem(value: u64, align: u64) -> u64 {
+    let mut result = value;
+    let align = align.max(1);
+    let align_diff = result % align;
+    if align_diff != 0 {
+        result += align - align_diff;
+    }
+    result
 }

@@ -6,13 +6,14 @@ use crate::IDBString;
 use anyhow::{anyhow, ensure};
 
 use super::section::TILSectionHeader;
+use super::CommentType;
 
 #[derive(Clone, Debug)]
 pub struct Enum {
     pub is_signed: bool,
     pub is_unsigned: bool,
     pub output_format: EnumFormat,
-    pub members: Vec<(Option<IDBString>, u64)>,
+    pub members: Vec<EnumMember>,
     pub groups: Option<Vec<u16>>,
     pub storage_size: Option<NonZeroU8>,
     // TODO parse type attributes
@@ -23,11 +24,16 @@ impl Enum {
         _til: &TILSectionHeader,
         value: EnumRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> anyhow::Result<Self> {
         let members = value
             .members
             .into_iter()
-            .map(|member| (fields.next().flatten(), member))
+            .map(|member| EnumMember {
+                name: fields.next().flatten(),
+                comment: comments.next().flatten(),
+                value: member,
+            })
             .collect();
         Ok(Self {
             is_signed: value.is_signed,
@@ -38,6 +44,13 @@ impl Enum {
             storage_size: value.storage_size,
         })
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct EnumMember {
+    pub name: Option<IDBString>,
+    pub comment: Option<CommentType>,
+    pub value: u64,
 }
 
 #[derive(Clone, Debug)]

@@ -705,7 +705,9 @@ impl TILSection {
                     ty.name,
                     ty.ordinal,
                     ty.tinfo,
+                    ty.cmt,
                     ty.fields,
+                    ty.fieldcmts,
                 )
             })
             .collect::<Result<_>>()?;
@@ -720,7 +722,9 @@ impl TILSection {
                     ty.name,
                     ty.ordinal,
                     ty.tinfo,
+                    ty.cmt,
                     ty.fields,
+                    ty.fieldcmts,
                 )
             })
             .collect::<Result<_>>()?;

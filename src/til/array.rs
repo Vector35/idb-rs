@@ -32,6 +32,8 @@ impl Array {
                 type_by_ord,
                 *value.elem_type,
                 fields,
+                None,
+                &mut vec![].into_iter(),
             )
             .map(Box::new)?,
         })

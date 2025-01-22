@@ -8,7 +8,7 @@ use anyhow::{anyhow, ensure, Context, Result};
 use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 
 use super::section::TILSectionHeader;
-use super::{TypeAttribute, TypeVariantRaw};
+use super::{CommentType, TypeAttribute, TypeVariantRaw};
 
 #[derive(Clone, Debug)]
 pub struct Struct {
@@ -19,7 +19,7 @@ pub struct Struct {
     /// Gcc msstruct attribute
     pub is_msstruct: bool,
     /// C++ object, not simple pod type
-    pub is_cppobj: bool,
+    is_cppobj: bool,
     /// Virtual function table
     pub is_vft: bool,
     /// Unknown meaning, use at your own risk
@@ -34,6 +34,7 @@ impl Struct {
         type_by_ord: &HashMap<u64, usize>,
         value: StructRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> Result<Self> {
         let members = value
             .members
@@ -41,11 +42,11 @@ impl Struct {
             .map(|member| {
                 StructMember::new(
                     til,
-                    fields.next().flatten(),
                     type_by_name,
                     type_by_ord,
                     member,
-                    &mut *fields,
+                    fields,
+                    comments,
                 )
             })
             .collect::<Result<_>>()?;
@@ -59,6 +60,13 @@ impl Struct {
             is_uknown_8: value.is_unknown_8,
             alignment: value.alignment,
         })
+    }
+
+    pub fn is_cppobj(&self) -> bool {
+        // TODO check innerref, maybe baseclass don't need to be the first, nor
+        // need to only one
+        self.is_cppobj
+            || matches!(self.members.first(), Some(first) if first.is_baseclass)
     }
 }
 
@@ -101,9 +109,9 @@ impl StructRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
         let mem_cnt = n >> 3;
         // TODO what is effective_alignment and how it's diferent from Modifier alignment?
-        let alpow = n & 7;
-        let effective_alignment =
-            (alpow != 0).then(|| NonZeroU8::new(1 << (alpow - 1)).unwrap());
+        let packalig = n & 7;
+        let effective_alignment = (packalig != 0)
+            .then(|| NonZeroU8::new(1 << (packalig - 1)).unwrap());
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459c97
         let mut alignment = None;
         let mut is_unknown_8 = false;
@@ -186,6 +194,7 @@ impl StructRaw {
 #[derive(Clone, Debug)]
 pub struct StructMember {
     pub name: Option<IDBString>,
+    pub comment: Option<CommentType>,
     pub member_type: Type,
     pub att: Option<StructMemberAtt>,
 
@@ -200,20 +209,25 @@ pub struct StructMember {
 impl StructMember {
     fn new(
         til: &TILSectionHeader,
-        name: Option<IDBString>,
         type_by_name: &HashMap<Vec<u8>, usize>,
         type_by_ord: &HashMap<u64, usize>,
         m: StructMemberRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> Result<Self> {
+        let name = fields.next().flatten();
+        let comment = comments.next().flatten();
         Ok(Self {
             name,
+            comment,
             member_type: Type::new(
                 til,
                 type_by_name,
                 type_by_ord,
                 m.ty,
                 fields,
+                None,
+                comments,
             )?,
             att: m.att,
             alignment: m.alignment,

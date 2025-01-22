@@ -109,7 +109,7 @@ enum Operation {
     DumpDirtreeBookmarksStructplace,
     DumpDirtreeBookmarksTiplace,
     /// Print all til types from file and it's information
-    PrintTilib,
+    PrintTilib(PrintTilibArgs),
 }
 
 ///// Split the IDB file into it's decompressed sectors. Allow IDB and I64 files.
@@ -126,6 +126,12 @@ enum Operation {
 struct DecompressTilArgs {
     /// output filename
     output: PathBuf,
+}
+
+/// Decompress the TIL into a uncompressed version of the TIL. Allow IDB, I64 and TIL files.
+#[derive(Clone, Debug, Parser)]
+struct PrintTilibArgs {
+    dump_struct_layout: Option<bool>,
 }
 
 impl Args {
@@ -187,6 +193,6 @@ fn main() -> Result<()> {
         Operation::DumpDirtreeBookmarksTiplace => {
             dump_dirtree_bookmarks_tiplace(&args)
         }
-        Operation::PrintTilib => tilib_print(&args),
+        Operation::PrintTilib(tilib_args) => tilib_print(&args, tilib_args),
     }
 }
