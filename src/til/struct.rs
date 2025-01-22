@@ -219,6 +219,7 @@ impl StructMember {
                 type_by_ord,
                 m.ty,
                 fields,
+                None,
                 comments,
             )?,
             att: m.att,

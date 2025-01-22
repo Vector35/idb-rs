@@ -21,7 +21,6 @@ impl Array {
         type_by_ord: &HashMap<u64, usize>,
         value: ArrayRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<IDBString>>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             alignment: value.alignment,
@@ -33,7 +32,8 @@ impl Array {
                 type_by_ord,
                 *value.elem_type,
                 fields,
-                comments,
+                None,
+                &mut vec![].into_iter(),
             )
             .map(Box::new)?,
         })

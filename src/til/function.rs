@@ -42,21 +42,23 @@ impl Function {
             type_by_ord,
             *value.ret,
             &mut *fields,
-            &mut *comments,
+            None,
+            &mut vec![].into_iter(),
         )?;
         let args = value
             .args
             .into_iter()
-            .map(|(ty, loc)| {
+            .map(move |(ty, loc)| {
                 let name = fields.next().flatten();
-                let comment = fields.next().flatten();
+                let comment = comments.next().flatten();
                 let ty = Type::new(
                     til,
                     type_by_name,
                     type_by_ord,
                     ty,
-                    &mut *fields,
-                    &mut *comments,
+                    fields,
+                    None,
+                    comments,
                 )?;
                 Ok(FunctionArg {
                     name,
