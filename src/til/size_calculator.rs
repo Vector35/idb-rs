@@ -131,8 +131,8 @@ impl<'a> TILTypeSizeSolver<'a> {
                                 self.inner_type_size_bytes(&first.member_type)?
                             }
                         };
-                    if !til_struct.is_unaligned {
-                        let align = match (
+                    let align = if !til_struct.is_unaligned {
+                        match (
                             first_member.alignment.map(|x| x.get().into()),
                             self.inner_type_align_bytes(
                                 &first_member.member_type,
@@ -142,14 +142,16 @@ impl<'a> TILTypeSizeSolver<'a> {
                             (Some(a), Some(b)) => a.max(b),
                             (Some(a), None) | (None, Some(a)) => a,
                             (None, None) => align,
-                        };
-                        let align = align.max(1);
-                        let align_diff = sum % align;
-                        if align_diff != 0 {
-                            sum += align - align_diff;
                         }
-                    }
-                    sum += field_size;
+                    } else {
+                        1
+                    };
+                    // align the current offset
+                    sum = align_mem(sum, align);
+                    // get the type size with padding
+                    let field_size_padded = align_mem(field_size, align);
+                    // add the size to the current offset, and do the next udt member
+                    sum += field_size_padded;
                 }
                 sum
             }
@@ -297,4 +299,14 @@ fn condensate_bitfields_from_struct(
         *rest = &rest[1..];
     }
     field_bytes
+}
+
+pub fn align_mem(value: u64, align: u64) -> u64 {
+    let mut result = value;
+    let align = align.max(1);
+    let align_diff = result % align;
+    if align_diff != 0 {
+        result += align - align_diff;
+    }
+    result
 }

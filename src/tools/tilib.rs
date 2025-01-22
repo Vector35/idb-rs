@@ -1424,11 +1424,14 @@ fn print_til_type_len(
     if let TypeVariant::Function(_function) = &tinfo.type_variant {
         write!(fmt, "FFFFFFFF")?;
     } else {
-        // if the type is unknown it just prints "FFFFFFF"
-        let len = size_solver
-            .type_size_bytes(idx, tinfo)
-            .unwrap_or(0xFFFF_FFFF);
-        write!(fmt, "{len:08X}")?;
+        let Some(len) = size_solver.type_size_bytes(idx, tinfo) else {
+            // if the type is unknown it just prints "FFFFFFF"
+            write!(fmt, "FFFFFFFF")?;
+            return Ok(());
+        };
+        let align = size_solver.type_align_bytes(idx, tinfo, len).unwrap_or(1);
+        let padded_size = idb_rs::til::align_mem(len, align);
+        write!(fmt, "{padded_size:08X}")?;
     }
     Ok(())
 }
@@ -1586,16 +1589,17 @@ fn print_til_type_struct_layout(
     til_struct: &Struct,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
-    let total_size = solver
+    let unpadded_size = solver
         .type_size_bytes(Some(type_idx), til_type)
         .unwrap_or(0xFFFF);
     let struct_align = if til_struct.is_unaligned {
         1
     } else {
         solver
-            .type_align_bytes(Some(type_idx), til_type, total_size)
+            .type_align_bytes(Some(type_idx), til_type, unpadded_size)
             .unwrap_or(1)
     };
+    let padded_size = idb_rs::til::align_mem(unpadded_size, struct_align);
     let mut offset_calc = StructOffset::default();
     for (i, member) in til_struct.members.iter().enumerate() {
         write!(fmt, "//{i:>3}. ")?;
@@ -1610,6 +1614,8 @@ fn print_til_type_struct_layout(
                 .or(member.alignment.map(NonZeroU8::get).map(u64::from))
                 .unwrap_or(1)
         };
+        let member_size_padded =
+            idb_rs::til::align_mem(member_size, member_align);
         if let TypeVariant::Bitfield(bitfield) =
             &member.member_type.type_variant
         {
@@ -1621,8 +1627,9 @@ fn print_til_type_struct_layout(
                 bitfield.width
             )?;
         } else {
-            let offset = offset_calc.next_field(member_size, member_align);
-            write!(fmt, "{offset:04X} {member_size:04X}")?;
+            let offset =
+                offset_calc.next_field(member_size_padded, member_align);
+            write!(fmt, "{offset:04X} {member_size_padded:04X}")?;
         }
         use idb_rs::til::flag::tattr_field::*;
         let bits = (member.is_vft as u16) << TAFLD_VFTABLE.trailing_zeros()
@@ -1689,7 +1696,11 @@ fn print_til_type_struct_layout(
         | (til_struct.is_unaligned as u16) << TAUDT_UNALIGNED.trailing_zeros()
         | (til_struct.is_cppobj() as u16) << TAUDT_CPPOBJ.trailing_zeros()
         | (til_struct.is_vft as u16) << TAUDT_VFTABLE.trailing_zeros();
-    write!(fmt, "//          {total_size:04X} effalign({struct_align}) sda={sda} bits={bits:04X} ")?;
+
+    if padded_size != unpadded_size {
+        writeln!(fmt, "//          {unpadded_size:04X} unpadded_size")?;
+    }
+    write!(fmt, "//          {padded_size:04X} effalign({struct_align}) sda={sda} bits={bits:04X} ")?;
     if let Some(name) = name {
         fmt.write_all(name)?;
         write!(fmt, " ")?;
@@ -1802,15 +1813,6 @@ struct StructOffset {
 }
 
 impl StructOffset {
-    fn align_byte(&mut self, align: u64) {
-        // offset alignment
-        let calc_align = align.max(1);
-        let align_diff = self.offset % calc_align;
-        if align_diff != 0 {
-            self.offset += calc_align - align_diff;
-        }
-    }
-
     fn next_field(&mut self, size: u64, align: u64) -> u64 {
         // if any bitfield left, advance to the next field
         if let Some(bit_field) = self.bit_field {
@@ -1819,7 +1821,7 @@ impl StructOffset {
         self.bit_field = None;
         self.bit_offset = 0;
 
-        self.align_byte(align);
+        self.offset = idb_rs::til::align_mem(self.offset, align);
 
         let current_offset = self.offset;
         self.offset += size;
@@ -1831,7 +1833,8 @@ impl StructOffset {
         match (self.bit_field, bitfield.nbytes) {
             // not in a bitfield, start one
             (None, bytes) => {
-                self.align_byte(bytes.get().into());
+                self.offset =
+                    idb_rs::til::align_mem(self.offset, bytes.get().into());
 
                 self.bit_field = Some(bytes);
                 start_bit_offset = 0;
@@ -1842,7 +1845,8 @@ impl StructOffset {
                 if self.bit_offset + bitfield.width > (bytes.get() * 8).into() {
                     // don't fit, start a new byte_field
                     self.offset += u64::from(bytes.get());
-                    self.align_byte(bytes.get().into());
+                    self.offset =
+                        idb_rs::til::align_mem(self.offset, bytes.get().into());
 
                     self.bit_field = Some(bytes);
                     start_bit_offset = 0;
@@ -1857,7 +1861,8 @@ impl StructOffset {
             (Some(old_bit_field), bytes) => {
                 // skip the previous byte-field
                 self.offset += u64::from(old_bit_field.get());
-                self.align_byte(bytes.get().into());
+                self.offset =
+                    idb_rs::til::align_mem(self.offset, bytes.get().into());
 
                 // start this bitfield
                 self.bit_field = Some(bytes);
