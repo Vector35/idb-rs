@@ -58,7 +58,7 @@ impl TILTypeInfo {
         let comment = (!comment.is_empty()).then_some(IDBString::new(comment));
         let mut comments_iter = comments
             .into_iter()
-            .map(|field| CommentType::from_raw(field))
+            .map(CommentType::from_raw)
             .collect::<Result<Vec<Option<CommentType>>>>()?
             .into_iter();
         let tinfo = Type::new(
