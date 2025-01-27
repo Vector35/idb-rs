@@ -35,6 +35,7 @@ pub struct TILTypeInfo {
     pub name: IDBString,
     pub ordinal: u64,
     pub tinfo: Type,
+    pub sclass: Option<SClass>,
 }
 
 impl TILTypeInfo {
@@ -49,6 +50,7 @@ impl TILTypeInfo {
         comment: Vec<u8>,
         fields: Vec<Vec<u8>>,
         comments: Vec<Vec<u8>>,
+        sclass: u8,
     ) -> Result<Self> {
         let mut fields_iter = fields
             .into_iter()
@@ -80,10 +82,41 @@ impl TILTypeInfo {
             "Extra field_comments found for til type \"{}\"",
             name.as_utf8_lossy()
         );
+        let sclass = SClass::from_raw(sclass);
         Ok(Self {
             name,
             ordinal,
             tinfo,
+            sclass,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SClass {
+    Typedef,
+    Extern,
+    Static,
+    Register,
+    Auto,
+    Friend,
+    Virtual,
+    // TODO allow this unknown value?
+    Other(u8),
+}
+
+impl SClass {
+    pub(crate) fn from_raw(value: u8) -> Option<Self> {
+        Some(match value {
+            0 => return None,
+            1 => Self::Typedef,
+            2 => Self::Extern,
+            3 => Self::Static,
+            4 => Self::Register,
+            5 => Self::Auto,
+            6 => Self::Friend,
+            7 => Self::Virtual,
+            value => Self::Other(value),
         })
     }
 }
@@ -97,7 +130,7 @@ pub(crate) struct TILTypeInfoRaw {
     cmt: Vec<u8>,
     fieldcmts: Vec<Vec<u8>>,
     fields: Vec<Vec<u8>>,
-    _sclass: u8,
+    sclass: u8,
 }
 
 impl TILTypeInfoRaw {
@@ -156,7 +189,7 @@ impl TILTypeInfoRaw {
             cmt,
             fields,
             fieldcmts,
-            _sclass: sclass,
+            sclass,
         })
     }
 }
