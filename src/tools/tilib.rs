@@ -8,7 +8,7 @@ use idb_rs::til::r#struct::{Struct, StructMemberAtt};
 use idb_rs::til::section::TILSection;
 use idb_rs::til::union::Union;
 use idb_rs::til::{
-    Basic, TILTypeInfo, TILTypeSizeSolver, Type, TypeVariant, Typeref,
+    Basic, SClass, TILTypeInfo, TILTypeSizeSolver, Type, TypeVariant, Typeref,
     TyperefType, TyperefValue,
 };
 use idb_rs::{IDBParser, IDBSectionCompression, IDBString};
@@ -186,6 +186,7 @@ fn print_section_flags(
 ) -> Result<()> {
     let flags = section.header.flags;
     write!(fmt, "Flags      : {:04X}", flags.as_raw())?;
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b72b
     if flags.is_zip() {
         write!(fmt, " compressed")?;
     }
@@ -214,6 +215,7 @@ fn print_section_flags(
 }
 
 fn compiler_id_to_str(compiler: Compiler) -> &'static str {
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x41b753
     match compiler {
         Compiler::Unknown => "Unknown",
         Compiler::VisualStudio => "Visual C++",
@@ -245,19 +247,19 @@ fn print_symbols(
             _ => write!(fmt, " {:08X}", symbol.ordinal)?,
         }
 
-        // TODO find this in InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a49
-        //let sym_kind = match arg8 {
-        //    0 => "        ",
-        //    1 => "typedef ",
-        //    2 => "extern  ",
-        //    3 => "static  ",
-        //    4 => "register",
-        //    5 => "auto    ",
-        //    6 => "friend  ",
-        //    7 => "virtual ",
-        //    _ => "?!",
-        //};
-        let sym_kind = "        ";
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a49
+        #[rustfmt::skip]
+        let sym_kind = match symbol.sclass {
+            None                   => "        ",
+            Some(SClass::Typedef)  => "typedef ",
+            Some(SClass::Extern)   => "extern  ",
+            Some(SClass::Static)   => "static  ",
+            Some(SClass::Register) => "register",
+            Some(SClass::Auto)     => "auto    ",
+            Some(SClass::Friend)   => "friend  ",
+            Some(SClass::Virtual)  => "virtual ",
+            Some(SClass::Other(_)) => "?!",
+        };
         write!(fmt, " {} ", sym_kind)?;
 
         // TODO investiage this

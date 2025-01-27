@@ -708,6 +708,7 @@ impl TILSection {
                     ty.cmt,
                     ty.fields,
                     ty.fieldcmts,
+                    ty.sclass,
                 )
             })
             .collect::<Result<_>>()?;
@@ -725,6 +726,7 @@ impl TILSection {
                     ty.cmt,
                     ty.fields,
                     ty.fieldcmts,
+                    ty.sclass,
                 )
             })
             .collect::<Result<_>>()?;
