@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 
 use std::collections::HashMap;
-use std::num::NonZeroU8;
+use std::num::{NonZeroU16, NonZeroU8};
 
 use crate::ida_reader::IdaGenericBufUnpack;
 use crate::til::{Type, TypeRaw};
@@ -12,7 +12,7 @@ use super::{CommentType, TypeAttribute, TypeVariantRaw};
 
 #[derive(Clone, Debug)]
 pub struct Union {
-    pub effective_alignment: u16,
+    pub effective_alignment: Option<NonZeroU16>,
     pub alignment: Option<NonZeroU8>,
     pub members: Vec<UnionMember>,
 
@@ -67,7 +67,7 @@ pub struct UnionMember {
 // merge both
 #[derive(Clone, Debug)]
 pub(crate) struct UnionRaw {
-    effective_alignment: u16,
+    effective_alignment: Option<NonZeroU16>,
     alignment: Option<NonZeroU8>,
     members: Vec<TypeRaw>,
     is_unaligned: bool,
@@ -93,7 +93,8 @@ impl UnionRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
         let alpow = n & 7;
         let mem_cnt = n >> 3;
-        let effective_alignment = if alpow == 0 { 0 } else { 1 << (alpow - 1) };
+        let effective_alignment =
+            NonZeroU16::new(if alpow == 0 { 0 } else { 1 << (alpow - 1) });
 
         let mut alignment = None;
         let mut is_unaligned = false;
