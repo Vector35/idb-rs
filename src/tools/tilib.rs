@@ -615,6 +615,7 @@ fn print_til_type_pointer(
             }
             add_space = true;
         }
+
         if let Some((ty, value)) = &pointer.shifted {
             if add_space {
                 write!(fmt, " ")?;
@@ -723,13 +724,56 @@ fn print_til_type_function(
         if i != 0 {
             write!(fmt, ", ")?;
         }
-        let param_name = arg.name.as_ref().map(IDBString::as_bytes);
+        let mut arg_name = Vec::with_capacity(
+            arg.name.as_ref().map(|x| x.as_bytes().len()).unwrap_or(0),
+        );
+        let mut need_space = false;
+        if let Some(flags) = &arg.flags {
+            if flags.is_hidden {
+                write!(&mut arg_name, "__hidden")?;
+                need_space = true;
+            }
+            if flags.is_return_ptr {
+                if need_space {
+                    write!(&mut arg_name, " ")?;
+                }
+                write!(&mut arg_name, "__return_ptr")?;
+                need_space = true;
+            }
+            if flags.is_struct_ptr {
+                if need_space {
+                    write!(&mut arg_name, " ")?;
+                }
+                write!(&mut arg_name, "__struct_ptr")?;
+                need_space = true;
+            }
+            if flags.is_array_ptr {
+                if need_space {
+                    write!(&mut arg_name, " ")?;
+                }
+                write!(&mut arg_name, "__array_ptr")?;
+                need_space = true;
+            }
+            if flags.is_unused {
+                if need_space {
+                    write!(&mut arg_name, " ")?;
+                }
+                write!(&mut arg_name, "__unused")?;
+                need_space = true;
+            }
+        }
+        if let Some(name) = &arg.name {
+            if need_space {
+                write!(&mut arg_name, " ")?;
+            }
+            arg_name.extend(name.as_bytes());
+        }
         print_til_type(
             fmt,
             &DEFAULT_TILIB_ARGS,
             0,
             section,
-            param_name,
+            (!arg_name.is_empty()).then_some(&arg_name),
             &arg.ty,
             false,
             true,

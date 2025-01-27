@@ -48,7 +48,7 @@ impl Function {
         let args = value
             .args
             .into_iter()
-            .map(move |(ty, loc)| {
+            .map(move |(ty, loc, flags)| {
                 let name = fields.next().flatten();
                 let comment = comments.next().flatten();
                 let ty = Type::new(
@@ -65,6 +65,7 @@ impl Function {
                     comment,
                     ty,
                     loc,
+                    flags,
                 })
             })
             .collect::<Result<_>>()?;
@@ -92,12 +93,44 @@ pub struct FunctionArg {
     pub comment: Option<CommentType>,
     pub ty: Type,
     pub loc: Option<ArgLoc>,
+    pub flags: Option<FunctionArgFlags>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct FunctionArgFlags {
+    pub is_hidden: bool,
+    pub is_return_ptr: bool,
+    pub is_struct_ptr: bool,
+    pub is_array_ptr: bool,
+    pub is_unused: bool,
+}
+
+impl FunctionArgFlags {
+    pub(crate) fn from_raw(flags: u32) -> Result<Self> {
+        #[cfg(feature = "restrictive")]
+        if flags > 0x10 {
+            return Err(anyhow!("Invalid value for FunctionArgFlags "));
+        }
+        // TODO find the value for this in `crate::til::flag::*`
+        let is_hidden = flags & 0x1 != 0;
+        let is_return_ptr = flags & 0x2 != 0;
+        let is_struct_ptr = flags & 0x4 != 0;
+        let is_array_ptr = flags & 0x8 != 0;
+        let is_unused = flags & 0x10 != 0;
+        Ok(Self {
+            is_hidden,
+            is_return_ptr,
+            is_struct_ptr,
+            is_array_ptr,
+            is_unused,
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct FunctionRaw {
     pub ret: Box<TypeRaw>,
-    pub args: Vec<(TypeRaw, Option<ArgLoc>)>,
+    pub args: Vec<(TypeRaw, Option<ArgLoc>, Option<FunctionArgFlags>)>,
     pub retloc: Option<ArgLoc>,
     pub calling_convention: Option<CallingConvention>,
 
@@ -246,11 +279,13 @@ impl FunctionRaw {
         result.args = (0..n)
             .map(|i| -> Result<_> {
                 let tmp = input.peek_u8()?;
-                if tmp == Some(0xFF) {
-                    input.consume(1);
-                    // TODO what is this?
-                    let _flags = input.read_de()?;
-                }
+                let flag = (tmp == Some(0xFF))
+                    .then(|| {
+                        input.consume(1);
+                        // TODO what is this?
+                        FunctionArgFlags::from_raw(input.read_de()?)
+                    })
+                    .transpose()?;
                 let tinfo = TypeRaw::read(&mut *input, header)
                     .with_context(|| format!("Argument Type {i}"))?;
                 let argloc = is_special_pe
@@ -258,7 +293,7 @@ impl FunctionRaw {
                     .transpose()
                     .with_context(|| format!("Argument Argloc {i}"))?;
 
-                Ok((tinfo, argloc))
+                Ok((tinfo, argloc, flag))
             })
             .collect::<Result<_, _>>()?;
 
