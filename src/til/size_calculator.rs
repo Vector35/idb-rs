@@ -228,6 +228,9 @@ impl<'a> TILTypeSizeSolver<'a> {
                 self.inner_type_align_bytes(ty, size)
             }
             TypeVariant::Struct(ty_struct) => {
+                if ty_struct.is_unaligned {
+                    return Some(1);
+                }
                 let max_member_align = ty_struct
                     .members
                     .iter()
@@ -248,6 +251,9 @@ impl<'a> TILTypeSizeSolver<'a> {
                 )
             }
             TypeVariant::Union(ty_union) => {
+                if ty_union.is_unaligned {
+                    return Some(1);
+                }
                 let max_member_align = ty_union
                     .members
                     .iter()
