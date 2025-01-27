@@ -12,6 +12,7 @@ use super::CommentType;
 pub struct Enum {
     pub is_signed: bool,
     pub is_unsigned: bool,
+    pub is_64: bool,
     pub output_format: EnumFormat,
     pub members: Vec<EnumMember>,
     pub groups: Option<Vec<u16>>,
@@ -38,6 +39,7 @@ impl Enum {
         Ok(Self {
             is_signed: value.is_signed,
             is_unsigned: value.is_unsigned,
+            is_64: value.is_64,
             output_format: value.output_format,
             members,
             groups: value.groups,
@@ -50,32 +52,17 @@ impl Enum {
 pub struct EnumMember {
     pub name: Option<IDBString>,
     pub comment: Option<CommentType>,
-    pub value: EnumValue,
-}
-
-// TODO have this type as Signed/Unsigned based on flags?
-#[derive(Clone, Debug, Copy)]
-pub enum EnumValue {
-    U32(u32),
-    U64(u64),
-}
-
-impl EnumValue {
-    pub fn as_u64(&self) -> u64 {
-        match *self {
-            EnumValue::U32(x) => x.into(),
-            EnumValue::U64(x) => x,
-        }
-    }
+    pub value: u64,
 }
 
 #[derive(Clone, Debug)]
 pub(crate) struct EnumRaw {
     is_signed: bool,
     is_unsigned: bool,
+    is_64: bool,
     output_format: EnumFormat,
     groups: Option<Vec<u16>>,
-    members: Vec<EnumValue>,
+    members: Vec<u64>,
     storage_size: Option<NonZeroU8>,
 }
 
@@ -187,23 +174,19 @@ impl EnumRaw {
                 }
                 // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45242f deserialize_enum
                 // NOTE this is originaly i32, but wrapping_add a u32/i32 have the same result
+                low_acc = low_acc.wrapping_add(input.read_de()?);
                 if is_64 {
-                    low_acc = low_acc.wrapping_add(input.read_de()?);
                     high_acc = high_acc.wrapping_add(input.read_de()?);
-                    // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452472 deserialize_enum
-                    Ok(EnumValue::U64(
-                        (((high_acc as u64) << 32) | low_acc as u64) & mask,
-                    ))
-                } else {
-                    low_acc = low_acc.wrapping_add(input.read_de()?);
-                    Ok(EnumValue::U32(low_acc & mask as u32))
                 }
+                // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452472 deserialize_enum
+                Ok((((high_acc as u64) << 32) | low_acc as u64) & mask)
             })
             .collect::<anyhow::Result<_>>()?;
 
         Ok(TypeVariantRaw::Enum(EnumRaw {
             is_signed,
             is_unsigned,
+            is_64,
             output_format,
             members,
             groups,
