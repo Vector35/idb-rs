@@ -449,6 +449,9 @@ fn print_til_type_root(
                 ) =>
             {
                 writeln!(fmt)?;
+                if til_union.effective_alignment.is_some() {
+                    writeln!(fmt, "#pragma pack(pop)")?;
+                }
                 print_til_type_union_layout(
                     fmt,
                     tilib_args,
@@ -958,6 +961,9 @@ fn print_til_type_struct(
         if tilib_args.dump_struct_layout == Some(true) {
             write!(fmt, "{AFTER_SPACE:>indent$}")?;
         }
+        if let Some(align) = member.alignment {
+            write!(fmt, "__attribute__((aligned({align}))) ")?;
+        }
         let member_name = member.name.as_ref().map(IDBString::as_bytes);
         print_til_type_complex_member(
             fmt,
@@ -1005,6 +1011,11 @@ fn print_til_type_union(
     til_union: &Union,
     print_name: bool,
 ) -> Result<()> {
+    if tilib_args.dump_struct_layout == Some(true) {
+        if let Some(packalign) = til_union.effective_alignment {
+            writeln!(fmt, "#pragma pack(push, {packalign})")?;
+        }
+    }
     write!(fmt, "union")?;
     if let Some(align) = til_union.alignment {
         write!(fmt, " __attribute__((aligned({align})))")?;
@@ -1631,7 +1642,7 @@ fn print_til_type_struct_layout(
     let padded_size = idb_rs::til::align_mem(unpadded_size, struct_align);
     let mut offset_calc = StructOffset::default();
     for (i, member) in til_struct.members.iter().enumerate() {
-        write!(fmt, "//{i:>3}. ")?;
+        write!(fmt, "// {i:>2}. ")?;
         let member_size = solver
             .type_size_bytes(None, &member.member_type)
             .unwrap_or(0);
@@ -1660,11 +1671,15 @@ fn print_til_type_struct_layout(
                 offset_calc.next_field(member_size_padded, member_align);
             write!(fmt, "{offset:04X} {member_size_padded:04X}")?;
         }
+        let fda = member
+            .alignment
+            .map(|x| x.trailing_zeros() + 1) // 1 => 1, 2 => 2, 4 => 3, 8 => 4, etc
+            .unwrap_or(0);
         use idb_rs::til::flag::tattr_field::*;
         let bits = (member.is_vft as u16) << TAFLD_VFTABLE.trailing_zeros()
             | (member.is_method as u16) << TAFLD_METHOD.trailing_zeros()
             | (member.is_baseclass as u16) << TAFLD_BASECLASS.trailing_zeros();
-        write!(fmt, " effalign({member_align}) fda=0 bits={bits:04X} ")?;
+        write!(fmt, " effalign({member_align}) fda={fda} bits={bits:04X} ")?;
         if let Some(name) = name {
             fmt.write_all(name)?;
             write!(fmt, ".")?;
@@ -1760,7 +1775,7 @@ fn print_til_type_union_layout(
         let member_align = solver
             .type_align_bytes(None, &member.ty, member_size)
             .unwrap_or(1);
-        write!(fmt, "//{i:>3}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 ")?;
+        write!(fmt, "// {i:>2}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 ")?;
         if let Some(name) = name {
             fmt.write_all(name)?;
             write!(fmt, ".")?;
@@ -1784,9 +1799,16 @@ fn print_til_type_union_layout(
         )?;
         writeln!(fmt, ";")?;
     }
+    let sda = til_union
+        .alignment
+        .map(|x| x.trailing_zeros() + 1) // 1 => 1, 2 => 2, 4 => 3, 8 => 4, etc
+        .unwrap_or(0);
+    use idb_rs::til::flag::tattr_udt::*;
+    let bits =
+        (til_union.is_unaligned as u16) << TAUDT_UNALIGNED.trailing_zeros();
     write!(
         fmt,
-        "//          {total_size:04X} effalign({union_align}) sda=0 bits=0000 "
+        "//          {total_size:04X} effalign({union_align}) sda={sda} bits={bits:04X} "
     )?;
     if let Some(name) = name {
         fmt.write_all(name)?;
