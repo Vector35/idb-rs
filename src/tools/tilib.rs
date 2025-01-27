@@ -3,7 +3,7 @@ use idb_rs::til::array::Array;
 use idb_rs::til::bitfield::Bitfield;
 use idb_rs::til::function::{CallingConvention, Function};
 use idb_rs::til::pointer::Pointer;
-use idb_rs::til::r#enum::{Enum, EnumValue};
+use idb_rs::til::r#enum::Enum;
 use idb_rs::til::r#struct::{Struct, StructMemberAtt};
 use idb_rs::til::section::TILSection;
 use idb_rs::til::union::Union;
@@ -1216,19 +1216,14 @@ fn print_til_type_enum(
             fmt.write_all(member_name.as_bytes())?;
         }
         write!(fmt, " = ")?;
-        match (til_enum.output_format, member.value) {
-            (Char, value) if value.as_u64() <= 0xFF => {
-                write!(fmt, "'{}'", value.as_u64() as u8 as char)?
-            }
-            (Char, value) => write!(fmt, "'\\xu{:X}'", value.as_u64())?,
-            (Hex, value) => write!(fmt, "{:#X}", value.as_u64())?,
-            (SignedDecimal, EnumValue::U32(value)) => {
-                write!(fmt, "{}", value as i32)?
-            }
-            (SignedDecimal, EnumValue::U64(value)) => {
-                write!(fmt, "{}", value as i32)?
-            }
-            (UnsignedDecimal, value) => write!(fmt, "{:X}", value.as_u64())?,
+        let value = member.value;
+        match til_enum.output_format {
+            Char if value <= 0xFF => write!(fmt, "'{}'", value as u8 as char)?,
+            Char => write!(fmt, "'\\xu{value:X}'")?,
+            Hex => write!(fmt, "{value:#X}")?,
+            SignedDecimal if til_enum.is_64 => write!(fmt, "{}", value as i64)?,
+            SignedDecimal /*if !til_enum.is_64*/ => write!(fmt, "{}", value as i32)?,
+            UnsignedDecimal => write!(fmt, "{value:X}")?,
         }
         // TODO find this in InnerRef
         if let Some(8) = til_enum.storage_size.map(NonZeroU8::get) {
