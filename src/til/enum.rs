@@ -50,7 +50,23 @@ impl Enum {
 pub struct EnumMember {
     pub name: Option<IDBString>,
     pub comment: Option<CommentType>,
-    pub value: u64,
+    pub value: EnumValue,
+}
+
+// TODO have this type as Signed/Unsigned based on flags?
+#[derive(Clone, Debug, Copy)]
+pub enum EnumValue {
+    U32(u32),
+    U64(u64),
+}
+
+impl EnumValue {
+    pub fn as_u64(&self) -> u64 {
+        match *self {
+            EnumValue::U32(x) => x.into(),
+            EnumValue::U64(x) => x,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -59,7 +75,7 @@ pub(crate) struct EnumRaw {
     is_unsigned: bool,
     output_format: EnumFormat,
     groups: Option<Vec<u16>>,
-    members: Vec<u64>,
+    members: Vec<EnumValue>,
     storage_size: Option<NonZeroU8>,
 }
 
@@ -171,12 +187,17 @@ impl EnumRaw {
                 }
                 // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45242f deserialize_enum
                 // NOTE this is originaly i32, but wrapping_add a u32/i32 have the same result
-                low_acc = low_acc.wrapping_add(input.read_de()?);
                 if is_64 {
+                    low_acc = low_acc.wrapping_add(input.read_de()?);
                     high_acc = high_acc.wrapping_add(input.read_de()?);
+                    // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452472 deserialize_enum
+                    Ok(EnumValue::U64(
+                        (((high_acc as u64) << 32) | low_acc as u64) & mask,
+                    ))
+                } else {
+                    low_acc = low_acc.wrapping_add(input.read_de()?);
+                    Ok(EnumValue::U32(low_acc & mask as u32))
                 }
-                // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452472 deserialize_enum
-                Ok((((high_acc as u64) << 32) | low_acc as u64) & mask)
             })
             .collect::<anyhow::Result<_>>()?;
 
