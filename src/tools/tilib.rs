@@ -281,7 +281,6 @@ fn print_symbols(
             &symbol.tinfo,
             false,
             true,
-            false,
             true,
         )?;
         writeln!(fmt, ";")?;
@@ -417,7 +416,7 @@ fn print_til_type_root(
         _ => write!(fmt, "typedef ")?,
     }
     print_til_type(
-        fmt, tilib_args, 0, section, name, til_type, false, true, true, true,
+        fmt, tilib_args, 0, section, name, til_type, false, true, true,
     )?;
     write!(fmt, ";")?;
     if tilib_args.dump_struct_layout == Some(true) {
@@ -478,7 +477,6 @@ fn print_til_type(
     til_type: &Type,
     is_vft: bool,
     print_pointer_space: bool,
-    print_type_prefix: bool,
     print_name: bool,
 ) -> Result<()> {
     if let Some(comment) = &til_type.comment {
@@ -498,7 +496,6 @@ fn print_til_type(
             pointer,
             is_vft,
             print_pointer_space,
-            print_type_prefix,
         ),
         TypeVariant::Function(function) => print_til_type_function(
             fmt, section, name, til_type, function, false,
@@ -510,16 +507,10 @@ fn print_til_type(
             til_type,
             array,
             print_pointer_space,
-            print_type_prefix,
         ),
-        TypeVariant::Typeref(ref_type) => print_til_type_typedef(
-            fmt,
-            section,
-            name,
-            til_type,
-            ref_type,
-            print_type_prefix,
-        ),
+        TypeVariant::Typeref(ref_type) => {
+            print_til_type_typedef(fmt, section, name, til_type, ref_type)
+        }
         TypeVariant::Struct(til_struct) => print_til_type_struct(
             fmt, tilib_args, indent, section, name, til_type, til_struct,
             print_name,
@@ -568,7 +559,6 @@ fn print_til_type_pointer(
     pointer: &Pointer,
     is_vft_parent: bool,
     print_pointer_space: bool,
-    print_type_prefix: bool,
 ) -> Result<()> {
     if let TypeVariant::Function(inner_fun) = &pointer.typ.type_variant {
         // How to handle modifier here?
@@ -584,7 +574,6 @@ fn print_til_type_pointer(
             &pointer.typ,
             is_vft_parent,
             print_pointer_space,
-            print_type_prefix,
             true,
         )?;
         // if the innertype is also a pointer, don't print the space
@@ -599,15 +588,15 @@ fn print_til_type_pointer(
             if add_space {
                 write!(fmt, " ")?;
             }
-            write!(fmt, "volatile")?;
-            add_space = true;
+            write!(fmt, "volatile ")?;
+            add_space = false;
         }
         if til_type.is_const {
             if add_space {
                 write!(fmt, " ")?;
             }
-            write!(fmt, "const")?;
-            add_space = true;
+            write!(fmt, "const ")?;
+            add_space = false;
         }
         if let Some(modifier) = pointer.modifier {
             if add_space {
@@ -682,7 +671,6 @@ fn print_til_type_function(
         false,
         true,
         true,
-        true,
     )?;
     if !matches!(&til_function.ret.type_variant, TypeVariant::Pointer(_)) {
         write!(fmt, " ")?;
@@ -745,7 +733,6 @@ fn print_til_type_function(
             &arg.ty,
             false,
             true,
-            false,
             true,
         )?;
     }
@@ -770,7 +757,6 @@ fn print_til_type_array(
     til_type: &Type,
     til_array: &Array,
     print_pointer_space: bool,
-    _print_type_prefix: bool,
 ) -> Result<()> {
     if til_type.is_volatile {
         write!(fmt, "volatile ")?;
@@ -787,7 +773,6 @@ fn print_til_type_array(
         &til_array.elem_type,
         false,
         print_pointer_space,
-        true,
         true,
     )?;
     if let Some(name) = name {
@@ -813,7 +798,6 @@ fn print_til_type_typedef(
     name: Option<&[u8]>,
     til_type: &Type,
     typedef: &Typeref,
-    print_prefix: bool,
 ) -> Result<()> {
     if til_type.is_volatile {
         write!(fmt, "volatile ")?;
@@ -822,11 +806,9 @@ fn print_til_type_typedef(
         write!(fmt, "const ")?;
     }
     let mut need_space = false;
-    if print_prefix {
-        if let Some(ref_prefix) = typedef.ref_type {
-            print_typeref_type_prefix(fmt, ref_prefix)?;
-            need_space = true;
-        }
+    if let Some(ref_prefix) = typedef.ref_type {
+        print_typeref_type_prefix(fmt, ref_prefix)?;
+        need_space = true;
     }
     // get the type referenced by the typdef
     match &typedef.typeref_value {
@@ -914,7 +896,6 @@ fn print_til_type_struct(
                     None,
                     &baseclass.member_type,
                     baseclass.is_vft,
-                    true,
                     true,
                     false,
                 )?;
@@ -1057,7 +1038,6 @@ fn print_til_type_complex_member(
             til,
             is_vft,
             print_pointer_space,
-            true,
             print_name,
         )
     };
@@ -1114,7 +1094,6 @@ fn print_til_type_complex_member(
             til,
             is_vft,
             print_pointer_space,
-            true,
             print_name,
         );
     }
@@ -1128,7 +1107,6 @@ fn print_til_type_complex_member(
         &inner_type.tinfo,
         is_vft,
         print_pointer_space,
-        true,
         false,
     )
 }
@@ -1677,7 +1655,6 @@ fn print_til_type_struct_layout(
                 &member.member_type,
                 member.is_vft,
                 true,
-                true,
                 false,
             )?;
             writeln!(fmt, ";")?;
@@ -1754,8 +1731,7 @@ fn print_til_type_union_layout(
             }
         }
         print_til_type(
-            fmt, tilib_args, 0, section, None, &member.ty, false, true, true,
-            false,
+            fmt, tilib_args, 0, section, None, &member.ty, false, true, false,
         )?;
         writeln!(fmt, ";")?;
     }
