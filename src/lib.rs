@@ -1,4 +1,4 @@
-#[forbid(unsafe_code)]
+#![forbid(unsafe_code)]
 pub mod id0;
 pub mod id1;
 pub(crate) mod ida_reader;

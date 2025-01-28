@@ -505,10 +505,10 @@ pub enum Basic {
 impl Basic {
     fn new(til: &TILSectionHeader, bt: u8, btmt: u8) -> Result<Self> {
         const fn bytes(bytes: u8) -> NonZeroU8 {
-            if bytes == 0 {
+            let Some(bytes) = NonZeroU8::new(bytes) else {
                 unreachable!()
-            }
-            unsafe { NonZeroU8::new_unchecked(bytes) }
+            };
+            bytes
         }
 
         use flag::{tf_bool::*, tf_float::*, tf_int::*, tf_unk::*};

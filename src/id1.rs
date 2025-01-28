@@ -285,22 +285,12 @@ fn split_flags_data(
     len: u64,
 ) -> Result<(Vec<u8>, Vec<u32>)> {
     let len = usize::try_from(len).unwrap();
-    let mut flags = vec![0u32; len];
-    // SAFETY: don't worry &mut[u32] is compatible with &mut[u8] with len * 4
-    input.read_exact(unsafe {
-        &mut *core::slice::from_raw_parts_mut(
-            flags.as_mut_ptr() as *mut u8,
-            len * 4,
-        )
-    })?;
-    // extract the bytes into other vector and leave the flags there
-    let data = flags
-        .iter_mut()
-        .map(|b| {
-            let value = (*b & 0xFF) as u8;
-            *b >>= 8;
-            value
-        })
-        .collect();
+    let mut flags = Vec::with_capacity(len);
+    let mut data = Vec::with_capacity(len);
+    for _i in 0..len {
+        let bytes = input.read_u32()?;
+        data.push((bytes & 0xFF) as u8);
+        flags.push(bytes >> 8);
+    }
     Ok((data, flags))
 }
