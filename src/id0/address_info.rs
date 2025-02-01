@@ -2,7 +2,9 @@ use anyhow::{anyhow, Result};
 
 use crate::til;
 
-use super::{parse_maybe_cstr, ID0Entry, IDBFileRegions};
+use super::{
+    parse_maybe_cstr, FileRegionIter, FileRegions, ID0Entry, ID0Section,
+};
 
 #[derive(Clone, Debug)]
 pub enum AddressInfo<'a> {
@@ -32,66 +34,129 @@ impl<'a> Comments<'a> {
     }
 }
 
-pub(crate) struct SectionAddressInfoIter<
-    'a,
-    I: Iterator<Item = Result<IDBFileRegions>>,
-> {
-    all_entries: &'a [ID0Entry],
-    regions: I,
-    current_region: AddressInfoIter<'a>,
+#[derive(Clone, Copy)]
+pub struct SectionAddressInfoByAddressIter<'a> {
+    id0: &'a ID0Section,
+    regions: FileRegionIter<'a>,
+    current_region: &'a [ID0Entry],
 }
 
-impl<'a, I: Iterator<Item = Result<IDBFileRegions>>>
-    SectionAddressInfoIter<'a, I>
-{
-    pub fn new(all_entries: &'a [ID0Entry], regions: I, is_64: bool) -> Self {
-        Self {
-            all_entries,
+impl<'a> SectionAddressInfoByAddressIter<'a> {
+    pub fn new(id0: &'a ID0Section, version: u16) -> Result<Self> {
+        let idx = id0
+            .file_regions_idx()
+            .ok_or_else(|| anyhow!("Could not find $ fileregions"))?;
+        let regions = id0.file_regions(idx, version);
+        Ok(Self {
+            id0,
             regions,
-            current_region: AddressInfoIter::new(&[], is_64),
-        }
+            // dummy values
+            current_region: &[],
+        })
+    }
+
+    fn advance_region(&mut self) -> Result<Option<()>> {
+        // get the next region
+        advance_region(&self.id0, &mut self.regions).map(|x| {
+            x.map(|x| {
+                self.current_region = x;
+                ()
+            })
+        })
     }
 }
 
-impl<'a, I: Iterator<Item = Result<IDBFileRegions>> + 'a> Iterator
-    for SectionAddressInfoIter<'a, I>
-{
+impl<'a> Iterator for SectionAddressInfoByAddressIter<'a> {
+    type Item = Result<(u64, AddressInfoIter<'a>)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // get the next address of the current region, if nothing, next region
+        let Some(first) = self.current_region.first() else {
+            match self.advance_region() {
+                Ok(Some(_)) => {}
+                // no more regions, end it
+                Ok(None) => return None,
+                Err(e) => return Some(Err(e)),
+            };
+            // NOTE regions can be empty, so check if this new region have
+            // elements by calling this function again
+            return self.next();
+        };
+
+        let addr_len = if self.id0.is_64 { 8 } else { 4 };
+        // 1.. because it starts with '.'
+        let key_start = addr_len + 1;
+        let key = &first.key[..key_start];
+        let end = self
+            .current_region
+            .iter()
+            .position(|e| !e.key.starts_with(&key))
+            .unwrap_or(self.current_region.len());
+        let (current_addr, rest) = self.current_region.split_at(end);
+        self.current_region = rest;
+        let address =
+            super::parse_number(&key[1..], true, self.id0.is_64).unwrap();
+        Some(Ok((
+            address,
+            AddressInfoIter::new(current_addr, self.id0.is_64),
+        )))
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct SectionAddressInfoIter<'a> {
+    id0: &'a ID0Section,
+    regions: FileRegionIter<'a>,
+    current_region: AddressInfoIter<'a>,
+}
+
+impl<'a> SectionAddressInfoIter<'a> {
+    pub fn new(id0: &'a ID0Section, version: u16) -> Result<Self> {
+        let idx = id0
+            .file_regions_idx()
+            .ok_or_else(|| anyhow!("Could not find $ fileregions"))?;
+        let regions = id0.file_regions(idx, version);
+        Ok(Self {
+            id0,
+            regions,
+            // dummy value
+            current_region: AddressInfoIter::new(&[], false),
+        })
+    }
+
+    fn advance_region(&mut self) -> Result<Option<()>> {
+        // get the next region
+        advance_region(&self.id0, &mut self.regions).map(|x| {
+            x.map(|x| {
+                self.current_region = AddressInfoIter::new(x, self.id0.is_64);
+                ()
+            })
+        })
+    }
+}
+
+impl<'a> Iterator for SectionAddressInfoIter<'a> {
     type Item = Result<(u64, AddressInfo<'a>)>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        // next element in the current region, or next region
         let Some(next_addr_info) = self.current_region.next() else {
-            // get the next region
-            let region = match self.regions.next() {
-                Some(Ok(region)) => region,
-                // if no more regions, finish the iter (AKA return None)
-                None => return None,
-                // return the error if err
-                Some(Err(err)) => return Some(Err(err)),
+            match self.advance_region() {
+                Ok(Some(_)) => {}
+                // no more regions, end it
+                Ok(None) => return None,
+                Err(e) => return Some(Err(e)),
             };
-            let is_64 = self.current_region.is_64;
-            let start_key: Vec<u8> =
-                crate::id0::key_from_address(region.start, is_64).collect();
-            let end_key: Vec<u8> =
-                crate::id0::key_from_address(region.end, is_64).collect();
-            let start = self
-                .all_entries
-                .binary_search_by_key(&&start_key[..], |b| &b.key[..])
-                .unwrap_or_else(|start| start);
-            let end = self
-                .all_entries
-                .binary_search_by_key(&&end_key[..], |b| &b.key[..])
-                .unwrap_or_else(|end| end);
-
-            let entries = &self.all_entries[start..end];
-            self.current_region = AddressInfoIter::new(entries, is_64);
-            // try again using this new region
+            // NOTE regions can be empty, so check if this new region have
+            // elements by calling this function again
             return self.next();
         };
         Some(next_addr_info)
     }
 }
 
-pub(crate) struct AddressInfoIter<'a> {
+#[derive(Clone, Copy)]
+pub struct AddressInfoIter<'a> {
     entries: &'a [ID0Entry],
     is_64: bool,
 }
@@ -140,20 +205,20 @@ impl<'a> Iterator for AddressInfoIter<'a> {
                 let Some(comment) = parse_maybe_cstr(value) else {
                     return Some(Err(anyhow!("Post-Comment is not valid CStr")));
                 };
-                Some(Ok((address, AddressInfo::Comment(Comments::PreComment(comment)))))
+                Some(Ok((address, AddressInfo::Comment(Comments::PostComment(comment)))))
             },
             (b'S', Some(0x0)) => {
                 let Some(comment) = parse_maybe_cstr(value) else {
                     return Some(Err(anyhow!("Comment is not valid CStr")));
                 };
-                Some(Ok((address, AddressInfo::Comment(Comments::PreComment(comment)))))
+                Some(Ok((address, AddressInfo::Comment(Comments::Comment(comment)))))
             },
             // Repeatable comment
             (b'S', Some(0x1)) => {
                 let Some(comment) = parse_maybe_cstr(value) else {
                     return Some(Err(anyhow!("Repeatable Comment is not valid CStr")));
                 };
-                Some(Ok((address, AddressInfo::Comment(Comments::PreComment(comment)))))
+                Some(Ok((address, AddressInfo::Comment(Comments::RepeatableComment(comment)))))
             },
 
             // Type at this address
@@ -244,4 +309,43 @@ fn id_from_key(key: &[u8], is_64: bool) -> Option<u64> {
             .map(u32::from_be_bytes)
             .map(u64::from)
     }
+}
+
+fn advance_region<'a>(
+    id0: &'a ID0Section,
+    mut regions: impl Iterator<Item = Result<FileRegions>>,
+) -> Result<Option<&'a [ID0Entry]>> {
+    // get the next region
+    let region = match regions.next() {
+        Some(Ok(region)) => region,
+        // if no more regions, finish the iter (AKA return None)
+        None => return Ok(None),
+        // return the error if err
+        Some(Err(err)) => return Err(err),
+    };
+    Ok(Some(get_next_address_region(
+        &region,
+        &id0.all_entries(),
+        id0.is_64,
+    )))
+}
+
+fn get_next_address_region<'a>(
+    region: &FileRegions,
+    all_entries: &'a [ID0Entry],
+    is_64: bool,
+) -> &'a [ID0Entry] {
+    // get the next region
+    let start_key: Vec<u8> =
+        crate::id0::key_from_address(region.start, is_64).collect();
+    let end_key: Vec<u8> =
+        crate::id0::key_from_address(region.end, is_64).collect();
+    let start = all_entries
+        .binary_search_by_key(&&start_key[..], |b| &b.key[..])
+        .unwrap_or_else(|start| start);
+    let end = all_entries
+        .binary_search_by_key(&&end_key[..], |b| &b.key[..])
+        .unwrap_or_else(|end| end);
+
+    &all_entries[start..end]
 }

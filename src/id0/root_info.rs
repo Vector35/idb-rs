@@ -1,6 +1,7 @@
 use std::io::Read;
 
 use anyhow::Result;
+use num_enum::{FromPrimitive, IntoPrimitive};
 
 use crate::ida_reader::IdaUnpack;
 
@@ -481,7 +482,7 @@ impl IDBParam {
 
         let strlit_sernum = input.unpack_usize()?;
         let datatypes = input.unpack_usize()?;
-        let cc_id = Compiler::from_value(input.read_u8()?);
+        let cc_id = Compiler::from(input.read_u8()?);
         let cc_cm = input.read_u8()?;
         let cc_size_i = input.read_u8()?;
         let cc_size_b = input.read_u8()?;
@@ -1232,31 +1233,18 @@ impl FileType {
 }
 
 // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x7e6cc0
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, FromPrimitive, IntoPrimitive)]
+#[repr(u8)]
 pub enum Compiler {
-    Unknown,
-    VisualStudio,
-    Borland,
-    Watcom,
-    Gnu,
-    VisualAge,
-    Delphi,
+    Unknown = 0,
+    VisualStudio = 1,
+    Borland = 2,
+    Watcom = 3,
+    Gnu = 6,
+    VisualAge = 7,
+    Delphi = 8,
 
     // IDA LIB pring compiler_name allow any value here, printing it as "?"
+    #[num_enum(default)]
     Other,
-}
-
-impl Compiler {
-    pub fn from_value(value: u8) -> Self {
-        match value {
-            0x0 => Self::Unknown,
-            0x1 => Self::VisualStudio,
-            0x2 => Self::Borland,
-            0x3 => Self::Watcom,
-            0x6 => Self::Gnu,
-            0x7 => Self::VisualAge,
-            0x8 => Self::Delphi,
-            _ => Self::Other,
-        }
-    }
 }

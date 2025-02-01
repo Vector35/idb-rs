@@ -94,7 +94,7 @@ impl ID0Header {
 
 #[derive(Debug, Clone)]
 pub struct ID0Section {
-    is_64: bool,
+    pub(crate) is_64: bool,
     pub entries: Vec<ID0Entry>,
 }
 
@@ -227,8 +227,8 @@ impl ID0Section {
         }
     }
 
-    pub fn all_entries(&self) -> impl Iterator<Item = &ID0Entry> {
-        self.entries.iter()
+    pub fn all_entries(&self) -> &[ID0Entry] {
+        &self.entries
     }
 
     pub(crate) fn binary_search(
@@ -259,28 +259,23 @@ impl ID0Section {
         &self,
         start: impl AsRef<[u8]>,
         end: impl AsRef<[u8]>,
-    ) -> impl Iterator<Item = &ID0Entry> {
+    ) -> &[ID0Entry] {
         let start = self.binary_search(start).unwrap_or_else(|start| start);
         let end = self.binary_search_end(end).unwrap_or_else(|end| end);
 
-        self.entries[start..end].iter()
+        &self.entries[start..end]
     }
 
-    pub fn sub_values(
-        &self,
-        key: impl AsRef<[u8]>,
-    ) -> impl Iterator<Item = &ID0Entry> {
+    pub fn sub_values(&self, key: impl AsRef<[u8]>) -> &[ID0Entry] {
         let key = key.as_ref();
         let start = self.binary_search(key).unwrap_or_else(|start| start);
         let end = self.binary_search_end(key).unwrap_or_else(|end| end);
 
-        self.entries[start..end].iter()
+        &self.entries[start..end]
     }
 
     /// read the `$ segs` entries of the database
-    pub fn segments(
-        &self,
-    ) -> Result<impl Iterator<Item = Result<Segment>> + '_> {
+    pub fn segments(&self) -> Result<SegmentIter> {
         let entry = self
             .get("N$ segs")
             .ok_or_else(|| anyhow!("Unable to find entry segs"))?;
@@ -290,67 +285,65 @@ impl ID0Section {
             .chain(b"S")
             .copied()
             .collect();
-        let names = self.segment_strings()?;
-        Ok(self.sub_values(key).map(move |e| {
-            Segment::read(&e.value, self.is_64, names.as_ref(), self)
-        }))
+        Ok(SegmentIter {
+            id0: self,
+            segments: self.sub_values(key),
+        })
     }
 
-    /// read the `$ segstrings` entries of the database
-    fn segment_strings(&self) -> Result<Option<HashMap<NonZeroU32, Vec<u8>>>> {
-        let Some(entry) = self.get("N$ segstrings") else {
-            // no entry means no strings
-            return Ok(None);
-        };
+    /// find the `$ segstrings`
+    pub fn segment_strings_idx(&self) -> Option<SegmentStringsIdx> {
+        self.get("N$ segstrings")
+            .map(|x| SegmentStringsIdx(&x.value))
+    }
+
+    /// read all the `$ segstrings` entries of the database
+    pub fn segment_strings(&self, idx: SegmentStringsIdx) -> SegmentStringIter {
         let key: Vec<u8> = b"."
             .iter()
-            .chain(entry.value.iter().rev())
+            .chain(idx.0.iter().rev())
             .chain(b"S")
             .copied()
             .collect();
-        let mut entries = HashMap::new();
-        for entry in self.sub_values(key) {
-            let mut value_current = &entry.value[..];
-            let start = value_current.unpack_dd()?;
-            let end = value_current.unpack_dd()?;
-            ensure!(start > 0);
-            ensure!(start <= end);
-            for i in start..end {
-                let name = value_current.unpack_ds()?;
-                if let Some(_old) = entries.insert(i.try_into().unwrap(), name)
-                {
-                    return Err(anyhow!("Duplicated id in segstrings {start}"));
-                }
-            }
-            // TODO always end with '\x0a'?
-            ensure!(
-                value_current.is_empty(),
-                "Unparsed data in SegsString: {}",
-                value_current.len()
-            );
-        }
-        Ok(Some(entries))
+        SegmentStringIter::new(self.sub_values(key))
     }
 
-    pub(crate) fn name_by_index(&self, idx: u64) -> Result<&[u8]> {
+    pub fn segment_name(&self, idx: SegmentNameIdx) -> Result<&[u8]> {
+        let seg_idx = self.segment_strings_idx();
+        // TODO I think this is dependent on the version, and not on availability
+        if let Some(seg_idx) = seg_idx {
+            for seg in self.segment_strings(seg_idx) {
+                let (seg_idx, seg_value) = seg?;
+                if seg_idx == idx {
+                    return Ok(seg_value);
+                }
+            }
+            Err(anyhow!("Unable to find ID0 Segment Name"))
+        } else {
+            // if there is no names, AKA `$ segstrings`, search for the key directly
+            self.name_by_index(idx)
+        }
+    }
+
+    pub(crate) fn name_by_index(&self, idx: SegmentNameIdx) -> Result<&[u8]> {
         // if there is no names, AKA `$ segstrings`, search for the key directly
         let key: Vec<u8> = b"."
             .iter()
             .copied()
             .chain(if self.is_64 {
-                (idx | (0xFF << 56)).to_be_bytes().to_vec()
-            } else {
-                (u32::try_from(idx).unwrap() | (0xFF << 24))
+                (u64::from(idx.0.get()) | (0xFFu64 << 56))
                     .to_be_bytes()
                     .to_vec()
+            } else {
+                (idx.0.get() | (0xFFu32 << 24)).to_be_bytes().to_vec()
             })
             .chain(b"N".iter().copied())
             .collect();
         let name = self
             .get(key)
-            .ok_or_else(|| anyhow!("Not found name for segment {idx}"))?;
+            .ok_or_else(|| anyhow!("Not found name for segment {}", idx.0))?;
         parse_maybe_cstr(&name.value)
-            .ok_or_else(|| anyhow!("Invalid segment name {idx}"))
+            .ok_or_else(|| anyhow!("Invalid segment name {}", idx.0))
     }
 
     /// read the `$ loader name` entries of the database
@@ -367,6 +360,7 @@ impl ID0Section {
             .collect();
         Ok(self
             .sub_values(key)
+            .iter()
             .map(|e| Ok(CStr::from_bytes_with_nul(&e.value)?.to_str()?)))
     }
 
@@ -383,7 +377,7 @@ impl ID0Section {
             .copied()
             .collect();
         let key_len = key.len();
-        Ok(self.sub_values(key).map(move |entry| {
+        Ok(self.sub_values(key).iter().map(move |entry| {
             let sub_key = &entry.key[key_len..];
             let Some(sub_type) = sub_key.first().copied() else {
                 return Ok(IDBRootInfo::Unknown(entry));
@@ -465,32 +459,40 @@ impl ID0Section {
             .chain(sub_key.iter())
             .copied()
             .collect();
-        let description = self.sub_values(key).next().ok_or_else(|| {
-            anyhow!("Unable to find id_params inside Root Node")
-        })?;
+        let description =
+            self.sub_values(key).iter().next().ok_or_else(|| {
+                anyhow!("Unable to find id_params inside Root Node")
+            })?;
         IDBParam::read(&description.value, self.is_64)
+    }
+
+    /// read the `$ fileregions` entries of the database
+    pub fn file_regions_idx(&self) -> Option<FileRegionIdx> {
+        self.get("N$ fileregions")
+            .map(|x| FileRegionIdx(&x.value[..]))
     }
 
     /// read the `$ fileregions` entries of the database
     pub fn file_regions(
         &self,
+        idx: FileRegionIdx,
         version: u16,
-    ) -> Result<impl Iterator<Item = Result<IDBFileRegions>> + '_> {
-        let entry = self
-            .get("N$ fileregions")
-            .ok_or_else(|| anyhow!("Unable to find fileregions"))?;
+    ) -> FileRegionIter {
         let key: Vec<u8> = b"."
             .iter()
-            .chain(entry.value.iter().rev())
+            .chain(idx.0.iter().rev())
             .chain(b"S")
             .copied()
             .collect();
         let key_len = key.len();
         // TODO find the meaning of "$ fileregions" b'V' entries
-        Ok(self.sub_values(key).map(move |e| {
-            let key = &e.key[key_len..];
-            IDBFileRegions::read(key, &e.value, version, self.is_64)
-        }))
+        let segments = self.sub_values(key);
+        FileRegionIter {
+            id0: self,
+            segments,
+            key_len,
+            version,
+        }
     }
 
     /// read the `$ funcs` entries of the database
@@ -506,7 +508,7 @@ impl ID0Section {
             .copied()
             .collect();
         let key_len = key.len();
-        Ok(self.sub_values(key).map(move |e| {
+        Ok(self.sub_values(key).iter().map(move |e| {
             let key = &e.key[key_len..];
             FunctionsAndComments::read(key, &e.value, self.is_64)
         }))
@@ -533,7 +535,7 @@ impl ID0Section {
             .copied()
             .collect();
         let key_len = key.len();
-        Ok(self.sub_values(key).map(move |e| {
+        Ok(self.sub_values(key).iter().map(move |e| {
             let key = &e.key[key_len..];
             EntryPointRaw::read(key, &e.value, self.is_64)
         }))
@@ -655,16 +657,16 @@ impl ID0Section {
     }
 
     /// read the address information for all addresses from `$ fileregions`
-    pub fn address_info(
+    pub fn address_info(&self, version: u16) -> Result<SectionAddressInfoIter> {
+        SectionAddressInfoIter::new(self, version)
+    }
+
+    /// read the address information for all addresses from `$ fileregions`
+    pub fn address_info_by_address(
         &self,
         version: u16,
-    ) -> Result<impl Iterator<Item = Result<(u64, AddressInfo)>>> {
-        let regions = self.file_regions(version)?;
-        Ok(SectionAddressInfoIter::new(
-            &self.entries[..],
-            regions,
-            self.is_64,
-        ))
+    ) -> Result<SectionAddressInfoByAddressIter> {
+        SectionAddressInfoByAddressIter::new(self, version)
     }
 
     /// read the address information for the address
@@ -720,7 +722,7 @@ impl ID0Section {
             .copied()
             .collect();
         let key_len = key.len();
-        let mut sub_values = self.sub_values(key).map(|entry| {
+        let mut sub_values = self.sub_values(key).iter().map(|entry| {
             let raw_idx = parse_number(&entry.key[key_len..], true, self.is_64)
                 .ok_or_else(|| anyhow!("invalid dirtree entry key"))?;
             let idx = raw_idx >> 16;
