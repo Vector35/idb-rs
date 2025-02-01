@@ -858,9 +858,9 @@ mod test {
         let _: Vec<_> =
             id0.loader_name().unwrap().map(Result::unwrap).collect();
         let _: Vec<_> = id0.root_info().unwrap().map(Result::unwrap).collect();
+        let file_regions_idx = id0.file_regions_idx().unwrap();
         let _: Vec<_> = id0
-            .file_regions(version)
-            .unwrap()
+            .file_regions(file_regions_idx, version)
             .map(Result::unwrap)
             .collect();
         let _: Vec<_> = id0

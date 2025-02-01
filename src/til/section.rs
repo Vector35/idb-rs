@@ -83,11 +83,56 @@ pub struct TILSectionHeaderRaw {
     pub size_long_double: Option<NonZeroU8>,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy)]
 pub struct TILSectionHeader1 {
     pub signature: [u8; 6],
     pub format: u32,
     pub flags: TILSectionFlags,
+}
+
+impl TILSectionHeader1 {
+    pub(crate) fn deserialize(
+        input: &mut impl IdaGenericUnpack,
+    ) -> Result<Self> {
+        let signature: [u8; 6] = bincode::deserialize_from(&mut *input)?;
+        ensure!(signature == *TIL_SECTION_MAGIC, "Invalid TIL Signature");
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x431eb5
+        let (format, flags) = match input.read_u32()? {
+            format @ 0x13.. => {
+                return Err(anyhow!("Invalid TIL format {format}"))
+            }
+            // read the flag after the format
+            format @ 0x10..=0x12 => {
+                let flags = TILSectionFlags::new(input.read_u32()?)?;
+                (format, flags)
+            }
+            // format and flag are the same
+            value @ ..=0xf => (value, TILSectionFlags::new(value)?),
+        };
+        Ok(Self {
+            signature,
+            format,
+            flags,
+        })
+    }
+
+    pub(crate) fn serialize(
+        self,
+        output: &mut impl Write,
+    ) -> std::io::Result<()> {
+        output.write_all(&self.signature)?;
+        output.write_all(&u32::to_le_bytes(self.format))?;
+        match self.format {
+            0x13.. => unreachable!(),
+            // read the flag after the format
+            0x10..=0x12 => {
+                output.write_all(&u32::to_le_bytes(self.flags.0.into()))?
+            }
+            // format and flag are the same
+            ..=0xf => {}
+        };
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
@@ -144,7 +189,7 @@ impl TILSectionRaw {
             description: IDBString::new(header_raw.description),
             flags: header_raw.flags,
             dependencies,
-            compiler_id: Compiler::from_value(header_raw.compiler_id),
+            compiler_id: Compiler::from(header_raw.compiler_id),
             cc,
             cn,
             cm,
@@ -236,26 +281,7 @@ impl TILSectionRaw {
         input: &mut impl IdaGenericUnpack,
     ) -> Result<TILSectionHeaderRaw> {
         // TODO this break a few files
-        let signature: [u8; 6] = bincode::deserialize_from(&mut *input)?;
-        ensure!(signature == *TIL_SECTION_MAGIC, "Invalid TIL Signature");
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x431eb5
-        let (format, flags) = match input.read_u32()? {
-            format @ 0x13.. => {
-                return Err(anyhow!("Invalid TIL format {format}"))
-            }
-            // read the flag after the format
-            format @ 0x10..=0x12 => {
-                let flags = TILSectionFlags::new(input.read_u32()?)?;
-                (format, flags)
-            }
-            // format and flag are the same
-            value @ ..=0xf => (value, TILSectionFlags::new(value)?),
-        };
-        let header1 = TILSectionHeader1 {
-            signature,
-            format,
-            flags,
-        };
+        let header1 = TILSectionHeader1::deserialize(&mut *input)?;
 
         let description = input.read_bytes_len_u8()?;
         let mut dependencies = input.read_bytes_len_u8()?;
@@ -532,26 +558,29 @@ impl TILSection {
             size_enum: header.size_enum.map(NonZeroU8::get).unwrap_or(0),
             def_align,
         };
-        bincode::serialize_into(&mut *output, &header1)?;
+        header1.serialize(&mut *output)?;
         crate::write_string_len_u8(&mut *output, &header.description)?;
         crate::write_string_len_u8(&mut *output, &header.dependencies)?;
         bincode::serialize_into(&mut *output, &header2)?;
         if header.flags.have_extended_sizeof_info() {
             let sizes = header.extended_sizeof_info.unwrap();
-            bincode::serialize_into(
-                &mut *output,
-                &(
-                    sizes.size_short.get(),
-                    sizes.size_long.get(),
-                    sizes.size_long_long.get(),
-                ),
-            )?;
+            bincode::serialize_into(&mut *output, &sizes.size_short.get())?;
+            bincode::serialize_into(&mut *output, &sizes.size_long.get())?;
+            bincode::serialize_into(&mut *output, &sizes.size_long_long.get())?;
         }
 
         if header.flags.has_size_long_double() {
             bincode::serialize_into(
                 &mut *output,
                 &header.size_long_double.unwrap().get(),
+            )?;
+        }
+
+        if let Some(def_align) = header.def_align {
+            let value = def_align.trailing_zeros() + 1;
+            bincode::serialize_into(
+                &mut *output,
+                &u8::try_from(value).unwrap(),
             )?;
         }
 

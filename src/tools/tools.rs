@@ -39,6 +39,8 @@ mod dump_dirtree_bookmarks_tiplace;
 use dump_dirtree_bookmarks_tiplace::dump_dirtree_bookmarks_tiplace;
 mod tilib;
 use tilib::tilib_print;
+mod produce_idc;
+use produce_idc::produce_idc;
 
 use idb_rs::{id0::ID0Section, IDBParser};
 
@@ -110,6 +112,8 @@ enum Operation {
     DumpDirtreeBookmarksTiplace,
     /// Print all til types from file and it's information
     PrintTilib(PrintTilibArgs),
+    /// Print a IDC file from the IDB database
+    ProduceIdc(ProduceIdcArgs),
 }
 
 ///// Split the IDB file into it's decompressed sectors. Allow IDB and I64 files.
@@ -132,6 +136,12 @@ struct DecompressTilArgs {
 #[derive(Clone, Debug, Parser)]
 struct PrintTilibArgs {
     dump_struct_layout: Option<bool>,
+}
+
+/// Produce idc from an IDB database
+#[derive(Clone, Debug, Parser)]
+struct ProduceIdcArgs {
+    banner: Vec<String>,
 }
 
 impl Args {
@@ -194,5 +204,6 @@ fn main() -> Result<()> {
             dump_dirtree_bookmarks_tiplace(&args)
         }
         Operation::PrintTilib(tilib_args) => tilib_print(&args, tilib_args),
+        Operation::ProduceIdc(idc_args) => produce_idc(&args, idc_args),
     }
 }
