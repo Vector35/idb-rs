@@ -79,7 +79,9 @@ impl UnionRaw {
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
     ) -> Result<TypeVariantRaw> {
-        let Some(n) = input.read_dt_de()? else {
+        // TODO n == 0 && n_cond == false?
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x325f87
+        let Some((n, _)) = input.read_dt_de()? else {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // is ref
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;

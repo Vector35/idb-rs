@@ -1,12 +1,12 @@
 /// byte sequence used to describe a type in IDA
-type TypeT = u8;
+pub type TypeT = u8;
 /// Enum type flags
-type BteT = u8;
+pub type BteT = u8;
 /// Til Type flags
-type TilT = u16;
+pub type TilT = u16;
 /// TypeAtt Type flags
-type TattrT = u16;
-type CmT = u8;
+pub type TattrT = u16;
+pub type CmT = u8;
 
 /// multi-use
 pub const RESERVED_BYTE: TypeT = 0xFF;
@@ -497,6 +497,9 @@ pub mod tattr_udt {
     pub const TAUDT_CPPOBJ: TattrT = 0x0080;
     /// struct: is virtual function table
     pub const TAUDT_VFTABLE: TattrT = 0x0100;
+    /// struct: fixed field offsets, stored in serialized form,
+    /// cannot be set for unions
+    pub const TAUDT_FIXED: TattrT = 0x0400;
 }
 
 /// Type attributes for udt fields
@@ -512,6 +515,16 @@ pub mod tattr_field {
     pub const TAFLD_VFTABLE: TattrT = 0x0100;
     /// denotes a udt member function
     pub const TAFLD_METHOD: TattrT = 0x0200;
+    /// gap member (displayed as padding in type details)
+    pub const TAFLD_GAP: TattrT = 0x0400;
+    /// the comment is regular (if not set, it is repeatable)
+    pub const TAFLD_REGCMT: TattrT = 0x0800;
+    /// function return address frame slot
+    pub const TAFLD_FRAME_R: TattrT = 0x1000;
+    /// function saved registers frame slot
+    pub const TAFLD_FRAME_S: TattrT = 0x2000;
+    /// was the member created due to the type system
+    pub const TAFLD_BYTIL: TattrT = 0x4000;
 }
 
 /// Type attributes for pointers
@@ -530,12 +543,22 @@ pub mod tattr_ptr {
 /// Type attributes for enums
 pub mod tattr_enum {
     use super::TattrT;
-    /// enum: store 64-bit values
+    /// store 64-bit values
     pub const TAENUM_64BIT: TattrT = 0x0020;
-    /// enum: unsigned
+    /// unsigned
     pub const TAENUM_UNSIGNED: TattrT = 0x0040;
-    /// enum: signed
+    /// signed
     pub const TAENUM_SIGNED: TattrT = 0x0080;
+    /// octal representation, if BTE_HEX
+    pub const TAENUM_OCT: TattrT = 0x0100;
+    /// binary representation, if BTE_HEX
+    /// only one of OCT/BIN bits can be set. they
+    /// are meaningful only if BTE_HEX is used.
+    pub const TAENUM_BIN: TattrT = 0x0200;
+    /// signed representation, if BTE_HEX
+    pub const TAENUM_NUMSIGN: TattrT = 0x0400;
+    /// print numbers with leading zeroes (only for HEX/OCT/BIN)
+    pub const TAENUM_LZERO: TattrT = 0x0800;
 }
 
 /// Type info library property bits
@@ -649,5 +672,293 @@ pub mod cm {
         pub const C_PC_LARGE: CmT = CM_N16_F32 | CM_M_FF;
         pub const C_PC_HUGE: CmT = CM_N16_F32 | CM_M_FF;
         pub const C_PC_FLAT: CmT = CM_N32_F48 | CM_M_NN;
+    }
+
+    pub mod comp {
+        pub const COMP_MASK: u8 = 0x0F;
+        /// Unknown
+        pub const COMP_UNK: u8 = 0x00;
+        /// Visual C++
+        pub const COMP_MS: u8 = 0x01;
+        /// Borland C++
+        pub const COMP_BC: u8 = 0x02;
+        /// Watcom C++
+        pub const COMP_WATCOM: u8 = 0x03;
+        /// GNU C++
+        pub const COMP_GNU: u8 = 0x06;
+        /// Visual Age C++
+        pub const COMP_VISAGE: u8 = 0x07;
+        /// Delphi
+        pub const COMP_BP: u8 = 0x08;
+        /// uncertain compiler id
+        pub const COMP_UNSURE: u8 = 0x80;
+    }
+
+    pub mod sc {
+        /// unknown
+        pub const SC_UNK: u8 = 0;
+        /// typedef
+        pub const SC_TYPE: u8 = 1;
+        /// extern
+        pub const SC_EXT: u8 = 2;
+        /// static
+        pub const SC_STAT: u8 = 3;
+        /// register
+        pub const SC_REG: u8 = 4;
+        /// auto
+        pub const SC_AUTO: u8 = 5;
+        /// friend
+        pub const SC_FRIEND: u8 = 6;
+        /// virtual
+        pub const SC_VIRT: u8 = 7;
+    }
+
+    /// Format/Parse/Print type information
+    pub mod hti {
+        /// C++ mode (not implemented)
+        pub const HTI_CPP: u32 = 0x00000001;
+        /// debug: print internal representation of types
+        pub const HTI_INT: u32 = 0x00000002;
+        /// debug: print external representation of types
+        pub const HTI_EXT: u32 = 0x00000004;
+        /// debug: print tokens
+        pub const HTI_LEX: u32 = 0x00000008;
+        /// debug: check the result by unpacking it
+        pub const HTI_UNP: u32 = 0x00000010;
+        /// test mode: discard the result
+        pub const HTI_TST: u32 = 0x00000020;
+        /// "input" is file name,
+        /// otherwise "input" contains a C declaration
+        pub const HTI_FIL: u32 = 0x00000040;
+
+        /// define macros from the base tils
+        pub const HTI_MAC: u32 = 0x00000080;
+        /// no warning messages
+        pub const HTI_NWR: u32 = 0x00000100;
+        /// ignore all errors but display them
+        pub const HTI_NER: u32 = 0x00000200;
+        /// don't complain about redeclarations
+        pub const HTI_DCL: u32 = 0x00000400;
+        /// don't decorate names
+        pub const HTI_NDC: u32 = 0x00000800;
+        /// explicit structure pack value (#pragma pack)
+        pub const HTI_PAK: u32 = 0x00007000;
+
+        /// shift for #HTI_PAK. This field should
+        /// be used if you want to remember an explicit
+        /// pack value for each structure/union type.
+        /// See #HTI_PAK... definitions
+        pub const HTI_PAK_SHIFT: u32 = 12;
+
+        /// default pack value
+        pub const HTI_PAKDEF: u32 = 0x00000000;
+        /// #pragma pack(1)
+        pub const HTI_PAK1: u32 = 0x00001000;
+        /// #pragma pack(2)
+        pub const HTI_PAK2: u32 = 0x00002000;
+        /// #pragma pack(4)
+        pub const HTI_PAK4: u32 = 0x00003000;
+        /// #pragma pack(8)
+        pub const HTI_PAK8: u32 = 0x00004000;
+        /// #pragma pack(16)
+        pub const HTI_PAK16: u32 = 0x00005000;
+        /// assume high level prototypes
+        pub const HTI_HIGH: u32 = 0x00008000;
+
+        /// (with hidden args, etc)
+        /// lower the function prototypes
+        pub const HTI_LOWER: u32 = 0x00010000;
+        /// leave argument names unchanged (do not remove underscores)
+        pub const HTI_RAWARGS: u32 = 0x00020000;
+        /// accept references to unknown namespaces
+        pub const HTI_RELAXED: u32 = 0x00080000;
+        /// do not inspect base tils
+        pub const HTI_NOBASE: u32 = 0x00100000;
+    }
+
+    pub mod pt {
+        /// silent, no messages
+        pub const PT_SIL: u32 = 0x0001;
+        /// don't decorate names
+        pub const PT_NDC: u32 = 0x0002;
+        /// return declared type information
+        pub const PT_TYP: u32 = 0x0004;
+        /// return declared object information
+        pub const PT_VAR: u32 = 0x0008;
+        /// mask for pack alignment values
+        pub const PT_PACKMASK: u32 = 0x0070;
+        /// assume high level prototypes
+        /// (with hidden args, etc)
+        pub const PT_HIGH: u32 = 0x0080;
+        /// lower the function prototypes
+        pub const PT_LOWER: u32 = 0x0100;
+        /// replace the old type (used in idc)
+        pub const PT_REPLACE: u32 = 0x0200;
+        /// leave argument names unchanged (do not remove underscores)
+        pub const PT_RAWARGS: u32 = 0x0400;
+        /// accept references to unknown namespaces
+        pub const PT_RELAXED: u32 = 0x1000;
+        /// accept empty decl
+        pub const PT_EMPTY: u32 = 0x2000;
+    }
+
+    pub mod prtype {
+        /// print to one line
+        pub const PRTYPE_1LINE: u32 = 0x00000;
+        /// print to many lines
+        pub const PRTYPE_MULTI: u32 = 0x00001;
+        /// print type declaration (not variable declaration)
+        pub const PRTYPE_TYPE: u32 = 0x00002;
+        /// print pragmas for alignment
+        pub const PRTYPE_PRAGMA: u32 = 0x00004;
+        /// append ; to the end
+        pub const PRTYPE_SEMI: u32 = 0x00008;
+        /// use c++ name (only for print_type())
+        pub const PRTYPE_CPP: u32 = 0x00010;
+        /// tinfo_t: print definition, if available
+        pub const PRTYPE_DEF: u32 = 0x00020;
+        /// tinfo_t: do not print function argument names
+        pub const PRTYPE_NOARGS: u32 = 0x00040;
+        /// tinfo_t: print arguments with #FAI_ARRAY as pointers
+        pub const PRTYPE_NOARRS: u32 = 0x00080;
+        /// tinfo_t: never resolve types (meaningful with PRTYPE_DEF)
+        pub const PRTYPE_NORES: u32 = 0x00100;
+        /// tinfo_t: print restored types for #FAI_ARRAY and #FAI_STRUCT
+        pub const PRTYPE_RESTORE: u32 = 0x00200;
+        /// do not apply regular expressions to beautify name
+        pub const PRTYPE_NOREGEX: u32 = 0x00400;
+        /// add color tag COLOR_SYMBOL for any parentheses, commas and colons
+        pub const PRTYPE_COLORED: u32 = 0x00800;
+        /// tinfo_t: print udt methods
+        pub const PRTYPE_METHODS: u32 = 0x01000;
+        /// print comments even in the one line mode
+        pub const PRTYPE_1LINCMT: u32 = 0x02000;
+        /// print only type header (only for definitions)
+        pub const PRTYPE_HEADER: u32 = 0x04000;
+        /// print udt member offsets
+        pub const PRTYPE_OFFSETS: u32 = 0x08000;
+        /// limit the output length to 1024 bytes (the output may be slightly longer)
+        pub const PRTYPE_MAXSTR: u32 = 0x10000;
+        /// print only the definition tail (only for definitions, exclusive with PRTYPE_HEADER)
+        pub const PRTYPE_TAIL: u32 = 0x20000;
+        /// print function arglocs (not only for usercall)
+        pub const PRTYPE_ARGLOCS: u32 = 0x40000;
+    }
+
+    pub mod ntf {
+        /// type name
+        pub const NTF_TYPE: u32 = 0x0001;
+        /// symbol, name is unmangled ('func')
+        pub const NTF_SYMU: u32 = 0x0008;
+        /// symbol, name is mangled ('_func');
+        /// only one of #NTF_TYPE and #NTF_SYMU, #NTF_SYMM can be used
+        pub const NTF_SYMM: u32 = 0x0000;
+        /// don't inspect base tils (for get_named_type)
+        pub const NTF_NOBASE: u32 = 0x0002;
+        /// replace original type (for set_named_type)
+        pub const NTF_REPLACE: u32 = 0x0004;
+        /// name is unmangled (don't use this flag)
+        pub const NTF_UMANGLED: u32 = 0x0008;
+        /// don't inspect current til file (for get_named_type)
+        pub const NTF_NOCUR: u32 = 0x0020;
+        /// value is 64bit
+        pub const NTF_64BIT: u32 = 0x0040;
+        /// force-validate the name of the type when setting (set_named_type, set_numbered_type only)
+        pub const NTF_FIXNAME: u32 = 0x0080;
+        /// the name is given in the IDB encoding;
+        /// non-ASCII bytes will be decoded accordingly
+        /// (set_named_type, set_numbered_type only)
+        pub const NTF_IDBENC: u32 = 0x0100;
+        /// check that synchronization to IDB passed OK
+        /// (set_numbered_type, set_named_type)
+        pub const NTF_CHKSYNC: u32 = 0x0200;
+        /// do not validate type name (set_numbered_type, set_named_type)
+        pub const NTF_NO_NAMECHK: u32 = 0x0400;
+        /// save a new type definition, not a typeref
+        /// (tinfo_t::set_numbered_type, tinfo_t::set_named_type)
+        pub const NTF_COPY: u32 = 0x1000;
+    }
+
+    /// Function type information (see tinfo_t::get_func_details())
+    pub mod fti {
+        /// information about spoiled registers is present
+        pub const FTI_SPOILED: u32 = 0x0001;
+        /// noreturn
+        pub const FTI_NORET: u32 = 0x0002;
+        /// __pure
+        pub const FTI_PURE: u32 = 0x0004;
+        /// high level prototype (with possibly hidden args)
+        pub const FTI_HIGH: u32 = 0x0008;
+        /// static
+        pub const FTI_STATIC: u32 = 0x0010;
+        /// virtual
+        pub const FTI_VIRTUAL: u32 = 0x0020;
+
+        /// mask for FTI_*CALL
+        pub const FTI_CALLTYPE: u32 = 0x00C0;
+        /// default call
+        pub const FTI_DEFCALL: u32 = 0x0000;
+        /// near call
+        pub const FTI_NEARCALL: u32 = 0x0040;
+        /// far call
+        pub const FTI_FARCALL: u32 = 0x0080;
+
+        /// interrupt call
+        pub const FTI_INTCALL: u32 = 0x00C0;
+        /// info about argument locations has been calculated (stkargs and retloc too)
+        pub const FTI_ARGLOCS: u32 = 0x0100;
+        /// all arglocs are specified explicitly
+        pub const FTI_EXPLOCS: u32 = 0x0200;
+        /// const member function
+        pub const FTI_CONST: u32 = 0x0400;
+        /// constructor
+        pub const FTI_CTOR: u32 = 0x0800;
+        /// destructor
+        pub const FTI_DTOR: u32 = 0x1000;
+
+        /// all defined bits
+        pub const FTI_ALL: u32 = 0x1FFF;
+    }
+
+    /// Visual representation of a member of a complex type (struct/union/enum)
+    pub mod frb {
+        /// Mask for the value type (* means requires additional info)
+        pub const FRB_MASK: u32 = 0xF;
+        ///   Unknown
+        pub const FRB_UNK: u32 = 0x0;
+        /// Binary number
+        pub const FRB_NUMB: u32 = 0x1;
+        /// Octal number
+        pub const FRB_NUMO: u32 = 0x2;
+        /// Hexadecimal number
+        pub const FRB_NUMH: u32 = 0x3;
+        /// Decimal number
+        pub const FRB_NUMD: u32 = 0x4;
+        /// Floating point number (for interpreting an integer type as a floating value)
+        pub const FRB_FLOAT: u32 = 0x5;
+        /// Char
+        pub const FRB_CHAR: u32 = 0x6;
+        /// Segment
+        pub const FRB_SEG: u32 = 0x7;
+        /// *Enumeration
+        pub const FRB_ENUM: u32 = 0x8;
+        /// *Offset
+        pub const FRB_OFFSET: u32 = 0x9;
+        /// *String literal (used for arrays)
+        pub const FRB_STRLIT: u32 = 0xA;
+        /// *Struct offset
+        pub const FRB_STROFF: u32 = 0xB;
+        /// *Custom data type
+        pub const FRB_CUSTOM: u32 = 0xC;
+        /// Invert sign (0x01 is represented as -0xFF)
+        pub const FRB_INVSIGN: u32 = 0x0100;
+        /// Invert bits (0x01 is represented as ~0xFE)
+        pub const FRB_INVBITS: u32 = 0x0200;
+        /// Force signed representation
+        pub const FRB_SIGNED: u32 = 0x0400;
+        /// Toggle leading zeroes (used for integers)
+        pub const FRB_LZERO: u32 = 0x0800;
+        /// has additional tabular
+        pub const FRB_TABFORM: u32 = 0x1000;
     }
 }

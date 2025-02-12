@@ -272,8 +272,10 @@ pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
     }
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce40
+    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x451590
     fn read_ext_att(&mut self) -> Result<u64> {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cec0
+        // TODO this can't be found at InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x451590
         let start_value = match self.read_dt()? {
             0x400 => return Ok(-1i64 as u64),
             0x200 => return Ok(-1i32 as u64),
@@ -545,6 +547,7 @@ pub trait IdaGenericUnpack: Read {
     /// Usage: 16bit numbers
     fn read_dt(&mut self) -> Result<u16> {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cd60
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x4514b
         let value = match self.read_u8()? {
             #[cfg(feature = "restrictive")]
             0 => return Err(anyhow!("DT can't have 0 value")),
@@ -584,18 +587,20 @@ pub trait IdaGenericUnpack: Read {
     /// Reads 2 to 7 bytes.
     /// Value Range: Nothing or 0-0xFFFF_FFFF
     /// Usage: some kind of size
-    fn read_dt_de(&mut self) -> Result<Option<u32>> {
+    fn read_dt_de(&mut self) -> Result<Option<(u32, bool)>> {
         // TODO the return is always NonZero?
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cf20
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x451670
         match self.read_dt()? {
             0 => Ok(None),
-            0x7FFE => self.read_de().map(Some),
-            n => Ok(Some(n.into())),
+            0x7FFE => self.read_de().map(|x| Some((x, x >> 3 == 0))),
+            n => Ok(Some((n.into(), false))),
         }
     }
 
-    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
     fn read_type_attribute(&mut self) -> Result<TypeAttribute> {
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x2fbf90
         use crate::til::flag::tattr_ext::*;
         #[cfg(feature = "restrictive")]
         let byte0 = self.read_u8()?;
