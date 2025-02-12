@@ -79,6 +79,7 @@ pub struct TILSectionHeaderRaw {
     pub size_int: NonZeroU8,
     pub size_bool: NonZeroU8,
     pub def_align: Option<NonZeroU8>,
+    // defaults to 2, 4, 8
     pub extended_sizeof_info: Option<TILSectionExtendedSizeofInfo>,
     pub size_long_double: Option<NonZeroU8>,
 }
@@ -217,6 +218,8 @@ impl TILSectionRaw {
             .then(|| Self::read_macros(&mut *input, &header))
             .transpose()?;
 
+        // TODO streams
+
         Ok(Self {
             symbols,
             types,
@@ -231,16 +234,17 @@ impl TILSectionRaw {
         header: &TILSectionHeader,
     ) -> Result<(Option<u32>, Option<Vec<(u32, u32)>>)> {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42e292
-        if !header.flags.has_ordinal() {
-            return Ok((None, None));
-        }
-        let next_ord = input.read_u32()?;
+        let next_ord = header
+            .flags
+            .has_ordinal()
+            .then(|| input.read_u32())
+            .transpose()?;
 
-        match (header.flags.has_type_aliases(), next_ord) {
+        let next_ord = match (header.flags.has_type_aliases(), next_ord) {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42e2a8
-            (false, _) | (_, 0) => return Ok((Some(next_ord), None)),
+            (false, _) | (_, Some(0) | None) => return Ok((next_ord, None)),
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42e29c
-            (true, 1..) => {}
+            (true, Some(next_ord @ 1..)) => next_ord,
         };
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42e2b1

@@ -811,6 +811,36 @@ mod test {
     }
 
     #[test]
+    fn parse_struct_with_fixed() {
+        let function = [
+            0x0d, // stuct type
+            0x31, // n = 0x30, mem_cnt = 6, packalig = 0
+            0xf1, 0x80, 0x08, // struct att
+            0x32, // member 0 => char
+            0x01, // member 0 fixed_ext_att
+            0x03, // member 1 => int16
+            0x02, 0x10, // member 1 fixed_ext_att
+            0x07, // member 2 => int
+            0x02, 0x10, // member 2 fixed_ext_att
+            0x3d, 0x03, 0x23, 0x48, // member 3 => typeref(8)
+            0x02, 0x20, // member 3 fixed_ext_att
+            0x08, // member 4 => bool
+            0x02, 0x40, // member 4 fixed_ext_att
+            0x1b, // member 5 array
+            0x01, // member 5 nelem = 0
+            0x32, // member 5 inner_type = char
+            0x02, 0x08, // member 5 fixed_ext_att
+            0x02, 0x13, // struct stuff
+            0x00, //end
+        ];
+        let til = til::Type::new_from_id0(&function, vec![]).unwrap();
+        let til::TypeVariant::Struct(til_struct) = til.type_variant else {
+            unreachable!()
+        };
+        assert!(til_struct.extra_padding == Some(19));
+    }
+
+    #[test]
     fn parse_idb_param() {
         let param = b"IDA\xbc\x02\x06metapc#\x8a\x03\x03\x02\x00\x00\x00\x00\xff_\xff\xff\xf7\x03\x00\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x0d\x00\x0d \x0d\x10\xff\xff\x00\x00\x00\xc0\x80\x00\x00\x00\x02\x02\x01\x0f\x0f\x06\xce\xa3\xbeg\xc6@\x00\x07\x00\x07\x10(FP\x87t\x09\x03\x00\x01\x13\x0a\x00\x00\x01a\x00\x07\x00\x13\x04\x04\x04\x00\x02\x04\x08\x00\x00\x00";
         let _parsed = id0::IDBParam::read(param, false).unwrap();

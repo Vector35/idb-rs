@@ -1232,18 +1232,22 @@ impl FileType {
     }
 }
 
+use crate::til::flag::cm::comp::*;
 // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x7e6cc0
 #[derive(Debug, Clone, Copy, FromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 pub enum Compiler {
-    Unknown = 0,
-    VisualStudio = 1,
-    Borland = 2,
-    Watcom = 3,
-    Gnu = 6,
-    VisualAge = 7,
-    Delphi = 8,
+    Unknown = COMP_UNK,
+    VisualStudio = COMP_MS,
+    Borland = COMP_BC,
+    Watcom = COMP_WATCOM,
+    Gnu = COMP_GNU,
+    VisualAge = COMP_VISAGE,
+    Delphi = COMP_BP,
 
+    Unsure = COMP_UNSURE,
+
+    // TODO delete this default, option
     // IDA LIB pring compiler_name allow any value here, printing it as "?"
     #[num_enum(default)]
     Other,

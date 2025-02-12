@@ -621,6 +621,7 @@ impl TypedefRaw {
         let buf = input.unpack_dt_bytes()?;
         match &buf[..] {
             [b'#', data @ ..] => {
+                // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x2fbf90
                 let mut tmp = data;
                 let de = tmp.read_de()?;
                 if !tmp.is_empty() {

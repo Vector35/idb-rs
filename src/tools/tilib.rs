@@ -224,7 +224,7 @@ fn compiler_id_to_str(compiler: Compiler) -> &'static str {
         Compiler::Gnu => "GNU C++",
         Compiler::VisualAge => "Visual Age C++",
         Compiler::Delphi => "Delphi",
-        Compiler::Other => "?",
+        Compiler::Unsure | Compiler::Other => "?",
     }
 }
 

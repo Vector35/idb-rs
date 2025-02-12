@@ -14,6 +14,8 @@ use super::{CommentType, TypeAttribute, TypeVariantRaw};
 pub struct Struct {
     pub effective_alignment: Option<NonZeroU8>,
     pub members: Vec<StructMember>,
+    pub extra_padding: Option<u64>,
+
     /// Unaligned struct
     pub is_unaligned: bool,
     /// Gcc msstruct attribute
@@ -53,6 +55,7 @@ impl Struct {
         Ok(Struct {
             effective_alignment: value.effective_alignment,
             members,
+            extra_padding: value.extra_padding,
             is_unaligned: value.is_unaligned,
             is_msstruct: value.is_msstruct,
             is_cppobj: value.is_cppobj,
@@ -74,6 +77,7 @@ impl Struct {
 pub(crate) struct StructRaw {
     effective_alignment: Option<NonZeroU8>,
     members: Vec<StructMemberRaw>,
+    extra_padding: Option<u64>,
 
     /// Unaligned struct
     is_unaligned: bool,
@@ -94,8 +98,11 @@ impl StructRaw {
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
     ) -> Result<TypeVariantRaw> {
+        // TODO n == 0 && n_cond == false?
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x325f87
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x303393
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x459883
-        let Some(n) = input.read_dt_de()? else {
+        let Some((n, _)) = input.read_dt_de()? else {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // simple reference
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
@@ -121,6 +128,7 @@ impl StructRaw {
         let mut is_vft = false;
         let mut is_method = false;
         let mut is_bitset2 = false;
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x30379a
         if let Some(TypeAttribute {
             tattr,
             extended: _extended,
@@ -141,6 +149,8 @@ impl StructRaw {
             is_unaligned = tattr & TAUDT_UNALIGNED != 0;
             is_cppobj = tattr & TAUDT_CPPOBJ != 0;
             is_vft = tattr & TAUDT_VFTABLE != 0;
+            // TODO handle this flag
+            let _is_fixed = tattr & TAUDT_FIXED != 0;
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
             // TODO using a field flag on the struct seems out-of-place
             is_method = tattr & TAFLD_METHOD != 0;
@@ -153,6 +163,7 @@ impl StructRaw {
                 | TAUDT_UNALIGNED
                 | TAUDT_CPPOBJ
                 | TAUDT_VFTABLE
+                | TAUDT_FIXED
                 | TAFLD_METHOD;
             #[cfg(feature = "restrictive")]
             ensure!(
@@ -178,9 +189,14 @@ impl StructRaw {
             })
             .collect::<Result<_, _>>()?;
 
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x3269ca
+        let extra_padding =
+            is_fixed.then(|| input.read_ext_att()).transpose()?;
+
         Ok(TypeVariantRaw::Struct(Self {
             effective_alignment,
             members,
+            extra_padding,
             is_unaligned,
             is_msstruct,
             is_cppobj,
@@ -255,13 +271,14 @@ impl StructMemberRaw {
     fn read(
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
-        is_bit_set: bool,
+        is_method: bool,
         is_bit_set2: bool,
     ) -> Result<Self> {
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x326610
         let ty = TypeRaw::read(&mut *input, header)?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478256
-        let att = is_bit_set
+        let att = is_method
             .then(|| Self::read_member_att_1(input, header))
             .transpose()?;
 
@@ -273,7 +290,7 @@ impl StructMemberRaw {
         let mut is_unknown_8 = false;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
-        if !is_bit_set || att.is_some() {
+        if !is_method || att.is_some() {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
             if let Some(TypeAttribute {
                 tattr,
@@ -298,11 +315,22 @@ impl StructMemberRaw {
                 is_vft = tattr & TAFLD_VFTABLE != 0;
                 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
                 is_method = tattr & TAFLD_METHOD != 0;
+                // TODO handle those flags
+                let _is_gap = tattr & TAFLD_GAP != 0;
+                let _is_regcmt = tattr & TAFLD_REGCMT != 0;
+                let _is_frame_r = tattr & TAFLD_FRAME_R != 0;
+                let _is_frame_s = tattr & TAFLD_FRAME_S != 0;
+                let _is_bytil = tattr & TAFLD_BYTIL != 0;
                 const _ALL_FLAGS: u16 = MAX_DECL_ALIGN
                     | TAFLD_BASECLASS
                     | TAFLD_UNALIGNED
                     | TAFLD_VFTABLE
-                    | TAFLD_METHOD;
+                    | TAFLD_METHOD
+                    | TAFLD_GAP
+                    | TAFLD_REGCMT
+                    | TAFLD_FRAME_R
+                    | TAFLD_FRAME_S
+                    | TAFLD_BYTIL;
                 #[cfg(feature = "restrictive")]
                 ensure!(
                     tattr & !_ALL_FLAGS == 0,
