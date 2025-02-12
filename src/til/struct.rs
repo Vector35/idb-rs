@@ -126,6 +126,7 @@ impl StructRaw {
         let mut is_unaligned = false;
         let mut is_cppobj = false;
         let mut is_vft = false;
+        let mut is_fixed = false;
         let mut is_method = false;
         let mut is_bitset2 = false;
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x30379a
@@ -149,8 +150,7 @@ impl StructRaw {
             is_unaligned = tattr & TAUDT_UNALIGNED != 0;
             is_cppobj = tattr & TAUDT_CPPOBJ != 0;
             is_vft = tattr & TAUDT_VFTABLE != 0;
-            // TODO handle this flag
-            let _is_fixed = tattr & TAUDT_FIXED != 0;
+            is_fixed = tattr & TAUDT_FIXED != 0;
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478203
             // TODO using a field flag on the struct seems out-of-place
             is_method = tattr & TAFLD_METHOD != 0;
@@ -183,6 +183,7 @@ impl StructRaw {
                     &mut *input,
                     header,
                     is_method,
+                    is_fixed,
                     is_bitset2,
                 )
                 .with_context(|| format!("Member {i}"))
@@ -272,6 +273,7 @@ impl StructMemberRaw {
         input: &mut impl IdaGenericBufUnpack,
         header: &TILSectionHeader,
         is_method: bool,
+        is_fixed: bool,
         is_bit_set2: bool,
     ) -> Result<Self> {
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x326610
@@ -341,6 +343,12 @@ impl StructMemberRaw {
                     _extended.is_none(),
                     "Unable to parse extended attributes for struct member"
                 );
+            }
+
+            if is_fixed && !is_method {
+                // TODO unknown meaning
+                // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x326820
+                let _value = input.read_ext_att()?;
             }
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
