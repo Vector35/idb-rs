@@ -243,3 +243,26 @@ fn parse_maybe_cstr(data: &[u8]) -> Option<&[u8]> {
     }
     Some(&data[..end_pos])
 }
+
+enum ID0CStr<'a> {
+    CStr(&'a [u8]),
+    Ref(u64),
+}
+
+// parse a string that maybe is finalized with \x00
+fn parse_cstr_or_subkey(data: &[u8], is_64: bool) -> Option<ID0CStr> {
+    // TODO find the InnerRef, so far I found only the
+    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x4e20c0
+    match data {
+        [b'\x00', rest @ ..] if rest.len() == if is_64 { 8 } else { 4 } => {
+            if is_64 {
+                Some(ID0CStr::Ref(u64::from_be_bytes(rest.try_into().unwrap())))
+            } else {
+                Some(ID0CStr::Ref(
+                    u32::from_be_bytes(rest.try_into().unwrap()).into(),
+                ))
+            }
+        }
+        _ => parse_maybe_cstr(data).map(ID0CStr::CStr),
+    }
+}

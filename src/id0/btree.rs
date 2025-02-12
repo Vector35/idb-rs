@@ -1,4 +1,4 @@
-use std::{ffi::CStr, io::Read};
+use std::{borrow::Cow, ffi::CStr, io::Read};
 
 use anyhow::Result;
 
@@ -272,6 +272,47 @@ impl ID0Section {
         let end = self.binary_search_end(key).unwrap_or_else(|end| end);
 
         &self.entries[start..end]
+    }
+
+    pub(crate) fn address_info_value(
+        &self,
+        label_ref: u64,
+    ) -> Result<&[ID0Entry]> {
+        // NOTE for some reasong the key is only 7 bytes,
+        // there is also a subindex, in case the value is very big
+        #[cfg(feature = "restrictive")]
+        {
+            let max_ref_value = if self.is_64 {
+                u64::MAX >> 8
+            } else {
+                (u32::MAX >> 8) as u64
+            };
+            ensure!(
+                label_ref <= max_ref_value,
+                "Ivanlid Address Info value Ref"
+            );
+        }
+        let label_ref = label_ref << 8;
+        let key: Vec<u8> = if self.is_64 {
+            let info_ref_key = 0xffu64.to_le_bytes();
+            let label_ref = label_ref.to_be_bytes();
+            b".".iter()
+                .chain(&info_ref_key)
+                .chain(b"S")
+                .chain(&label_ref)
+                .copied()
+                .collect()
+        } else {
+            let info_ref_key = 0xffu32.to_le_bytes();
+            let label_ref = (label_ref as u32).to_be_bytes();
+            b".".iter()
+                .chain(&info_ref_key)
+                .chain(b"S")
+                .chain(&label_ref)
+                .copied()
+                .collect()
+        };
+        Ok(self.sub_values(key))
     }
 
     /// read the `$ segs` entries of the database
@@ -681,7 +722,7 @@ impl ID0Section {
 
         let entries = &self.entries[start..end];
         // ignore the address, it will always be the same, the one request
-        let iter = AddressInfoIter::new(entries, self.is_64)
+        let iter = AddressInfoIter::new(entries, self)
             .map(|value| value.map(|(_addr, value)| value));
         Ok(iter)
     }
@@ -690,7 +731,7 @@ impl ID0Section {
     pub fn label_at(
         &self,
         id0_addr: impl Id0AddressKey,
-    ) -> Result<Option<&[u8]>> {
+    ) -> Result<Option<Cow<[u8]>>> {
         let key: Vec<u8> = key_from_address(id0_addr.as_u64(), self.is_64)
             .chain(Some(b'N'))
             .collect();
@@ -702,9 +743,21 @@ impl ID0Section {
         let key_len = key.len();
         let key = &entry.key[key_len..];
         ensure!(key.is_empty(), "Label ID0 entry with key");
-        let label = parse_maybe_cstr(&entry.value)
+        let label = parse_cstr_or_subkey(&entry.value, self.is_64)
             .ok_or_else(|| anyhow!("Label is not valid CStr"))?;
-        Ok(Some(label))
+        match label {
+            ID0CStr::CStr(label) => Ok(Some(Cow::Borrowed(label))),
+            ID0CStr::Ref(label_ref) => {
+                let entries = self.address_info_value(label_ref)?;
+                Ok(Some(Cow::Owned(
+                    entries
+                        .iter()
+                        .flat_map(|x| &x.value[..])
+                        .copied()
+                        .collect(),
+                )))
+            }
+        }
     }
 
     pub(crate) fn dirtree_from_name<T: FromDirTreeNumber>(
