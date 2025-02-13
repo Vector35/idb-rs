@@ -211,14 +211,16 @@ fn produce_gen_info(
     writeln!(fmt, "  set_inf_attr(INF_STRLIT_BREAK, {strlit_break:#X});",)?;
     let scf_allcmt = match &info {
         idb_rs::id0::IDBParam::V1(_x) => {
-            todo!("flag from V1 x.cmtflag.is_allcmt()")
+            // TODO todo!("flag from V1 x.cmtflag.is_allcmt()")
+            false as u8
         }
         idb_rs::id0::IDBParam::V2(x) => x.cmtflg.is_allcmt() as u8,
     };
     writeln!(fmt, "  set_flag(INF_CMTFLG, SCF_ALLCMT, {scf_allcmt});")?;
     let oflg_show_void = match &info {
         idb_rs::id0::IDBParam::V1(_x) => {
-            todo!("flag from V1 x.outflags.show_void()")
+            // TODO todo!("flag from V1 x.outflags.show_void()")
+            false as u8
         }
         idb_rs::id0::IDBParam::V2(x) => x.outflags.show_void() as u8,
     };
@@ -233,7 +235,8 @@ fn produce_gen_info(
     writeln!(fmt, "  set_inf_attr(INF_XREFNUM, {xrefnum});")?;
     let oflg_show_auto = match &info {
         idb_rs::id0::IDBParam::V1(_x) => {
-            todo!("flag from V1 x.outflags.show_auto()")
+            // TODO todo!("flag from V1 x.outflags.show_auto()")
+            false as u8
         }
         idb_rs::id0::IDBParam::V2(x) => x.outflags.show_auto() as u8,
     };
@@ -247,7 +250,10 @@ fn produce_gen_info(
     };
     writeln!(fmt, "  set_inf_attr(INF_INDENT, {indent});")?;
     let cmd_indent = match &info {
-        idb_rs::id0::IDBParam::V1(_x) => todo!("value from V1.cmd_indent"),
+        idb_rs::id0::IDBParam::V1(_x) => {
+            // TODO todo!("value from V1.cmd_indent")
+            0
+        }
         idb_rs::id0::IDBParam::V2(x) => x.cmt_ident,
     };
     writeln!(fmt, "  set_inf_attr(INF_CMT_INDENT, {cmd_indent});")?;
