@@ -299,7 +299,7 @@ impl ID0Section {
             b".".iter()
                 .chain(&info_ref_key)
                 .chain(b"S")
-                .chain(&label_ref)
+                .chain(&label_ref[..7])
                 .copied()
                 .collect()
         } else {
@@ -308,7 +308,7 @@ impl ID0Section {
             b".".iter()
                 .chain(&info_ref_key)
                 .chain(b"S")
-                .chain(&label_ref)
+                .chain(&label_ref[..3])
                 .copied()
                 .collect()
         };
