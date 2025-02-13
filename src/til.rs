@@ -876,6 +876,7 @@ pub fn ephemeral_til_header() -> TILSectionHeader {
         size_long_double: None,
         extended_sizeof_info: None,
         cc: None,
+        compiler_guessed: false,
         cn: None,
         type_ordinal_alias: None,
         is_universal: true,

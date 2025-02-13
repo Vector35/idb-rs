@@ -41,6 +41,7 @@ pub fn dump_til(args: &Args) -> Result<()> {
                 dependencies,
                 compiler_id,
                 cc,
+                compiler_guessed,
                 cn,
                 cm,
                 def_align,
@@ -60,7 +61,8 @@ pub fn dump_til(args: &Args) -> Result<()> {
         println!("dependency-{i}: {}", dependency.as_utf8_lossy());
     }
     println!("id: {compiler_id:?}");
-    println!("cc: {cc:?}");
+    let cc_guessed = if *compiler_guessed { " (guessed)" } else { "" };
+    println!("cc: {cc:?}{cc_guessed}");
     println!("cm: {cm:?}");
     println!("cn: {cn:?}");
     println!("def_align: {}", def_align.map(|x| x.get()).unwrap_or(0));

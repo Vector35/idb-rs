@@ -41,6 +41,8 @@ pub struct TILSectionHeader {
     pub dependencies: Vec<IDBString>,
     /// the compiler used to generated types
     pub compiler_id: Compiler,
+    /// if the the compiler is just a guess
+    pub compiler_guessed: bool,
     /// default calling convention
     pub cc: Option<CallingConvention>,
     /// default calling ptr size
@@ -185,12 +187,17 @@ impl TILSectionRaw {
         } else {
             vec![]
         };
+        let cc_id_raw = header_raw.compiler_id;
+        let compiler_guessed = cc_id_raw & 0x80 != 0;
+        let compiler_id = Compiler::try_from(cc_id_raw & 0x7F)
+            .map_err(|_| anyhow!("Invalid compiler id: {cc_id_raw}"))?;
         let mut header = TILSectionHeader {
             format: header_raw.format,
             description: IDBString::new(header_raw.description),
             flags: header_raw.flags,
             dependencies,
-            compiler_id: Compiler::from(header_raw.compiler_id),
+            compiler_id,
+            compiler_guessed,
             cc,
             cn,
             cm,

@@ -1,7 +1,7 @@
 use std::io::Read;
 
 use anyhow::Result;
-use num_enum::{FromPrimitive, IntoPrimitive};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use crate::ida_reader::IdaUnpack;
 
@@ -173,6 +173,7 @@ pub struct IDBParam2 {
     pub strlit_sernum: u64,
     pub datatypes: u64,
     pub cc_id: Compiler,
+    pub cc_guessed: bool,
     pub cc_cm: u8,
     pub cc_size_i: u8,
     pub cc_size_b: u8,
@@ -482,7 +483,15 @@ impl IDBParam {
 
         let strlit_sernum = input.unpack_usize()?;
         let datatypes = input.unpack_usize()?;
-        let cc_id = Compiler::from(input.read_u8()?);
+        let cc_id_raw = input.read_u8()?;
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1a15e8
+        let cc_guessed = cc_id_raw & 0x80 != 0;
+        #[cfg(feature = "restrictive")]
+        let cc_id = Compiler::try_from(cc_id_raw & 0x7F)
+            .map_err(|_| anyhow!("Invalid compiler id: {cc_id_raw}"))?;
+        #[cfg(not(feature = "restrictive"))]
+        let cc_id =
+            Compiler::try_from(cc_id_raw & 0x7F).unwrap_or(Compiler::Unknown);
         let cc_cm = input.read_u8()?;
         let cc_size_i = input.read_u8()?;
         let cc_size_b = input.read_u8()?;
@@ -551,6 +560,7 @@ impl IDBParam {
             strlit_sernum,
             datatypes,
             cc_id,
+            cc_guessed,
             cc_cm,
             cc_size_i,
             cc_size_b,
@@ -1234,7 +1244,8 @@ impl FileType {
 
 use crate::til::flag::cm::comp::*;
 // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x7e6cc0
-#[derive(Debug, Clone, Copy, FromPrimitive, IntoPrimitive)]
+// InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x3a03c0
+#[derive(Debug, Clone, Copy, TryFromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 pub enum Compiler {
     Unknown = COMP_UNK,
@@ -1246,9 +1257,4 @@ pub enum Compiler {
     Delphi = COMP_BP,
 
     Unsure = COMP_UNSURE,
-
-    // TODO delete this default, option
-    // IDA LIB pring compiler_name allow any value here, printing it as "?"
-    #[num_enum(default)]
-    Other,
 }
