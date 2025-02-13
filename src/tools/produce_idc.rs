@@ -113,9 +113,14 @@ fn inner_produce_idc(
         produce_types(fmt, til)?;
     }
 
+    // TODO only if non-zero patches
+    writeln!(fmt)?;
+    produce_patches(fmt, id0)?;
+
     writeln!(fmt)?;
     produce_bytes_info(fmt, id0, til)?;
 
+    // TODO only if non-zero functions
     writeln!(fmt)?;
     produce_functions(fmt, id0, til)?;
 
@@ -123,7 +128,7 @@ fn inner_produce_idc(
     produce_seg_regs(fmt, id0, til)?;
 
     writeln!(fmt)?;
-    produce_patches(fmt, id0, til)?;
+    produce_all_patches(fmt, id0, til)?;
 
     writeln!(fmt)?;
     produce_bytes(fmt, id0, til)?;
@@ -191,14 +196,14 @@ fn produce_gen_info(
     };
     writeln!(
         fmt,
-        "  set_processor_type(\"{}\", SETPROC_USER)",
+        "  set_processor_type(\"{}\", SETPROC_USER);",
         String::from_utf8_lossy(cpu)
     )?;
     let compiler = match &info {
         idb_rs::id0::IDBParam::V1(x) => x.compiler,
         idb_rs::id0::IDBParam::V2(x) => x.cc_id.into(),
     };
-    writeln!(fmt, "  set_inf_attr(INF_COMPILER, {compiler})")?;
+    writeln!(fmt, "  set_inf_attr(INF_COMPILER, {compiler});")?;
     let strlit_break = match &info {
         idb_rs::id0::IDBParam::V1(x) => x.ascii_break,
         idb_rs::id0::IDBParam::V2(x) => x.strlit_break,
@@ -230,7 +235,7 @@ fn produce_gen_info(
         idb_rs::id0::IDBParam::V1(_x) => {
             todo!("flag from V1 x.outflags.show_auto()")
         }
-        idb_rs::id0::IDBParam::V2(x) => x.outflags.show_auto(),
+        idb_rs::id0::IDBParam::V2(x) => x.outflags.show_auto() as u8,
     };
     writeln!(
         fmt,
@@ -348,7 +353,7 @@ fn produce_segments(fmt: &mut impl Write, id0: &ID0Section) -> Result<()> {
         idb_rs::id0::IDBParam::V1(x) => x.lowoff,
         idb_rs::id0::IDBParam::V2(x) => x.lowoff,
     };
-    writeln!(fmt, "set_inf_attr(INF_LOW_OFF, {low_off:#X});")?;
+    writeln!(fmt, "  set_inf_attr(INF_LOW_OFF, {low_off:#X});")?;
     let high_off = match &ida_info {
         idb_rs::id0::IDBParam::V1(x) => x.highoff,
         idb_rs::id0::IDBParam::V2(x) => x.highoff,
@@ -377,6 +382,21 @@ fn produce_types(fmt: &mut impl Write, til: &TILSection) -> Result<()> {
     writeln!(fmt, "static LocalTypes()")?;
     writeln!(fmt, "{{")?;
     writeln!(fmt, "  LocalTypes_0();")?;
+    writeln!(fmt, "}}")?;
+    Ok(())
+}
+
+fn produce_patches(fmt: &mut impl Write, _id0: &ID0Section) -> Result<()> {
+    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b170e
+    writeln!(fmt, "//------------------------------------------------------------------------")?;
+    writeln!(fmt, "// Information about patches")?;
+    writeln!(fmt)?;
+    writeln!(fmt, "static Patches_0(void)")?;
+    writeln!(fmt, "{{")?;
+    writeln!(fmt, "  auto x;")?;
+    writeln!(fmt, "#define id x")?;
+    writeln!(fmt)?;
+    writeln!(fmt, "  TODO();")?;
     writeln!(fmt, "}}")?;
     Ok(())
 }
@@ -489,7 +509,7 @@ fn produce_functions(
     _til: &TILSection,
 ) -> Result<()> {
     // TODO find the number of functions
-    writeln!(fmt, "static Functions_0() ")?;
+    writeln!(fmt, "static Functions_0(void) ")?;
     writeln!(fmt, "{{")?;
     writeln!(fmt, "  TODO();")?;
     writeln!(fmt, "}}")?;
@@ -497,7 +517,7 @@ fn produce_functions(
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// Information about functions")?;
     writeln!(fmt)?;
-    writeln!(fmt, "static Functions()")?;
+    writeln!(fmt, "static Functions(void)")?;
     writeln!(fmt, "{{")?;
     writeln!(fmt, "  Functions_0();")?;
     writeln!(fmt, "}}")?;
@@ -519,13 +539,13 @@ fn produce_seg_regs(
     Ok(())
 }
 
-fn produce_patches(
+fn produce_all_patches(
     fmt: &mut impl Write,
     _id0: &ID0Section,
     _til: &TILSection,
 ) -> Result<()> {
     writeln!(fmt, "//------------------------------------------------------------------------")?;
-    writeln!(fmt, "// Information about patched bytes")?;
+    writeln!(fmt, "// Information about all patched bytes:")?;
     writeln!(fmt)?;
     writeln!(fmt, "static Patches(void)")?;
     writeln!(fmt, "{{")?;
