@@ -1,6 +1,7 @@
 use std::io::Read;
 
 use anyhow::Result;
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 use crate::ida_reader::IdaUnpack;
 
@@ -172,6 +173,7 @@ pub struct IDBParam2 {
     pub strlit_sernum: u64,
     pub datatypes: u64,
     pub cc_id: Compiler,
+    pub cc_guessed: bool,
     pub cc_cm: u8,
     pub cc_size_i: u8,
     pub cc_size_b: u8,
@@ -481,7 +483,15 @@ impl IDBParam {
 
         let strlit_sernum = input.unpack_usize()?;
         let datatypes = input.unpack_usize()?;
-        let cc_id = Compiler::from_value(input.read_u8()?);
+        let cc_id_raw = input.read_u8()?;
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1a15e8
+        let cc_guessed = cc_id_raw & 0x80 != 0;
+        #[cfg(feature = "restrictive")]
+        let cc_id = Compiler::try_from(cc_id_raw & 0x7F)
+            .map_err(|_| anyhow!("Invalid compiler id: {cc_id_raw}"))?;
+        #[cfg(not(feature = "restrictive"))]
+        let cc_id =
+            Compiler::try_from(cc_id_raw & 0x7F).unwrap_or(Compiler::Unknown);
         let cc_cm = input.read_u8()?;
         let cc_size_i = input.read_u8()?;
         let cc_size_b = input.read_u8()?;
@@ -550,6 +560,7 @@ impl IDBParam {
             strlit_sernum,
             datatypes,
             cc_id,
+            cc_guessed,
             cc_cm,
             cc_size_i,
             cc_size_b,
@@ -1231,32 +1242,19 @@ impl FileType {
     }
 }
 
+use crate::til::flag::cm::comp::*;
 // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x7e6cc0
-#[derive(Debug, Clone, Copy)]
+// InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x3a03c0
+#[derive(Debug, Clone, Copy, TryFromPrimitive, IntoPrimitive)]
+#[repr(u8)]
 pub enum Compiler {
-    Unknown,
-    VisualStudio,
-    Borland,
-    Watcom,
-    Gnu,
-    VisualAge,
-    Delphi,
+    Unknown = COMP_UNK,
+    VisualStudio = COMP_MS,
+    Borland = COMP_BC,
+    Watcom = COMP_WATCOM,
+    Gnu = COMP_GNU,
+    VisualAge = COMP_VISAGE,
+    Delphi = COMP_BP,
 
-    // IDA LIB pring compiler_name allow any value here, printing it as "?"
-    Other,
-}
-
-impl Compiler {
-    pub fn from_value(value: u8) -> Self {
-        match value {
-            0x0 => Self::Unknown,
-            0x1 => Self::VisualStudio,
-            0x2 => Self::Borland,
-            0x3 => Self::Watcom,
-            0x6 => Self::Gnu,
-            0x7 => Self::VisualAge,
-            0x8 => Self::Delphi,
-            _ => Self::Other,
-        }
-    }
+    Unsure = COMP_UNSURE,
 }

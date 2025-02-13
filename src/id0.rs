@@ -17,46 +17,26 @@ mod address_info;
 pub use address_info::*;
 mod dirtree;
 pub use dirtree::*;
+mod file_region;
+pub use file_region::*;
 
 #[derive(Clone, Debug)]
-pub struct IDBFileRegions {
-    pub start: u64,
-    pub end: u64,
-    pub eva: u64,
+pub struct IDBFunction {
+    pub address: Range<u64>,
+    pub flags: u16,
+    pub extra: Option<IDBFunctionExtra>,
 }
 
-impl IDBFileRegions {
-    fn read(
-        _key: &[u8],
-        data: &[u8],
-        version: u16,
-        is_64: bool,
-    ) -> Result<Self> {
-        let mut input = IdaUnpacker::new(data, is_64);
-        // TODO detect versions with more accuracy
-        let (start, end, eva) = match version {
-            ..=699 => {
-                let start = input.read_word()?;
-                let end = input.read_word()?;
-                let rva: u32 = bincode::deserialize_from(&mut input)?;
-                (start, end, rva.into())
-            }
-            700.. => {
-                let start = input.unpack_usize()?;
-                let end = start.checked_add(input.unpack_usize()?).ok_or_else(
-                    || anyhow!("Overflow address in File Regions"),
-                )?;
-                let rva = input.unpack_usize()?;
-                // TODO some may include an extra 0 byte at the end?
-                if let Ok(_unknown) = input.unpack_usize() {
-                    ensure!(_unknown == 0);
-                }
-                (start, end, rva)
-            }
-        };
-        ensure!(input.inner().is_empty());
-        Ok(Self { start, end, eva })
-    }
+#[derive(Clone, Debug)]
+pub enum IDBFunctionExtra {
+    NonTail {
+        frame: u64,
+    },
+    Tail {
+        /// function owner of the function start
+        owner: u64,
+        refqty: u64,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -111,25 +91,6 @@ impl<'a> FunctionsAndComments<'a> {
             _ => Ok(Self::Unknown { key, value }),
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct IDBFunction {
-    pub address: Range<u64>,
-    pub flags: u16,
-    pub extra: Option<IDBFunctionExtra>,
-}
-
-#[derive(Clone, Debug)]
-pub enum IDBFunctionExtra {
-    NonTail {
-        frame: u64,
-    },
-    Tail {
-        /// function owner of the function start
-        owner: u64,
-        refqty: u64,
-    },
 }
 
 impl IDBFunction {
@@ -281,4 +242,27 @@ fn parse_maybe_cstr(data: &[u8]) -> Option<&[u8]> {
         return None;
     }
     Some(&data[..end_pos])
+}
+
+enum ID0CStr<'a> {
+    CStr(&'a [u8]),
+    Ref(u64),
+}
+
+// parse a string that maybe is finalized with \x00
+fn parse_cstr_or_subkey(data: &[u8], is_64: bool) -> Option<ID0CStr> {
+    // TODO find the InnerRef, so far I found only the
+    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x4e20c0
+    match data {
+        [b'\x00', rest @ ..] if rest.len() == if is_64 { 8 } else { 4 } => {
+            if is_64 {
+                Some(ID0CStr::Ref(u64::from_be_bytes(rest.try_into().unwrap())))
+            } else {
+                Some(ID0CStr::Ref(
+                    u32::from_be_bytes(rest.try_into().unwrap()).into(),
+                ))
+            }
+        }
+        _ => parse_maybe_cstr(data).map(ID0CStr::CStr),
+    }
 }

@@ -20,10 +20,12 @@ pub fn dump_segments(args: &Args) -> Result<()> {
             version, ..
         }) => version,
     };
-    println!();
-    println!("Segments AKA `$ fileregions`: ");
-    for entry in id0.file_regions(version)? {
-        println!("  {:x?}", entry?);
+    if let Some(idx) = id0.file_regions_idx() {
+        println!();
+        println!("Segments AKA `$ fileregions`: ");
+        for entry in id0.file_regions(idx, version) {
+            println!("  {:x?}", entry?);
+        }
     }
     Ok(())
 }
