@@ -349,6 +349,30 @@ impl ID0Section {
         SegmentStringIter::new(self.sub_values(key))
     }
 
+    /// find the `$ patches`
+    pub fn segment_patches_idx(&self) -> Option<SegmentPatchIdx> {
+        self.get("N$ patches").map(|x| SegmentPatchIdx(&x.value))
+    }
+
+    /// read all the original values from `$ patches` entries of the database
+    pub fn segment_patches_original_value(
+        &self,
+        idx: SegmentPatchIdx,
+    ) -> SegmentPatchOridinalValueIter {
+        let key: Vec<u8> = b"."
+            .iter()
+            .chain(idx.0.iter().rev())
+            .chain(b"A")
+            .copied()
+            .collect();
+        let key_len = key.len();
+        let entries = self.sub_values(key);
+        SegmentPatchOridinalValueIter::new(self, entries, key_len)
+    }
+
+    // TODO there is also a "P" entry in patches, it seems to only contains
+    // the value 0x01 for each equivalent "A" entry
+
     pub fn segment_name(&self, idx: SegmentNameIdx) -> Result<&[u8]> {
         let seg_idx = self.segment_strings_idx();
         // TODO I think this is dependent on the version, and not on availability

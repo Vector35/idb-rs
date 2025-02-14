@@ -15,7 +15,7 @@ pub struct SegInfo {
     pub offset: u64,
     pub data: Vec<u8>,
     // TODO find a way to decode this data
-    _flags: Vec<u32>,
+    pub _flags: Vec<u32>,
 }
 
 impl ID1Section {
@@ -227,6 +227,19 @@ impl ID1Section {
         ignore_bytes(input, &mut buf)?;
 
         Ok(Self { seglist })
+    }
+
+    pub fn value_by_address(&self, address: u64) -> Option<u8> {
+        for seg in &self.seglist {
+            let addr_range =
+                seg.offset..seg.offset + u64::try_from(seg.data.len()).unwrap();
+            if addr_range.contains(&address) {
+                return Some(
+                    seg.data[usize::try_from(address - seg.offset).unwrap()],
+                );
+            }
+        }
+        None
     }
 }
 

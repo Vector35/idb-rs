@@ -19,6 +19,8 @@ mod dirtree;
 pub use dirtree::*;
 mod file_region;
 pub use file_region::*;
+mod patch;
+pub use patch::*;
 
 #[derive(Clone, Debug)]
 pub struct IDBFunction {
