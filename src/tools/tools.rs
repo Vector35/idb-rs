@@ -3,6 +3,8 @@ mod dump_til;
 use dump_til::dump_til;
 mod dump_id0;
 use dump_id0::dump_id0;
+mod dump_id1;
+use dump_id1::dump_id1;
 //mod split_idb;
 //use split_idb::split_idb;
 mod decompress_til;
@@ -39,8 +41,10 @@ mod dump_dirtree_bookmarks_tiplace;
 use dump_dirtree_bookmarks_tiplace::dump_dirtree_bookmarks_tiplace;
 mod tilib;
 use tilib::tilib_print;
+mod produce_idc;
+use produce_idc::produce_idc;
 
-use idb_rs::{id0::ID0Section, IDBParser};
+use idb_rs::{id0::ID0Section, id1::ID1Section, IDBParser};
 
 use std::fs::File;
 use std::io::BufReader;
@@ -82,6 +86,8 @@ enum Operation {
     DumpTil,
     /// Dump all entries of the ID0 database
     DumpID0,
+    /// Dump all entries of the ID1 database
+    DumpID1,
     //SplitIDB(SplitIDBArgs),
     /// Decompress the TIL Section and buckets
     DecompressTil(DecompressTilArgs),
@@ -110,6 +116,8 @@ enum Operation {
     DumpDirtreeBookmarksTiplace,
     /// Print all til types from file and it's information
     PrintTilib(PrintTilibArgs),
+    /// Print a IDC file from the IDB database
+    ProduceIdc(ProduceIdcArgs),
 }
 
 ///// Split the IDB file into it's decompressed sectors. Allow IDB and I64 files.
@@ -132,6 +140,12 @@ struct DecompressTilArgs {
 #[derive(Clone, Debug, Parser)]
 struct PrintTilibArgs {
     dump_struct_layout: Option<bool>,
+}
+
+/// Produce idc from an IDB database
+#[derive(Clone, Debug, Parser)]
+struct ProduceIdcArgs {
+    banner: Vec<String>,
 }
 
 impl Args {
@@ -162,12 +176,27 @@ fn get_id0_section(args: &Args) -> Result<ID0Section> {
     }
 }
 
+fn get_id1_section(args: &Args) -> Result<ID1Section> {
+    match args.input_type() {
+        FileType::Til => Err(anyhow!("TIL don't contains any ID1 data")),
+        FileType::Idb => {
+            let input = BufReader::new(File::open(&args.input)?);
+            let mut parser = IDBParser::new(input)?;
+            let id1_offset = parser.id1_section_offset().ok_or_else(|| {
+                anyhow!("IDB file don't contains a TIL sector")
+            })?;
+            parser.read_id1_section(id1_offset)
+        }
+    }
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
 
     match &args.operation {
         Operation::DumpTil => dump_til(&args),
         Operation::DumpID0 => dump_id0(&args),
+        Operation::DumpID1 => dump_id1(&args),
         //Operation::SplitIDB(split_idbargs) => split_idb(&args, split_idbargs),
         Operation::DecompressTil(decompress_til_args) => {
             decompress_til(&args, decompress_til_args)
@@ -194,5 +223,6 @@ fn main() -> Result<()> {
             dump_dirtree_bookmarks_tiplace(&args)
         }
         Operation::PrintTilib(tilib_args) => tilib_print(&args, tilib_args),
+        Operation::ProduceIdc(idc_args) => produce_idc(&args, idc_args),
     }
 }

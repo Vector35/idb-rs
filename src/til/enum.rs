@@ -75,7 +75,9 @@ impl EnumRaw {
         use flag::tattr_enum::*;
         use flag::tf_enum::*;
 
-        let Some(member_num) = input.read_dt_de()? else {
+        // TODO n == 0 && n_cond == false?
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x325f87
+        let Some((member_num, _)) = input.read_dt_de()? else {
             // is ref
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             let ref_type = TypeRaw::read_ref(&mut *input, header)?;
@@ -99,11 +101,26 @@ impl EnumRaw {
             is_64 = tattr & TAENUM_64BIT != 0;
             is_signed = tattr & TAENUM_SIGNED != 0;
             is_unsigned = tattr & TAENUM_UNSIGNED != 0;
+            // TODO handle those flags
+            let _is_oct = tattr & TAENUM_OCT != 0;
+            let _is_bin = tattr & TAENUM_BIN != 0;
+            let _is_numsign = tattr & TAENUM_NUMSIGN != 0;
+            let _is_lzero = tattr & TAENUM_LZERO != 0;
+
             #[cfg(feature = "restrictive")]
-            ensure!(
-                tattr & !(TAENUM_64BIT | TAENUM_SIGNED | TAENUM_UNSIGNED) == 0,
-                "Invalid Enum taenum_bits {tattr:x}"
-            );
+            {
+                const ALL_FLAGS: crate::til::flag::TattrT = TAENUM_64BIT
+                    | TAENUM_SIGNED
+                    | TAENUM_UNSIGNED
+                    | TAENUM_OCT
+                    | TAENUM_BIN
+                    | TAENUM_NUMSIGN
+                    | TAENUM_LZERO;
+                ensure!(
+                    tattr & !ALL_FLAGS == 0,
+                    "Invalid Enum taenum_bits {tattr:x}"
+                );
+            }
             #[cfg(feature = "restrictive")]
             ensure!(
                 !(is_signed && is_unsigned),
