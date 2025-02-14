@@ -5,6 +5,7 @@ use std::{fs::File, io::Write};
 use anyhow::{anyhow, Result};
 
 use idb_rs::id0::{AddressInfo, Comments, ID0Section};
+use idb_rs::id1::ID1Section;
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
 use idb_rs::IDBParser;
@@ -25,12 +26,22 @@ pub fn produce_idc(args: &Args, idc_args: &ProduceIdcArgs) -> Result<()> {
             let id0_offset = parser.id0_section_offset().ok_or_else(|| {
                 anyhow!("IDB file don't contains a ID0 sector")
             })?;
+            let id1_offset = parser.id1_section_offset().ok_or_else(|| {
+                anyhow!("IDB file don't contains a ID1 sector")
+            })?;
             let til_offset = parser.til_section_offset().ok_or_else(|| {
                 anyhow!("IDB file don't contains a TIL sector")
             })?;
             let id0 = parser.read_id0_section(id0_offset)?;
+            let id1 = parser.read_id1_section(id1_offset)?;
             let til = parser.read_til_section(til_offset)?;
-            inner_produce_idc(&mut std::io::stdout(), idc_args, &id0, &til)?;
+            inner_produce_idc(
+                &mut std::io::stdout(),
+                idc_args,
+                &id0,
+                &id1,
+                &til,
+            )?;
         }
     }
     Ok(())
@@ -40,14 +51,15 @@ fn inner_produce_idc(
     fmt: &mut impl Write,
     args: &ProduceIdcArgs,
     id0: &ID0Section,
+    id1: &ID1Section,
     til: &TILSection,
 ) -> Result<()> {
     if !args.banner.is_empty() {
-        write!(fmt, "//\n// +-------------------------------------------------------------------------+\n")?;
+        writeln!(fmt, "//\n// +-------------------------------------------------------------------------+")?;
         for line in &args.banner {
-            write!(fmt, "// |{line:^73}|\n")?;
+            writeln!(fmt, "// |{line:^73}|")?;
         }
-        write!(fmt, "// +-------------------------------------------------------------------------+\n//\n")?;
+        writeln!(fmt, "// +-------------------------------------------------------------------------+\n//")?;
     }
     // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb6e80
     let _unknown_value1 = true; // all database, or just range?
@@ -113,9 +125,7 @@ fn inner_produce_idc(
         produce_types(fmt, til)?;
     }
 
-    // TODO only if non-zero patches
-    writeln!(fmt)?;
-    produce_patches(fmt, id0)?;
+    produce_patches(fmt, id0, id1)?;
 
     writeln!(fmt)?;
     produce_bytes_info(fmt, id0, til)?;
@@ -392,7 +402,20 @@ fn produce_types(fmt: &mut impl Write, til: &TILSection) -> Result<()> {
     Ok(())
 }
 
-fn produce_patches(fmt: &mut impl Write, _id0: &ID0Section) -> Result<()> {
+fn produce_patches(
+    fmt: &mut impl Write,
+    id0: &ID0Section,
+    id1: &ID1Section,
+) -> Result<()> {
+    let Some(patches_idx) = id0.segment_patches_idx() else {
+        return Ok(());
+    };
+    let patches = id0.segment_patches_original_value(patches_idx);
+    if patches.len() == 0 {
+        return Ok(());
+    }
+
+    writeln!(fmt)?;
     // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b170e
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// Information about patches")?;
@@ -402,7 +425,15 @@ fn produce_patches(fmt: &mut impl Write, _id0: &ID0Section) -> Result<()> {
     writeln!(fmt, "  auto x;")?;
     writeln!(fmt, "#define id x")?;
     writeln!(fmt)?;
-    writeln!(fmt, "  TODO();")?;
+    for patch in patches {
+        let patch = patch?;
+        let oridinal_value = id1.value_by_address(patch.address).unwrap_or(0);
+        writeln!(
+            fmt,
+            "  patch_byte({:#X}, {oridinal_value:#X});",
+            patch.address,
+        )?;
+    }
     writeln!(fmt, "}}")?;
     Ok(())
 }
