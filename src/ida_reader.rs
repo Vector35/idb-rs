@@ -80,6 +80,10 @@ impl<I> IdaUnpacker<I> {
     pub fn inner(self) -> I {
         self.input
     }
+
+    pub fn inner_ref(&self) -> &I {
+        &self.input
+    }
 }
 
 impl<I: IdaGenericUnpack> IdaUnpack for IdaUnpacker<I> {
