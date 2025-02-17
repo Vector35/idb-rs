@@ -1,10 +1,10 @@
-use std::borrow::Cow;
+use std::borrow::{Borrow, Cow};
 use std::io::BufReader;
 use std::{fs::File, io::Write};
 
 use anyhow::{anyhow, Result};
 
-use idb_rs::id0::{AddressInfo, Comments, ID0Section};
+use idb_rs::id0::{AddressInfo, Comments, FunctionsAndComments, ID0Section};
 use idb_rs::id1::ID1Section;
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
@@ -130,8 +130,6 @@ fn inner_produce_idc(
     writeln!(fmt)?;
     produce_bytes_info(fmt, id0, til)?;
 
-    // TODO only if non-zero functions
-    writeln!(fmt)?;
     produce_functions(fmt, id0, til)?;
 
     writeln!(fmt)?;
@@ -329,10 +327,13 @@ fn produce_segments(fmt: &mut impl Write, id0: &ID0Section) -> Result<()> {
         writeln!(
             fmt,
             "  set_segm_name({startea:#X}, \"{}\");",
-            name.unwrap_or(Cow::Borrowed(""))
+            name.as_ref().unwrap_or(&Cow::Borrowed(""))
         )?;
 
         let seg_class_name = match seg.seg_type {
+            idb_rs::id0::SegmentType::Norm if name.is_some() => {
+                name.as_ref().unwrap().borrow()
+            }
             idb_rs::id0::SegmentType::Norm => "NORM",
             idb_rs::id0::SegmentType::Xtrn => "XTRN",
             idb_rs::id0::SegmentType::Code => "CODE",
@@ -514,7 +515,7 @@ fn produce_bytes_info(
         for (i, cmt) in pre_cmts.enumerate() {
             writeln!(
                 fmt,
-                "  update_extra_cmt({addr:#X}, E_PREV + {i:>2}, \"{}\");",
+                "  update_extra_cmt({addr:#X}, E_PREV + {i:>3}, \"{}\");",
                 String::from_utf8_lossy(cmt?)
             )?;
         }
@@ -527,12 +528,13 @@ fn produce_bytes_info(
             }
         }
 
-        for addr_info in iter {
-            let (_addr_2, info) = addr_info?;
-            if let AddressInfo::TilType(til) = info {
-                writeln!(fmt, "  set_name({addr:#X}, \"{til:?}\");",)?;
-            }
-        }
+        // TODO
+        //for addr_info in iter {
+        //    let (_addr_2, info) = addr_info?;
+        //    if let AddressInfo::TilType(til) = info {
+        //        todo!();
+        //    }
+        //}
 
         // TODO other AddressInfo types
     }
@@ -542,13 +544,57 @@ fn produce_bytes_info(
 
 fn produce_functions(
     fmt: &mut impl Write,
-    _id0: &ID0Section,
+    id0: &ID0Section,
     _til: &TILSection,
 ) -> Result<()> {
+    use idb_rs::id0::FunctionsAndComments::*;
+    use idb_rs::id0::IDBFunctionExtra::*;
+
+    // TODO find the InnerRef for this, maybe it's just `$ dirtree/funcs`
+    let id0_funcs = id0.functions_and_comments()?;
+    let funcs: Vec<_> = id0_funcs
+        .filter_map(|fun| match fun {
+            Err(e) => Some(Err(e)),
+            Ok(FunctionsAndComments::Function(fun)) => Some(Ok(fun)),
+            Ok(
+                Name
+                | FunctionsAndComments::Comment { .. }
+                | FunctionsAndComments::Unknown { .. },
+            ) => None,
+        })
+        .collect::<Result<_>>()?;
+
+    if funcs.is_empty() {
+        return Ok(());
+    }
+
     // TODO find the number of functions
-    writeln!(fmt, "static Functions_0(void) ")?;
+    writeln!(fmt)?;
+    writeln!(fmt, "static Functions_0(void)")?;
     writeln!(fmt, "{{")?;
-    writeln!(fmt, "  TODO();")?;
+    for fun in funcs {
+        let addr = fun.address.start;
+        writeln!(fmt, "  add_func({addr:#X}, {:#X});", fun.address.end)?;
+        writeln!(fmt, "  set_func_flags({addr:#X}, {:#x});", fun.flags)?;
+        writeln!(fmt, "  apply_type({addr:#X}, \"TODO\");")?;
+        match &fun.extra {
+            NonTail { frame } => {
+                writeln!(fmt, "  set_frame_size({addr:#X}, {frame:#X?});")?;
+            }
+            Tail {
+                owner: _,
+                refqty,
+                _unknown1,
+                _unknown2,
+            } if *refqty != 0 => {
+                writeln!(
+                    fmt,
+                    "  set_frame_size({addr:#X}, {refqty:#X}, {_unknown1}, {_unknown2:#X});"
+                )?;
+            }
+            Tail { .. } => {}
+        }
+    }
     writeln!(fmt, "}}")?;
     writeln!(fmt)?;
     writeln!(fmt, "//------------------------------------------------------------------------")?;
