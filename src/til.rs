@@ -621,6 +621,7 @@ impl TypedefRaw {
         let buf = input.unpack_dt_bytes()?;
         match &buf[..] {
             [b'#', data @ ..] => {
+                // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x2fbf90
                 let mut tmp = data;
                 let de = tmp.read_de()?;
                 if !tmp.is_empty() {
@@ -875,6 +876,7 @@ pub fn ephemeral_til_header() -> TILSectionHeader {
         size_long_double: None,
         extended_sizeof_info: None,
         cc: None,
+        compiler_guessed: false,
         cn: None,
         type_ordinal_alias: None,
         is_universal: true,

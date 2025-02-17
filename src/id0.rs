@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::ops::Range;
 
-use crate::ida_reader::{IdaGenericUnpack, IdaUnpack, IdaUnpacker};
+use crate::ida_reader::{
+    IdaGenericBufUnpack, IdaGenericUnpack, IdaUnpack, IdaUnpacker,
+};
 use crate::{til, IDBHeader, IDBSectionCompression};
 
 use anyhow::{anyhow, ensure, Result};
@@ -17,46 +19,30 @@ mod address_info;
 pub use address_info::*;
 mod dirtree;
 pub use dirtree::*;
+mod file_region;
+pub use file_region::*;
+mod patch;
+pub use patch::*;
 
 #[derive(Clone, Debug)]
-pub struct IDBFileRegions {
-    pub start: u64,
-    pub end: u64,
-    pub eva: u64,
+pub struct IDBFunction {
+    pub address: Range<u64>,
+    pub flags: u16,
+    pub extra: IDBFunctionExtra,
 }
 
-impl IDBFileRegions {
-    fn read(
-        _key: &[u8],
-        data: &[u8],
-        version: u16,
-        is_64: bool,
-    ) -> Result<Self> {
-        let mut input = IdaUnpacker::new(data, is_64);
-        // TODO detect versions with more accuracy
-        let (start, end, eva) = match version {
-            ..=699 => {
-                let start = input.read_word()?;
-                let end = input.read_word()?;
-                let rva: u32 = bincode::deserialize_from(&mut input)?;
-                (start, end, rva.into())
-            }
-            700.. => {
-                let start = input.unpack_usize()?;
-                let end = start.checked_add(input.unpack_usize()?).ok_or_else(
-                    || anyhow!("Overflow address in File Regions"),
-                )?;
-                let rva = input.unpack_usize()?;
-                // TODO some may include an extra 0 byte at the end?
-                if let Ok(_unknown) = input.unpack_usize() {
-                    ensure!(_unknown == 0);
-                }
-                (start, end, rva)
-            }
-        };
-        ensure!(input.inner().is_empty());
-        Ok(Self { start, end, eva })
-    }
+#[derive(Clone, Debug)]
+pub enum IDBFunctionExtra {
+    NonTail {
+        frame: u64,
+    },
+    Tail {
+        /// function owner of the function start
+        owner: u64,
+        refqty: u64,
+        _unknown1: u16,
+        _unknown2: u64,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -113,26 +99,8 @@ impl<'a> FunctionsAndComments<'a> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct IDBFunction {
-    pub address: Range<u64>,
-    pub flags: u16,
-    pub extra: Option<IDBFunctionExtra>,
-}
-
-#[derive(Clone, Debug)]
-pub enum IDBFunctionExtra {
-    NonTail {
-        frame: u64,
-    },
-    Tail {
-        /// function owner of the function start
-        owner: u64,
-        refqty: u64,
-    },
-}
-
 impl IDBFunction {
+    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x37dd30
     // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f810
     fn read(_key: &[u8], value: &[u8], is_64: bool) -> Result<Self> {
         let mut input = IdaUnpacker::new(value, is_64);
@@ -141,14 +109,18 @@ impl IDBFunction {
 
         // CONST migrate this to mod flags
         const FUNC_TAIL: u16 = 0x8000;
-        let extra = if flags & FUNC_TAIL != 0 {
-            Self::read_extra_tail(input, address.start).ok()
+        let extra = if flags & FUNC_TAIL == 0 {
+            Self::read_extra_tail(&mut input, address.start)?
         } else {
-            Self::read_extra_regular(input).ok()
+            Self::read_extra_regular(&mut input)?
         };
-        // TODO Undertand the InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f9d8 data
+
+        if !input.inner_ref().is_empty() {
+            let _value = input.unpack_dq()?;
+        }
+        // TODO Undestand the InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f9d8 data
         // TODO make sure all the data is parsed
-        //ensure!(input.position() == u64::try_from(data.len()).unwrap());
+        //ensure!(input.inner_ref().empty());
         Ok(Self {
             address,
             flags,
@@ -157,7 +129,7 @@ impl IDBFunction {
     }
 
     fn read_extra_regular(
-        mut input: impl IdaUnpack,
+        input: &mut impl IdaUnpack,
     ) -> Result<IDBFunctionExtra> {
         // TODO Undertand the sub operation at InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f98f
         let frame = input.unpack_usize_ext_max()?;
@@ -168,10 +140,13 @@ impl IDBFunction {
         Ok(IDBFunctionExtra::NonTail { frame })
     }
 
-    fn read_extra_tail(
-        mut input: impl IdaUnpack,
+    fn read_extra_tail<R>(
+        input: &mut R,
         address_start: u64,
-    ) -> Result<IDBFunctionExtra> {
+    ) -> Result<IDBFunctionExtra>
+    where
+        R: IdaUnpack + IdaGenericBufUnpack,
+    {
         // offset of the function owner in relation to the function start
         let owner_offset = input.unpack_usize()? as i64;
         let owner = match address_start.checked_add_signed(owner_offset) {
@@ -182,9 +157,17 @@ impl IDBFunction {
         let refqty = input.unpack_usize_ext_max()?;
         let _unknown1 = input.unpack_dw()?;
         let _unknown2 = input.unpack_usize_ext_max()?;
+        if input.peek_u8()?.is_some() {
+            input.consume(1);
+        }
         // TODO make data depending on variables that I don't understant
         // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28fa93
-        Ok(IDBFunctionExtra::Tail { owner, refqty })
+        Ok(IDBFunctionExtra::Tail {
+            owner,
+            refqty,
+            _unknown1,
+            _unknown2,
+        })
     }
 }
 
@@ -281,4 +264,27 @@ fn parse_maybe_cstr(data: &[u8]) -> Option<&[u8]> {
         return None;
     }
     Some(&data[..end_pos])
+}
+
+enum ID0CStr<'a> {
+    CStr(&'a [u8]),
+    Ref(u64),
+}
+
+// parse a string that maybe is finalized with \x00
+fn parse_cstr_or_subkey(data: &[u8], is_64: bool) -> Option<ID0CStr> {
+    // TODO find the InnerRef, so far I found only the
+    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x4e20c0
+    match data {
+        [b'\x00', rest @ ..] if rest.len() == if is_64 { 8 } else { 4 } => {
+            if is_64 {
+                Some(ID0CStr::Ref(u64::from_be_bytes(rest.try_into().unwrap())))
+            } else {
+                Some(ID0CStr::Ref(
+                    u32::from_be_bytes(rest.try_into().unwrap()).into(),
+                ))
+            }
+        }
+        _ => parse_maybe_cstr(data).map(ID0CStr::CStr),
+    }
 }

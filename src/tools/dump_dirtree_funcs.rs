@@ -47,5 +47,6 @@ pub fn print_function(id0: &ID0Section, address: Id0Address) -> Result<()> {
         (None, Some(ty)) => print!("UNAMED:{ty:?}"),
         (Some(name), None) => print!("\"{name}\""),
     }
+    println!();
     Ok(())
 }

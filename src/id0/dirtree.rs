@@ -51,7 +51,7 @@ impl FromDirTreeNumber for u64 {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Id0Address {
     address: u64,
 }

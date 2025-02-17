@@ -13,7 +13,7 @@ pub fn dump_dirtree_names(args: &Args) -> Result<()> {
             print!("{:#x}:", address.as_u64());
             let label = id0.label_at(*address);
             if let Some(name) = label.unwrap() {
-                print!("{}", String::from_utf8_lossy(name));
+                print!("{}", String::from_utf8_lossy(&name));
             } else {
                 print!("[Label Not Found]");
             }
