@@ -1,5 +1,7 @@
 use anyhow::{anyhow, ensure, Result};
 
+pub mod flag;
+
 use std::ops::Range;
 
 use crate::ida_reader::IdaGenericUnpack;
@@ -13,9 +15,38 @@ pub struct ID1Section {
 #[derive(Clone, Debug)]
 pub struct SegInfo {
     pub offset: u64,
-    pub data: Vec<u8>,
-    // TODO find a way to decode this data
-    pub _flags: Vec<u32>,
+    // data and flags
+    pub data: Vec<ByteInfo>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ByteInfo(u32);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ByteType {
+    Code,
+    Data,
+    Tail,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ByteDataType {
+    Byte,
+    Word,
+    Dword,
+    Qword,
+    Oword,
+    Yword,
+    Zword,
+    Tbyte,
+    Float,
+    Double,
+    Packreal,
+    Strlit,
+    Struct,
+    Align,
+    Reserved,
+    Custom,
 }
 
 impl ID1Section {
@@ -191,13 +222,11 @@ impl ID1Section {
                             std::cmp::Ordering::Equal => {}
                         }
                         let len = seg.address.end - seg.address.start;
-                        let (data, _flags) =
-                            split_flags_data(&mut *input, len)?;
+                        let data = read_data(&mut *input, len)?;
                         current_offset += len * 4;
                         Ok(SegInfo {
                             offset: seg.address.start,
                             data,
-                            _flags,
                         })
                     })
                     .collect::<Result<_>>()?
@@ -206,14 +235,13 @@ impl ID1Section {
                 // the data for the segments are stored sequentialy in disk
                 segs.into_iter()
                     .map(|address| {
-                        let (data, _flags) = split_flags_data(
+                        let data = read_data(
                             &mut *input,
                             address.end - address.start,
                         )?;
                         Ok(SegInfo {
                             offset: address.start,
                             data,
-                            _flags,
                         })
                     })
                     .collect::<Result<_>>()?
@@ -229,7 +257,7 @@ impl ID1Section {
         Ok(Self { seglist })
     }
 
-    pub fn value_by_address(&self, address: u64) -> Option<u8> {
+    pub fn byte_by_address(&self, address: u64) -> Option<ByteInfo> {
         for seg in &self.seglist {
             let addr_range =
                 seg.offset..seg.offset + u64::try_from(seg.data.len()).unwrap();
@@ -240,6 +268,118 @@ impl ID1Section {
             }
         }
         None
+    }
+
+    pub fn all_bytes(&self) -> impl Iterator<Item = (u64, ByteInfo)> + use<'_> {
+        self.seglist.iter().flat_map(|seg| {
+            seg.data
+                .iter()
+                .enumerate()
+                .map(|(i, b)| (seg.offset + u64::try_from(i).unwrap(), *b))
+        })
+    }
+}
+
+impl ByteInfo {
+    pub fn value_raw(&self) -> u8 {
+        (self.0 & flag::byte::MS_VAL) as u8
+    }
+
+    pub fn flag_raw(&self) -> u32 {
+        self.0 & !flag::byte::MS_VAL
+    }
+
+    pub fn byte_value(&self) -> Option<u8> {
+        self.has_value().then_some(self.value_raw())
+    }
+
+    pub fn byte_type(&self) -> Option<ByteType> {
+        use flag::flags::byte_type::*;
+        match self.0 & MS_CLS {
+            FF_CODE => Some(ByteType::Code),
+            FF_DATA => Some(ByteType::Data),
+            FF_TAIL => Some(ByteType::Tail),
+            FF_UNK => None,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn data_type(&self) -> Option<ByteDataType> {
+        use flag::flags::data_info::*;
+        if !matches!(self.byte_type(), Some(ByteType::Data)) {
+            return None;
+        }
+        Some(match self.0 & DT_TYPE {
+            FF_BYTE => ByteDataType::Byte,
+            FF_WORD => ByteDataType::Word,
+            FF_DWORD => ByteDataType::Dword,
+            FF_QWORD => ByteDataType::Qword,
+            FF_TBYTE => ByteDataType::Tbyte,
+            FF_STRLIT => ByteDataType::Strlit,
+            FF_STRUCT => ByteDataType::Struct,
+            FF_OWORD => ByteDataType::Oword,
+            FF_FLOAT => ByteDataType::Float,
+            FF_DOUBLE => ByteDataType::Double,
+            FF_PACKREAL => ByteDataType::Packreal,
+            FF_ALIGN => ByteDataType::Align,
+            FF_RESERVED => ByteDataType::Reserved,
+            FF_CUSTOM => ByteDataType::Custom,
+            FF_YWORD => ByteDataType::Yword,
+            FF_ZWORD => ByteDataType::Zword,
+            _ => unreachable!(),
+        })
+    }
+
+    pub fn has_value(&self) -> bool {
+        self.0 & flag::byte::FF_IVL != 0
+    }
+
+    pub fn has_comment(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_COMM != 0
+    }
+
+    pub fn has_references(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_REF != 0
+    }
+
+    pub fn has_ext_comments(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_LINE != 0
+    }
+
+    pub fn has_name(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_NAME != 0
+    }
+
+    pub fn has_dummy_name(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_LABL != 0
+    }
+
+    pub fn is_exec_flow_instruction(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_FLOW != 0
+    }
+
+    pub fn have_sign_operands(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_SIGN != 0
+    }
+
+    pub fn is_bitwise_negation_of_operands(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_BNOT != 0
+    }
+
+    pub fn is_unused(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_UNUSED != 0
+    }
+
+    pub fn is_function_start(&self) -> bool {
+        self.0 & flag::flags::code_info::FF_FUNC != 0
+    }
+
+    pub fn has_immediate_value(&self) -> bool {
+        self.0 & flag::flags::code_info::FF_IMMD != 0
+    }
+
+    pub fn has_jump_table(&self) -> bool {
+        self.0 & flag::flags::code_info::FF_JUMP != 0
     }
 }
 
@@ -293,17 +433,18 @@ fn ignore_bytes(
     Ok(())
 }
 
-fn split_flags_data(
+fn read_data(
     mut input: impl IdaGenericUnpack,
     len: u64,
-) -> Result<(Vec<u8>, Vec<u32>)> {
-    let len = usize::try_from(len).unwrap();
-    let mut flags = Vec::with_capacity(len);
-    let mut data = Vec::with_capacity(len);
-    for _i in 0..len {
-        let bytes = input.read_u32()?;
-        data.push((bytes & 0xFF) as u8);
-        flags.push(bytes >> 8);
-    }
-    Ok((data, flags))
+) -> Result<Vec<ByteInfo>> {
+    let len: usize = usize::try_from(len).unwrap();
+    let mut data = vec![0u8; len * 4];
+    input.read_exact(&mut data)?;
+    Ok(data
+        .windows(4)
+        .map(|b| {
+            let data = u32::from_le_bytes(b.try_into().unwrap());
+            ByteInfo(data)
+        })
+        .collect())
 }

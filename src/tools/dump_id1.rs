@@ -8,8 +8,12 @@ pub fn dump_id1(args: &Args) -> Result<()> {
 
     for entry in &id1.seglist {
         let mut offset = entry.offset;
-        for byte in &entry.data {
-            println!("{offset:08X}: {byte:#04X}");
+        for byte_info in &entry.data {
+            println!(
+                "{offset:08X}: {:#04X} {:#010X}",
+                byte_info.value_raw(),
+                byte_info.flag_raw()
+            );
             offset += 1;
         }
     }

@@ -738,17 +738,14 @@ impl ID0Section {
     pub fn address_info_at(
         &self,
         address: impl Id0AddressKey,
-    ) -> Result<impl Iterator<Item = Result<AddressInfo>>> {
+    ) -> Result<AddressInfoIterAt> {
         let address = address.as_u64();
         let key: Vec<u8> = key_from_address(address, self.is_64).collect();
         let start = self.binary_search(&key).unwrap_or_else(|start| start);
         let end = self.binary_search_end(&key).unwrap_or_else(|end| end);
 
         let entries = &self.entries[start..end];
-        // ignore the address, it will always be the same, the one request
-        let iter = AddressInfoIter::new(entries, self)
-            .map(|value| value.map(|(_addr, value)| value));
-        Ok(iter)
+        Ok(AddressInfoIterAt::new(AddressInfoIter::new(entries, self)))
     }
 
     /// read the label set at address, if any
@@ -1117,4 +1114,10 @@ pub(crate) fn key_from_address(
 
 pub trait Id0AddressKey {
     fn as_u64(&self) -> u64;
+}
+
+impl Id0AddressKey for u64 {
+    fn as_u64(&self) -> u64 {
+        *self
+    }
 }
