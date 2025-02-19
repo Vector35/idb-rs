@@ -325,6 +325,26 @@ impl<'a> Iterator for AddressInfoIter<'a> {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct AddressInfoIterAt<'a> {
+    iter: AddressInfoIter<'a>,
+}
+
+impl<'a> AddressInfoIterAt<'a> {
+    pub fn new(iter: AddressInfoIter<'a>) -> Self {
+        Self { iter }
+    }
+}
+
+impl<'a> Iterator for AddressInfoIterAt<'a> {
+    type Item = Result<AddressInfo<'a>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // ignore the address, it will always be the same, the one request
+        self.iter.next().map(|x| x.map(|(_, x)| x))
+    }
+}
+
 fn id_subkey_from_idx(key: &[u8], is_64: bool) -> Option<(u8, Option<u64>)> {
     let (sub_type, id) = key.split_first()?;
     Some((*sub_type, id_from_key(id, is_64)))

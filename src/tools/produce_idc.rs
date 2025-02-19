@@ -5,7 +5,7 @@ use std::{fs::File, io::Write};
 use anyhow::{anyhow, Result};
 
 use idb_rs::id0::{AddressInfo, Comments, FunctionsAndComments, ID0Section};
-use idb_rs::id1::ID1Section;
+use idb_rs::id1::{ByteDataType, ByteType, ID1Section};
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
 use idb_rs::IDBParser;
@@ -128,7 +128,7 @@ fn inner_produce_idc(
     produce_patches(fmt, id0, id1)?;
 
     writeln!(fmt)?;
-    produce_bytes_info(fmt, id0, til)?;
+    produce_bytes_info(fmt, id0, id1, til)?;
 
     produce_functions(fmt, id0, til)?;
 
@@ -428,12 +428,12 @@ fn produce_patches(
     writeln!(fmt)?;
     for patch in patches {
         let patch = patch?;
-        let oridinal_value = id1.value_by_address(patch.address).unwrap_or(0);
-        writeln!(
-            fmt,
-            "  patch_byte({:#X}, {oridinal_value:#X});",
-            patch.address,
-        )?;
+        let address = patch.address;
+        let value = id1
+            .byte_by_address(patch.address)
+            .map(|x| x.value_raw())
+            .unwrap_or(0);
+        writeln!(fmt, "  patch_byte({address:#X}, {value:#X});")?;
     }
     writeln!(fmt, "}}")?;
     Ok(())
@@ -477,6 +477,7 @@ fn produce_type_load(
 fn produce_bytes_info(
     fmt: &mut impl Write,
     id0: &ID0Section,
+    id1: &ID1Section,
     _til: &TILSection,
 ) -> Result<()> {
     // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb70ce
@@ -492,49 +493,191 @@ fn produce_bytes_info(
         idb_rs::id0::IDBParam::V1(x) => x.version,
         idb_rs::id0::IDBParam::V2(x) => x.version,
     };
-    for addr_info in id0.address_info_by_address(version)? {
-        let (addr, iter) = addr_info?;
-        // first print comments
-        for addr_info in iter {
-            let (_addr_2, info) = addr_info?;
-            if let AddressInfo::Comment(Comments::Comment(cmt)) = info {
+
+    for (address, byte_info) in id1.all_bytes() {
+        let addr_info = id0.address_info_at(address)?;
+        // print comments
+        // TODO byte_info.has_comment() ignored?
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1822
+        for addr_info in addr_info {
+            if let AddressInfo::Comment(Comments::Comment(cmt)) = addr_info? {
                 writeln!(
                     fmt,
-                    "  set_cmt({addr:#X}, \"{}\", 0);",
+                    "  set_cmt({address:#X}, \"{}\", 0);",
                     String::from_utf8_lossy(cmt)
                 )?;
             }
         }
-        let pre_cmts = iter.filter_map(|x| match x {
-            Ok((_, AddressInfo::Comment(Comments::PreComment(cmt)))) => {
-                Some(Ok(cmt))
+
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1ddd
+        if byte_info.has_ext_comments() {
+            let pre_cmts = addr_info.filter_map(|x| match x {
+                Ok(AddressInfo::Comment(Comments::PreComment(cmt))) => {
+                    Some(Ok(cmt))
+                }
+                Ok(_x) => None,
+                Err(e) => Some(Err(e)),
+            });
+            for (i, cmt) in pre_cmts.enumerate() {
+                writeln!(
+                    fmt,
+                    "  update_extra_cmt({address:#X}, E_PREV + {i:>3}, \"{}\");",
+                    String::from_utf8_lossy(cmt?)
+                )?;
             }
-            Ok(_x) => None,
-            Err(e) => Some(Err(e)),
-        });
-        for (i, cmt) in pre_cmts.enumerate() {
-            writeln!(
-                fmt,
-                "  update_extra_cmt({addr:#X}, E_PREV + {i:>3}, \"{}\");",
-                String::from_utf8_lossy(cmt?)
-            )?;
+
+            let pre_cmts = addr_info.filter_map(|x| match x {
+                Ok(AddressInfo::Comment(Comments::PostComment(cmt))) => {
+                    Some(Ok(cmt))
+                }
+                Ok(_x) => None,
+                Err(e) => Some(Err(e)),
+            });
+            for (i, cmt) in pre_cmts.enumerate() {
+                writeln!(
+                    fmt,
+                    "  update_extra_cmt({address:#X}, E_NEXT + {i:>3}, \"{}\");",
+                    String::from_utf8_lossy(cmt?)
+                )?;
+            }
         }
 
-        // names, NOTE there is only one!
+        let byte_type = byte_info.byte_type();
+        // TODO InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1dee
+        // if matches!(byte_type, (ByteType::Code | ByteType::Data)) {
+        //   is_manual(byte_type, 0xf) ||
+        //   (!is_off(byte_type, 0xf) && !is_seg(byte_type, 0xf) &&
+        //   !is_char(byte_type, 0xf) && !is_enum(byte_type, 0xf) &&
+        //   !is_stroff(byte_type, 0xf) && !is_stkvar(byte_type, 0xf) &&
+        //   !is_numop(byte_type, 0xf))
+        //   "x=\"\"" | ""
+        // }
+        let set_x = "x=";
+
+        match byte_type {
+            // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1dee
+            Some(ByteType::Code) => {
+                if !byte_info.is_exec_flow_instruction()
+                    || byte_info.is_function_start()
+                //  || TODO: byte_info.is_manual()
+                {
+                    writeln!(fmt, "  create_insn({set_x}{address:#X});")?;
+                }
+            }
+            // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1e37
+            Some(ByteType::Data) => {
+                match byte_info.data_type().unwrap() {
+                    ByteDataType::Strlit => {
+                        writeln!(fmt, "  create_strlit({set_x}{address:#X});")?
+                    }
+                    ByteDataType::Dword => {
+                        writeln!(fmt, "  create_dword({set_x}{address:#X});")?
+                    }
+                    ByteDataType::Byte => {
+                        writeln!(fmt, "  create_byte({set_x}{address:#X});")?
+                    }
+                    ByteDataType::Word => {
+                        writeln!(fmt, "  create_word({set_x}{address:#X});")?
+                    }
+                    ByteDataType::Qword => {
+                        writeln!(fmt, "  create_qword({set_x}{address:#X});")?
+                    }
+                    ByteDataType::Tbyte => {
+                        writeln!(fmt, "  create_tbyte({set_x}{address:#X});")?
+                    }
+                    ByteDataType::Float => {
+                        writeln!(fmt, "  create_float({set_x}{address:#X});")?
+                    }
+                    ByteDataType::Packreal => writeln!(
+                        fmt,
+                        "  create_pack_real({set_x}{address:#X});"
+                    )?,
+                    ByteDataType::Yword => {
+                        writeln!(fmt, "  create_yword({set_x}{address:#X});")?
+                    }
+                    ByteDataType::Double => {
+                        writeln!(fmt, "  create_double({set_x}{address:#X});")?
+                    }
+                    ByteDataType::Oword => {
+                        writeln!(fmt, "  create_oword({set_x}{address:#X});")?
+                    }
+                    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2690
+                    ByteDataType::Struct => {
+                        // TODO
+                    }
+                    ByteDataType::Zword
+                    | ByteDataType::Align
+                    | ByteDataType::Reserved
+                    | ByteDataType::Custom => {
+                        //TODO
+                    }
+                }
+                // TODO  get_data_elsize
+                // TODO make_array
+                // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2622
+            }
+            Some(ByteType::Tail) | None => {}
+        }
+
+        // TODO InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1e5e
+        // for bit in 0..8 {
+        //  if id1.is_invsign(address, byte_info, bit) {
+        //    todo!();
+        //  }
+        //  if id1.is_bnot(address, byte_info, bit) {
+        //    todo!();
+        //  }
+        //  if id1.is_defarg(address, byte_info, bit) {
+        //    break;
+        //  }
+        //  todo!();
+        //}
+
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2160
+        if byte_info.has_name() {
+            for addr_info in addr_info {
+                if let AddressInfo::Label(name) = addr_info? {
+                    writeln!(
+                        fmt,
+                        "  set_name({address:#X}, \"{}\");",
+                        String::from_utf8_lossy(name.as_bytes())
+                    )?;
+                }
+            }
+        }
+    }
+
+    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b28ea
+    // TODO add_func and other getn_func related functions
+
+    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2fee
+    // TODO getn_fchunk related stuff
+
+    for addr_info in id0.address_info_by_address(version)? {
+        let (addr, iter) = addr_info?;
         for addr_info in iter {
             let (_addr_2, info) = addr_info?;
-            if let AddressInfo::Label(label) = info {
-                writeln!(fmt, "  set_name({addr:#X}, \"{label}\");",)?;
+            if let AddressInfo::Other { key, value } = info {
+                match std::str::from_utf8(value) {
+                    Ok(value_str)
+                        if value_str.chars().all(|c| {
+                            c.is_alphabetic() || c.is_whitespace()
+                        }) =>
+                    {
+                        writeln!(
+                            fmt,
+                            "  other({addr:#X}, {key:x?}, \"{value_str}\");",
+                        )?;
+                    }
+                    _ => {
+                        writeln!(
+                            fmt,
+                            "  other({addr:#X}, {key:x?}, {value:?});",
+                        )?;
+                    }
+                }
             }
         }
-
-        // TODO
-        //for addr_info in iter {
-        //    let (_addr_2, info) = addr_info?;
-        //    if let AddressInfo::TilType(til) = info {
-        //        todo!();
-        //    }
-        //}
 
         // TODO other AddressInfo types
     }
