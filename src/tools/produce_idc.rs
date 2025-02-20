@@ -5,7 +5,7 @@ use std::{fs::File, io::Write};
 use anyhow::{anyhow, Result};
 
 use idb_rs::id0::{AddressInfo, Comments, FunctionsAndComments, ID0Section};
-use idb_rs::id1::{ByteDataType, ByteType, ID1Section};
+use idb_rs::id1::{ByteData, ByteDataType, ByteType, ID1Section, InstOpInfo};
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
 use idb_rs::IDBParser;
@@ -431,7 +431,7 @@ fn produce_patches(
         let address = patch.address;
         let value = id1
             .byte_by_address(patch.address)
-            .map(|x| x.value_raw())
+            .map(|x| x.byte_raw())
             .unwrap_or(0);
         writeln!(fmt, "  patch_byte({address:#X}, {value:#X});")?;
     }
@@ -494,7 +494,12 @@ fn produce_bytes_info(
         idb_rs::id0::IDBParam::V2(x) => x.version,
     };
 
-    for (address, byte_info) in id1.all_bytes() {
+    for (address, byte_info_raw) in id1.all_bytes() {
+        let byte_info = byte_info_raw.decode().unwrap();
+        if byte_info.byte_type == ByteType::Tail {
+            // tail is completelly ignored
+            continue;
+        }
         let addr_info = id0.address_info_at(address)?;
         // print comments
         // TODO byte_info.has_comment() ignored?
@@ -510,7 +515,7 @@ fn produce_bytes_info(
         }
 
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1ddd
-        if byte_info.has_ext_comments() {
+        if byte_info.has_comment_ext {
             let pre_cmts = addr_info.filter_map(|x| match x {
                 Ok(AddressInfo::Comment(Comments::PreComment(cmt))) => {
                     Some(Ok(cmt))
@@ -526,14 +531,14 @@ fn produce_bytes_info(
                 )?;
             }
 
-            let pre_cmts = addr_info.filter_map(|x| match x {
+            let post_cmts = addr_info.filter_map(|x| match x {
                 Ok(AddressInfo::Comment(Comments::PostComment(cmt))) => {
                     Some(Ok(cmt))
                 }
                 Ok(_x) => None,
                 Err(e) => Some(Err(e)),
             });
-            for (i, cmt) in pre_cmts.enumerate() {
+            for (i, cmt) in post_cmts.enumerate() {
                 writeln!(
                     fmt,
                     "  update_extra_cmt({address:#X}, E_NEXT + {i:>3}, \"{}\");",
@@ -542,7 +547,6 @@ fn produce_bytes_info(
             }
         }
 
-        let byte_type = byte_info.byte_type();
         // TODO InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1dee
         // if matches!(byte_type, (ByteType::Code | ByteType::Data)) {
         //   is_manual(byte_type, 0xf) ||
@@ -552,21 +556,30 @@ fn produce_bytes_info(
         //   !is_numop(byte_type, 0xf))
         //   "x=\"\"" | ""
         // }
-        let set_x = "x=";
+        let set_x = match byte_info.byte_type {
+            ByteType::Data(ByteData {
+                print_info:
+                    InstOpInfo::Hex
+                    | InstOpInfo::Dec
+                    | InstOpInfo::Bin
+                    | InstOpInfo::Oct,
+                data_type: _,
+            }) => "x=",
+            _ => "",
+        };
 
-        match byte_type {
+        match byte_info.byte_type {
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1dee
-            Some(ByteType::Code) => {
-                if !byte_info.is_exec_flow_instruction()
-                    || byte_info.is_function_start()
+            ByteType::Code(code) => {
+                if !byte_info.exec_flow_from_prev_inst || code.is_func_start
                 //  || TODO: byte_info.is_manual()
                 {
                     writeln!(fmt, "  create_insn({set_x}{address:#X});")?;
                 }
             }
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1e37
-            Some(ByteType::Data) => {
-                match byte_info.data_type().unwrap() {
+            ByteType::Data(data) => {
+                match data.data_type {
                     ByteDataType::Strlit => {
                         writeln!(fmt, "  create_strlit({set_x}{address:#X});")?
                     }
@@ -612,11 +625,27 @@ fn produce_bytes_info(
                         //TODO
                     }
                 }
+                match data.print_info {
+                    InstOpInfo::Hex => writeln!(fmt, "  op_hex(x, 0);")?,
+                    InstOpInfo::Dec => writeln!(fmt, "  op_dec(x, 0);")?,
+                    InstOpInfo::Bin => writeln!(fmt, "  op_bin(x, 0);")?,
+                    InstOpInfo::Oct => writeln!(fmt, "  op_oct(x, 0);")?,
+                    InstOpInfo::Void
+                    | InstOpInfo::Char
+                    | InstOpInfo::Seg
+                    | InstOpInfo::Off
+                    | InstOpInfo::Enum
+                    | InstOpInfo::Fop
+                    | InstOpInfo::StrOff
+                    | InstOpInfo::StackVar
+                    | InstOpInfo::Float
+                    | InstOpInfo::Custom => {}
+                }
                 // TODO  get_data_elsize
                 // TODO make_array
                 // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2622
             }
-            Some(ByteType::Tail) | None => {}
+            ByteType::Tail | ByteType::Unknown => {}
         }
 
         // TODO InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1e5e
@@ -634,7 +663,7 @@ fn produce_bytes_info(
         //}
 
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2160
-        if byte_info.has_name() {
+        if byte_info.has_name {
             for addr_info in addr_info {
                 if let AddressInfo::Label(name) = addr_info? {
                     writeln!(
