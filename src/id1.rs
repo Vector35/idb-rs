@@ -12,43 +12,6 @@ pub struct ID1Section {
     pub seglist: Vec<SegInfo>,
 }
 
-#[derive(Clone, Debug)]
-pub struct SegInfo {
-    pub offset: u64,
-    // data and flags
-    pub data: Vec<ByteInfo>,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct ByteInfo(u32);
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum ByteType {
-    Code,
-    Data,
-    Tail,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum ByteDataType {
-    Byte,
-    Word,
-    Dword,
-    Qword,
-    Oword,
-    Yword,
-    Zword,
-    Tbyte,
-    Float,
-    Double,
-    Packreal,
-    Strlit,
-    Struct,
-    Align,
-    Reserved,
-    Custom,
-}
-
 impl ID1Section {
     pub(crate) fn read(
         input: &mut impl IdaGenericUnpack,
@@ -257,59 +220,200 @@ impl ID1Section {
         Ok(Self { seglist })
     }
 
-    pub fn byte_by_address(&self, address: u64) -> Option<ByteInfo> {
+    pub fn byte_by_address(&self, address: u64) -> Option<ByteInfoRaw> {
         for seg in &self.seglist {
             let addr_range =
                 seg.offset..seg.offset + u64::try_from(seg.data.len()).unwrap();
             if addr_range.contains(&address) {
-                return Some(
+                return Some(ByteInfoRaw(
                     seg.data[usize::try_from(address - seg.offset).unwrap()],
-                );
+                ));
             }
         }
         None
     }
 
-    pub fn all_bytes(&self) -> impl Iterator<Item = (u64, ByteInfo)> + use<'_> {
+    pub fn all_bytes(
+        &self,
+    ) -> impl Iterator<Item = (u64, ByteInfoRaw)> + use<'_> {
         self.seglist.iter().flat_map(|seg| {
-            seg.data
-                .iter()
-                .enumerate()
-                .map(|(i, b)| (seg.offset + u64::try_from(i).unwrap(), *b))
+            seg.data.iter().enumerate().map(|(i, b)| {
+                (seg.offset + u64::try_from(i).unwrap(), ByteInfoRaw(*b))
+            })
         })
     }
 }
 
-impl ByteInfo {
-    pub fn value_raw(&self) -> u8 {
+#[derive(Clone, Debug)]
+pub struct SegInfo {
+    pub offset: u64,
+    // data and flags
+    data: Vec<u32>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct ByteInfoRaw(u32);
+
+impl ByteInfoRaw {
+    pub fn as_raw(&self) -> u32 {
+        self.0
+    }
+
+    pub fn byte_raw(&self) -> u8 {
         (self.0 & flag::byte::MS_VAL) as u8
     }
 
-    pub fn flag_raw(&self) -> u32 {
+    pub fn flags_raw(&self) -> u32 {
         self.0 & !flag::byte::MS_VAL
     }
 
-    pub fn byte_value(&self) -> Option<u8> {
-        self.has_value().then_some(self.value_raw())
+    pub fn decode(&self) -> Result<ByteInfo> {
+        ByteInfo::from_raw(self.0)
     }
+}
 
-    pub fn byte_type(&self) -> Option<ByteType> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ByteInfo {
+    pub byte_value: Option<u8>,
+    pub has_comment: bool,
+    pub has_reference: bool,
+    pub has_comment_ext: bool,
+    pub has_name: bool,
+    pub has_dummy_name: bool,
+    pub exec_flow_from_prev_inst: bool,
+    pub op_invert_sig: bool,
+    pub op_bitwise_negation: bool,
+    pub is_unused_set: bool,
+    pub byte_type: ByteType,
+}
+
+impl ByteInfo {
+    fn from_raw(value: u32) -> Result<Self> {
+        use flag::byte::*;
+        use flag::flags::byte_info::*;
+        let byte_type = ByteType::from_raw(value)?;
+        Ok(Self {
+            byte_value: (value & FF_IVL != 0).then(|| (value & MS_VAL) as u8),
+            has_comment: value & FF_COMM != 0,
+            has_reference: value & FF_REF != 0,
+            has_comment_ext: value & FF_LINE != 0,
+            has_name: value & FF_NAME != 0,
+            has_dummy_name: value & FF_LABL != 0,
+            exec_flow_from_prev_inst: value & FF_FLOW != 0,
+            op_invert_sig: value & FF_SIGN != 0,
+            op_bitwise_negation: value & FF_BNOT != 0,
+            is_unused_set: value & FF_UNUSED != 0,
+            byte_type,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ByteType {
+    Code(CodeData),
+    Data(ByteData),
+    Tail,
+    Unknown,
+}
+
+impl ByteType {
+    fn from_raw(value: u32) -> Result<Self> {
+        use flag::flags::byte_type::MS_CLS;
         use flag::flags::byte_type::*;
-        match self.0 & MS_CLS {
-            FF_CODE => Some(ByteType::Code),
-            FF_DATA => Some(ByteType::Data),
-            FF_TAIL => Some(ByteType::Tail),
-            FF_UNK => None,
+        match value & MS_CLS {
+            FF_DATA => Ok(ByteType::Data(ByteData::from_raw(value)?)),
+            // TODO find the InnerRef for this decoding, this is not correct
+            FF_CODE => Ok(ByteType::Code(CodeData::from_raw(value.into())?)),
+            FF_TAIL => Ok(ByteType::Tail),
+            FF_UNK => Ok(ByteType::Unknown),
             _ => unreachable!(),
         }
     }
+}
 
-    pub fn data_type(&self) -> Option<ByteDataType> {
-        use flag::flags::data_info::*;
-        if !matches!(self.byte_type(), Some(ByteType::Data)) {
-            return None;
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct CodeData {
+    pub operands: [InstOpInfo; 8],
+    pub is_func_start: bool,
+    pub is_reserved_set: bool,
+    pub is_immediate_value: bool,
+    pub is_jump_table: bool,
+}
+
+impl CodeData {
+    fn from_raw(value: u64) -> Result<Self> {
+        use flag::flags::code_info::*;
+        let is_func_start = value & FF_FUNC as u64 != 0;
+        let is_reserved_set = value & FF_RESERVED as u64 != 0;
+        let is_immediate_value = value & FF_IMMD as u64 != 0;
+        let is_jump_table = value & FF_JUMP as u64 != 0;
+        #[cfg(feature = "restrictive")]
+        if value
+            & (MS_CODE as u64)
+            & !((FF_FUNC | FF_RESERVED | FF_IMMD | FF_JUMP) as u64)
+            != 0
+        {
+            return Err(anyhow!("Invalid id1 CodeData flag"));
         }
-        Some(match self.0 & DT_TYPE {
+        let operands = [
+            InstOpInfo::from_raw(value.into(), 7)?,
+            InstOpInfo::from_raw(value.into(), 6)?,
+            InstOpInfo::from_raw(value.into(), 5)?,
+            InstOpInfo::from_raw(value.into(), 4)?,
+            InstOpInfo::from_raw(value.into(), 3)?,
+            InstOpInfo::from_raw(value.into(), 2)?,
+            InstOpInfo::from_raw(value.into(), 1)?,
+            InstOpInfo::from_raw(value.into(), 0)?,
+        ];
+        Ok(CodeData {
+            is_func_start,
+            is_reserved_set,
+            is_immediate_value,
+            is_jump_table,
+            operands,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ByteData {
+    pub data_type: ByteDataType,
+    pub print_info: InstOpInfo,
+}
+
+impl ByteData {
+    fn from_raw(value: u32) -> Result<Self> {
+        Ok(Self {
+            data_type: ByteDataType::from_raw(value),
+            print_info: InstOpInfo::from_raw(value.into(), 0)?,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ByteDataType {
+    Byte,
+    Word,
+    Dword,
+    Qword,
+    Oword,
+    Yword,
+    Zword,
+    Tbyte,
+    Float,
+    Double,
+    Packreal,
+    Strlit,
+    Struct,
+    Align,
+    Reserved,
+    Custom,
+}
+
+impl ByteDataType {
+    fn from_raw(value: u32) -> Self {
+        use flag::flags::data_info::*;
+        match value & DT_TYPE {
             FF_BYTE => ByteDataType::Byte,
             FF_WORD => ByteDataType::Word,
             FF_DWORD => ByteDataType::Dword,
@@ -327,59 +431,69 @@ impl ByteInfo {
             FF_YWORD => ByteDataType::Yword,
             FF_ZWORD => ByteDataType::Zword,
             _ => unreachable!(),
-        })
+        }
     }
+}
 
-    pub fn has_value(&self) -> bool {
-        self.0 & flag::byte::FF_IVL != 0
-    }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum InstOpInfo {
+    /// Void (unknown)
+    Void,
+    /// Hexadecimal number
+    Hex,
+    /// Decimal number
+    Dec,
+    /// Char
+    Char,
+    /// Segment
+    Seg,
+    /// Offset
+    Off,
+    /// Binary number
+    Bin,
+    /// Octal number
+    Oct,
+    /// Enumeration
+    Enum,
+    /// Forced operand
+    Fop,
+    /// Struct offset
+    StrOff,
+    /// Stack variable
+    StackVar,
+    /// Floating point number
+    Float,
+    /// Custom representation
+    Custom,
+}
 
-    pub fn has_comment(&self) -> bool {
-        self.0 & flag::flags::byte_info::FF_COMM != 0
-    }
-
-    pub fn has_references(&self) -> bool {
-        self.0 & flag::flags::byte_info::FF_REF != 0
-    }
-
-    pub fn has_ext_comments(&self) -> bool {
-        self.0 & flag::flags::byte_info::FF_LINE != 0
-    }
-
-    pub fn has_name(&self) -> bool {
-        self.0 & flag::flags::byte_info::FF_NAME != 0
-    }
-
-    pub fn has_dummy_name(&self) -> bool {
-        self.0 & flag::flags::byte_info::FF_LABL != 0
-    }
-
-    pub fn is_exec_flow_instruction(&self) -> bool {
-        self.0 & flag::flags::byte_info::FF_FLOW != 0
-    }
-
-    pub fn have_sign_operands(&self) -> bool {
-        self.0 & flag::flags::byte_info::FF_SIGN != 0
-    }
-
-    pub fn is_bitwise_negation_of_operands(&self) -> bool {
-        self.0 & flag::flags::byte_info::FF_BNOT != 0
-    }
-
-    pub fn is_unused(&self) -> bool {
-        self.0 & flag::flags::byte_info::FF_UNUSED != 0
-    }
-
-    pub fn is_function_start(&self) -> bool {
-        self.0 & flag::flags::code_info::FF_FUNC != 0
-    }
-
-    pub fn has_immediate_value(&self) -> bool {
-        self.0 & flag::flags::code_info::FF_IMMD != 0
-    }
-
-    pub fn has_jump_table(&self) -> bool {
-        self.0 & flag::flags::code_info::FF_JUMP != 0
+impl InstOpInfo {
+    fn from_raw(value: u64, n: u32) -> Result<Self> {
+        use flag::flags::inst_info::*;
+        Ok(
+            match ((value >> get_operand_type_shift(n)) as u8) & MS_N_TYPE {
+                FF_N_VOID => Self::Void,
+                FF_N_NUMH => Self::Hex,
+                FF_N_NUMD => Self::Dec,
+                FF_N_CHAR => Self::Char,
+                FF_N_SEG => Self::Seg,
+                FF_N_OFF => Self::Off,
+                FF_N_NUMB => Self::Bin,
+                FF_N_NUMO => Self::Oct,
+                FF_N_ENUM => Self::Enum,
+                FF_N_FOP => Self::Fop,
+                FF_N_STRO => Self::StrOff,
+                FF_N_STK => Self::StackVar,
+                FF_N_FLT => Self::Float,
+                FF_N_CUST => Self::Custom,
+                // TODO reserved values?
+                #[cfg(not(feature = "restrictive"))]
+                0xE | 0xF => Self::Custom,
+                #[cfg(feature = "restrictive")]
+                0xE | 0xF => return Err(anyhow!("Invalid ID1 operand value")),
+                _ => unreachable!(),
+            },
+        )
     }
 }
 
@@ -433,18 +547,20 @@ fn ignore_bytes(
     Ok(())
 }
 
-fn read_data(
-    mut input: impl IdaGenericUnpack,
-    len: u64,
-) -> Result<Vec<ByteInfo>> {
+fn read_data(mut input: impl IdaGenericUnpack, len: u64) -> Result<Vec<u32>> {
     let len: usize = usize::try_from(len).unwrap();
     let mut data = vec![0u8; len * 4];
     input.read_exact(&mut data)?;
     Ok(data
-        .windows(4)
+        .chunks(4)
         .map(|b| {
             let data = u32::from_le_bytes(b.try_into().unwrap());
-            ByteInfo(data)
+            data
         })
         .collect())
+}
+
+const fn get_operand_type_shift(n: u32) -> u32 {
+    let n_mod = (n > 1) as u32;
+    20 + (4 * (n + n_mod))
 }

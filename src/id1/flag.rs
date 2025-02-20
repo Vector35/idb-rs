@@ -59,35 +59,35 @@ pub mod flags {
     /// an array have the same type).
     pub mod inst_info {
         /// Mask for nth arg (a 64-bit constant)
-        pub const MS_N_TYPE: u32 = 0xf;
+        pub const MS_N_TYPE: u8 = 0xf;
         /// Void (unknown)?
-        pub const FF_N_VOID: u32 = 0x0;
+        pub const FF_N_VOID: u8 = 0x0;
         /// Hexadecimal number?
-        pub const FF_N_NUMH: u32 = 0x1;
+        pub const FF_N_NUMH: u8 = 0x1;
         /// Decimal number?
-        pub const FF_N_NUMD: u32 = 0x2;
+        pub const FF_N_NUMD: u8 = 0x2;
         /// Char ('x')?
-        pub const FF_N_CHAR: u32 = 0x3;
+        pub const FF_N_CHAR: u8 = 0x3;
         /// Segment?
-        pub const FF_N_SEG: u32 = 0x4;
+        pub const FF_N_SEG: u8 = 0x4;
         /// Offset?
-        pub const FF_N_OFF: u32 = 0x5;
+        pub const FF_N_OFF: u8 = 0x5;
         /// Binary number?
-        pub const FF_N_NUMB: u32 = 0x6;
+        pub const FF_N_NUMB: u8 = 0x6;
         /// Octal number?
-        pub const FF_N_NUMO: u32 = 0x7;
+        pub const FF_N_NUMO: u8 = 0x7;
         /// Enumeration?
-        pub const FF_N_ENUM: u32 = 0x8;
+        pub const FF_N_ENUM: u8 = 0x8;
         /// Forced operand?
-        pub const FF_N_FOP: u32 = 0x9;
+        pub const FF_N_FOP: u8 = 0x9;
         /// Struct offset?
-        pub const FF_N_STRO: u32 = 0xA;
+        pub const FF_N_STRO: u8 = 0xA;
         /// Stack variable?
-        pub const FF_N_STK: u32 = 0xB;
+        pub const FF_N_STK: u8 = 0xB;
         /// Floating point number?
-        pub const FF_N_FLT: u32 = 0xC;
+        pub const FF_N_FLT: u8 = 0xC;
         /// Custom representation?
-        pub const FF_N_CUST: u32 = 0xD;
+        pub const FF_N_CUST: u8 = 0xD;
     }
 
     /// data bytes
