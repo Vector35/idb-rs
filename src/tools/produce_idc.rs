@@ -616,7 +616,25 @@ fn produce_bytes_info(
                     }
                     // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2690
                     ByteDataType::Struct => {
-                        // TODO
+                        // TODO make a struct_def_at
+                        let struct_id = id0
+                            .address_info_at(address)
+                            .unwrap()
+                            .find_map(|e| match e {
+                                Ok(AddressInfo::DefinedStruct(s)) => {
+                                    Some(Ok(s))
+                                }
+                                Err(e) => Some(Err(e)),
+                                Ok(_) => None,
+                            });
+                        let struct_name = struct_id
+                            .map(|idx| id0.struct_at(idx.unwrap()).unwrap())
+                            .unwrap_or(b"BAD_STRUCT");
+                        writeln!(
+                            fmt,
+                            "  create_struct({address:#X}, -1, \"{}\");",
+                            core::str::from_utf8(&struct_name).unwrap()
+                        )?;
                     }
                     ByteDataType::Zword
                     | ByteDataType::Align
