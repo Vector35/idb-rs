@@ -20,6 +20,7 @@ pub fn print_function(id0: &ID0Section, address: Id0Address) -> Result<()> {
     for info in infos {
         match info? {
             idb_rs::id0::AddressInfo::Comment(_)
+            | idb_rs::id0::AddressInfo::DefinedStruct(_)
             | idb_rs::id0::AddressInfo::Other { .. } => {}
             idb_rs::id0::AddressInfo::Label(label) => {
                 if let Some(_old) = name.replace(label) {

@@ -781,6 +781,22 @@ impl ID0Section {
         }
     }
 
+    pub fn struct_at(&self, idx: SubtypeId) -> Result<&[u8]> {
+        let key: Vec<u8> = key_from_address(idx.0, self.is_64)
+            .chain(Some(b'N'))
+            .collect();
+        let start = self.binary_search(&key).map_err(|_| {
+            anyhow!("Unable to locate struct type for id0 entry")
+        })?;
+
+        let entry = &self.entries[start];
+        let value = entry
+            .value
+            .strip_prefix(b"$$ ")
+            .ok_or_else(|| anyhow!("Invalid struct name for id0 entry"))?;
+        Ok(value)
+    }
+
     pub(crate) fn dirtree_from_name<T: FromDirTreeNumber>(
         &self,
         name: impl AsRef<[u8]>,

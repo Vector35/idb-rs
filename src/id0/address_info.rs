@@ -14,6 +14,7 @@ pub enum AddressInfo<'a> {
     Comment(Comments<'a>),
     Label(Cow<'a, str>),
     TilType(til::Type),
+    DefinedStruct(SubtypeId),
     Other { key: &'a [u8], value: &'a [u8] },
 }
 
@@ -24,6 +25,9 @@ pub enum Comments<'a> {
     PreComment(&'a [u8]),
     PostComment(&'a [u8]),
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct SubtypeId(pub(crate) u64);
 
 impl<'a> Comments<'a> {
     /// The message on the comment, NOTE that IDA don't have a default character encoding
@@ -304,6 +308,11 @@ impl<'a> Iterator for AddressInfoIter<'a> {
                     Ok(label) => Some(Ok((address, AddressInfo::Label(label)))),
                 }
             },
+
+            // Used to define what struct is apply at the address
+            (b'd', Some(subkey)) if &current.value[..] == &[0x03] => {
+                Some(Ok((address, AddressInfo::DefinedStruct(SubtypeId(subkey)))))
+            }
 
             // Seems related to datatype, maybe cstr, align and stuff like that
             (b'A', Some(_)) |
