@@ -790,10 +790,9 @@ impl ID0Section {
         })?;
 
         let entry = &self.entries[start];
-        let value = entry
-            .value
-            .strip_prefix(b"$$ ")
-            .ok_or_else(|| anyhow!("Invalid struct name for id0 entry"))?;
+        // older versions dont have this prefix
+        let value =
+            entry.value.strip_prefix(b"$$ ").unwrap_or(&entry.value[..]);
         Ok(value)
     }
 
