@@ -1,11 +1,15 @@
 use std::borrow::{Borrow, Cow};
 use std::io::BufReader;
+use std::iter::Peekable;
 use std::{fs::File, io::Write};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 
 use idb_rs::id0::{AddressInfo, Comments, FunctionsAndComments, ID0Section};
-use idb_rs::id1::{ByteData, ByteDataType, ByteType, ID1Section, InstOpInfo};
+use idb_rs::id1::{
+    ByteData, ByteDataType, ByteInfoRaw, ByteRawType, ByteType, ID1Section,
+    InstOpInfo,
+};
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
 use idb_rs::IDBParser;
@@ -489,17 +493,14 @@ fn produce_bytes_info(
     writeln!(fmt, "  auto x;")?;
     writeln!(fmt, "#define id x")?;
     writeln!(fmt)?;
-    let version = match id0.ida_info().unwrap() {
-        idb_rs::id0::IDBParam::V1(x) => x.version,
-        idb_rs::id0::IDBParam::V2(x) => x.version,
-    };
 
-    for (address, byte_info_raw) in id1.all_bytes() {
+    let mut all_bytes = id1.all_bytes().peekable();
+    loop {
+        let Some((address, byte_info_raw)) = all_bytes.next() else {
+            break;
+        };
+
         let byte_info = byte_info_raw.decode().unwrap();
-        if byte_info.byte_type == ByteType::Tail {
-            // tail is completelly ignored
-            continue;
-        }
         let addr_info = id0.address_info_at(address)?;
         // print comments
         // TODO byte_info.has_comment() ignored?
@@ -571,6 +572,7 @@ fn produce_bytes_info(
         match byte_info.byte_type {
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1dee
             ByteType::Code(code) => {
+                let _len = count_tails(&mut all_bytes) + 1;
                 if !byte_info.exec_flow_from_prev_inst || code.is_func_start
                 //  || TODO: byte_info.is_manual()
                 {
@@ -581,24 +583,60 @@ fn produce_bytes_info(
             ByteType::Data(data) => {
                 match data.data_type {
                     ByteDataType::Strlit => {
-                        writeln!(fmt, "  create_strlit({set_x}{address:#X});")?
+                        let len = count_tails(&mut all_bytes);
+                        writeln!(
+                            fmt,
+                            "  create_strlit({set_x}{address:#X}, {len:#X});"
+                        )?
                     }
                     ByteDataType::Dword => {
-                        writeln!(fmt, "  create_dword({set_x}{address:#X});")?
+                        let len = count_element(&mut all_bytes, 4)?;
+                        writeln!(fmt, "  create_dword({set_x}{address:#X});")?;
+                        if len > 1 {
+                            writeln!(
+                                fmt,
+                                "  make_array({address:#X}, {len:#X});"
+                            )?
+                        }
                     }
                     ByteDataType::Byte => {
-                        writeln!(fmt, "  create_byte({set_x}{address:#X});")?
+                        let len = count_tails(&mut all_bytes);
+                        writeln!(fmt, "  create_byte({set_x}{address:#X});")?;
+                        if len > 1 {
+                            writeln!(
+                                fmt,
+                                "  make_array({address:#X}, {len:#X});"
+                            )?
+                        }
                     }
                     ByteDataType::Word => {
-                        writeln!(fmt, "  create_word({set_x}{address:#X});")?
+                        let len = count_element(&mut all_bytes, 2)?;
+                        writeln!(fmt, "  create_word({set_x}{address:#X});")?;
+                        if len > 1 {
+                            writeln!(
+                                fmt,
+                                "  make_array({address:#X}, {len:#X});"
+                            )?
+                        }
                     }
                     ByteDataType::Qword => {
-                        writeln!(fmt, "  create_qword({set_x}{address:#X});")?
+                        let len = count_element(&mut all_bytes, 8)?;
+                        writeln!(fmt, "  create_qword({set_x}{address:#X});")?;
+                        if len > 1 {
+                            writeln!(
+                                fmt,
+                                "  make_array({address:#X}, {len:#X});"
+                            )?
+                        }
                     }
                     ByteDataType::Tbyte => {
+                        let _len = count_tails(&mut all_bytes);
+                        // TODO make array?
                         writeln!(fmt, "  create_tbyte({set_x}{address:#X});")?
                     }
                     ByteDataType::Float => {
+                        let _len = count_tails(&mut all_bytes);
+                        // TODO make array?
                         writeln!(fmt, "  create_float({set_x}{address:#X});")?
                     }
                     ByteDataType::Packreal => writeln!(
@@ -606,17 +644,26 @@ fn produce_bytes_info(
                         "  create_pack_real({set_x}{address:#X});"
                     )?,
                     ByteDataType::Yword => {
+                        let _len = count_tails(&mut all_bytes);
+                        // TODO make array?
                         writeln!(fmt, "  create_yword({set_x}{address:#X});")?
                     }
                     ByteDataType::Double => {
+                        let _len = count_tails(&mut all_bytes);
+                        // TODO make array?
                         writeln!(fmt, "  create_double({set_x}{address:#X});")?
                     }
                     ByteDataType::Oword => {
+                        let _len = count_tails(&mut all_bytes);
+                        // TODO make array?
                         writeln!(fmt, "  create_oword({set_x}{address:#X});")?
                     }
                     // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2690
                     ByteDataType::Struct => {
+                        let _len = count_tails(&mut all_bytes);
+                        // TODO ensure struct have the same len that _len
                         // TODO make a struct_def_at
+                        // TODO make array?
                         let struct_id = id0
                             .address_info_at(address)
                             .unwrap()
@@ -628,7 +675,13 @@ fn produce_bytes_info(
                                 Ok(_) => None,
                             });
                         let struct_name = struct_id
-                            .map(|idx| id0.struct_at(idx.unwrap()).unwrap())
+                            .map(|idx| {
+                                id0.struct_at(idx.unwrap())
+                                    .with_context(|| {
+                                        format!("ID1 addr {address:#X}")
+                                    })
+                                    .unwrap()
+                            })
                             .unwrap_or(b"BAD_STRUCT");
                         writeln!(
                             fmt,
@@ -636,8 +689,16 @@ fn produce_bytes_info(
                             core::str::from_utf8(&struct_name).unwrap()
                         )?;
                     }
+                    ByteDataType::Align => {
+                        let len = count_tails(&mut all_bytes);
+                        if len > 1 {
+                            writeln!(
+                                fmt,
+                                "  make_array({address:#X}, {len:#X});"
+                            )?
+                        }
+                    }
                     ByteDataType::Zword
-                    | ByteDataType::Align
                     | ByteDataType::Reserved
                     | ByteDataType::Custom => {
                         //TODO
@@ -663,7 +724,10 @@ fn produce_bytes_info(
                 // TODO make_array
                 // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2622
             }
-            ByteType::Tail | ByteType::Unknown => {}
+            ByteType::Tail => {
+                return Err(anyhow!("Unexpected ID1 Tail entry: {address:#X}"))
+            }
+            ByteType::Unknown => {}
         }
 
         // TODO InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1e5e
@@ -700,34 +764,6 @@ fn produce_bytes_info(
     // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2fee
     // TODO getn_fchunk related stuff
 
-    for addr_info in id0.address_info_by_address(version)? {
-        let (addr, iter) = addr_info?;
-        for addr_info in iter {
-            let (_addr_2, info) = addr_info?;
-            if let AddressInfo::Other { key, value } = info {
-                match std::str::from_utf8(value) {
-                    Ok(value_str)
-                        if value_str.chars().all(|c| {
-                            c.is_alphabetic() || c.is_whitespace()
-                        }) =>
-                    {
-                        writeln!(
-                            fmt,
-                            "  other({addr:#X}, {key:x?}, \"{value_str}\");",
-                        )?;
-                    }
-                    _ => {
-                        writeln!(
-                            fmt,
-                            "  other({addr:#X}, {key:x?}, {value:?});",
-                        )?;
-                    }
-                }
-            }
-        }
-
-        // TODO other AddressInfo types
-    }
     writeln!(fmt, "}}")?;
     Ok(())
 }
@@ -840,4 +876,30 @@ fn produce_bytes(
     writeln!(fmt, "  Bytes_0();")?;
     writeln!(fmt, "}}")?;
     Ok(())
+}
+
+fn count_tails<I>(bytes: &mut Peekable<I>) -> usize
+where
+    I: Iterator<Item = (u64, ByteInfoRaw)>,
+{
+    let mut num = 1;
+    while let Some(_) =
+        bytes.next_if(|(_a, b)| b.byte_type() == ByteRawType::Tail)
+    {
+        num += 1;
+    }
+    return num;
+}
+
+fn count_element<I>(bytes: &mut Peekable<I>, ele_len: usize) -> Result<usize>
+where
+    I: Iterator<Item = (u64, ByteInfoRaw)>,
+{
+    let len = count_tails(bytes);
+    ensure!(len >= ele_len, "Expected more ID1 Tail entries");
+    ensure!(
+        len % ele_len == 0,
+        "More ID1 Tails that expects or invalid array len"
+    );
+    Ok(len / ele_len)
 }
