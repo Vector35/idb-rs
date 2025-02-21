@@ -268,7 +268,51 @@ impl ByteInfoRaw {
     }
 
     pub fn decode(&self) -> Result<ByteInfo> {
-        ByteInfo::from_raw(self.0)
+        ByteInfo::from_raw(*self)
+    }
+
+    pub fn byte_value(&self) -> Option<u8> {
+        (self.0 & flag::byte::FF_IVL != 0)
+            .then(|| (self.0 & flag::byte::MS_VAL) as u8)
+    }
+
+    pub fn byte_type(&self) -> ByteRawType {
+        use flag::flags::byte_type::*;
+        match self.0 & MS_CLS {
+            FF_DATA => ByteRawType::Data,
+            FF_CODE => ByteRawType::Code,
+            FF_TAIL => ByteRawType::Tail,
+            FF_UNK => ByteRawType::Unknown,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn has_comment(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_COMM != 0
+    }
+    pub fn has_reference(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_REF != 0
+    }
+    pub fn has_comment_ext(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_LINE != 0
+    }
+    pub fn has_name(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_NAME != 0
+    }
+    pub fn has_dummy_name(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_LABL != 0
+    }
+    pub fn exec_flow_from_prev_inst(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_FLOW != 0
+    }
+    pub fn op_invert_sig(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_SIGN != 0
+    }
+    pub fn op_bitwise_negation(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_BNOT != 0
+    }
+    pub fn is_unused_set(&self) -> bool {
+        self.0 & flag::flags::byte_info::FF_UNUSED != 0
     }
 }
 
@@ -288,24 +332,30 @@ pub struct ByteInfo {
 }
 
 impl ByteInfo {
-    fn from_raw(value: u32) -> Result<Self> {
-        use flag::byte::*;
-        use flag::flags::byte_info::*;
+    fn from_raw(value: ByteInfoRaw) -> Result<Self> {
         let byte_type = ByteType::from_raw(value)?;
         Ok(Self {
-            byte_value: (value & FF_IVL != 0).then(|| (value & MS_VAL) as u8),
-            has_comment: value & FF_COMM != 0,
-            has_reference: value & FF_REF != 0,
-            has_comment_ext: value & FF_LINE != 0,
-            has_name: value & FF_NAME != 0,
-            has_dummy_name: value & FF_LABL != 0,
-            exec_flow_from_prev_inst: value & FF_FLOW != 0,
-            op_invert_sig: value & FF_SIGN != 0,
-            op_bitwise_negation: value & FF_BNOT != 0,
-            is_unused_set: value & FF_UNUSED != 0,
+            byte_value: value.byte_value(),
+            has_comment: value.has_comment(),
+            has_reference: value.has_reference(),
+            has_comment_ext: value.has_comment_ext(),
+            has_name: value.has_name(),
+            has_dummy_name: value.has_dummy_name(),
+            exec_flow_from_prev_inst: value.exec_flow_from_prev_inst(),
+            op_invert_sig: value.op_invert_sig(),
+            op_bitwise_negation: value.op_bitwise_negation(),
+            is_unused_set: value.is_unused_set(),
             byte_type,
         })
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum ByteRawType {
+    Code,
+    Data,
+    Tail,
+    Unknown,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -317,16 +367,17 @@ pub enum ByteType {
 }
 
 impl ByteType {
-    fn from_raw(value: u32) -> Result<Self> {
-        use flag::flags::byte_type::MS_CLS;
-        use flag::flags::byte_type::*;
-        match value & MS_CLS {
-            FF_DATA => Ok(ByteType::Data(ByteData::from_raw(value)?)),
+    fn from_raw(value: ByteInfoRaw) -> Result<Self> {
+        match value.byte_type() {
             // TODO find the InnerRef for this decoding, this is not correct
-            FF_CODE => Ok(ByteType::Code(CodeData::from_raw(value.into())?)),
-            FF_TAIL => Ok(ByteType::Tail),
-            FF_UNK => Ok(ByteType::Unknown),
-            _ => unreachable!(),
+            ByteRawType::Code => {
+                Ok(ByteType::Code(CodeData::from_raw(value.0.into())?))
+            }
+            ByteRawType::Data => {
+                Ok(ByteType::Data(ByteData::from_raw(value.0)?))
+            }
+            ByteRawType::Tail => Ok(ByteType::Tail),
+            ByteRawType::Unknown => Ok(ByteType::Unknown),
         }
     }
 }
