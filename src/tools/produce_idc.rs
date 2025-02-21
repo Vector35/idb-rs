@@ -698,10 +698,12 @@ fn produce_bytes_info(
                             )?
                         }
                     }
-                    ByteDataType::Zword
-                    | ByteDataType::Reserved
-                    | ByteDataType::Custom => {
+                    ByteDataType::Zword | ByteDataType::Custom => {
+                        let _len = count_tails(&mut all_bytes);
                         //TODO
+                    }
+                    ByteDataType::Reserved => {
+                        todo!();
                     }
                 }
                 match data.print_info {
