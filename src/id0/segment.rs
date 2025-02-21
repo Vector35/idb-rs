@@ -66,7 +66,10 @@ impl Segment {
             .ok()
             .and_then(|x| SegmentAlignment::try_from_primitive(x).ok())
             .ok_or_else(|| anyhow!("Invalid Segment Alignment value"))?;
-        let comb = SegmentCombination::from_raw(cursor.unpack_dd()?)
+        let comb_raw = cursor.unpack_dd()?;
+        let comb = u8::try_from(comb_raw)
+            .ok()
+            .and_then(|x| SegmentCombination::try_from_primitive(x).ok())
             .ok_or_else(|| anyhow!("Invalid Segment Combination value"))?;
         let perm = SegmentPermission::from_raw(cursor.unpack_dd()?)
             .ok_or_else(|| anyhow!("Invalid Segment Permission value"))?;
@@ -116,33 +119,33 @@ impl SegmentFlag {
 
     /// IDP dependent field (IBM PC: if set, ORG directive is not commented out)
     pub fn is_comorg(&self) -> bool {
-        self.0 & 0x01 != 0
+        self.0 & flag::segs::sfl::SFL_COMORG != 0
     }
     /// Orgbase is present? (IDP dependent field)
     pub fn is_orgbase_present(&self) -> bool {
-        self.0 & 0x02 != 0
+        self.0 & flag::segs::sfl::SFL_OBOK != 0
     }
     /// Is the segment hidden?
     pub fn is_hidden(&self) -> bool {
-        self.0 & 0x04 != 0
+        self.0 & flag::segs::sfl::SFL_HIDDEN != 0
     }
     /// Is the segment created for the debugger?.
     ///
     /// Such segments are temporary and do not have permanent flags.
     pub fn is_debug(&self) -> bool {
-        self.0 & 0x08 != 0
+        self.0 & flag::segs::sfl::SFL_DEBUG != 0
     }
     /// Is the segment created by the loader?
     pub fn is_created_by_loader(&self) -> bool {
-        self.0 & 0x10 != 0
+        self.0 & flag::segs::sfl::SFL_LOADER != 0
     }
     /// Hide segment type (do not print it in the listing)
     pub fn is_hide_type(&self) -> bool {
-        self.0 & 0x20 != 0
+        self.0 & flag::segs::sfl::SFL_HIDETYPE != 0
     }
     /// Header segment (do not create offsets to it in the disassembly)
     pub fn is_header(&self) -> bool {
-        self.0 & 0x40 != 0
+        self.0 & flag::segs::sfl::SFL_HEADER != 0
     }
 }
 
@@ -169,76 +172,62 @@ impl core::fmt::Debug for SegmentFlag {
 #[repr(u8)]
 pub enum SegmentAlignment {
     /// Absolute segment.
-    Abs = 0,
+    Abs = flag::segs::sa::SA_ABS,
     /// Relocatable, byte aligned.
-    RelByte = 1,
+    RelByte = flag::segs::sa::SA_REL_BYTE,
     /// Relocatable, word (2-byte) aligned.
-    RelWord = 2,
+    RelWord = flag::segs::sa::SA_REL_WORD,
     /// Relocatable, paragraph (16-byte) aligned.
-    RelPara = 3,
+    RelPara = flag::segs::sa::SA_REL_PARA,
     /// Relocatable, aligned on 256-byte boundary.
-    RelPage = 4,
+    RelPage = flag::segs::sa::SA_REL_PAGE,
     /// Relocatable, aligned on a double word (4-byte) boundary.
-    RelDble = 5,
+    RelDble = flag::segs::sa::SA_REL_DBLE,
     /// This value is used by the PharLap OMF for page (4K) alignment.
     ///
     /// It is not supported by LINK.
-    Rel4K = 6,
+    Rel4K = flag::segs::sa::SA_REL4_K,
     /// Segment group.
-    Group = 7,
+    Group = flag::segs::sa::SA_GROUP,
     /// 32 bytes
-    Rel32Bytes = 8,
+    Rel32Bytes = flag::segs::sa::SA_REL32_BYTES,
     /// 64 bytes
-    Rel64Bytes = 9,
+    Rel64Bytes = flag::segs::sa::SA_REL64_BYTES,
     /// 8 bytes
-    RelQword = 10,
+    RelQword = flag::segs::sa::SA_REL_QWORD,
     /// 128 bytes
-    Rel128Bytes = 11,
+    Rel128Bytes = flag::segs::sa::SA_REL128_BYTES,
     /// 512 bytes
-    Rel512Bytes = 12,
+    Rel512Bytes = flag::segs::sa::SA_REL512_BYTES,
     /// 1024 bytes
-    Rel1024Bytes = 13,
+    Rel1024Bytes = flag::segs::sa::SA_REL1024_BYTES,
     /// 2048 bytes
-    Rel2048Bytes = 14,
+    Rel2048Bytes = flag::segs::sa::SA_REL2048_BYTES,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive)]
+#[repr(u8)]
 pub enum SegmentCombination {
     /// Private.
     ///
     /// Do not combine with any other program segment.
-    Priv,
+    Priv = super::flag::segs::sc::SC_PRIV,
     /// Segment group.
-    Group,
+    Group = super::flag::segs::sc::SC_GROUP,
     /// Public.
     ///
     /// Combine by appending at an offset that meets the alignment requirement.
-    Pub,
+    Pub = super::flag::segs::sc::SC_PUB,
     /// As defined by Microsoft, same as C=2 (public).
-    Pub2,
+    Pub2 = super::flag::segs::sc::SC_PUB2,
     /// Stack.
-    Stack,
+    Stack = super::flag::segs::sc::SC_STACK,
     /// Common. Combine by overlay using maximum size.
     ///
     /// Combine as for C=2. This combine type forces byte alignment.
-    Common,
+    Common = super::flag::segs::sc::SC_COMMON,
     /// As defined by Microsoft, same as C=2 (public).
-    Pub3,
-}
-
-impl SegmentCombination {
-    fn from_raw(value: u32) -> Option<Self> {
-        match value {
-            0 => Some(Self::Priv),
-            1 => Some(Self::Group),
-            2 => Some(Self::Pub),
-            4 => Some(Self::Pub2),
-            5 => Some(Self::Stack),
-            6 => Some(Self::Common),
-            7 => Some(Self::Pub3),
-            _ => None,
-        }
-    }
+    Pub3 = super::flag::segs::sc::SC_PUB3,
 }
 
 #[derive(Clone, Copy)]
@@ -303,31 +292,31 @@ impl SegmentBitness {
 #[repr(u8)]
 pub enum SegmentType {
     /// unknown type, no assumptions
-    Norm = 0,
+    Norm = flag::segs::ty::SEG_NORM,
     /// segment with 'extern' definitions.
     ///
     /// no instructions are allowed
-    Xtrn = 1,
+    Xtrn = flag::segs::ty::SEG_XTRN,
     /// code segment
-    Code = 2,
+    Code = flag::segs::ty::SEG_CODE,
     /// data segment
-    Data = 3,
+    Data = flag::segs::ty::SEG_DATA,
     /// java: implementation segment
-    Imp = 4,
+    Imp = flag::segs::ty::SEG_IMP,
     /// group of segments
-    Grp = 6,
+    Grp = flag::segs::ty::SEG_GRP,
     /// zero-length segment
-    Null = 7,
+    Null = flag::segs::ty::SEG_NULL,
     /// undefined segment type (not used)
-    Undf = 8,
+    Undf = flag::segs::ty::SEG_UNDF,
     /// uninitialized segment
-    Bss = 9,
+    Bss = flag::segs::ty::SEG_BSS,
     /// segment with definitions of absolute symbols
-    Abssym = 10,
+    Abssym = flag::segs::ty::SEG_ABSSYM,
     /// segment with communal definitions
-    Comm = 11,
+    Comm = flag::segs::ty::SEG_COMM,
     /// internal processor memory & sfr (8051)
-    Imem = 12,
+    Imem = flag::segs::ty::SEG_IMEM,
 }
 
 pub struct SegmentIter<'a> {

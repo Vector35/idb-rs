@@ -9,6 +9,8 @@ use crate::{til, IDBHeader, IDBSectionCompression};
 
 use anyhow::{anyhow, ensure, Result};
 
+pub mod flag;
+
 mod segment;
 pub use segment::*;
 mod root_info;
@@ -60,11 +62,11 @@ impl<'a> FunctionsAndComments<'a> {
             return Err(anyhow!("invalid Funcs subkey"));
         };
         match *key_type {
-            b'N' => {
+            flag::netnode::nn_res::ntag => {
                 ensure!(parse_maybe_cstr(value) == Some(&b"$ funcs"[..]));
                 Ok(Self::Name)
             }
-            b'S' => {
+            flag::netnode::nn_res::stag => {
                 IDBFunction::read(sub_key, value, is_64).map(Self::Function)
             }
             // some kind of style setting, maybe setting font and background color
@@ -195,7 +197,7 @@ impl<'a> EntryPointRaw<'a> {
         };
         match *key_type {
             // TODO for some reason the address is one byte extra
-            b'A' => IdaUnpacker::new(value, is_64)
+            flag::netnode::nn_res::atag => IdaUnpacker::new(value, is_64)
                 .read_word()
                 .map(|address| Self::Address {
                     key: sub_key,
@@ -217,7 +219,7 @@ impl<'a> EntryPointRaw<'a> {
                     })
                 })
                 .ok_or_else(|| anyhow!("Invalid Forwarded symbol name")),
-            b'S' => parse_maybe_cstr(value)
+            flag::netnode::nn_res::stag => parse_maybe_cstr(value)
                 .and_then(|name| {
                     Some(Self::FunctionName {
                         key: sub_key,
