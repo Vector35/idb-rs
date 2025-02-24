@@ -206,26 +206,26 @@ impl<'a> Iterator for AddressInfoIter<'a> {
             // pre comments start at index 1000
             // post comments start at index 2000
             // if you create more then a 1000 pre/post comments ida start acting strange, BUG?
-            (flag::netnode::nn_res::stag, Some(1000..=1999)) => {
+            (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(1000..=1999)) => {
                 let Some(comment) = parse_maybe_cstr(value) else {
                     return Some(Err(anyhow!("Pre-Comment is not valid CStr")));
                 };
                 Some(Ok((address, AddressInfo::Comment(Comments::PreComment(comment)))))
             },
-            (flag::netnode::nn_res::stag, Some(2000..=2999)) => {
+            (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(2000..=2999)) => {
                 let Some(comment) = parse_maybe_cstr(value) else {
                     return Some(Err(anyhow!("Post-Comment is not valid CStr")));
                 };
                 Some(Ok((address, AddressInfo::Comment(Comments::PostComment(comment)))))
             },
-            (flag::netnode::nn_res::stag, Some(0x0)) => {
+            (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(0x0)) => {
                 let Some(comment) = parse_maybe_cstr(value) else {
                     return Some(Err(anyhow!("Comment is not valid CStr")));
                 };
                 Some(Ok((address, AddressInfo::Comment(Comments::Comment(comment)))))
             },
             // Repeatable comment
-            (flag::netnode::nn_res::stag, Some(0x1)) => {
+            (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(0x1)) => {
                 let Some(comment) = parse_maybe_cstr(value) else {
                     return Some(Err(anyhow!("Repeatable Comment is not valid CStr")));
                 };
@@ -233,7 +233,7 @@ impl<'a> Iterator for AddressInfoIter<'a> {
             },
 
             // Type at this address
-            (flag::netnode::nn_res::stag, Some(0x3000)) => {
+            (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(0x3000)) => {
                 // take the field names (optional?) and the continuation (optional!)
                 let last = rest.iter().position(|entry| {
                     let Some((sub_type, id)) = entry.key[key_start..].split_first() else {
@@ -271,12 +271,12 @@ impl<'a> Iterator for AddressInfoIter<'a> {
                 Some(Ok((address, AddressInfo::TilType(til))))
             },
             // field names and continuation in from the previous til type [citation needed]
-            (flag::netnode::nn_res::stag, Some(0x3001..=0x3999)) => {
+            (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(0x3001..=0x3999)) => {
                 Some(Err(anyhow!("ID0 Til type info without a previous TIL type")))
             },
 
             // Name, aka a label to this memory address
-            (flag::netnode::nn_res::ntag, None) => {
+            (flag::netnode::nn_res::NAME_TAG, None) => {
                 let value = super::parse_cstr_or_subkey(value, self.id0.is_64);
                 let label_raw = match value {
                     None => {
@@ -315,11 +315,11 @@ impl<'a> Iterator for AddressInfoIter<'a> {
             }
 
             // Seems related to datatype, maybe cstr, align and stuff like that
-            (flag::netnode::nn_res::atag, Some(_)) |
+            (flag::netnode::nn_res::ARRAY_ALT_TAG, Some(_)) |
             // Know to happen to data that represent an memory location
-            (flag::netnode::nn_res::stag, Some(0x09)) |
+            (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(0x09)) |
             // Seem defined on procedures
-            (flag::netnode::nn_res::stag, Some(0x1000)) |
+            (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(0x1000)) |
             // seems to be a code reference to memory, key is the destination memory
             (flag::nalt::x::NALT_CREF_FROM, Some(_)) |
             // The oposite of 'x', memory being referenced by an instruction

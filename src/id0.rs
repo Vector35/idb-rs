@@ -62,11 +62,11 @@ impl<'a> FunctionsAndComments<'a> {
             return Err(anyhow!("invalid Funcs subkey"));
         };
         match *key_type {
-            flag::netnode::nn_res::ntag => {
+            flag::netnode::nn_res::NAME_TAG => {
                 ensure!(parse_maybe_cstr(value) == Some(&b"$ funcs"[..]));
                 Ok(Self::Name)
             }
-            flag::netnode::nn_res::stag => {
+            flag::netnode::nn_res::ARRAY_SUP_TAG => {
                 IDBFunction::read(sub_key, value, is_64).map(Self::Function)
             }
             // some kind of style setting, maybe setting font and background color
@@ -197,13 +197,15 @@ impl<'a> EntryPointRaw<'a> {
         };
         match *key_type {
             // TODO for some reason the address is one byte extra
-            flag::netnode::nn_res::atag => IdaUnpacker::new(value, is_64)
-                .read_word()
-                .map(|address| Self::Address {
-                    key: sub_key,
-                    address: address - 1,
-                })
-                .map_err(|_| anyhow!("Invalid Function address")),
+            flag::netnode::nn_res::ARRAY_ALT_TAG => {
+                IdaUnpacker::new(value, is_64)
+                    .read_word()
+                    .map(|address| Self::Address {
+                        key: sub_key,
+                        address: address - 1,
+                    })
+                    .map_err(|_| anyhow!("Invalid Function address"))
+            }
             b'I' => IdaUnpacker::new(value, is_64)
                 .read_word()
                 .map(|ordinal| Self::Ordinal {
@@ -219,7 +221,7 @@ impl<'a> EntryPointRaw<'a> {
                     })
                 })
                 .ok_or_else(|| anyhow!("Invalid Forwarded symbol name")),
-            flag::netnode::nn_res::stag => parse_maybe_cstr(value)
+            flag::netnode::nn_res::ARRAY_SUP_TAG => parse_maybe_cstr(value)
                 .and_then(|name| {
                     Some(Self::FunctionName {
                         key: sub_key,
