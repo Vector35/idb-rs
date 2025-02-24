@@ -16,17 +16,17 @@ pub mod netnode {
     /// for your tagged alt/sup/char/hash arrays.
     pub mod nn_res {
         /// Array of altvals
-        pub const atag: u8 = b'A';
+        pub const ARRAY_ALT_TAG: u8 = b'A';
         /// Array of supvals
-        pub const stag: u8 = b'S';
+        pub const ARRAY_SUP_TAG: u8 = b'S';
         /// Array of hashvals
-        pub const htag: u8 = b'H';
+        pub const HASH_TAG: u8 = b'H';
         /// Value of netnode
-        pub const vtag: u8 = b'V';
+        pub const VALUE_TAG: u8 = b'V';
         /// Name of netnode
-        pub const ntag: u8 = b'N';
+        pub const NAME_TAG: u8 = b'N';
         /// Links between netnodes
-        pub const ltag: u8 = b'L';
+        pub const LINK_TAG: u8 = b'L';
     }
 
     // Internal bit used to request ea2node() mapping of alt and sup indexes
