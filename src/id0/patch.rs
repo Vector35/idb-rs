@@ -1,66 +1,57 @@
-use super::{ID0Entry, ID0Section};
+use crate::{IdbInt, IdbKind};
+
+use super::ID0Entry;
 
 use anyhow::{anyhow, Result};
+use byteorder::{BE, LE};
+use num_traits::AsPrimitive;
 
 #[derive(Clone, Copy, Debug)]
 pub struct SegmentPatchIdx<'a>(pub(crate) &'a [u8]);
 
-pub struct Patch {
-    pub address: u64,
+pub struct Patch<K: IdbKind> {
+    pub address: K::Int,
     pub original_byte: u8,
 }
 
 #[derive(Clone, Copy)]
-pub struct SegmentPatchOridinalValueIter<'a> {
-    pub(crate) id0: &'a ID0Section,
+pub struct SegmentPatchOriginalValueIter<'a, K: IdbKind> {
+    _kind: std::marker::PhantomData<K>,
     pub(crate) entries: &'a [ID0Entry],
     pub(crate) key_len: usize,
     //pub(crate) segment_strings: SegmentStringsIter<'a>,
 }
-impl<'a> SegmentPatchOridinalValueIter<'a> {
-    pub(crate) fn new(
-        id0: &'a ID0Section,
-        entries: &'a [ID0Entry],
-        key_len: usize,
-    ) -> Self {
+impl<'a, K: IdbKind> SegmentPatchOriginalValueIter<'a, K> {
+    pub(crate) fn new(entries: &'a [ID0Entry], key_len: usize) -> Self {
         Self {
-            id0,
+            _kind: std::marker::PhantomData,
             entries,
             key_len,
         }
     }
 
-    fn patch_from_entry(&self, entry: &ID0Entry) -> Result<Patch> {
+    fn patch_from_entry(&self, entry: &ID0Entry) -> Result<Patch<K>> {
         // TODO find the InnerRef for this
         let addr_raw = &entry.key[self.key_len..];
-        let address = if self.id0.is_64 {
-            addr_raw.try_into().map(u64::from_be_bytes)
-        } else {
-            addr_raw.try_into().map(u32::from_be_bytes).map(u64::from)
-        }
-        .map_err(|_| anyhow!("Invalid id1 entry address"))?;
 
-        let original_value_raw = &entry.value[..];
-        let original_value = if self.id0.is_64 {
-            original_value_raw.try_into().map(u64::from_le_bytes)
-        } else {
-            original_value_raw
-                .try_into()
-                .map(u32::from_le_bytes)
-                .map(u64::from)
-        }
-        .map_err(|_| anyhow!("Invalid id1 entry original value"))?;
+        let address = K::Int::from_bytes::<BE>(addr_raw)
+            .ok_or_else(|| anyhow!("Invalid id1 entry address"))?;
 
+        let original_value = K::Int::from_bytes::<LE>(&entry.value[..])
+            .ok_or_else(|| anyhow!("Invalid id1 entry original value"))?;
+        let original_byte = AsPrimitive::<u8>::as_(original_value) & 0xFF;
+
+        // TODO the rest of the value is unknown, it's not the id1 flag...
+        let _rest_byte = original_value >> 8;
         Ok(Patch {
             address,
-            // TODO the rest of the value is unknown, it's not the id1 flag...
-            original_byte: (original_value & 0xFF) as u8,
+            original_byte,
         })
     }
 }
 
-impl Iterator for SegmentPatchOridinalValueIter<'_> {
-    type Item = Result<Patch>;
+impl<K: IdbKind> Iterator for SegmentPatchOriginalValueIter<'_, K> {
+    type Item = Result<Patch<K>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let (first, rest) = self.entries.split_first()?;
@@ -74,4 +65,4 @@ impl Iterator for SegmentPatchOridinalValueIter<'_> {
     }
 }
 
-impl ExactSizeIterator for SegmentPatchOridinalValueIter<'_> {}
+impl<K: IdbKind> ExactSizeIterator for SegmentPatchOriginalValueIter<'_, K> {}

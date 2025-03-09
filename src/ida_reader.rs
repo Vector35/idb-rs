@@ -1,345 +1,12 @@
 use anyhow::{anyhow, ensure, Result};
 
-use std::io::{BufRead, ErrorKind, Read, Seek};
+use std::io::{BufRead, ErrorKind, Read};
 use std::ops::Range;
 
 use crate::til::{TypeAttribute, TypeAttributeExt};
+use crate::{IdbInt, IdbKind};
 
-pub trait IdbReader: Seek + IdaGenericBufUnpack {}
-impl<R: Seek + IdaGenericBufUnpack> IdbReader for R {}
-
-pub trait IdaUnpack: IdaGenericUnpack {
-    fn is_64(&self) -> bool;
-
-    // TODO rename to deserialize_usize
-    fn read_word(&mut self) -> Result<u64> {
-        if self.is_64() {
-            Ok(bincode::deserialize_from(self)?)
-        } else {
-            Ok(bincode::deserialize_from::<_, u32>(self).map(u64::from)?)
-        }
-    }
-
-    fn unpack_usize(&mut self) -> Result<u64> {
-        if self.is_64() {
-            self.unpack_dq()
-        } else {
-            self.unpack_dd().map(u64::from)
-        }
-    }
-
-    // TODO unpack_address_ext
-    /// unpack an address and extend to max address if 32bits and u32::MAX
-    fn unpack_usize_ext_max(&mut self) -> Result<u64> {
-        if self.is_64() {
-            self.unpack_dq()
-        } else {
-            self.unpack_dd_ext_max().map(u64::from)
-        }
-    }
-
-    // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x28f8cc
-    fn unpack_address_range(&mut self) -> Result<Range<u64>> {
-        if self.is_64() {
-            let start = self.unpack_dq()?;
-            let len = self.unpack_dq()?;
-            #[cfg(feature = "restrictive")]
-            let end = start
-                .checked_add(len)
-                .ok_or_else(|| anyhow!("Function range overflows"))?;
-            #[cfg(not(feature = "restrictive"))]
-            let end = start.saturating_add(len);
-            Ok(start..end)
-        } else {
-            let start = self.unpack_dd_ext_max()?;
-            let len = self.unpack_dd()?;
-            // NOTE may not look right, but that's how ida does it
-            let end = match start.checked_add(len.into()) {
-                Some(0xFFFF_FFFF) => u64::MAX,
-                Some(value) => value,
-                #[cfg(feature = "restrictive")]
-                None => return Err(anyhow!("Function range overflows")),
-                #[cfg(not(feature = "restrictive"))]
-                None => u64::MAX,
-            };
-            Ok(start..end)
-        }
-    }
-}
-
-pub struct IdaUnpacker<I> {
-    input: I,
-    is_64: bool,
-}
-
-impl<I> IdaUnpacker<I> {
-    pub fn new(input: I, is_64: bool) -> Self {
-        Self { input, is_64 }
-    }
-
-    pub fn inner(self) -> I {
-        self.input
-    }
-
-    pub fn inner_ref(&self) -> &I {
-        &self.input
-    }
-}
-
-impl<I: IdaGenericUnpack> IdaUnpack for IdaUnpacker<I> {
-    fn is_64(&self) -> bool {
-        self.is_64
-    }
-}
-
-impl<I: Read> Read for IdaUnpacker<I> {
-    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        self.input.read(buf)
-    }
-
-    fn read_vectored(
-        &mut self,
-        bufs: &mut [std::io::IoSliceMut<'_>],
-    ) -> std::io::Result<usize> {
-        self.input.read_vectored(bufs)
-    }
-
-    fn read_to_end(&mut self, buf: &mut Vec<u8>) -> std::io::Result<usize> {
-        self.input.read_to_end(buf)
-    }
-
-    fn read_to_string(&mut self, buf: &mut String) -> std::io::Result<usize> {
-        self.input.read_to_string(buf)
-    }
-
-    fn read_exact(&mut self, buf: &mut [u8]) -> std::io::Result<()> {
-        self.input.read_exact(buf)
-    }
-}
-
-impl<I: BufRead> BufRead for IdaUnpacker<I> {
-    fn fill_buf(&mut self) -> std::io::Result<&[u8]> {
-        self.input.fill_buf()
-    }
-
-    fn consume(&mut self, amt: usize) {
-        self.input.consume(amt);
-    }
-
-    fn read_until(
-        &mut self,
-        byte: u8,
-        buf: &mut Vec<u8>,
-    ) -> std::io::Result<usize> {
-        self.input.read_until(byte, buf)
-    }
-
-    fn read_line(&mut self, buf: &mut String) -> std::io::Result<usize> {
-        self.input.read_line(buf)
-    }
-}
-
-pub trait IdaGenericBufUnpack: IdaGenericUnpack + BufRead {
-    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42ad36
-    fn read_raw_til_type(&mut self, format: u32) -> Result<Vec<u8>> {
-        let flags = self.read_u32()?;
-        if flags == 0x7fff_fffe {
-            let len = self.read_u32()?;
-            let mut data = vec![0; 8 + len as usize];
-            data[0..4].copy_from_slice(&flags.to_le_bytes());
-            data[4..8].copy_from_slice(&len.to_le_bytes());
-            self.read_exact(&mut data[8..])?;
-            Ok(data)
-        } else {
-            let mut data = flags.to_le_bytes().to_vec();
-            // skip name
-            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42ad58
-            self.read_until(b'\x00', &mut data)?;
-
-            // skip the ordinal number
-            match (format, (flags >> 31) != 0) {
-                // formats below 0x12 doesn't have 64 bits ord
-                (0..=0x11, _) | (_, false) => {
-                    data.extend(self.read_u32()?.to_le_bytes())
-                }
-                (_, true) => data.extend(self.read_u64()?.to_le_bytes()),
-            }
-
-            // skip the type itself
-            self.read_until(b'\x00', &mut data)?;
-            // skip the info field
-            self.read_until(b'\x00', &mut data)?;
-            // skip the cmt field
-            self.read_until(b'\x00', &mut data)?;
-            // skip the fieldcmts field
-            self.read_until(b'\x00', &mut data)?;
-            // skip the sclass
-            data.push(self.read_u8()?);
-            Ok(data)
-        }
-    }
-
-    /// Reads 1 to 9 bytes.
-    /// ValueRange: 0-0x7FFFFFFF, 0-0xFFFFFFFF
-    /// Usage: Arrays
-    fn read_da(&mut self) -> Result<(u8, u8)> {
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478620
-        let mut a = 0;
-        let mut b = 0;
-        let mut da = 0;
-        let mut base = 0;
-        let mut nelem = 0;
-        // TODO check no more then 9 bytes are read
-        loop {
-            let Some(typ) = self.peek_u8()? else {
-                #[cfg(feature = "restrictive")]
-                return Err(anyhow!(std::io::Error::new(
-                    std::io::ErrorKind::UnexpectedEof,
-                    "Unexpected EoF on DA"
-                )));
-                #[cfg(not(feature = "restrictive"))]
-                return Ok((nelem, base));
-            };
-            if typ & 0x80 == 0 {
-                break;
-            }
-            self.consume(1);
-
-            da = (da << 7) | typ & 0x7F;
-            b += 1;
-            if b >= 4 {
-                let z: u8 = self.read_u8()?;
-                if z != 0 {
-                    base = (da << 4) | z & 0xF
-                }
-                nelem = (z >> 4) & 7;
-                loop {
-                    let Some(y) = self.peek_u8()? else {
-                        #[cfg(feature = "restrictive")]
-                        return Err(anyhow!(std::io::Error::new(
-                            std::io::ErrorKind::UnexpectedEof,
-                            "Unexpected EoF on DA"
-                        )));
-                        #[cfg(not(feature = "restrictive"))]
-                        return Ok((nelem, base));
-                    };
-                    if (y & 0x80) == 0 {
-                        break;
-                    }
-                    self.consume(1);
-                    nelem = (nelem << 7) | y & 0x7F;
-                    a += 1;
-                    if a >= 4 {
-                        return Ok((nelem, base));
-                    }
-                }
-            }
-        }
-        Ok((nelem, base))
-    }
-
-    // TODO rename this
-    fn read_c_string_raw(&mut self) -> Result<Vec<u8>> {
-        let mut buf = vec![];
-        self.read_until(b'\x00', &mut buf)?;
-        // last char need to be \x00 or we found a EoF
-        if let Some(b'\x00') = buf.last() {
-            let _ = buf.pop(); // remove the \x00 from the end
-        } else {
-            // found EOF, aka could not find the \x00 for the string end
-            #[cfg(feature = "restrictive")]
-            return Err(anyhow!("Unexpected EoF on CStr"));
-        }
-        Ok(buf)
-    }
-
-    // TODO rename this
-    fn read_c_string_vec(&mut self) -> Result<Vec<Vec<u8>>> {
-        let buf = self.read_c_string_raw()?;
-        split_strings_from_array(&buf)
-            .ok_or_else(|| anyhow!("Invalid len on Vec of CStr {buf:02x?}"))
-    }
-
-    fn peek_u8(&mut self) -> Result<Option<u8>> {
-        Ok(self.fill_buf()?.first().copied())
-    }
-
-    // InnerRef b47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46b690 unpack_dd
-    // NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
-    /// Reads 1 to 5 bytes.
-    fn unpack_dd_or_eof(&mut self) -> Result<Option<u32>> {
-        let Some(b1) = self.peek_u8()? else {
-            return Ok(None);
-        };
-        self.consume(1);
-        self.unpack_dd_from_byte(b1).map(Option::Some)
-    }
-
-    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce40
-    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x451590
-    fn read_ext_att(&mut self) -> Result<u64> {
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cec0
-        // TODO this can't be found at InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x451590
-        let start_value = match self.read_dt()? {
-            0x400 => return Ok(-1i64 as u64),
-            0x200 => return Ok(-1i32 as u64),
-            other => other,
-        };
-
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce6f
-        let mut acc = 0;
-        for bit in 0..8 {
-            let byte = bit * 8;
-            if (start_value >> bit) & 1 != 0 {
-                let value = self.read_u8()?;
-                // TODO is this an error or expect possible value?
-                #[cfg(feature = "restrictive")]
-                ensure!(value != 0);
-                acc |= (value as u64) << byte;
-            }
-        }
-
-        if start_value & 0x100 != 0 {
-            acc = !acc;
-        }
-        Ok(acc)
-    }
-
-    fn read_tah(&mut self) -> Result<Option<TypeAttribute>> {
-        // TODO TAH in each type have a especial meaning, verify those
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477080
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
-        let Some(tah) = self.peek_u8()? else {
-            return Err(anyhow!(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "Unexpected EoF on DA"
-            )));
-        };
-        if tah == 0xFE {
-            Ok(Some(self.read_type_attribute()?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn read_sdacl(&mut self) -> Result<Option<TypeAttribute>> {
-        let Some(sdacl) = self.peek_u8()? else {
-            return Err(anyhow!(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "Unexpected EoF on SDACL"
-            )));
-        };
-
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477eff
-        //NOTE: original op ((sdacl as u8 & 0xcf) ^ 0xC0) as i32 <= 0x01
-        matches!(sdacl, 0xC0..=0xC1 | 0xD0..=0xD1 | 0xE0..=0xE1 | 0xF0..=0xF1)
-            .then(|| self.read_type_attribute())
-            .transpose()
-    }
-}
-impl<R: BufRead> IdaGenericBufUnpack for R {}
-
-pub trait IdaGenericUnpack: Read {
+pub trait IdbRead: Read {
     fn read_u8(&mut self) -> Result<u8> {
         let mut data = [0; 1];
         self.read_exact(&mut data)?;
@@ -482,13 +149,13 @@ pub trait IdaGenericUnpack: Read {
         }
     }
 
-    /// unpack 32bits, extending the max value if equal to u32::MAX
-    fn unpack_dd_ext_max(&mut self) -> Result<u64> {
-        match self.unpack_dd()? {
-            u32::MAX => Ok(u64::MAX),
-            value => Ok(u64::from(value)),
-        }
-    }
+    ///// unpack 32bits, extending the max value if equal to u32::MAX
+    //fn unpack_dd_ext_max(&mut self) -> Result<u64> {
+    //    match self.unpack_dd()? {
+    //        u32::MAX => Ok(u64::MAX),
+    //        value => Ok(u64::from(value)),
+    //    }
+    //}
 
     // InnerRef b47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46b7b0 unpack_dq
     // NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
@@ -688,7 +355,249 @@ pub trait IdaGenericUnpack: Read {
     }
 }
 
-impl<R: Read> IdaGenericUnpack for R {}
+impl<R: Read> IdbRead for R {}
+
+pub trait IdbBufRead: IdbRead + BufRead {
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42ad36
+    fn read_raw_til_type(&mut self, format: u32) -> Result<Vec<u8>> {
+        let flags = self.read_u32()?;
+        if flags == 0x7fff_fffe {
+            // TODO find the type that have this flag
+            let len = self.read_u32()?;
+            let mut data = vec![0; 8 + len as usize];
+            data[0..4].copy_from_slice(&flags.to_le_bytes());
+            data[4..8].copy_from_slice(&len.to_le_bytes());
+            self.read_exact(&mut data[8..])?;
+            Ok(data)
+        } else {
+            let mut data = flags.to_le_bytes().to_vec();
+            // skip name
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x42ad58
+            self.read_until(b'\x00', &mut data)?;
+
+            // skip the ordinal number
+            match (format, (flags >> 31) != 0) {
+                // formats below 0x12 doesn't have 64 bits ord
+                (0..=0x11, _) | (_, false) => {
+                    data.extend(self.read_u32()?.to_le_bytes())
+                }
+                (_, true) => data.extend(self.read_u64()?.to_le_bytes()),
+            }
+
+            // skip the type itself
+            self.read_until(b'\x00', &mut data)?;
+            // skip the info field
+            self.read_until(b'\x00', &mut data)?;
+            // skip the cmt field
+            self.read_until(b'\x00', &mut data)?;
+            // skip the fieldcmts field
+            self.read_until(b'\x00', &mut data)?;
+            // skip the sclass
+            data.push(self.read_u8()?);
+            Ok(data)
+        }
+    }
+
+    /// Reads 1 to 9 bytes.
+    /// ValueRange: 0-0x7FFFFFFF, 0-0xFFFFFFFF
+    /// Usage: Arrays
+    fn read_da(&mut self) -> Result<(u8, u8)> {
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478620
+        let mut a = 0;
+        let mut b = 0;
+        let mut da = 0;
+        let mut base = 0;
+        let mut nelem = 0;
+        // TODO check no more then 9 bytes are read
+        loop {
+            let Some(typ) = self.peek_u8()? else {
+                #[cfg(feature = "restrictive")]
+                return Err(anyhow!(std::io::Error::new(
+                    std::io::ErrorKind::UnexpectedEof,
+                    "Unexpected EoF on DA"
+                )));
+                #[cfg(not(feature = "restrictive"))]
+                return Ok((nelem, base));
+            };
+            if typ & 0x80 == 0 {
+                break;
+            }
+            self.consume(1);
+
+            da = (da << 7) | typ & 0x7F;
+            b += 1;
+            if b >= 4 {
+                let z: u8 = self.read_u8()?;
+                if z != 0 {
+                    base = (da << 4) | z & 0xF
+                }
+                nelem = (z >> 4) & 7;
+                loop {
+                    let Some(y) = self.peek_u8()? else {
+                        #[cfg(feature = "restrictive")]
+                        return Err(anyhow!(std::io::Error::new(
+                            std::io::ErrorKind::UnexpectedEof,
+                            "Unexpected EoF on DA"
+                        )));
+                        #[cfg(not(feature = "restrictive"))]
+                        return Ok((nelem, base));
+                    };
+                    if (y & 0x80) == 0 {
+                        break;
+                    }
+                    self.consume(1);
+                    nelem = (nelem << 7) | y & 0x7F;
+                    a += 1;
+                    if a >= 4 {
+                        return Ok((nelem, base));
+                    }
+                }
+            }
+        }
+        Ok((nelem, base))
+    }
+
+    // TODO rename this
+    fn read_c_string_raw(&mut self) -> Result<Vec<u8>> {
+        let mut buf = vec![];
+        self.read_until(b'\x00', &mut buf)?;
+        // last char need to be \x00 or we found a EoF
+        if let Some(b'\x00') = buf.last() {
+            let _ = buf.pop(); // remove the \x00 from the end
+        } else {
+            // found EOF, aka could not find the \x00 for the string end
+            #[cfg(feature = "restrictive")]
+            return Err(anyhow!("Unexpected EoF on CStr"));
+        }
+        Ok(buf)
+    }
+
+    // TODO rename this
+    fn read_c_string_vec(&mut self) -> Result<Vec<Vec<u8>>> {
+        let buf = self.read_c_string_raw()?;
+        split_strings_from_array(&buf)
+            .ok_or_else(|| anyhow!("Invalid len on Vec of CStr {buf:02x?}"))
+    }
+
+    fn peek_u8(&mut self) -> Result<Option<u8>> {
+        Ok(self.fill_buf()?.first().copied())
+    }
+
+    // InnerRef b47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46b690 unpack_dd
+    // NOTE the orignal implementation never fails, if input hit EoF it a partial result or 0
+    /// Reads 1 to 5 bytes.
+    fn unpack_dd_or_eof(&mut self) -> Result<Option<u32>> {
+        let Some(b1) = self.peek_u8()? else {
+            return Ok(None);
+        };
+        self.consume(1);
+        self.unpack_dd_from_byte(b1).map(Option::Some)
+    }
+
+    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce40
+    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x451590
+    fn read_ext_att(&mut self) -> Result<u64> {
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48cec0
+        // TODO this can't be found at InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x451590
+        let start_value = match self.read_dt()? {
+            0x400 => return Ok(-1i64 as u64),
+            0x200 => return Ok(-1i32 as u64),
+            other => other,
+        };
+
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48ce6f
+        let mut acc = 0;
+        for bit in 0..8 {
+            let byte = bit * 8;
+            if (start_value >> bit) & 1 != 0 {
+                let value = self.read_u8()?;
+                // TODO is this an error or expect possible value?
+                #[cfg(feature = "restrictive")]
+                ensure!(value != 0);
+                acc |= (value as u64) << byte;
+            }
+        }
+
+        if start_value & 0x100 != 0 {
+            acc = !acc;
+        }
+        Ok(acc)
+    }
+
+    fn read_tah(&mut self) -> Result<Option<TypeAttribute>> {
+        // TODO TAH in each type have a especial meaning, verify those
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477080
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
+        let Some(tah) = self.peek_u8()? else {
+            return Err(anyhow!(std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                "Unexpected EoF on DA"
+            )));
+        };
+        if tah == 0xFE {
+            Ok(Some(self.read_type_attribute()?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn read_sdacl(&mut self) -> Result<Option<TypeAttribute>> {
+        let Some(sdacl) = self.peek_u8()? else {
+            return Err(anyhow!(std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                "Unexpected EoF on SDACL"
+            )));
+        };
+
+        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477eff
+        //NOTE: original op ((sdacl as u8 & 0xcf) ^ 0xC0) as i32 <= 0x01
+        matches!(sdacl, 0xC0..=0xC1 | 0xD0..=0xD1 | 0xE0..=0xE1 | 0xF0..=0xF1)
+            .then(|| self.read_type_attribute())
+            .transpose()
+    }
+}
+
+impl<R: BufRead> IdbBufRead for R {}
+
+pub trait IdbReadKind<K: IdbKind>: Read + IdbRead {
+    // TODO fix confusing names
+    fn read_word(&mut self) -> Result<K::Int>
+    where
+        Self: Sized,
+    {
+        self.read_addr()
+    }
+    fn read_addr(&mut self) -> Result<K::Int>
+    where
+        Self: Sized,
+    {
+        <K::Int as IdbInt>::from_reader(self)
+    }
+
+    fn unpack_usize(&mut self) -> Result<K::Int>
+    where
+        Self: Sized,
+    {
+        <K::Int as IdbInt>::unpack_from_reader(self)
+    }
+    fn unpack_address_range(&mut self) -> Result<Range<K::Int>>
+    where
+        Self: Sized,
+    {
+        // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0x28f8cc
+        let start = self.unpack_usize()?;
+        let len = self.unpack_usize()?;
+        // NOTE may not look right, but that's how ida does it
+        #[cfg(feature = "restrictive")]
+        let end = num_traits::CheckedAdd::checked_add(&start, &len)
+            .ok_or_else(|| anyhow!("Function range overflows"))?;
+        #[cfg(not(feature = "restrictive"))]
+        let end = num_traits::Saturating::saturating_add(start, len);
+        Ok(start..end)
+    }
+}
+
+impl<R: Read, K: IdbKind> IdbReadKind<K> for R {}
 
 pub fn split_strings_from_array(buf: &[u8]) -> Option<Vec<Vec<u8>>> {
     if buf.is_empty() {

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::num::{NonZeroU16, NonZeroU8};
 
-use crate::ida_reader::IdaGenericBufUnpack;
+use crate::ida_reader::IdbBufRead;
 use crate::til::{Type, TypeAttribute, TypeRaw};
 use crate::IDBString;
 
@@ -50,7 +50,7 @@ pub(crate) struct ArrayRaw {
 
 impl ArrayRaw {
     pub(crate) fn read(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
         metadata: u8,
     ) -> anyhow::Result<Self> {

@@ -44,7 +44,9 @@ use tilib::tilib_print;
 mod produce_idc;
 use produce_idc::produce_idc;
 
-use idb_rs::{id0::ID0Section, id1::ID1Section, IDBParser};
+use idb_rs::id0::Id0Section;
+use idb_rs::id1::ID1Section;
+use idb_rs::IdbParser;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -162,12 +164,12 @@ impl Args {
     }
 }
 
-fn get_id0_section(args: &Args) -> Result<ID0Section> {
+fn get_id0_section(args: &Args) -> Result<Id0Section> {
     match args.input_type() {
         FileType::Til => Err(anyhow!("TIL don't contains any ID0 data")),
         FileType::Idb => {
             let input = BufReader::new(File::open(&args.input)?);
-            let mut parser = IDBParser::new(input)?;
+            let mut parser = IdbParser::new(input)?;
             let id0_offset = parser.id0_section_offset().ok_or_else(|| {
                 anyhow!("IDB file don't contains a TIL sector")
             })?;
@@ -181,7 +183,7 @@ fn get_id1_section(args: &Args) -> Result<ID1Section> {
         FileType::Til => Err(anyhow!("TIL don't contains any ID1 data")),
         FileType::Idb => {
             let input = BufReader::new(File::open(&args.input)?);
-            let mut parser = IDBParser::new(input)?;
+            let mut parser = IdbParser::new(input)?;
             let id1_offset = parser.id1_section_offset().ok_or_else(|| {
                 anyhow!("IDB file don't contains a TIL sector")
             })?;

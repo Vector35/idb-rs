@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::ops::Range;
 
-use crate::ida_reader::{
-    IdaGenericBufUnpack, IdaGenericUnpack, IdaUnpack, IdaUnpacker,
-};
-use crate::{til, IDBHeader, IDBSectionCompression};
+use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
+use crate::{til, IDBSectionCompression, IdbInt, IdbKind};
 
 use anyhow::{anyhow, ensure, Result};
+use byteorder::BE;
 
 pub mod flag;
 
 mod segment;
+use num_traits::CheckedAdd;
 pub use segment::*;
 mod root_info;
 pub use root_info::*;
@@ -25,39 +25,47 @@ mod file_region;
 pub use file_region::*;
 mod patch;
 pub use patch::*;
+mod db;
+pub use db::*;
 
 #[derive(Clone, Debug)]
-pub struct IDBFunction {
-    pub address: Range<u64>,
+pub struct IDBFunction<K: IdbKind> {
+    pub address: Range<K::Int>,
     pub flags: u16,
-    pub extra: IDBFunctionExtra,
+    pub extra: IDBFunctionExtra<K>,
 }
 
 #[derive(Clone, Debug)]
-pub enum IDBFunctionExtra {
+pub enum IDBFunctionExtra<K: IdbKind> {
     NonTail {
-        frame: u64,
+        frame: K::Int,
     },
     Tail {
         /// function owner of the function start
-        owner: u64,
-        refqty: u64,
+        owner: K::Int,
+        refqty: K::Int,
         _unknown1: u16,
-        _unknown2: u64,
+        _unknown2: K::Int,
     },
 }
 
 #[derive(Clone, Debug)]
-pub enum FunctionsAndComments<'a> {
+pub enum FunctionsAndComments<'a, K: IdbKind> {
     // It's just the name "$ funcs"
     Name,
-    Function(IDBFunction),
-    Comment { address: u64, comment: Comments<'a> },
-    Unknown { key: &'a [u8], value: &'a [u8] },
+    Function(IDBFunction<K>),
+    Comment {
+        address: K::Int,
+        comment: Comments<'a>,
+    },
+    Unknown {
+        key: &'a [u8],
+        value: &'a [u8],
+    },
 }
 
-impl<'a> FunctionsAndComments<'a> {
-    fn read(key: &'a [u8], value: &'a [u8], is_64: bool) -> Result<Self> {
+impl<'a, K: IdbKind> FunctionsAndComments<'a, K> {
+    fn read(key: &'a [u8], value: &'a [u8]) -> Result<Self> {
         let [key_type, sub_key @ ..] = key else {
             return Err(anyhow!("invalid Funcs subkey"));
         };
@@ -67,14 +75,14 @@ impl<'a> FunctionsAndComments<'a> {
                 Ok(Self::Name)
             }
             flag::netnode::nn_res::ARRAY_SUP_TAG => {
-                IDBFunction::read(sub_key, value, is_64).map(Self::Function)
+                IDBFunction::read(sub_key, value).map(Self::Function)
             }
             // some kind of style setting, maybe setting font and background color
             b'R' | b'C' if value.starts_with(&[4, 3, 2, 1]) => {
                 Ok(Self::Unknown { key, value })
             }
             b'C' => {
-                let address = parse_number(sub_key, true, is_64)
+                let address = K::Int::from_bytes::<BE>(sub_key)
                     .ok_or_else(|| anyhow!("Invalid Comment address"))?;
                 parse_maybe_cstr(value)
                     .map(|value| Self::Comment {
@@ -85,7 +93,7 @@ impl<'a> FunctionsAndComments<'a> {
             }
             b'R' => {
                 let address =
-                    parse_number(sub_key, true, is_64).ok_or_else(|| {
+                    K::Int::from_bytes::<BE>(sub_key).ok_or_else(|| {
                         anyhow!("Invalid Repetable Comment address")
                     })?;
                 parse_maybe_cstr(value)
@@ -101,12 +109,12 @@ impl<'a> FunctionsAndComments<'a> {
     }
 }
 
-impl IDBFunction {
+impl<K: IdbKind> IDBFunction<K> {
     // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x37dd30
     // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f810
-    fn read(_key: &[u8], value: &[u8], is_64: bool) -> Result<Self> {
-        let mut input = IdaUnpacker::new(value, is_64);
-        let address = input.unpack_address_range()?;
+    fn read(_key: &[u8], value: &[u8]) -> Result<Self> {
+        let mut input = value;
+        let address = IdbReadKind::<K>::unpack_address_range(&mut input)?;
         let flags = input.unpack_dw()?;
 
         // CONST migrate this to mod flags
@@ -117,7 +125,7 @@ impl IDBFunction {
             Self::read_extra_regular(&mut input)?
         };
 
-        if !input.inner_ref().is_empty() {
+        if !input.is_empty() {
             let _value = input.unpack_dq()?;
         }
         // TODO Undestand the InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f9d8 data
@@ -131,10 +139,10 @@ impl IDBFunction {
     }
 
     fn read_extra_regular(
-        input: &mut impl IdaUnpack,
-    ) -> Result<IDBFunctionExtra> {
+        input: &mut impl IdbReadKind<K>,
+    ) -> Result<IDBFunctionExtra<K>> {
         // TODO Undertand the sub operation at InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f98f
-        let frame = input.unpack_usize_ext_max()?;
+        let frame = input.unpack_usize()?;
         let _unknown4 = input.unpack_dw()?;
         if _unknown4 == 0 {
             let _unknown5 = input.unpack_dd()?;
@@ -144,21 +152,19 @@ impl IDBFunction {
 
     fn read_extra_tail<R>(
         input: &mut R,
-        address_start: u64,
-    ) -> Result<IDBFunctionExtra>
+        address_start: K::Int,
+    ) -> Result<IDBFunctionExtra<K>>
     where
-        R: IdaUnpack + IdaGenericBufUnpack,
+        R: IdbBufRead + IdbReadKind<K>,
     {
         // offset of the function owner in relation to the function start
-        let owner_offset = input.unpack_usize()? as i64;
-        let owner = match address_start.checked_add_signed(owner_offset) {
-            Some(0xFFFF_FFFF) => u64::MAX,
-            Some(value) => value,
-            None => return Err(anyhow!("Owner Function offset is invalid")),
-        };
-        let refqty = input.unpack_usize_ext_max()?;
+        let owner_offset = input.unpack_usize()?;
+        let owner = address_start
+            .checked_add(&owner_offset)
+            .ok_or_else(|| anyhow!("Owner Function offset is invalid"))?;
+        let refqty = input.unpack_usize()?;
         let _unknown1 = input.unpack_dw()?;
-        let _unknown2 = input.unpack_usize_ext_max()?;
+        let _unknown2 = input.unpack_usize()?;
         if input.peek_u8()?.is_some() {
             input.consume(1);
         }
@@ -174,17 +180,18 @@ impl IDBFunction {
 }
 
 #[derive(Clone, Debug)]
-pub enum EntryPointRaw<'a> {
+pub enum EntryPointRaw<'a, K: IdbKind> {
     Name,
-    Address { key: u64, address: u64 },
-    Ordinal { key: u64, ordinal: u64 },
-    ForwardedSymbol { key: u64, symbol: &'a str },
-    FunctionName { key: u64, name: &'a str },
+    Address { key: K::Int, address: K::Int },
+    Ordinal { key: K::Int, ordinal: K::Int },
+    ForwardedSymbol { key: K::Int, symbol: &'a str },
+    FunctionName { key: K::Int, name: &'a str },
     Unknown { key: &'a [u8], value: &'a [u8] },
 }
 
-impl<'a> EntryPointRaw<'a> {
-    fn read(key: &'a [u8], value: &'a [u8], is_64: bool) -> Result<Self> {
+impl<'a, K: IdbKind> EntryPointRaw<'a, K> {
+    fn read(key: &'a [u8], value: &'a [u8]) -> Result<Self> {
+        let mut value = value;
         let [key_type, sub_key @ ..] = key else {
             return Err(anyhow!("invalid Funcs subkey"));
         };
@@ -192,22 +199,20 @@ impl<'a> EntryPointRaw<'a> {
             ensure!(parse_maybe_cstr(value) == Some(&b"$ entry points"[..]));
             return Ok(Self::Name);
         }
-        let Some(sub_key) = parse_number(sub_key, true, is_64) else {
+        let Some(sub_key) = K::Int::from_bytes::<BE>(sub_key) else {
             return Ok(Self::Unknown { key, value });
         };
         match *key_type {
             // TODO for some reason the address is one byte extra
             flag::netnode::nn_res::ARRAY_ALT_TAG => {
-                IdaUnpacker::new(value, is_64)
-                    .read_word()
+                IdbReadKind::<K>::read_word(&mut value)
                     .map(|address| Self::Address {
                         key: sub_key,
-                        address: address - 1,
+                        address: address - K::Int::from(1u8),
                     })
                     .map_err(|_| anyhow!("Invalid Function address"))
             }
-            b'I' => IdaUnpacker::new(value, is_64)
-                .read_word()
+            b'I' => IdbReadKind::<K>::read_word(&mut value)
                 .map(|ordinal| Self::Ordinal {
                     key: sub_key,
                     ordinal,
@@ -236,27 +241,11 @@ impl<'a> EntryPointRaw<'a> {
 }
 
 #[derive(Clone, Debug)]
-pub struct EntryPoint {
+pub struct EntryPoint<K: IdbKind> {
     pub name: String,
-    pub address: u64,
+    pub address: K::Int,
     pub forwarded: Option<String>,
     pub entry_type: Option<til::Type>,
-}
-
-pub(crate) fn parse_number(
-    data: &[u8],
-    big_endian: bool,
-    is_64: bool,
-) -> Option<u64> {
-    Some(match (data.len(), is_64, big_endian) {
-        (8, true, true) => u64::from_be_bytes(data.try_into().unwrap()),
-        (8, true, false) => u64::from_le_bytes(data.try_into().unwrap()),
-        (4, false, true) => u32::from_be_bytes(data.try_into().unwrap()).into(),
-        (4, false, false) => {
-            u32::from_le_bytes(data.try_into().unwrap()).into()
-        }
-        _ => return None,
-    })
 }
 
 // parse a string that maybe is finalized with \x00
@@ -270,25 +259,21 @@ fn parse_maybe_cstr(data: &[u8]) -> Option<&[u8]> {
     Some(&data[..end_pos])
 }
 
-enum ID0CStr<'a> {
+enum ID0CStr<'a, K: IdbKind> {
     CStr(&'a [u8]),
-    Ref(u64),
+    Ref(K::Int),
 }
 
 // parse a string that maybe is finalized with \x00
-fn parse_cstr_or_subkey(data: &[u8], is_64: bool) -> Option<ID0CStr> {
-    // TODO find the InnerRef, so far I found only the
-    // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x4e20c0
-    match data {
-        [b'\x00', rest @ ..] if rest.len() == if is_64 { 8 } else { 4 } => {
-            if is_64 {
-                Some(ID0CStr::Ref(u64::from_be_bytes(rest.try_into().unwrap())))
-            } else {
-                Some(ID0CStr::Ref(
-                    u32::from_be_bytes(rest.try_into().unwrap()).into(),
-                ))
+impl<'a, K: IdbKind> ID0CStr<'a, K> {
+    pub(crate) fn parse_cstr_or_subkey(data: &'a [u8]) -> Option<Self> {
+        // TODO find the InnerRef, so far I found only the
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x4e20c0
+        match data {
+            [b'\x00', rest @ ..] => {
+                K::Int::from_bytes::<BE>(rest).map(ID0CStr::Ref)
             }
+            _ => parse_maybe_cstr(data).map(ID0CStr::CStr),
         }
-        _ => parse_maybe_cstr(data).map(ID0CStr::CStr),
     }
 }

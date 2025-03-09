@@ -5,15 +5,14 @@ pub(crate) mod ida_reader;
 pub mod nam;
 pub mod til;
 
-use std::borrow::Cow;
-use std::fmt::Debug;
 use std::fmt::Write;
-use std::io::SeekFrom;
+use std::io::{BufRead, Read, SeekFrom};
 use std::num::NonZeroU64;
+use std::{borrow::Cow, io::Seek};
 
-use id0::ID0Section;
-use ida_reader::IdaGenericUnpack;
-use ida_reader::IdbReader;
+use byteorder::{ByteOrder, LE};
+use id0::{ID0Section, Id0Section};
+use ida_reader::{IdbBufRead, IdbRead};
 use serde::Deserialize;
 
 use crate::id1::ID1Section;
@@ -21,10 +20,37 @@ use crate::nam::NamSection;
 use crate::til::section::TILSection;
 use anyhow::{anyhow, ensure, Result};
 
+// TODO fix the name
+#[derive(Debug, Clone)]
+pub enum IdbParser<I> {
+    U32(IDBParser<I, Idb32>),
+    U64(IDBParser<I, Idb64>),
+}
+
+impl<I: Read + Seek> IdbParser<I> {
+    pub fn new(mut input: I) -> Result<Self> {
+        let header = IDBHeader::read(&mut input)?;
+        if header.magic_version.is_64() {
+            Ok(Self::U64(IDBParser {
+                input,
+                header,
+                _kind: std::marker::PhantomData,
+            }))
+        } else {
+            Ok(Self::U32(IDBParser {
+                input,
+                header,
+                _kind: std::marker::PhantomData,
+            }))
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
-pub struct IDBParser<I> {
+pub struct IDBParser<I, K: IdbKind> {
     input: I,
     header: IDBHeader,
+    _kind: std::marker::PhantomData<K>,
 }
 
 trait Sealed {}
@@ -60,12 +86,66 @@ impl_idb_offset!(NamOffset);
 pub struct TILOffset(NonZeroU64);
 impl_idb_offset!(TILOffset);
 
-impl<I: IdbReader> IDBParser<I> {
-    pub fn new(mut input: I) -> Result<Self> {
-        let header = IDBHeader::read(&mut input)?;
-        Ok(Self { input, header })
+macro_rules! call_parser_discrimiant {
+    ($slf:ident, $name:ident, $call:tt) => {
+        match $slf {
+            Self::U32($name) => $call,
+            Self::U64($name) => $call,
+        }
+    };
+}
+impl<I: BufRead + Seek> IdbParser<I> {
+    pub fn id0_section_offset(&self) -> Option<ID0Offset> {
+        call_parser_discrimiant!(self, x, { x.id0_section_offset() })
     }
 
+    pub fn id1_section_offset(&self) -> Option<ID1Offset> {
+        call_parser_discrimiant!(self, x, { x.id1_section_offset() })
+    }
+
+    pub fn nam_section_offset(&self) -> Option<NamOffset> {
+        call_parser_discrimiant!(self, x, { x.nam_section_offset() })
+    }
+
+    pub fn til_section_offset(&self) -> Option<TILOffset> {
+        call_parser_discrimiant!(self, x, { x.til_section_offset() })
+    }
+
+    pub fn read_id0_section(&mut self, id0: ID0Offset) -> Result<Id0Section> {
+        match self {
+            IdbParser::U32(parser) => {
+                parser.read_id0_section(id0).map(Id0Section::U32)
+            }
+            IdbParser::U64(parser) => {
+                parser.read_id0_section(id0).map(Id0Section::U64)
+            }
+        }
+    }
+
+    pub fn read_id1_section(&mut self, id1: ID1Offset) -> Result<ID1Section> {
+        call_parser_discrimiant!(self, x, { x.read_id1_section(id1) })
+    }
+
+    pub fn read_nam_section(&mut self, nam: NamOffset) -> Result<NamSection> {
+        call_parser_discrimiant!(self, x, { x.read_nam_section(nam) })
+    }
+
+    pub fn read_til_section(&mut self, til: TILOffset) -> Result<TILSection> {
+        call_parser_discrimiant!(self, x, { x.read_til_section(til) })
+    }
+
+    pub fn decompress_til_section(
+        &mut self,
+        til: TILOffset,
+        output: &mut impl std::io::Write,
+    ) -> Result<()> {
+        call_parser_discrimiant!(self, x, {
+            x.decompress_til_section(til, output)
+        })
+    }
+}
+
+impl<I: BufRead + Seek, K: IdbKind> IDBParser<I, K> {
     pub fn id0_section_offset(&self) -> Option<ID0Offset> {
         self.header.id0_offset.map(ID0Offset)
     }
@@ -82,12 +162,15 @@ impl<I: IdbReader> IDBParser<I> {
         self.header.til_offset.map(TILOffset)
     }
 
-    pub fn read_id0_section(&mut self, id0: ID0Offset) -> Result<ID0Section> {
+    pub fn read_id0_section(
+        &mut self,
+        id0: ID0Offset,
+    ) -> Result<ID0Section<K>> {
         read_section(
             &mut self.input,
             &self.header,
             id0.0.get(),
-            ID0Section::read,
+            ID0Section::<K>::read,
         )
     }
 
@@ -96,7 +179,7 @@ impl<I: IdbReader> IDBParser<I> {
             &mut self.input,
             &self.header,
             id1.0.get(),
-            ID1Section::read,
+            ID1Section::read::<K>,
         )
     }
 
@@ -105,7 +188,7 @@ impl<I: IdbReader> IDBParser<I> {
             &mut self.input,
             &self.header,
             nam.0.get(),
-            NamSection::read,
+            NamSection::read::<K>,
         )
     }
 
@@ -114,7 +197,7 @@ impl<I: IdbReader> IDBParser<I> {
             &mut self.input,
             &self.header,
             til.0.get(),
-            |input, _header, compressed| TILSection::read(input, compressed),
+            TILSection::read,
         )
     }
 
@@ -163,18 +246,14 @@ fn read_section<'a, I, T, F>(
     mut process: F,
 ) -> Result<T>
 where
-    I: IdbReader,
-    F: FnMut(
-        &mut std::io::Take<&'a mut I>,
-        &IDBHeader,
-        IDBSectionCompression,
-    ) -> Result<T>,
+    I: IdbBufRead + Seek,
+    F: FnMut(&mut std::io::Take<&'a mut I>, IDBSectionCompression) -> Result<T>,
 {
     input.seek(SeekFrom::Start(offset))?;
     let section_header = IDBSectionHeader::read(header, &mut *input)?;
     // makes sure the reader doesn't go out-of-bounds
     let mut input = std::io::Read::take(input, section_header.len);
-    let result = process(&mut input, header, section_header.compress)?;
+    let result = process(&mut input, section_header.compress)?;
 
     // TODO seems its normal to have a few extra bytes at the end of the sector, maybe
     // because of the compressions stuff, anyway verify that
@@ -296,7 +375,7 @@ struct IDBHeaderRaw {
 }
 
 impl IDBHeader {
-    pub fn read(mut input: impl IdaGenericUnpack) -> Result<Self> {
+    pub fn read(mut input: impl Read) -> Result<Self> {
         let header_raw: IDBHeaderRaw = bincode::deserialize_from(&mut input)?;
         let magic = IDBMagic::try_from(header_raw.magic)?;
         ensure!(
@@ -317,7 +396,7 @@ impl IDBHeader {
     fn read_v1(
         header_raw: &IDBHeaderRaw,
         magic: IDBMagic,
-        input: impl IdaGenericUnpack,
+        input: impl Read,
     ) -> Result<Self> {
         #[derive(Debug, Deserialize)]
         struct V1Raw {
@@ -353,7 +432,7 @@ impl IDBHeader {
     fn read_v4(
         header_raw: &IDBHeaderRaw,
         magic: IDBMagic,
-        input: impl IdaGenericUnpack,
+        input: impl Read,
     ) -> Result<Self> {
         #[derive(Debug, Deserialize)]
         struct V4Raw {
@@ -394,7 +473,7 @@ impl IDBHeader {
     fn read_v5(
         header_raw: &IDBHeaderRaw,
         magic: IDBMagic,
-        input: impl IdaGenericUnpack,
+        input: impl Read,
     ) -> Result<Self> {
         #[derive(Debug, Deserialize)]
         struct V5Raw {
@@ -447,7 +526,7 @@ impl IDBHeader {
     fn read_v6(
         header_raw: &IDBHeaderRaw,
         magic: IDBMagic,
-        input: impl IdaGenericUnpack,
+        input: impl Read,
     ) -> Result<Self> {
         #[derive(Debug, Deserialize)]
         struct V6Raw {
@@ -498,10 +577,7 @@ impl IDBHeader {
 }
 
 impl IDBSectionHeader {
-    pub fn read(
-        header: &IDBHeader,
-        input: impl IdaGenericUnpack,
-    ) -> Result<Self> {
+    pub fn read(header: &IDBHeader, input: impl Read) -> Result<Self> {
         match header.version {
             IDBVersion::V1 | IDBVersion::V4 => {
                 #[derive(Debug, Deserialize)]
@@ -548,7 +624,7 @@ enum VaVersion {
 }
 
 impl VaVersion {
-    fn read(mut input: impl IdaGenericUnpack) -> Result<Self> {
+    fn read(mut input: impl Read) -> Result<Self> {
         let mut magic: [u8; 4] = [0; 4];
         input.read_exact(&mut magic)?;
         match &magic[..] {
@@ -843,7 +919,7 @@ mod test {
     #[test]
     fn parse_idb_param() {
         let param = b"IDA\xbc\x02\x06metapc#\x8a\x03\x03\x02\x00\x00\x00\x00\xff_\xff\xff\xf7\x03\x00\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x0d\x00\x0d \x0d\x10\xff\xff\x00\x00\x00\xc0\x80\x00\x00\x00\x02\x02\x01\x0f\x0f\x06\xce\xa3\xbeg\xc6@\x00\x07\x00\x07\x10(FP\x87t\x09\x03\x00\x01\x13\x0a\x00\x00\x01a\x00\x07\x00\x13\x04\x04\x04\x00\x02\x04\x08\x00\x00\x00";
-        let _parsed = id0::IDBParam::read(param, false).unwrap();
+        let _parsed = id0::IDBParam::<Idb32>::read(param).unwrap();
     }
 
     #[test]
@@ -862,7 +938,18 @@ mod test {
         let filename = filename.as_ref();
         println!("{}", filename.to_str().unwrap());
         let file = BufReader::new(File::open(&filename).unwrap());
-        let mut parser = IDBParser::new(file).unwrap();
+        let parser = IdbParser::new(file).unwrap();
+        match parser {
+            IdbParser::U32(idbparser) => parse_idb_inner(idbparser),
+            IdbParser::U64(idbparser) => parse_idb_inner(idbparser),
+        }
+    }
+
+    fn parse_idb_inner<I, K>(mut parser: IDBParser<I, K>)
+    where
+        I: BufRead + Seek,
+        K: IdbKind,
+    {
         // parse sectors
         let id0 = parser
             .read_id0_section(parser.id0_section_offset().unwrap())
@@ -887,7 +974,12 @@ mod test {
         let _: Vec<_> = id0.segments().unwrap().map(Result::unwrap).collect();
         let _: Vec<_> =
             id0.loader_name().unwrap().map(Result::unwrap).collect();
-        let _: Vec<_> = id0.root_info().unwrap().map(Result::unwrap).collect();
+        let root_info_idx = id0.root_info_node().unwrap();
+        let _: Vec<_> = id0
+            .root_info(root_info_idx)
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
         let file_regions_idx = id0.file_regions_idx().unwrap();
         let _: Vec<_> = id0
             .file_regions(file_regions_idx, version)
@@ -981,5 +1073,130 @@ mod test {
         let mut result = vec![];
         inner_find_all(path, exts, &mut result)?;
         Ok(result)
+    }
+}
+
+pub trait IdbKind: std::fmt::Debug + Clone + Copy {
+    type Int: IdbInt;
+}
+
+pub trait IdbInt:
+    Sized
+    + Sync
+    + Send
+    + 'static
+    + Copy
+    + Clone
+    + std::fmt::Debug
+    + std::fmt::Display
+    + std::fmt::LowerHex
+    + std::fmt::UpperHex
+    + PartialEq
+    + Eq
+    + PartialOrd
+    + Ord
+    + core::hash::Hash
+    + core::iter::Sum
+    + num_traits::PrimInt
+    + num_traits::NumAssign
+    + num_traits::WrappingAdd
+    + num_traits::WrappingSub
+    + num_traits::FromBytes
+    + num_traits::ToBytes
+    + num_traits::ToBytes
+    + num_traits::AsPrimitive<u8>
+    + num_traits::AsPrimitive<u16>
+    + num_traits::AsPrimitive<u32>
+    + num_traits::AsPrimitive<u64>
+    + TryInto<usize, Error: std::fmt::Debug>
+    + Into<u64>
+    + TryInto<u32, Error: std::fmt::Debug>
+    + TryInto<u16, Error: std::fmt::Debug>
+    + TryInto<u8, Error: std::fmt::Debug>
+    + From<u8>
+    + From<u16>
+    + From<u32>
+    + TryFrom<u64, Error: std::fmt::Debug>
+    + TryFrom<usize, Error: std::fmt::Debug>
+    + Into<i128>
+{
+    const BYTES: u8;
+    /// Convert the inner address value into a u64
+    fn as_raw_u64(&self) -> u64;
+    fn is_max(&self) -> bool;
+    // TODO delete this function
+    //#[deprecated]
+    fn from_reader(read: &mut impl std::io::Read) -> Result<Self> {
+        Self::from_bytes_reader::<LE>(read)
+    }
+    fn from_bytes<B: ByteOrder>(data: &[u8]) -> Option<Self>;
+    fn from_bytes_reader<B: ByteOrder>(
+        read: &mut impl std::io::Read,
+    ) -> Result<Self>;
+    fn unpack_from_reader(read: &mut impl std::io::Read) -> Result<Self>;
+    fn as_i64(&self) -> i64;
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Idb32;
+impl IdbKind for Idb32 {
+    type Int = u32;
+}
+impl IdbInt for u32 {
+    const BYTES: u8 = 4;
+    fn as_raw_u64(&self) -> u64 {
+        *self as u64
+    }
+    fn is_max(&self) -> bool {
+        *self == u32::MAX
+    }
+    fn from_bytes<B: ByteOrder>(data: &[u8]) -> Option<Self> {
+        (data.len() == 4).then(|| B::read_u32(data))
+    }
+    fn from_bytes_reader<B: ByteOrder>(
+        read: &mut impl std::io::Read,
+    ) -> Result<Self> {
+        // TODO replace this with `read.read_u32::<B>()`
+        let mut data = [0; 4];
+        read.read_exact(&mut data)?;
+        Ok(B::read_u32(&data))
+    }
+    fn unpack_from_reader(read: &mut impl std::io::Read) -> Result<Self> {
+        read.unpack_dd()
+    }
+    fn as_i64(&self) -> i64 {
+        ((*self) as i32).into()
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Idb64;
+impl IdbKind for Idb64 {
+    type Int = u64;
+}
+impl IdbInt for u64 {
+    const BYTES: u8 = 8;
+    fn as_raw_u64(&self) -> u64 {
+        *self
+    }
+    fn is_max(&self) -> bool {
+        *self == u64::MAX
+    }
+    fn from_bytes<B: ByteOrder>(data: &[u8]) -> Option<Self> {
+        (data.len() == 8).then(|| B::read_u64(data))
+    }
+    fn from_bytes_reader<B: ByteOrder>(
+        read: &mut impl std::io::Read,
+    ) -> Result<Self> {
+        // TODO replace this with `read.read_u64::<B>()`
+        let mut data = [0; 8];
+        read.read_exact(&mut data)?;
+        Ok(B::read_u64(&data))
+    }
+    fn unpack_from_reader(read: &mut impl std::io::Read) -> Result<Self> {
+        read.unpack_dq()
+    }
+    fn as_i64(&self) -> i64 {
+        (*self) as i64
     }
 }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::num::NonZeroU8;
 
-use crate::ida_reader::IdaGenericBufUnpack;
+use crate::ida_reader::IdbBufRead;
 use crate::til::{Type, TypeRaw};
 use crate::IDBString;
 use anyhow::{anyhow, ensure, Context, Result};
@@ -95,7 +95,7 @@ pub(crate) struct StructRaw {
 
 impl StructRaw {
     pub fn read(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
     ) -> Result<TypeVariantRaw> {
         // TODO n == 0 && n_cond == false?
@@ -270,7 +270,7 @@ pub(crate) struct StructMemberRaw {
 
 impl StructMemberRaw {
     fn read(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
         is_method: bool,
         is_fixed: bool,
@@ -373,7 +373,7 @@ impl StructMemberRaw {
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x486cd0
     fn read_member_att_1(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         _header: &TILSectionHeader,
     ) -> Result<StructMemberAtt> {
         let att = input.read_ext_att()?;
@@ -413,7 +413,7 @@ impl StructMemberRaw {
     }
 
     fn basic_att(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         att: u64,
     ) -> Result<StructMemberAttBasic> {
         if (att >> 8) & 0x10 != 0 {
