@@ -4,20 +4,20 @@ use anyhow::Result;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use num_traits::{CheckedAdd, CheckedSub, WrappingAdd, WrappingSub};
 
-use crate::{ida_reader::IdbReadKind, IdbInt, IdbKind};
+use crate::{ida_reader::IdbReadKind, IDAKind, IDAUsize};
 
 use super::*;
 
 #[derive(Clone, Debug)]
-pub enum IDBRootInfo<'a, K: IdbKind> {
+pub enum IDBRootInfo<'a, K: IDAKind> {
     /// it's just the "Root Node" String
     RootNodeName,
     InputFile(&'a [u8]),
-    Crc(K::Int),
+    Crc(K::Usize),
     ImageBase(ImageBase<K>),
-    OpenCount(K::Int),
-    CreatedDate(K::Int),
-    Version(K::Int),
+    OpenCount(K::Usize),
+    CreatedDate(K::Usize),
+    Version(K::Usize),
     Md5(&'a [u8; 16]),
     VersionString(&'a str),
     Sha256(&'a [u8; 32]),
@@ -26,10 +26,10 @@ pub enum IDBRootInfo<'a, K: IdbKind> {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct ImageBase<K: IdbKind>(pub(crate) K::Int);
-impl<K: IdbKind> ImageBase<K> {
+pub struct ImageBase<K: IDAKind>(pub(crate) K::Usize);
+impl<K: IDAKind> ImageBase<K> {
     // TODO create a nodeidx_t type
-    pub fn ea2node(&self, ea: K::Int) -> Result<NodeIdx<K>> {
+    pub fn ea2node(&self, ea: K::Usize) -> Result<NodeIdx<K>> {
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1db9c0
         if ea.is_max() {
             return Ok(NodeIdx(ea));
@@ -42,7 +42,7 @@ impl<K: IdbKind> ImageBase<K> {
             Ok(NodeIdx(ea.wrapping_add(&self.0)))
         }
     }
-    pub fn node2ea(&self, node: NodeIdx<K>) -> Result<K::Int> {
+    pub fn node2ea(&self, node: NodeIdx<K>) -> Result<K::Usize> {
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1dba10
         if cfg!(feature = "restrictive") {
             node.0
@@ -55,40 +55,40 @@ impl<K: IdbKind> ImageBase<K> {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct NodeIdx<K: IdbKind>(pub(crate) K::Int);
+pub struct NodeIdx<K: IDAKind>(pub(crate) K::Usize);
 
-pub trait AsNodeIdx<K: IdbKind> {
+pub trait AsNodeIdx<K: IDAKind> {
     fn as_node_idx(&self) -> NodeIdx<K>;
 }
 
 #[derive(Clone, Debug)]
-pub enum IDBParam<K: IdbKind> {
+pub enum IDBParam<K: IDAKind> {
     V1(IDBParam1<K>),
     V2(IDBParam2<K>),
 }
 
 #[derive(Clone, Debug)]
-pub struct IDBParam1<K: IdbKind> {
+pub struct IDBParam1<K: IDAKind> {
     pub version: u16,
     pub cpu: Vec<u8>,
     pub lflags: u8,
     pub demnames: u8,
     pub filetype: u16,
-    pub fcoresize: K::Int,
-    pub corestart: K::Int,
+    pub fcoresize: K::Usize,
+    pub corestart: K::Usize,
     pub ostype: u16,
     pub apptype: u16,
-    pub startsp: K::Int,
+    pub startsp: K::Usize,
     pub af: u16,
-    pub startip: K::Int,
-    pub startea: K::Int,
-    pub minea: K::Int,
-    pub maxea: K::Int,
-    pub ominea: K::Int,
-    pub omaxea: K::Int,
-    pub lowoff: K::Int,
-    pub highoff: K::Int,
-    pub maxref: K::Int,
+    pub startip: K::Usize,
+    pub startea: K::Usize,
+    pub minea: K::Usize,
+    pub maxea: K::Usize,
+    pub ominea: K::Usize,
+    pub omaxea: K::Usize,
+    pub lowoff: K::Usize,
+    pub highoff: K::Usize,
+    pub maxref: K::Usize,
     pub ascii_break: u8,
     pub wide_high_byte_first: u8,
     pub indent: u8,
@@ -105,7 +105,7 @@ pub struct IDBParam1<K: IdbKind> {
     pub showpref: u8,
     pub prefseg: u8,
     pub asmtype: u8,
-    pub baseaddr: K::Int,
+    pub baseaddr: K::Usize,
     pub xrefs: u8,
     pub binpref: u16,
     pub cmtflag: u8,
@@ -116,7 +116,7 @@ pub struct IDBParam1<K: IdbKind> {
     pub asciiflags: u8,
     pub listnames: u8,
     pub asciiprefs: [u8; 16],
-    pub asciisernum: K::Int,
+    pub asciisernum: K::Usize,
     pub asciizeroes: u8,
     pub tribyte_order: u8,
     pub mf: u8,
@@ -124,13 +124,13 @@ pub struct IDBParam1<K: IdbKind> {
     pub assume: u8,
     pub checkarg: u8,
     // offset 131
-    pub start_ss: K::Int,
-    pub start_cs: K::Int,
-    pub main: K::Int,
-    pub short_dn: K::Int,
-    pub long_dn: K::Int,
-    pub datatypes: K::Int,
-    pub strtype: K::Int,
+    pub start_ss: K::Usize,
+    pub start_cs: K::Usize,
+    pub main: K::Usize,
+    pub short_dn: K::Usize,
+    pub long_dn: K::Usize,
+    pub datatypes: K::Usize,
+    pub strtype: K::Usize,
     pub af2: u16,
     pub namelen: u16,
     pub margin: u16,
@@ -154,7 +154,7 @@ pub struct IDBParam1<K: IdbKind> {
 }
 
 #[derive(Clone, Debug)]
-pub struct IDBParam2<K: IdbKind> {
+pub struct IDBParam2<K: IDAKind> {
     pub version: u16,
     pub cpu: Vec<u8>,
     pub genflags: Inffl,
@@ -166,23 +166,23 @@ pub struct IDBParam2<K: IdbKind> {
     pub asmtype: u8,
     pub specsegs: u8,
     pub af: Af,
-    pub baseaddr: K::Int,
-    pub start_ss: K::Int,
-    pub start_cs: K::Int,
-    pub start_ip: K::Int,
-    pub start_ea: K::Int,
-    pub start_sp: K::Int,
-    pub main: K::Int,
-    pub min_ea: K::Int,
-    pub max_ea: K::Int,
-    pub omin_ea: K::Int,
-    pub omax_ea: K::Int,
-    pub lowoff: K::Int,
-    pub highoff: K::Int,
-    pub maxref: K::Int,
-    pub privrange_start_ea: K::Int,
-    pub privrange_end_ea: K::Int,
-    pub netdelta: K::Int,
+    pub baseaddr: K::Usize,
+    pub start_ss: K::Usize,
+    pub start_cs: K::Usize,
+    pub start_ip: K::Usize,
+    pub start_ea: K::Usize,
+    pub start_sp: K::Usize,
+    pub main: K::Usize,
+    pub min_ea: K::Usize,
+    pub max_ea: K::Usize,
+    pub omin_ea: K::Usize,
+    pub omax_ea: K::Usize,
+    pub lowoff: K::Usize,
+    pub highoff: K::Usize,
+    pub maxref: K::Usize,
+    pub privrange_start_ea: K::Usize,
+    pub privrange_end_ea: K::Usize,
+    pub netdelta: K::Usize,
     pub xrefnum: u8,
     pub type_xrefnum: u8,
     pub refcmtnum: u8,
@@ -207,8 +207,8 @@ pub struct IDBParam2<K: IdbKind> {
     pub strlit_zeroes: u8,
     pub strtype: u32,
     pub strlit_pref: String,
-    pub strlit_sernum: K::Int,
-    pub datatypes: K::Int,
+    pub strlit_sernum: K::Usize,
+    pub datatypes: K::Usize,
     pub cc_id: Compiler,
     pub cc_guessed: bool,
     pub cc_cm: u8,
@@ -224,7 +224,7 @@ pub struct IDBParam2<K: IdbKind> {
     pub appcall_options: u32,
 }
 
-impl<K: IdbKind> IDBParam<K> {
+impl<K: IDAKind> IDBParam<K> {
     pub(crate) fn read(data: &[u8]) -> Result<Self> {
         let mut input = data;
         let magic: [u8; 3] = bincode::deserialize_from(&mut input)?;

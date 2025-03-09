@@ -5,7 +5,7 @@ use byteorder::BE;
 use num_traits::ToBytes;
 
 use crate::ida_reader::IdbRead;
-use crate::{til, IdbInt, IdbKind};
+use crate::{til, IDAKind, IDAUsize};
 
 use super::{
     flag, parse_maybe_cstr, FileRegionIter, FileRegions, ID0CStr, ID0Entry,
@@ -13,7 +13,7 @@ use super::{
 };
 
 #[derive(Clone, Debug)]
-pub enum AddressInfo<'a, K: IdbKind> {
+pub enum AddressInfo<'a, K: IDAKind> {
     Comment(Comments<'a>),
     Label(Cow<'a, str>),
     TilType(til::Type),
@@ -30,7 +30,7 @@ pub enum Comments<'a> {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct SubtypeId<K: IdbKind>(pub(crate) K::Int);
+pub struct SubtypeId<K: IDAKind>(pub(crate) K::Usize);
 
 impl<'a> Comments<'a> {
     /// The message on the comment, NOTE that IDA don't have a default character encoding
@@ -45,13 +45,13 @@ impl<'a> Comments<'a> {
 }
 
 #[derive(Clone, Copy)]
-pub struct SectionAddressInfoByAddressIter<'a, K: IdbKind> {
+pub struct SectionAddressInfoByAddressIter<'a, K: IDAKind> {
     id0: &'a ID0Section<K>,
     regions: FileRegionIter<'a, K>,
     current_region: &'a [ID0Entry],
 }
 
-impl<'a, K: IdbKind> SectionAddressInfoByAddressIter<'a, K> {
+impl<'a, K: IDAKind> SectionAddressInfoByAddressIter<'a, K> {
     pub fn new(id0: &'a ID0Section<K>, version: u16) -> Result<Self> {
         let idx = id0.file_regions_idx()?;
         let regions = id0.file_regions(idx, version);
@@ -75,7 +75,7 @@ impl<'a, K: IdbKind> SectionAddressInfoByAddressIter<'a, K> {
 
     fn next_inner(
         &mut self,
-    ) -> Result<Option<(K::Int, AddressInfoIter<'a, K>)>> {
+    ) -> Result<Option<(K::Usize, AddressInfoIter<'a, K>)>> {
         // get the next address of the current region, if nothing, next region
         let Some(first) = self.current_region.first() else {
             if self.advance_region()?.is_none() {
@@ -91,7 +91,7 @@ impl<'a, K: IdbKind> SectionAddressInfoByAddressIter<'a, K> {
         // skip the '.'
         ensure!(cursor.read_u8()? == b'.');
         // read the key
-        let address = K::Int::from_bytes_reader::<BE>(&mut cursor)?;
+        let address = K::Usize::from_bytes_reader::<BE>(&mut cursor)?;
 
         let end = self
             .current_region
@@ -107,8 +107,8 @@ impl<'a, K: IdbKind> SectionAddressInfoByAddressIter<'a, K> {
     }
 }
 
-impl<'a, K: IdbKind> Iterator for SectionAddressInfoByAddressIter<'a, K> {
-    type Item = Result<(K::Int, AddressInfoIter<'a, K>)>;
+impl<'a, K: IDAKind> Iterator for SectionAddressInfoByAddressIter<'a, K> {
+    type Item = Result<(K::Usize, AddressInfoIter<'a, K>)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next_inner().transpose()
@@ -116,13 +116,13 @@ impl<'a, K: IdbKind> Iterator for SectionAddressInfoByAddressIter<'a, K> {
 }
 
 #[derive(Clone, Copy)]
-pub struct SectionAddressInfoIter<'a, K: IdbKind> {
+pub struct SectionAddressInfoIter<'a, K: IDAKind> {
     id0: &'a ID0Section<K>,
     regions: FileRegionIter<'a, K>,
     current_region: AddressInfoIter<'a, K>,
 }
 
-impl<'a, K: IdbKind> SectionAddressInfoIter<'a, K> {
+impl<'a, K: IDAKind> SectionAddressInfoIter<'a, K> {
     pub fn new(id0: &'a ID0Section<K>, version: u16) -> Result<Self> {
         let idx = id0.file_regions_idx()?;
         let regions = id0.file_regions(idx, version);
@@ -145,8 +145,8 @@ impl<'a, K: IdbKind> SectionAddressInfoIter<'a, K> {
     }
 }
 
-impl<'a, K: IdbKind> Iterator for SectionAddressInfoIter<'a, K> {
-    type Item = Result<(K::Int, AddressInfo<'a, K>)>;
+impl<'a, K: IDAKind> Iterator for SectionAddressInfoIter<'a, K> {
+    type Item = Result<(K::Usize, AddressInfo<'a, K>)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // next element in the current region, or next region
@@ -166,12 +166,12 @@ impl<'a, K: IdbKind> Iterator for SectionAddressInfoIter<'a, K> {
 }
 
 #[derive(Clone, Copy)]
-pub struct AddressInfoIter<'a, K: IdbKind> {
+pub struct AddressInfoIter<'a, K: IDAKind> {
     id0: &'a ID0Section<K>,
     entries: &'a [ID0Entry],
 }
 
-impl<'a, K: IdbKind> AddressInfoIter<'a, K> {
+impl<'a, K: IDAKind> AddressInfoIter<'a, K> {
     pub fn new(entries: &'a [ID0Entry], section: &'a ID0Section<K>) -> Self {
         Self {
             entries,
@@ -179,7 +179,7 @@ impl<'a, K: IdbKind> AddressInfoIter<'a, K> {
         }
     }
 
-    fn next_inner(&mut self) -> Result<Option<(K::Int, AddressInfo<'a, K>)>> {
+    fn next_inner(&mut self) -> Result<Option<(K::Usize, AddressInfo<'a, K>)>> {
         let Some((current, rest)) = self.entries.split_first() else {
             return Ok(None);
         };
@@ -188,14 +188,14 @@ impl<'a, K: IdbKind> AddressInfoIter<'a, K> {
         // skip the '.'
         ensure!(cursor.read_u8()? == b'.');
         // read the key
-        let address = K::Int::from_bytes_reader::<BE>(&mut cursor)?;
+        let address = K::Usize::from_bytes_reader::<BE>(&mut cursor)?;
         let (sub_type, subkey) = id_subkey_from_idx::<K>(cursor)
             .ok_or_else(|| anyhow!("Missing SubType"))?;
 
         // Non UTF-8 comment: "C:\\Documents and Settings\\Administrator\\\xb9\xd9\xc5\xc1 \xc8\xad\xb8\xe9\ls"
         // \xb9\xd9\xc5\xc1 \xc8\xad\xb8\xe9 = "바탕 화면" = "Desktop" in Korean encoded using Extended Unix Code
         #[allow(clippy::wildcard_in_or_patterns)]
-        match (sub_type, subkey.map(<K::Int as Into<u64>>::into)) {
+        match (sub_type, subkey.map(<K::Usize as Into<u64>>::into)) {
             // Comments
             // NOTE
             // pre comments start at index 1000
@@ -234,13 +234,13 @@ impl<'a, K: IdbKind> AddressInfoIter<'a, K> {
                     let Some((_address, sub_type, Some(id))) = id_subkey_from_key::<K>(&entry.key[..]) else {
                         return true;
                     };
-                    !matches!((sub_type, <K::Int as Into<u64>>::into(id)), (b'S', 0x3000u64..=0x3999))
+                    !matches!((sub_type, <K::Usize as Into<u64>>::into(id)), (b'S', 0x3000u64..=0x3999))
                 }).unwrap_or(rest.len());
                 self.entries = &rest[last..];
                 // TODO enforce sequential index for the id?
                 // get the entry for field names and rest of data
                 let (fields, continuation) = match &rest[..last] {
-                    [fields, rest @ ..] if id_subkey_from_key::<K>(&fields.key[..]) == Some((address, b'S', Some(K::Int::from(0x3001u16)))) => {
+                    [fields, rest @ ..] if id_subkey_from_key::<K>(&fields.key[..]) == Some((address, b'S', Some(K::Usize::from(0x3001u16)))) => {
                         // convert the value into fields
                         // usually this string ends with \x00, but bmaybe there is no garanty for that.
                         let value = parse_maybe_cstr(&fields.value).ok_or_else(||anyhow!("Incomplete Fields for TIL Type"))?;
@@ -309,8 +309,8 @@ impl<'a, K: IdbKind> AddressInfoIter<'a, K> {
     }
 }
 
-impl<'a, K: IdbKind> Iterator for AddressInfoIter<'a, K> {
-    type Item = Result<(K::Int, AddressInfo<'a, K>)>;
+impl<'a, K: IDAKind> Iterator for AddressInfoIter<'a, K> {
+    type Item = Result<(K::Usize, AddressInfo<'a, K>)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next_inner().transpose()
@@ -318,17 +318,17 @@ impl<'a, K: IdbKind> Iterator for AddressInfoIter<'a, K> {
 }
 
 #[derive(Clone, Copy)]
-pub struct AddressInfoIterAt<'a, K: IdbKind> {
+pub struct AddressInfoIterAt<'a, K: IDAKind> {
     iter: AddressInfoIter<'a, K>,
 }
 
-impl<'a, K: IdbKind> AddressInfoIterAt<'a, K> {
+impl<'a, K: IDAKind> AddressInfoIterAt<'a, K> {
     pub fn new(iter: AddressInfoIter<'a, K>) -> Self {
         Self { iter }
     }
 }
 
-impl<'a, K: IdbKind> Iterator for AddressInfoIterAt<'a, K> {
+impl<'a, K: IDAKind> Iterator for AddressInfoIterAt<'a, K> {
     type Item = Result<AddressInfo<'a, K>>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -337,13 +337,13 @@ impl<'a, K: IdbKind> Iterator for AddressInfoIterAt<'a, K> {
     }
 }
 
-fn id_subkey_from_key<K: IdbKind>(
+fn id_subkey_from_key<K: IDAKind>(
     mut cursor: &[u8],
-) -> Option<(K::Int, u8, Option<K::Int>)> {
+) -> Option<(K::Usize, u8, Option<K::Usize>)> {
     let Some(b'.') = cursor.read_u8().ok() else {
         return None;
     };
-    let Some(address) = K::Int::from_bytes_reader::<BE>(&mut cursor).ok()
+    let Some(address) = K::Usize::from_bytes_reader::<BE>(&mut cursor).ok()
     else {
         return None;
     };
@@ -353,12 +353,14 @@ fn id_subkey_from_key<K: IdbKind>(
     Some((address, sub_type, id))
 }
 
-fn id_subkey_from_idx<K: IdbKind>(key: &[u8]) -> Option<(u8, Option<K::Int>)> {
+fn id_subkey_from_idx<K: IDAKind>(
+    key: &[u8],
+) -> Option<(u8, Option<K::Usize>)> {
     let (sub_type, id) = key.split_first()?;
-    Some((*sub_type, K::Int::from_bytes::<BE>(id)))
+    Some((*sub_type, K::Usize::from_bytes::<BE>(id)))
 }
 
-fn advance_region<'a, K: IdbKind>(
+fn advance_region<'a, K: IDAKind>(
     id0: &'a ID0Section<K>,
     mut regions: impl Iterator<Item = Result<FileRegions<K>>>,
 ) -> Result<Option<&'a [ID0Entry]>> {
@@ -373,7 +375,7 @@ fn advance_region<'a, K: IdbKind>(
     Ok(Some(get_next_address_region(&region, &id0.all_entries())))
 }
 
-fn get_next_address_region<'a, K: IdbKind>(
+fn get_next_address_region<'a, K: IDAKind>(
     region: &FileRegions<K>,
     all_entries: &'a [ID0Entry],
 ) -> &'a [ID0Entry] {

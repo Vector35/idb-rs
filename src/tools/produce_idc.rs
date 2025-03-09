@@ -5,16 +5,14 @@ use std::{fs::File, io::Write};
 
 use anyhow::{anyhow, ensure, Context, Result};
 
-use idb_rs::id0::{
-    AddressInfo, Comments, FunctionsAndComments, ID0Section, Id0Section,
-};
+use idb_rs::id0::{AddressInfo, Comments, FunctionsAndComments, ID0Section};
 use idb_rs::id1::{
     ByteData, ByteDataType, ByteInfoRaw, ByteRawType, ByteType, ID1Section,
     InstOpInfo,
 };
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
-use idb_rs::{IdbKind, IdbParser};
+use idb_rs::{IDAKind, IDAVariants};
 
 use crate::{Args, FileType, ProduceIdcArgs};
 
@@ -28,7 +26,7 @@ pub fn produce_idc(args: &Args, idc_args: &ProduceIdcArgs) -> Result<()> {
             ));
         }
         FileType::Idb => {
-            let mut parser = IdbParser::new(input)?;
+            let mut parser = IDAVariants::new(input)?;
             let id0_offset = parser.id0_section_offset().ok_or_else(|| {
                 anyhow!("IDB file don't contains a ID0 sector")
             })?;
@@ -42,7 +40,7 @@ pub fn produce_idc(args: &Args, idc_args: &ProduceIdcArgs) -> Result<()> {
             let id1 = parser.read_id1_section(id1_offset)?;
             let til = parser.read_til_section(til_offset)?;
             match id0 {
-                Id0Section::U32(id0) => {
+                IDAVariants::IDA32(id0) => {
                     produce_idc_inner(
                         &mut std::io::stdout(),
                         idc_args,
@@ -51,7 +49,7 @@ pub fn produce_idc(args: &Args, idc_args: &ProduceIdcArgs) -> Result<()> {
                         &til,
                     )?;
                 }
-                Id0Section::U64(id0) => {
+                IDAVariants::IDA64(id0) => {
                     produce_idc_inner(
                         &mut std::io::stdout(),
                         idc_args,
@@ -66,7 +64,7 @@ pub fn produce_idc(args: &Args, idc_args: &ProduceIdcArgs) -> Result<()> {
     Ok(())
 }
 
-fn produce_idc_inner<K: IdbKind>(
+fn produce_idc_inner<K: IDAKind>(
     fmt: &mut impl Write,
     args: &ProduceIdcArgs,
     id0: &ID0Section<K>,
@@ -205,7 +203,7 @@ fn produce_main(
     Ok(())
 }
 
-fn produce_gen_info<K: IdbKind>(
+fn produce_gen_info<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
     til: &TILSection,
@@ -297,7 +295,7 @@ fn produce_gen_info<K: IdbKind>(
     Ok(())
 }
 
-fn produce_segments<K: IdbKind>(
+fn produce_segments<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
 ) -> Result<()> {
@@ -425,7 +423,7 @@ fn produce_types(fmt: &mut impl Write, til: &TILSection) -> Result<()> {
     Ok(())
 }
 
-fn produce_patches<K: IdbKind>(
+fn produce_patches<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
     id1: &ID1Section,
@@ -496,7 +494,7 @@ fn produce_type_load(
     Ok(())
 }
 
-fn produce_bytes_info<K: IdbKind>(
+fn produce_bytes_info<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
     id1: &ID1Section,
@@ -520,7 +518,7 @@ fn produce_bytes_info<K: IdbKind>(
 
         let byte_info = byte_info_raw.decode().unwrap();
         let addr_info =
-            id0.address_info_at(K::Int::try_from(address).unwrap())?;
+            id0.address_info_at(K::Usize::try_from(address).unwrap())?;
         // print comments
         // TODO byte_info.has_comment() ignored?
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1822
@@ -684,7 +682,9 @@ fn produce_bytes_info<K: IdbKind>(
                         // TODO make a struct_def_at
                         // TODO make array?
                         let struct_id = id0
-                            .address_info_at(K::Int::try_from(address).unwrap())
+                            .address_info_at(
+                                K::Usize::try_from(address).unwrap(),
+                            )
                             .unwrap()
                             .find_map(|e| match e {
                                 Ok(AddressInfo::DefinedStruct(s)) => {
@@ -789,7 +789,7 @@ fn produce_bytes_info<K: IdbKind>(
     Ok(())
 }
 
-fn produce_functions<K: IdbKind>(
+fn produce_functions<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
     _til: &TILSection,
@@ -833,7 +833,7 @@ fn produce_functions<K: IdbKind>(
                 refqty,
                 _unknown1,
                 _unknown2,
-            } if *refqty != K::Int::from(0u8) => {
+            } if *refqty != K::Usize::from(0u8) => {
                 writeln!(
                     fmt,
                     "  set_frame_size({addr:#X}, {refqty:#X}, {_unknown1}, {_unknown2:#X});"
@@ -854,7 +854,7 @@ fn produce_functions<K: IdbKind>(
     Ok(())
 }
 
-fn produce_seg_regs<K: IdbKind>(
+fn produce_seg_regs<K: IDAKind>(
     fmt: &mut impl Write,
     _id0: &ID0Section<K>,
     _til: &TILSection,
@@ -869,7 +869,7 @@ fn produce_seg_regs<K: IdbKind>(
     Ok(())
 }
 
-fn produce_all_patches<K: IdbKind>(
+fn produce_all_patches<K: IDAKind>(
     fmt: &mut impl Write,
     _id0: &ID0Section<K>,
     _til: &TILSection,
@@ -884,7 +884,7 @@ fn produce_all_patches<K: IdbKind>(
     Ok(())
 }
 
-fn produce_bytes<K: IdbKind>(
+fn produce_bytes<K: IDAKind>(
     fmt: &mut impl Write,
     _id0: &ID0Section<K>,
     _til: &TILSection,

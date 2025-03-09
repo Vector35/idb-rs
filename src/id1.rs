@@ -5,7 +5,7 @@ pub mod flag;
 use std::ops::{Div, Range, Rem};
 
 use crate::ida_reader::{IdbRead, IdbReadKind};
-use crate::{IDBSectionCompression, IdbKind, VaVersion};
+use crate::{IDAKind, IDBSectionCompression, VaVersion};
 
 #[derive(Clone, Debug)]
 pub struct ID1Section {
@@ -13,7 +13,7 @@ pub struct ID1Section {
 }
 
 impl ID1Section {
-    pub(crate) fn read<K: IdbKind>(
+    pub(crate) fn read<K: IDAKind>(
         input: &mut impl IdbRead,
         compress: IDBSectionCompression,
     ) -> Result<Self> {
@@ -26,7 +26,7 @@ impl ID1Section {
         }
     }
 
-    fn read_inner<K: IdbKind>(input: &mut impl IdbRead) -> Result<Self> {
+    fn read_inner<K: IDAKind>(input: &mut impl IdbRead) -> Result<Self> {
         // TODO pages are always 0x2000?
         const PAGE_SIZE: usize = 0x2000;
         let mut buf = vec![0; PAGE_SIZE];
@@ -112,25 +112,25 @@ impl ID1Section {
         ensure!(!overlap);
 
         // make sure the data fits the available pages
-        let required_size: K::Int = overlay_check
+        let required_size: K::Usize = overlay_check
             .iter()
-            .map(|s| (s.end - s.start) * K::Int::from(4u8))
+            .map(|s| (s.end - s.start) * K::Usize::from(4u8))
             .sum();
-        let round_up = required_size.rem(K::Int::try_from(PAGE_SIZE).unwrap())
-            != K::Int::from(0u8);
+        let round_up = required_size.rem(K::Usize::try_from(PAGE_SIZE).unwrap())
+            != K::Usize::from(0u8);
         let required_pages = required_size
-            .div(K::Int::try_from(PAGE_SIZE).unwrap())
-            + K::Int::from(round_up as u8);
+            .div(K::Usize::try_from(PAGE_SIZE).unwrap())
+            + K::Usize::from(round_up as u8);
         // TODO if the extra data at the end of the section is identified, review replacing <= with ==
         // -1 because the first page is always the header
-        ensure!(required_pages <= K::Int::from(npages - 1));
+        ensure!(required_pages <= K::Usize::from(npages - 1));
 
         // populated the seglist data using the pages
         let seglist = match seglist_raw {
             SegInfoRaw::VaN(mut segs) => {
                 // sort it by disk offset, so we can read one after the other
                 segs.sort_unstable_by_key(|s| s.offset);
-                let mut current_offset = K::Int::try_from(PAGE_SIZE).unwrap();
+                let mut current_offset = K::Usize::try_from(PAGE_SIZE).unwrap();
                 segs.into_iter()
                     .map(|seg| {
                         // skip any gaps
@@ -154,7 +154,7 @@ impl ID1Section {
                         }
                         let len = seg.address.end - seg.address.start;
                         let data = read_data::<K>(&mut *input, len)?;
-                        current_offset += len * K::Int::from(4u8);
+                        current_offset += len * K::Usize::from(4u8);
                         Ok(SegInfo {
                             offset: (seg.address.start).into(),
                             data,
@@ -517,15 +517,15 @@ impl InstOpInfo {
 }
 
 #[derive(Clone, Debug)]
-enum SegInfoRaw<K: IdbKind> {
+enum SegInfoRaw<K: IDAKind> {
     VaN(Vec<SegInfoVaNRaw<K>>),
-    VaX(Vec<Range<K::Int>>),
+    VaX(Vec<Range<K::Usize>>),
 }
 
 #[derive(Clone, Debug)]
-struct SegInfoVaNRaw<K: IdbKind> {
-    address: Range<K::Int>,
-    offset: K::Int,
+struct SegInfoVaNRaw<K: IDAKind> {
+    address: Range<K::Usize>,
+    offset: K::Usize,
 }
 
 fn ensure_all_bytes_are_zero(
@@ -563,11 +563,11 @@ fn ignore_bytes(mut input: impl IdbRead, buf: &mut [u8]) -> Result<()> {
     Ok(())
 }
 
-fn read_data<K: IdbKind>(
+fn read_data<K: IDAKind>(
     mut input: impl IdbRead,
-    len: K::Int,
+    len: K::Usize,
 ) -> Result<Vec<u32>> {
-    let len = <K::Int as TryInto<usize>>::try_into(len).unwrap();
+    let len = <K::Usize as TryInto<usize>>::try_into(len).unwrap();
     let mut data = vec![0u8; len * 4];
     input.read_exact(&mut data)?;
     Ok(data

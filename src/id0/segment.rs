@@ -12,14 +12,14 @@ use super::*;
 pub struct SegmentStringsIdx<'a>(pub(crate) &'a [u8]);
 
 #[derive(Clone, Debug)]
-pub struct Segment<K: IdbKind> {
-    pub address: Range<K::Int>,
+pub struct Segment<K: IDAKind> {
+    pub address: Range<K::Usize>,
     pub name: Option<SegmentNameIdx>,
     // TODO class String
-    _class_id: K::Int,
+    _class_id: K::Usize,
     /// This field is IDP dependent.
     /// You may keep your information about the segment here
-    pub orgbase: K::Int,
+    pub orgbase: K::Usize,
     /// See more at [flags](https://hex-rays.com//products/ida/support/sdkdoc/group___s_f_l__.html)
     pub flags: SegmentFlag,
     /// [Segment alignment codes](https://hex-rays.com//products/ida/support/sdkdoc/group__sa__.html)
@@ -38,10 +38,10 @@ pub struct Segment<K: IdbKind> {
     /// Exception: 16bit OMF files may have several segments with the same selector,
     /// but this is not good (no way to denote a segment exactly) so it should be fixed in
     /// the future.
-    pub selector: K::Int,
+    pub selector: K::Usize,
     /// Default segment register values.
     /// First element of this array keeps information about value of [processor_t::reg_first_sreg](https://hex-rays.com//products/ida/support/sdkdoc/structprocessor__t.html#a4206e35bf99d211c18d53bd1035eb2e3)
-    pub defsr: [K::Int; 16],
+    pub defsr: [K::Usize; 16],
     /// the segment color
     pub color: u32,
 }
@@ -49,7 +49,7 @@ pub struct Segment<K: IdbKind> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SegmentNameIdx(pub(crate) NonZeroU32);
 
-impl<K: IdbKind> Segment<K> {
+impl<K: IDAKind> Segment<K> {
     pub(crate) fn read(value: &[u8]) -> Result<Self> {
         let mut cursor = value;
         let result = Self::inner_read(&mut cursor)?;
@@ -62,7 +62,7 @@ impl<K: IdbKind> Segment<K> {
         let startea = cursor.unpack_usize()?;
         let size = cursor.unpack_usize()?;
         let name_id = cursor.unpack_usize()?;
-        let name_id = <K::Int as TryInto<u32>>::try_into(name_id)
+        let name_id = <K::Usize as TryInto<u32>>::try_into(name_id)
             .map(NonZeroU32::new)
             .map_err(|_| anyhow!("Invalid ID0 Segment NameId value"))?;
         let name = name_id.map(SegmentNameIdx);
@@ -330,12 +330,12 @@ pub enum SegmentType {
     Imem = flag::segs::ty::SEG_IMEM,
 }
 
-pub struct SegmentIter<'a, K: IdbKind> {
+pub struct SegmentIter<'a, K: IDAKind> {
     pub(crate) _kind: std::marker::PhantomData<K>,
     pub(crate) segments: &'a [ID0Entry],
 }
 
-impl<'a, K: IdbKind> Iterator for SegmentIter<'a, K> {
+impl<'a, K: IDAKind> Iterator for SegmentIter<'a, K> {
     type Item = Result<Segment<K>>;
 
     fn next(&mut self) -> Option<Self::Item> {

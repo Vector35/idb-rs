@@ -5,19 +5,14 @@ use anyhow::Result;
 use byteorder::{BE, LE};
 use num_traits::{AsPrimitive, PrimInt, ToBytes};
 
-use crate::{ida_reader::IdbReadKind, Idb32, Idb64, IdbInt};
+use crate::{ida_reader::IdbReadKind, IDAUsize, IDAVariants, IDA32, IDA64};
 
 use super::*;
 
-// TODO fix this name
-#[derive(Debug, Clone)]
-pub enum Id0Section {
-    U32(ID0Section<Idb32>),
-    U64(ID0Section<Idb64>),
-}
+pub type ID0SectionVariants = IDAVariants<ID0Section<IDA32>, ID0Section<IDA64>>;
 
 #[derive(Debug, Clone)]
-pub struct ID0Section<K: IdbKind> {
+pub struct ID0Section<K: IDAKind> {
     // the data itself don't have a kind, but it's required to handle the data
     _kind: std::marker::PhantomData<K>,
     pub entries: Vec<ID0Entry>,
@@ -29,7 +24,7 @@ pub struct ID0Entry {
     pub value: Vec<u8>,
 }
 
-impl<K: IdbKind> ID0Section<K> {
+impl<K: IDAKind> ID0Section<K> {
     pub(crate) fn read(
         input: &mut impl IdbReadKind<K>,
         compress: IDBSectionCompression,
@@ -91,14 +86,14 @@ impl<K: IdbKind> ID0Section<K> {
 
     pub(crate) fn address_info_value(
         &self,
-        label_ref: K::Int,
+        label_ref: K::Usize,
     ) -> Result<&[ID0Entry]> {
         // NOTE for some reasong the key is only 7 bytes,
         // there is also a subindex, in case the value is very big
         #[cfg(feature = "restrictive")]
         {
             let max_ref_value =
-                <K::Int as num_traits::Bounded>::max_value() >> 8;
+                <K::Usize as num_traits::Bounded>::max_value() >> 8;
             ensure!(
                 label_ref <= max_ref_value,
                 "Ivanlid Address Info value Ref"
@@ -106,7 +101,7 @@ impl<K: IdbKind> ID0Section<K> {
         }
         let label_ref = (label_ref << 8).to_be_bytes();
         let key: Vec<u8> = key_from_address_and_subtype::<K>(
-            K::Int::from(0xFFu8).swap_bytes(),
+            K::Usize::from(0xFFu8).swap_bytes(),
             b'S',
         )
         .chain(
@@ -196,7 +191,7 @@ impl<K: IdbKind> ID0Section<K> {
     pub(crate) fn name_by_index(&self, idx: SegmentNameIdx) -> Result<&[u8]> {
         // if there is no names, AKA `$ segstrings`, search for the key directly
         let key: Vec<u8> = key_from_address_and_subtype::<K>(
-            K::Int::from(0xFFu8).swap_bytes(),
+            K::Usize::from(0xFFu8).swap_bytes(),
             b'N',
         )
         .collect();
@@ -229,7 +224,7 @@ impl<K: IdbKind> ID0Section<K> {
         let entry = self
             .get("NRoot Node")
             .ok_or_else(|| anyhow!("Unable to find entry Root Node"))?;
-        let node_idx = K::Int::from_bytes::<LE>(&entry.value[..])
+        let node_idx = K::Usize::from_bytes::<LE>(&entry.value[..])
             .ok_or_else(|| anyhow!("Invalid Root Node key value"))?;
         Ok(NodeIdx(node_idx))
     }
@@ -259,24 +254,24 @@ impl<K: IdbKind> ID0Section<K> {
                 (b'V', 1) => return Ok(IDBRootInfo::InputFile(&entry.value)),
                 _ => {}
             }
-            let Some(value) = K::Int::from_bytes::<BE>(&sub_key[1..]) else {
+            let Some(value) = K::Usize::from_bytes::<BE>(&sub_key[1..]) else {
                 return Ok(IDBRootInfo::Unknown(entry));
             };
             match (sub_type, value.as_i64()) {
-                (b'A', -6) => K::Int::from_bytes::<LE>(&entry.value[..])
+                (b'A', -6) => K::Usize::from_bytes::<LE>(&entry.value[..])
                     .ok_or_else(|| anyhow!("Unable to parse imagebase value"))
                     .map(ImageBase)
                     .map(IDBRootInfo::ImageBase),
-                (b'A', -5) => K::Int::from_bytes::<LE>(&entry.value[..])
+                (b'A', -5) => K::Usize::from_bytes::<LE>(&entry.value[..])
                     .ok_or_else(|| anyhow!("Unable to parse crc value"))
                     .map(IDBRootInfo::Crc),
-                (b'A', -4) => K::Int::from_bytes::<LE>(&entry.value[..])
+                (b'A', -4) => K::Usize::from_bytes::<LE>(&entry.value[..])
                     .ok_or_else(|| anyhow!("Unable to parse open_count value"))
                     .map(IDBRootInfo::OpenCount),
-                (b'A', -2) => K::Int::from_bytes::<LE>(&entry.value[..])
+                (b'A', -2) => K::Usize::from_bytes::<LE>(&entry.value[..])
                     .ok_or_else(|| anyhow!("Unable to parse CreatedDate value"))
                     .map(IDBRootInfo::CreatedDate),
-                (b'A', -1) => K::Int::from_bytes::<LE>(&entry.value[..])
+                (b'A', -1) => K::Usize::from_bytes::<LE>(&entry.value[..])
                     .ok_or_else(|| anyhow!("Unable to parse Version value"))
                     .map(IDBRootInfo::Version),
                 (b'S', 1302) => entry
@@ -309,7 +304,7 @@ impl<K: IdbKind> ID0Section<K> {
     pub fn ida_info(&self) -> Result<IDBParam<K>> {
         // TODO Root Node is always the last one?
         let entry = self.root_info_node()?;
-        let sub_key = K::Int::from(0x41B994u32);
+        let sub_key = K::Usize::from(0x41B994u32);
         let key: Vec<u8> = key_from_address_and_subtype::<K>(entry.0, b'S')
             .chain(sub_key.to_be_bytes().as_ref().iter().copied())
             .collect();
@@ -325,7 +320,7 @@ impl<K: IdbKind> ID0Section<K> {
         let entry = self
             .get("N$ fileregions")
             .ok_or_else(|| anyhow!("Unable to find entry fileregions"))?;
-        let node_idx = K::Int::from_bytes::<LE>(&entry.value[..])
+        let node_idx = K::Usize::from_bytes::<LE>(&entry.value[..])
             .ok_or_else(|| anyhow!("Invalid fileregions key value"))?;
         Ok(FileRegionIdx(NodeIdx(node_idx)))
     }
@@ -399,7 +394,7 @@ impl<K: IdbKind> ID0Section<K> {
     pub fn entry_points(&self) -> Result<Vec<EntryPoint<K>>> {
         type RawEntryPoint<'a, K> =
             HashMap<K, (Option<K>, Option<&'a str>, Option<&'a str>)>;
-        let mut entry_points: RawEntryPoint<'_, K::Int> = HashMap::new();
+        let mut entry_points: RawEntryPoint<'_, K::Usize> = HashMap::new();
         for entry_point in self.entry_points_raw()? {
             match entry_point? {
                 EntryPointRaw::Unknown { .. }
@@ -465,17 +460,17 @@ impl<K: IdbKind> ID0Section<K> {
 
     fn find_entry_point_type(
         &self,
-        key: K::Int,
-        address: K::Int,
+        key: K::Usize,
+        address: K::Usize,
     ) -> Result<Option<til::Type>> {
         if let Some(key_entry) =
-            self.find_entry_point_type_value(key, K::Int::from(0x3000u16))?
+            self.find_entry_point_type_value(key, K::Usize::from(0x3000u16))?
         {
             return Ok(Some(key_entry));
         }
         // TODO some times it uses the address as key, it's based on the version?
-        if let Some(key_entry) =
-            self.find_entry_point_type_value(address, K::Int::from(0x3000u16))?
+        if let Some(key_entry) = self
+            .find_entry_point_type_value(address, K::Usize::from(0x3000u16))?
         {
             return Ok(Some(key_entry));
         }
@@ -484,15 +479,15 @@ impl<K: IdbKind> ID0Section<K> {
 
     fn find_entry_point_type_value(
         &self,
-        value: K::Int,
-        key_find: K::Int,
+        value: K::Usize,
+        key_find: K::Usize,
     ) -> Result<Option<til::Type>> {
         let key: Vec<u8> =
             key_from_address_and_subtype::<K>(value, b'S').collect();
         let key_len = key.len();
         for entry in self.sub_values(key) {
             let key = &entry.key[key_len..];
-            let key = K::Int::from_bytes::<BE>(key).unwrap();
+            let key = K::Usize::from_bytes::<BE>(key).unwrap();
             // TODO handle other values for the key
             if key == key_find {
                 return til::Type::new_from_id0(&entry.value, vec![])
@@ -521,7 +516,7 @@ impl<K: IdbKind> ID0Section<K> {
     /// read the address information for the address
     pub fn address_info_at(
         &self,
-        address: impl Id0AddressKey<K::Int>,
+        address: impl Id0AddressKey<K::Usize>,
     ) -> Result<AddressInfoIterAt<K>> {
         let address = address.as_u64();
         let key: Vec<u8> = key_from_address::<K>(address).collect();
@@ -535,7 +530,7 @@ impl<K: IdbKind> ID0Section<K> {
     /// read the label set at address, if any
     pub fn label_at(
         &self,
-        id0_addr: impl Id0AddressKey<K::Int>,
+        id0_addr: impl Id0AddressKey<K::Usize>,
     ) -> Result<Option<Cow<[u8]>>> {
         let key: Vec<u8> = key_from_address::<K>(id0_addr.as_u64())
             .chain(Some(b'N'))
@@ -579,7 +574,7 @@ impl<K: IdbKind> ID0Section<K> {
         Ok(value)
     }
 
-    pub(crate) fn dirtree_from_name<T: FromDirTreeNumber<K::Int>>(
+    pub(crate) fn dirtree_from_name<T: FromDirTreeNumber<K::Usize>>(
         &self,
         name: impl AsRef<[u8]>,
     ) -> Result<DirTreeRoot<T>> {
@@ -595,10 +590,10 @@ impl<K: IdbKind> ID0Section<K> {
             .collect();
         let key_len = key.len();
         let mut sub_values = self.sub_values(key).iter().map(|entry| {
-            let raw_idx = K::Int::from_bytes::<BE>(&entry.key[key_len..])
+            let raw_idx = K::Usize::from_bytes::<BE>(&entry.key[key_len..])
                 .ok_or_else(|| anyhow!("invalid dirtree entry key"))?;
             let idx = raw_idx >> 16;
-            let sub_idx: u16 = (raw_idx & K::Int::from(0xFFFFu16)).as_();
+            let sub_idx: u16 = (raw_idx & K::Usize::from(0xFFFFu16)).as_();
             Ok((idx, sub_idx, &entry.value[..]))
         });
         let dirs = dirtree::parse_dirtree::<'_, _, _, K>(&mut sub_values)?;
@@ -615,13 +610,13 @@ impl<K: IdbKind> ID0Section<K> {
 
     // TODO remove the u64 and make it a TILOrdIndex type
     /// read the `$ dirtree/structs` entries of the database
-    pub fn dirtree_structs(&self) -> Result<DirTreeRoot<K::Int>> {
+    pub fn dirtree_structs(&self) -> Result<DirTreeRoot<K::Usize>> {
         self.dirtree_from_name("N$ dirtree/structs")
     }
 
     // TODO remove the u64 and make it a TILOrdIndex type
     /// read the `$ dirtree/enums` entries of the database
-    pub fn dirtree_enums(&self) -> Result<DirTreeRoot<K::Int>> {
+    pub fn dirtree_enums(&self) -> Result<DirTreeRoot<K::Usize>> {
         self.dirtree_from_name("N$ dirtree/enums")
     }
 
@@ -640,37 +635,39 @@ impl<K: IdbKind> ID0Section<K> {
 
     // TODO remove the u64 and make it a ImportIDX type
     /// read the `$ dirtree/imports` entries of the database
-    pub fn dirtree_imports(&self) -> Result<DirTreeRoot<K::Int>> {
+    pub fn dirtree_imports(&self) -> Result<DirTreeRoot<K::Usize>> {
         self.dirtree_from_name("N$ dirtree/imports")
     }
 
     // TODO remove the u64 and make it a BptsIDX type
     /// read the `$ dirtree/bpts` entries of the database
-    pub fn dirtree_bpts(&self) -> Result<DirTreeRoot<K::Int>> {
+    pub fn dirtree_bpts(&self) -> Result<DirTreeRoot<K::Usize>> {
         self.dirtree_from_name("N$ dirtree/bpts")
     }
 
     // TODO remove the u64 and make it a &str type
     /// read the `$ dirtree/bookmarks_idaplace_t` entries of the database
-    pub fn dirtree_bookmarks_idaplace(&self) -> Result<DirTreeRoot<K::Int>> {
+    pub fn dirtree_bookmarks_idaplace(&self) -> Result<DirTreeRoot<K::Usize>> {
         self.dirtree_from_name("N$ dirtree/bookmarks_idaplace_t")
     }
 
     // TODO remove the u64 and make it a &str type
     /// read the `$ dirtree/bookmarks_structplace_t` entries of the database
-    pub fn dirtree_bookmarks_structplace(&self) -> Result<DirTreeRoot<K::Int>> {
+    pub fn dirtree_bookmarks_structplace(
+        &self,
+    ) -> Result<DirTreeRoot<K::Usize>> {
         self.dirtree_from_name("N$ dirtree/bookmarks_structplace_t")
     }
 
     // TODO remove the u64 and make it a &str type
     /// read the `$ dirtree/bookmarks_tiplace_t` entries of the database
-    pub fn dirtree_bookmarks_tiplace(&self) -> Result<DirTreeRoot<K::Int>> {
+    pub fn dirtree_bookmarks_tiplace(&self) -> Result<DirTreeRoot<K::Usize>> {
         self.dirtree_from_name("N$ dirtree/bookmarks_tiplace_t")
     }
 }
 
-fn key_from_address_and_subtype<K: IdbKind>(
-    address: K::Int,
+fn key_from_address_and_subtype<K: IDAKind>(
+    address: K::Usize,
     subtype: u8,
 ) -> impl Iterator<Item = u8> {
     key_from_address::<K>(address).chain([subtype].into_iter())

@@ -3,7 +3,7 @@ use std::num::NonZeroU32;
 use std::ops::Range;
 
 use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
-use crate::{til, IDBSectionCompression, IdbInt, IdbKind};
+use crate::{til, IDAKind, IDAUsize, IDBSectionCompression};
 
 use anyhow::{anyhow, ensure, Result};
 use byteorder::BE;
@@ -29,33 +29,33 @@ mod db;
 pub use db::*;
 
 #[derive(Clone, Debug)]
-pub struct IDBFunction<K: IdbKind> {
-    pub address: Range<K::Int>,
+pub struct IDBFunction<K: IDAKind> {
+    pub address: Range<K::Usize>,
     pub flags: u16,
     pub extra: IDBFunctionExtra<K>,
 }
 
 #[derive(Clone, Debug)]
-pub enum IDBFunctionExtra<K: IdbKind> {
+pub enum IDBFunctionExtra<K: IDAKind> {
     NonTail {
-        frame: K::Int,
+        frame: K::Usize,
     },
     Tail {
         /// function owner of the function start
-        owner: K::Int,
-        refqty: K::Int,
+        owner: K::Usize,
+        refqty: K::Usize,
         _unknown1: u16,
-        _unknown2: K::Int,
+        _unknown2: K::Usize,
     },
 }
 
 #[derive(Clone, Debug)]
-pub enum FunctionsAndComments<'a, K: IdbKind> {
+pub enum FunctionsAndComments<'a, K: IDAKind> {
     // It's just the name "$ funcs"
     Name,
     Function(IDBFunction<K>),
     Comment {
-        address: K::Int,
+        address: K::Usize,
         comment: Comments<'a>,
     },
     Unknown {
@@ -64,7 +64,7 @@ pub enum FunctionsAndComments<'a, K: IdbKind> {
     },
 }
 
-impl<'a, K: IdbKind> FunctionsAndComments<'a, K> {
+impl<'a, K: IDAKind> FunctionsAndComments<'a, K> {
     fn read(key: &'a [u8], value: &'a [u8]) -> Result<Self> {
         let [key_type, sub_key @ ..] = key else {
             return Err(anyhow!("invalid Funcs subkey"));
@@ -82,7 +82,7 @@ impl<'a, K: IdbKind> FunctionsAndComments<'a, K> {
                 Ok(Self::Unknown { key, value })
             }
             b'C' => {
-                let address = K::Int::from_bytes::<BE>(sub_key)
+                let address = K::Usize::from_bytes::<BE>(sub_key)
                     .ok_or_else(|| anyhow!("Invalid Comment address"))?;
                 parse_maybe_cstr(value)
                     .map(|value| Self::Comment {
@@ -93,7 +93,7 @@ impl<'a, K: IdbKind> FunctionsAndComments<'a, K> {
             }
             b'R' => {
                 let address =
-                    K::Int::from_bytes::<BE>(sub_key).ok_or_else(|| {
+                    K::Usize::from_bytes::<BE>(sub_key).ok_or_else(|| {
                         anyhow!("Invalid Repetable Comment address")
                     })?;
                 parse_maybe_cstr(value)
@@ -109,7 +109,7 @@ impl<'a, K: IdbKind> FunctionsAndComments<'a, K> {
     }
 }
 
-impl<K: IdbKind> IDBFunction<K> {
+impl<K: IDAKind> IDBFunction<K> {
     // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x37dd30
     // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f810
     fn read(_key: &[u8], value: &[u8]) -> Result<Self> {
@@ -152,7 +152,7 @@ impl<K: IdbKind> IDBFunction<K> {
 
     fn read_extra_tail<R>(
         input: &mut R,
-        address_start: K::Int,
+        address_start: K::Usize,
     ) -> Result<IDBFunctionExtra<K>>
     where
         R: IdbBufRead + IdbReadKind<K>,
@@ -180,16 +180,16 @@ impl<K: IdbKind> IDBFunction<K> {
 }
 
 #[derive(Clone, Debug)]
-pub enum EntryPointRaw<'a, K: IdbKind> {
+pub enum EntryPointRaw<'a, K: IDAKind> {
     Name,
-    Address { key: K::Int, address: K::Int },
-    Ordinal { key: K::Int, ordinal: K::Int },
-    ForwardedSymbol { key: K::Int, symbol: &'a str },
-    FunctionName { key: K::Int, name: &'a str },
+    Address { key: K::Usize, address: K::Usize },
+    Ordinal { key: K::Usize, ordinal: K::Usize },
+    ForwardedSymbol { key: K::Usize, symbol: &'a str },
+    FunctionName { key: K::Usize, name: &'a str },
     Unknown { key: &'a [u8], value: &'a [u8] },
 }
 
-impl<'a, K: IdbKind> EntryPointRaw<'a, K> {
+impl<'a, K: IDAKind> EntryPointRaw<'a, K> {
     fn read(key: &'a [u8], value: &'a [u8]) -> Result<Self> {
         let mut value = value;
         let [key_type, sub_key @ ..] = key else {
@@ -199,7 +199,7 @@ impl<'a, K: IdbKind> EntryPointRaw<'a, K> {
             ensure!(parse_maybe_cstr(value) == Some(&b"$ entry points"[..]));
             return Ok(Self::Name);
         }
-        let Some(sub_key) = K::Int::from_bytes::<BE>(sub_key) else {
+        let Some(sub_key) = K::Usize::from_bytes::<BE>(sub_key) else {
             return Ok(Self::Unknown { key, value });
         };
         match *key_type {
@@ -208,7 +208,7 @@ impl<'a, K: IdbKind> EntryPointRaw<'a, K> {
                 IdbReadKind::<K>::read_word(&mut value)
                     .map(|address| Self::Address {
                         key: sub_key,
-                        address: address - K::Int::from(1u8),
+                        address: address - K::Usize::from(1u8),
                     })
                     .map_err(|_| anyhow!("Invalid Function address"))
             }
@@ -241,9 +241,9 @@ impl<'a, K: IdbKind> EntryPointRaw<'a, K> {
 }
 
 #[derive(Clone, Debug)]
-pub struct EntryPoint<K: IdbKind> {
+pub struct EntryPoint<K: IDAKind> {
     pub name: String,
-    pub address: K::Int,
+    pub address: K::Usize,
     pub forwarded: Option<String>,
     pub entry_type: Option<til::Type>,
 }
@@ -259,19 +259,19 @@ fn parse_maybe_cstr(data: &[u8]) -> Option<&[u8]> {
     Some(&data[..end_pos])
 }
 
-enum ID0CStr<'a, K: IdbKind> {
+enum ID0CStr<'a, K: IDAKind> {
     CStr(&'a [u8]),
-    Ref(K::Int),
+    Ref(K::Usize),
 }
 
 // parse a string that maybe is finalized with \x00
-impl<'a, K: IdbKind> ID0CStr<'a, K> {
+impl<'a, K: IDAKind> ID0CStr<'a, K> {
     pub(crate) fn parse_cstr_or_subkey(data: &'a [u8]) -> Option<Self> {
         // TODO find the InnerRef, so far I found only the
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x4e20c0
         match data {
             [b'\x00', rest @ ..] => {
-                K::Int::from_bytes::<BE>(rest).map(ID0CStr::Ref)
+                K::Usize::from_bytes::<BE>(rest).map(ID0CStr::Ref)
             }
             _ => parse_maybe_cstr(data).map(ID0CStr::CStr),
         }

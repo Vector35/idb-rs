@@ -2,18 +2,18 @@ use anyhow::{anyhow, Result};
 use num_traits::CheckedAdd;
 
 use crate::ida_reader::IdbReadKind;
-use crate::IdbKind;
+use crate::IDAKind;
 
 use super::{ID0Entry, NodeIdx};
 
 #[derive(Clone, Debug)]
-pub struct FileRegions<K: IdbKind> {
-    pub start: K::Int,
-    pub end: K::Int,
-    pub eva: K::Int,
+pub struct FileRegions<K: IDAKind> {
+    pub start: K::Usize,
+    pub end: K::Usize,
+    pub eva: K::Usize,
 }
 
-impl<K: IdbKind> FileRegions<K> {
+impl<K: IDAKind> FileRegions<K> {
     fn read(_key: &[u8], data: &[u8], version: u16) -> Result<Self> {
         let mut cursor = data;
         let result = Self::innner_read(&mut cursor, version)?;
@@ -53,17 +53,17 @@ impl<K: IdbKind> FileRegions<K> {
     }
 }
 
-pub struct FileRegionIdx<K: IdbKind>(pub(crate) NodeIdx<K>);
+pub struct FileRegionIdx<K: IDAKind>(pub(crate) NodeIdx<K>);
 
 #[derive(Clone, Copy)]
-pub struct FileRegionIter<'a, K: IdbKind> {
+pub struct FileRegionIter<'a, K: IDAKind> {
     pub(crate) _kind: std::marker::PhantomData<K>,
     pub(crate) segments: &'a [ID0Entry],
     pub(crate) key_len: usize,
     pub(crate) version: u16,
 }
 
-impl<'a, K: IdbKind> Iterator for FileRegionIter<'a, K> {
+impl<'a, K: IDAKind> Iterator for FileRegionIter<'a, K> {
     type Item = Result<FileRegions<K>>;
 
     fn next(&mut self) -> Option<Self::Item> {

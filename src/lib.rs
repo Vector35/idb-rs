@@ -11,7 +11,7 @@ use std::num::NonZeroU64;
 use std::{borrow::Cow, io::Seek};
 
 use byteorder::{ByteOrder, LE};
-use id0::{ID0Section, Id0Section};
+use id0::{ID0Section, ID0SectionVariants};
 use ida_reader::{IdbBufRead, IdbRead};
 use serde::Deserialize;
 
@@ -20,34 +20,8 @@ use crate::nam::NamSection;
 use crate::til::section::TILSection;
 use anyhow::{anyhow, ensure, Result};
 
-// TODO fix the name
-#[derive(Debug, Clone)]
-pub enum IdbParser<I> {
-    U32(IDBParser<I, Idb32>),
-    U64(IDBParser<I, Idb64>),
-}
-
-impl<I: Read + Seek> IdbParser<I> {
-    pub fn new(mut input: I) -> Result<Self> {
-        let header = IDBHeader::read(&mut input)?;
-        if header.magic_version.is_64() {
-            Ok(Self::U64(IDBParser {
-                input,
-                header,
-                _kind: std::marker::PhantomData,
-            }))
-        } else {
-            Ok(Self::U32(IDBParser {
-                input,
-                header,
-                _kind: std::marker::PhantomData,
-            }))
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy)]
-pub struct IDBParser<I, K: IdbKind> {
+pub struct IDBParser<I, K: IDAKind> {
     input: I,
     header: IDBHeader,
     _kind: std::marker::PhantomData<K>,
@@ -89,12 +63,32 @@ impl_idb_offset!(TILOffset);
 macro_rules! call_parser_discrimiant {
     ($slf:ident, $name:ident, $call:tt) => {
         match $slf {
-            Self::U32($name) => $call,
-            Self::U64($name) => $call,
+            Self::IDA32($name) => $call,
+            Self::IDA64($name) => $call,
         }
     };
 }
-impl<I: BufRead + Seek> IdbParser<I> {
+
+pub type IDBParserVariants<I> =
+    IDAVariants<IDBParser<I, IDA32>, IDBParser<I, IDA64>>;
+
+impl<I: BufRead + Seek> IDBParserVariants<I> {
+    pub fn new(mut input: I) -> Result<Self> {
+        let header = IDBHeader::read(&mut input)?;
+        if header.magic_version.is_64() {
+            Ok(Self::IDA64(IDBParser {
+                input,
+                header,
+                _kind: std::marker::PhantomData,
+            }))
+        } else {
+            Ok(Self::IDA32(IDBParser {
+                input,
+                header,
+                _kind: std::marker::PhantomData,
+            }))
+        }
+    }
     pub fn id0_section_offset(&self) -> Option<ID0Offset> {
         call_parser_discrimiant!(self, x, { x.id0_section_offset() })
     }
@@ -111,13 +105,16 @@ impl<I: BufRead + Seek> IdbParser<I> {
         call_parser_discrimiant!(self, x, { x.til_section_offset() })
     }
 
-    pub fn read_id0_section(&mut self, id0: ID0Offset) -> Result<Id0Section> {
+    pub fn read_id0_section(
+        &mut self,
+        id0: ID0Offset,
+    ) -> Result<ID0SectionVariants> {
         match self {
-            IdbParser::U32(parser) => {
-                parser.read_id0_section(id0).map(Id0Section::U32)
+            Self::IDA32(parser) => {
+                parser.read_id0_section(id0).map(IDAVariants::IDA32)
             }
-            IdbParser::U64(parser) => {
-                parser.read_id0_section(id0).map(Id0Section::U64)
+            Self::IDA64(parser) => {
+                parser.read_id0_section(id0).map(IDAVariants::IDA64)
             }
         }
     }
@@ -145,7 +142,7 @@ impl<I: BufRead + Seek> IdbParser<I> {
     }
 }
 
-impl<I: BufRead + Seek, K: IdbKind> IDBParser<I, K> {
+impl<I: BufRead + Seek, K: IDAKind> IDBParser<I, K> {
     pub fn id0_section_offset(&self) -> Option<ID0Offset> {
         self.header.id0_offset.map(ID0Offset)
     }
@@ -919,7 +916,7 @@ mod test {
     #[test]
     fn parse_idb_param() {
         let param = b"IDA\xbc\x02\x06metapc#\x8a\x03\x03\x02\x00\x00\x00\x00\xff_\xff\xff\xf7\x03\x00\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x0d\x00\x0d \x0d\x10\xff\xff\x00\x00\x00\xc0\x80\x00\x00\x00\x02\x02\x01\x0f\x0f\x06\xce\xa3\xbeg\xc6@\x00\x07\x00\x07\x10(FP\x87t\x09\x03\x00\x01\x13\x0a\x00\x00\x01a\x00\x07\x00\x13\x04\x04\x04\x00\x02\x04\x08\x00\x00\x00";
-        let _parsed = id0::IDBParam::<Idb32>::read(param).unwrap();
+        let _parsed = id0::IDBParam::<IDA32>::read(param).unwrap();
     }
 
     #[test]
@@ -938,17 +935,17 @@ mod test {
         let filename = filename.as_ref();
         println!("{}", filename.to_str().unwrap());
         let file = BufReader::new(File::open(&filename).unwrap());
-        let parser = IdbParser::new(file).unwrap();
+        let parser = IDAVariants::new(file).unwrap();
         match parser {
-            IdbParser::U32(idbparser) => parse_idb_inner(idbparser),
-            IdbParser::U64(idbparser) => parse_idb_inner(idbparser),
+            IDAVariants::IDA32(idbparser) => parse_idb_inner(idbparser),
+            IDAVariants::IDA64(idbparser) => parse_idb_inner(idbparser),
         }
     }
 
     fn parse_idb_inner<I, K>(mut parser: IDBParser<I, K>)
     where
         I: BufRead + Seek,
-        K: IdbKind,
+        K: IDAKind,
     {
         // parse sectors
         let id0 = parser
@@ -1076,11 +1073,16 @@ mod test {
     }
 }
 
-pub trait IdbKind: std::fmt::Debug + Clone + Copy {
-    type Int: IdbInt;
+pub enum IDAVariants<I32, I64> {
+    IDA32(I32),
+    IDA64(I64),
 }
 
-pub trait IdbInt:
+pub trait IDAKind: std::fmt::Debug + Clone + Copy {
+    type Usize: IDAUsize;
+}
+
+pub trait IDAUsize:
     Sized
     + Sync
     + Send
@@ -1138,11 +1140,11 @@ pub trait IdbInt:
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Idb32;
-impl IdbKind for Idb32 {
-    type Int = u32;
+pub struct IDA32;
+impl IDAKind for IDA32 {
+    type Usize = u32;
 }
-impl IdbInt for u32 {
+impl IDAUsize for u32 {
     const BYTES: u8 = 4;
     fn as_raw_u64(&self) -> u64 {
         *self as u64
@@ -1170,11 +1172,11 @@ impl IdbInt for u32 {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Idb64;
-impl IdbKind for Idb64 {
-    type Int = u64;
+pub struct IDA64;
+impl IDAKind for IDA64 {
+    type Usize = u64;
 }
-impl IdbInt for u64 {
+impl IDAUsize for u64 {
     const BYTES: u8 = 8;
     fn as_raw_u64(&self) -> u64 {
         *self
