@@ -10,7 +10,7 @@ use std::io::{BufRead, Read, SeekFrom};
 use std::num::NonZeroU64;
 use std::{borrow::Cow, io::Seek};
 
-use byteorder::{ByteOrder, LE};
+use byteorder::ByteOrder;
 use id0::{ID0Section, ID0SectionVariants};
 use ida_reader::{IdbBufRead, IdbRead};
 use serde::Deserialize;
@@ -1110,6 +1110,7 @@ pub trait IDAUsize:
     + num_traits::AsPrimitive<u16>
     + num_traits::AsPrimitive<u32>
     + num_traits::AsPrimitive<u64>
+    + num_traits::AsPrimitive<Self::Isize>
     + TryInto<usize, Error: std::fmt::Debug>
     + Into<u64>
     + TryInto<u32, Error: std::fmt::Debug>
@@ -1122,21 +1123,26 @@ pub trait IDAUsize:
     + TryFrom<usize, Error: std::fmt::Debug>
     + Into<i128>
 {
+    type Isize: num_traits::Signed + Into<i64> + Copy;
     const BYTES: u8;
-    /// Convert the inner address value into a u64
-    fn as_raw_u64(&self) -> u64;
-    fn is_max(&self) -> bool;
-    // TODO delete this function
-    //#[deprecated]
-    fn from_reader(read: &mut impl std::io::Read) -> Result<Self> {
-        Self::from_bytes_reader::<LE>(read)
+
+    /// helper fo call into u64
+    fn into_u64(&self) -> u64 {
+        (*self).into()
+    }
+    /// cast the inner type as a signed version of itself, then call into i64
+    fn into_i64(&self) -> i64 {
+        let signed: Self::Isize = self.as_();
+        signed.into()
+    }
+    fn is_max(&self) -> bool {
+        *self == Self::max_value()
     }
     fn from_bytes<B: ByteOrder>(data: &[u8]) -> Option<Self>;
     fn from_bytes_reader<B: ByteOrder>(
         read: &mut impl std::io::Read,
     ) -> Result<Self>;
     fn unpack_from_reader(read: &mut impl std::io::Read) -> Result<Self>;
-    fn as_i64(&self) -> i64;
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1145,13 +1151,9 @@ impl IDAKind for IDA32 {
     type Usize = u32;
 }
 impl IDAUsize for u32 {
+    type Isize = i32;
     const BYTES: u8 = 4;
-    fn as_raw_u64(&self) -> u64 {
-        *self as u64
-    }
-    fn is_max(&self) -> bool {
-        *self == u32::MAX
-    }
+
     fn from_bytes<B: ByteOrder>(data: &[u8]) -> Option<Self> {
         (data.len() == 4).then(|| B::read_u32(data))
     }
@@ -1166,9 +1168,6 @@ impl IDAUsize for u32 {
     fn unpack_from_reader(read: &mut impl std::io::Read) -> Result<Self> {
         read.unpack_dd()
     }
-    fn as_i64(&self) -> i64 {
-        ((*self) as i32).into()
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1177,13 +1176,8 @@ impl IDAKind for IDA64 {
     type Usize = u64;
 }
 impl IDAUsize for u64 {
+    type Isize = i64;
     const BYTES: u8 = 8;
-    fn as_raw_u64(&self) -> u64 {
-        *self
-    }
-    fn is_max(&self) -> bool {
-        *self == u64::MAX
-    }
     fn from_bytes<B: ByteOrder>(data: &[u8]) -> Option<Self> {
         (data.len() == 8).then(|| B::read_u64(data))
     }
@@ -1197,8 +1191,5 @@ impl IDAUsize for u64 {
     }
     fn unpack_from_reader(read: &mut impl std::io::Read) -> Result<Self> {
         read.unpack_dq()
-    }
-    fn as_i64(&self) -> i64 {
-        (*self) as i64
     }
 }
