@@ -4,7 +4,7 @@ use anyhow::{anyhow, ensure, Result};
 use num_traits::WrappingAdd;
 
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
-use crate::{IdbInt, IdbKind};
+use crate::{IDAKind, IDAUsize};
 
 use super::Id0AddressKey;
 
@@ -42,27 +42,27 @@ pub enum DirTreeEntry<T> {
     },
 }
 
-pub(crate) trait FromDirTreeNumber<K: IdbInt> {
+pub(crate) trait FromDirTreeNumber<K: IDAUsize> {
     fn new(value: K) -> Self;
 }
 
-impl<K: IdbInt> FromDirTreeNumber<K> for K {
+impl<K: IDAUsize> FromDirTreeNumber<K> for K {
     fn new(value: K) -> K {
         value
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Id0Address<K: IdbKind> {
-    address: K::Int,
+pub struct Id0Address<K: IDAKind> {
+    address: K::Usize,
 }
-impl<K: IdbKind> FromDirTreeNumber<K::Int> for Id0Address<K> {
-    fn new(address: K::Int) -> Self {
+impl<K: IDAKind> FromDirTreeNumber<K::Usize> for Id0Address<K> {
+    fn new(address: K::Usize) -> Self {
         Self { address }
     }
 }
-impl<K: IdbKind> Id0AddressKey<K::Int> for Id0Address<K> {
-    fn as_u64(&self) -> K::Int {
+impl<K: IDAKind> Id0AddressKey<K::Usize> for Id0Address<K> {
+    fn as_u64(&self) -> K::Usize {
         self.address
     }
 }
@@ -73,7 +73,7 @@ pub struct Id0TilOrd {
     // TODO remove this pub
     pub ord: u64,
 }
-impl<K: IdbInt> FromDirTreeNumber<K> for Id0TilOrd {
+impl<K: IDAUsize> FromDirTreeNumber<K> for Id0TilOrd {
     fn new(ord: K) -> Self {
         Self { ord: ord.into() }
     }
@@ -95,12 +95,12 @@ impl<K: IdbInt> FromDirTreeNumber<K> for Id0TilOrd {
 /// "\x2e\xff\x00\x00\x31\x53\x00\x02\x00\x00":"\x01\x62\x00\x00\x00\x0d\x90\x20\x80\x88\x08\x10\x80\xe9\x04\x80\xe7\x82\x36\x06\xff\xff\xff\xfc\xd0\xff\xff\xff\xff\x60\x50\x83\x0a\x00\x0d"
 /// ...
 /// "N$ dirtree/funcs":"\x31\x00\x00\xff"
-pub(crate) fn parse_dirtree<'a, T, I, K: IdbKind>(
+pub(crate) fn parse_dirtree<'a, T, I, K: IDAKind>(
     entries_iter: I,
 ) -> Result<DirTreeRoot<T>>
 where
-    T: FromDirTreeNumber<K::Int>,
-    I: IntoIterator<Item = Result<(K::Int, u16, &'a [u8])>>,
+    T: FromDirTreeNumber<K::Usize>,
+    I: IntoIterator<Item = Result<(K::Usize, u16, &'a [u8])>>,
 {
     // parse all the raw entries
     let mut entries_raw = HashMap::new();
@@ -109,7 +109,7 @@ where
         iter: entries_iter.into_iter(),
         // dummy value so next_entry() will get the first one
         state: DirtreeEntryState::Reading {
-            idx: K::Int::from(0u8),
+            idx: K::Usize::from(0u8),
             sub_idx: 0,
             entry: &[],
         },
@@ -136,19 +136,19 @@ where
         .unwrap();
     let name = root.name;
     ensure!(name.is_empty(), "DirTree With a named root");
-    ensure!(root.parent == K::Int::from(0u8), "Dirtree Root with parent");
+    ensure!(root.parent == K::Usize::from(0u8), "Dirtree Root with parent");
     let dirs = dirtree_directory_from_raw(
         &mut entries_raw,
-        K::Int::from(0u8),
+        K::Usize::from(0u8),
         root.entries,
     )?;
 
     Ok(DirTreeRoot { entries: dirs })
 }
 
-fn dirtree_directory_from_raw<T: FromDirTreeNumber<K::Int>, K: IdbKind>(
-    raw: &mut HashMap<K::Int, Option<DirTreeEntryRaw<K>>>,
-    parent_idx: K::Int,
+fn dirtree_directory_from_raw<T: FromDirTreeNumber<K::Usize>, K: IDAKind>(
+    raw: &mut HashMap<K::Usize, Option<DirTreeEntryRaw<K>>>,
+    parent_idx: K::Usize,
     entries: Vec<DirTreeEntryChildRaw<K>>,
 ) -> Result<Vec<DirTreeEntry<T>>> {
     let sub_dirs = entries
@@ -185,13 +185,13 @@ fn dirtree_directory_from_raw<T: FromDirTreeNumber<K::Int>, K: IdbKind>(
 }
 
 #[derive(Clone, Debug)]
-struct DirTreeEntryRaw<K: IdbKind> {
+struct DirTreeEntryRaw<K: IDAKind> {
     name: Vec<u8>,
-    parent: K::Int,
+    parent: K::Usize,
     entries: Vec<DirTreeEntryChildRaw<K>>,
 }
 
-impl<K: IdbKind> DirTreeEntryRaw<K> {
+impl<K: IDAKind> DirTreeEntryRaw<K> {
     fn from_raw<I: IdbBufRead + IdbReadKind<K>>(data: &mut I) -> Result<Self> {
         // TODO It's unclear if this value is a version, it seems so
         match data.read_u8()? {
@@ -334,34 +334,34 @@ impl<K: IdbKind> DirTreeEntryRaw<K> {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct DirTreeEntryChildRaw<K: IdbKind> {
-    number: K::Int,
+struct DirTreeEntryChildRaw<K: IDAKind> {
+    number: K::Usize,
     is_value: bool,
 }
 
-struct DirtreeEntryRead<'a, I, K: IdbKind> {
+struct DirtreeEntryRead<'a, I, K: IDAKind> {
     iter: I,
     state: DirtreeEntryState<'a, K>,
 }
 
-enum DirtreeEntryState<'a, K: IdbKind> {
+enum DirtreeEntryState<'a, K: IDAKind> {
     Reading {
-        idx: K::Int,
+        idx: K::Usize,
         sub_idx: u16,
         entry: &'a [u8],
     },
     Next {
-        idx: K::Int,
+        idx: K::Usize,
         entry: &'a [u8],
     },
 }
 
-impl<'a, I, K: IdbKind> DirtreeEntryRead<'a, I, K>
+impl<'a, I, K: IDAKind> DirtreeEntryRead<'a, I, K>
 where
-    I: Iterator<Item = Result<(K::Int, u16, &'a [u8])>>,
+    I: Iterator<Item = Result<(K::Usize, u16, &'a [u8])>>,
 {
     // get the next entry on the database
-    fn next_entry(&mut self) -> Result<Option<K::Int>> {
+    fn next_entry(&mut self) -> Result<Option<K::Usize>> {
         let (idx, sub_idx, entry) = match self.state {
             DirtreeEntryState::Reading { entry: &[], .. } => {
                 let Some(next_entry) = self.iter.next() else {
@@ -456,9 +456,9 @@ where
     }
 }
 
-impl<'a, I, K: IdbKind> std::io::Read for DirtreeEntryRead<'a, I, K>
+impl<'a, I, K: IDAKind> std::io::Read for DirtreeEntryRead<'a, I, K>
 where
-    I: Iterator<Item = Result<(K::Int, u16, &'a [u8])>>,
+    I: Iterator<Item = Result<(K::Usize, u16, &'a [u8])>>,
 {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let is_empty = match self.state {
@@ -481,9 +481,9 @@ where
     }
 }
 
-impl<'a, I, K: IdbKind> std::io::BufRead for DirtreeEntryRead<'a, I, K>
+impl<'a, I, K: IDAKind> std::io::BufRead for DirtreeEntryRead<'a, I, K>
 where
-    I: Iterator<Item = Result<(K::Int, u16, &'a [u8])>>,
+    I: Iterator<Item = Result<(K::Usize, u16, &'a [u8])>>,
 {
     fn fill_buf(&mut self) -> std::io::Result<&[u8]> {
         match self.state {
@@ -508,13 +508,13 @@ where
     }
 }
 
-fn parse_entries<K: IdbKind, I: IdbReadKind<K>>(
+fn parse_entries<K: IDAKind, I: IdbReadKind<K>>(
     data: &mut I,
     entries: &mut Vec<DirTreeEntryChildRaw<K>>,
     entries_len: u32,
     default_is_value: bool,
 ) -> Result<()> {
-    let mut last_value: Option<K::Int> = None;
+    let mut last_value: Option<K::Usize> = None;
     for _ in 0..entries_len {
         let rel_value = data.unpack_usize()?;
         let value = match last_value {

@@ -4,7 +4,7 @@ use std::io::{BufRead, ErrorKind, Read};
 use std::ops::Range;
 
 use crate::til::{TypeAttribute, TypeAttributeExt};
-use crate::{IdbInt, IdbKind};
+use crate::{IDAKind, IDAUsize};
 
 pub trait IdbRead: Read {
     fn read_u8(&mut self) -> Result<u8> {
@@ -559,28 +559,28 @@ pub trait IdbBufRead: IdbRead + BufRead {
 
 impl<R: BufRead> IdbBufRead for R {}
 
-pub trait IdbReadKind<K: IdbKind>: Read + IdbRead {
+pub trait IdbReadKind<K: IDAKind>: Read + IdbRead {
     // TODO fix confusing names
-    fn read_word(&mut self) -> Result<K::Int>
+    fn read_word(&mut self) -> Result<K::Usize>
     where
         Self: Sized,
     {
         self.read_addr()
     }
-    fn read_addr(&mut self) -> Result<K::Int>
+    fn read_addr(&mut self) -> Result<K::Usize>
     where
         Self: Sized,
     {
-        <K::Int as IdbInt>::from_reader(self)
+        <K::Usize as IDAUsize>::from_reader(self)
     }
 
-    fn unpack_usize(&mut self) -> Result<K::Int>
+    fn unpack_usize(&mut self) -> Result<K::Usize>
     where
         Self: Sized,
     {
-        <K::Int as IdbInt>::unpack_from_reader(self)
+        <K::Usize as IDAUsize>::unpack_from_reader(self)
     }
-    fn unpack_address_range(&mut self) -> Result<Range<K::Int>>
+    fn unpack_address_range(&mut self) -> Result<Range<K::Usize>>
     where
         Self: Sized,
     {
@@ -597,7 +597,7 @@ pub trait IdbReadKind<K: IdbKind>: Read + IdbRead {
     }
 }
 
-impl<R: Read, K: IdbKind> IdbReadKind<K> for R {}
+impl<R: Read, K: IDAKind> IdbReadKind<K> for R {}
 
 pub fn split_strings_from_array(buf: &[u8]) -> Option<Vec<Vec<u8>>> {
     if buf.is_empty() {

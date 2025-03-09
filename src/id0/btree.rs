@@ -326,20 +326,20 @@ impl ID0Page {
 }
 
 // TODO improve this function, maybe make a one liner
-pub(crate) fn key_from_address<K: IdbKind>(
-    address: K::Int,
+pub(crate) fn key_from_address<K: IDAKind>(
+    address: K::Usize,
 ) -> impl Iterator<Item = u8> {
     b".".iter()
         .copied()
         .chain(address.to_be_bytes().as_ref().to_vec())
 }
 
-pub trait Id0AddressKey<K: IdbInt> {
+pub trait Id0AddressKey<K: IDAUsize> {
     // TODO fix this name
     fn as_u64(&self) -> K;
 }
 
-impl<K: IdbInt> Id0AddressKey<K> for K {
+impl<K: IDAUsize> Id0AddressKey<K> for K {
     fn as_u64(&self) -> K {
         *self
     }

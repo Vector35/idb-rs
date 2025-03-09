@@ -1,4 +1,4 @@
-use crate::{IdbInt, IdbKind};
+use crate::{IDAKind, IDAUsize};
 
 use super::ID0Entry;
 
@@ -9,19 +9,19 @@ use num_traits::AsPrimitive;
 #[derive(Clone, Copy, Debug)]
 pub struct SegmentPatchIdx<'a>(pub(crate) &'a [u8]);
 
-pub struct Patch<K: IdbKind> {
-    pub address: K::Int,
+pub struct Patch<K: IDAKind> {
+    pub address: K::Usize,
     pub original_byte: u8,
 }
 
 #[derive(Clone, Copy)]
-pub struct SegmentPatchOriginalValueIter<'a, K: IdbKind> {
+pub struct SegmentPatchOriginalValueIter<'a, K: IDAKind> {
     _kind: std::marker::PhantomData<K>,
     pub(crate) entries: &'a [ID0Entry],
     pub(crate) key_len: usize,
     //pub(crate) segment_strings: SegmentStringsIter<'a>,
 }
-impl<'a, K: IdbKind> SegmentPatchOriginalValueIter<'a, K> {
+impl<'a, K: IDAKind> SegmentPatchOriginalValueIter<'a, K> {
     pub(crate) fn new(entries: &'a [ID0Entry], key_len: usize) -> Self {
         Self {
             _kind: std::marker::PhantomData,
@@ -34,10 +34,10 @@ impl<'a, K: IdbKind> SegmentPatchOriginalValueIter<'a, K> {
         // TODO find the InnerRef for this
         let addr_raw = &entry.key[self.key_len..];
 
-        let address = K::Int::from_bytes::<BE>(addr_raw)
+        let address = K::Usize::from_bytes::<BE>(addr_raw)
             .ok_or_else(|| anyhow!("Invalid id1 entry address"))?;
 
-        let original_value = K::Int::from_bytes::<LE>(&entry.value[..])
+        let original_value = K::Usize::from_bytes::<LE>(&entry.value[..])
             .ok_or_else(|| anyhow!("Invalid id1 entry original value"))?;
         let original_byte = AsPrimitive::<u8>::as_(original_value) & 0xFF;
 
@@ -50,7 +50,7 @@ impl<'a, K: IdbKind> SegmentPatchOriginalValueIter<'a, K> {
     }
 }
 
-impl<K: IdbKind> Iterator for SegmentPatchOriginalValueIter<'_, K> {
+impl<K: IDAKind> Iterator for SegmentPatchOriginalValueIter<'_, K> {
     type Item = Result<Patch<K>>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -65,4 +65,4 @@ impl<K: IdbKind> Iterator for SegmentPatchOriginalValueIter<'_, K> {
     }
 }
 
-impl<K: IdbKind> ExactSizeIterator for SegmentPatchOriginalValueIter<'_, K> {}
+impl<K: IDAKind> ExactSizeIterator for SegmentPatchOriginalValueIter<'_, K> {}
