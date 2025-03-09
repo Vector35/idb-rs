@@ -205,14 +205,14 @@ impl<'a, K: IDAKind> EntryPointRaw<'a, K> {
         match *key_type {
             // TODO for some reason the address is one byte extra
             flag::netnode::nn_res::ARRAY_ALT_TAG => {
-                IdbReadKind::<K>::read_word(&mut value)
+                IdbReadKind::<K>::read_usize(&mut value)
                     .map(|address| Self::Address {
                         key: sub_key,
                         address: address - K::Usize::from(1u8),
                     })
                     .map_err(|_| anyhow!("Invalid Function address"))
             }
-            b'I' => IdbReadKind::<K>::read_word(&mut value)
+            b'I' => IdbReadKind::<K>::read_usize(&mut value)
                 .map(|ordinal| Self::Ordinal {
                     key: sub_key,
                     ordinal,

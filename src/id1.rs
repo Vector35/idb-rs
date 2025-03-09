@@ -26,74 +26,14 @@ impl ID1Section {
         }
     }
 
-    fn read_inner<K: IDAKind>(input: &mut impl IdbRead) -> Result<Self> {
+    fn read_inner<K: IDAKind>(input: &mut impl std::io::Read) -> Result<Self> {
         // TODO pages are always 0x2000?
         const PAGE_SIZE: usize = 0x2000;
         let mut buf = vec![0; PAGE_SIZE];
         input.read_exact(&mut buf[..])?;
-        let mut header_page = &buf[..];
-        let version = VaVersion::read(&mut header_page)?;
-        let (npages, seglist_raw) = match version {
-            VaVersion::Va0
-            | VaVersion::Va1
-            | VaVersion::Va2
-            | VaVersion::Va3
-            | VaVersion::Va4 => {
-                let nsegments = header_page.read_u16()?;
-                let npages = header_page.read_u16()?;
-                ensure!(
-                    npages > 0,
-                    "Invalid number of pages, net at least one for the header"
-                );
-                // TODO section_size / npages == 0x2000
-
-                // TODO the reference code uses the magic version, should it use
-                // the version itself instead?
-                let seglist: Vec<SegInfoVaNRaw<K>> = (0..nsegments)
-                    .map(|_| {
-                        let start =
-                            IdbReadKind::<K>::read_word(&mut header_page)?;
-                        let end =
-                            IdbReadKind::<K>::read_word(&mut header_page)?;
-                        ensure!(start <= end);
-                        let offset =
-                            IdbReadKind::<K>::read_word(&mut header_page)?;
-                        Ok(SegInfoVaNRaw {
-                            address: start..end,
-                            offset,
-                        })
-                    })
-                    .collect::<Result<_>>()?;
-                (u32::from(npages), SegInfoRaw::VaN(seglist))
-            }
-            VaVersion::VaX => {
-                let unknown_always3: u32 =
-                    bincode::deserialize_from(&mut header_page)?;
-                ensure!(unknown_always3 == 3);
-                let nsegments: u32 =
-                    bincode::deserialize_from(&mut header_page)?;
-                let unknown_always2048: u32 =
-                    bincode::deserialize_from(&mut header_page)?;
-                ensure!(unknown_always2048 == 2048);
-                let npages: u32 = bincode::deserialize_from(&mut header_page)?;
-
-                let seglist = (0..nsegments)
-                    // TODO the reference code uses the magic version, should it use
-                    // the version itself instead?
-                    .map(|_| {
-                        let start =
-                            IdbReadKind::<K>::read_word(&mut header_page)?;
-                        let end =
-                            IdbReadKind::<K>::read_word(&mut header_page)?;
-                        ensure!(start <= end);
-                        Ok(start..end)
-                    })
-                    .collect::<Result<_>>()?;
-                (npages, SegInfoRaw::VaX(seglist))
-            }
-        };
+        let (npages, seglist_raw) = Self::read_header::<K>(&mut &buf[..])?;
         // make sure the unused values a all zero
-        ensure!(header_page.iter().all(|b| *b == 0));
+        ensure!(buf.iter().all(|b| *b == 0));
 
         // sort segments by address
         let mut overlay_check = match &seglist_raw {
@@ -116,7 +56,8 @@ impl ID1Section {
             .iter()
             .map(|s| (s.end - s.start) * K::Usize::from(4u8))
             .sum();
-        let round_up = required_size.rem(K::Usize::try_from(PAGE_SIZE).unwrap())
+        let round_up = required_size
+            .rem(K::Usize::try_from(PAGE_SIZE).unwrap())
             != K::Usize::from(0u8);
         let required_pages = required_size
             .div(K::Usize::try_from(PAGE_SIZE).unwrap())
@@ -186,6 +127,63 @@ impl ID1Section {
         ignore_bytes(input, &mut buf)?;
 
         Ok(Self { seglist })
+    }
+
+    fn read_header<K: IDAKind>(
+        input: &mut impl IdbReadKind<K>,
+    ) -> Result<(u32, SegInfoRaw<K>)> {
+        let version = VaVersion::read(&mut *input)?;
+        match version {
+            VaVersion::Va0
+            | VaVersion::Va1
+            | VaVersion::Va2
+            | VaVersion::Va3
+            | VaVersion::Va4 => {
+                let nsegments = input.read_u16()?;
+                let npages = input.read_u16()?;
+                ensure!(
+                    npages > 0,
+                    "Invalid number of pages, net at least one for the header"
+                );
+                // TODO section_size / npages == 0x2000
+
+                // TODO the reference code uses the magic version, should it use
+                // the version itself instead?
+                let seglist: Vec<SegInfoVaNRaw<K>> = (0..nsegments)
+                    .map(|_| {
+                        let start = input.read_usize()?;
+                        let end = input.read_usize()?;
+                        ensure!(start <= end);
+                        let offset = input.read_usize()?;
+                        Ok(SegInfoVaNRaw {
+                            address: start..end,
+                            offset,
+                        })
+                    })
+                    .collect::<Result<_>>()?;
+                Ok((u32::from(npages), SegInfoRaw::VaN(seglist)))
+            }
+            VaVersion::VaX => {
+                let unknown_always3 = input.read_u32()?;
+                ensure!(unknown_always3 == 3);
+                let nsegments = input.read_u32()?;
+                let unknown_always2048 = input.read_u32()?;
+                ensure!(unknown_always2048 == 2048);
+                let npages = input.read_u32()?;
+
+                let seglist = (0..nsegments)
+                    // TODO the reference code uses the magic version, should it use
+                    // the version itself instead?
+                    .map(|_| {
+                        let start = input.read_usize()?;
+                        let end = input.read_usize()?;
+                        ensure!(start <= end);
+                        Ok(start..end)
+                    })
+                    .collect::<Result<_>>()?;
+                Ok((npages, SegInfoRaw::VaX(seglist)))
+            }
+        }
     }
 
     pub fn byte_by_address(&self, address: u64) -> Option<ByteInfoRaw> {

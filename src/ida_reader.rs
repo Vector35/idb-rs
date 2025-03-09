@@ -1,4 +1,5 @@
 use anyhow::{anyhow, ensure, Result};
+use byteorder::LE;
 
 use std::io::{BufRead, ErrorKind, Read};
 use std::ops::Range;
@@ -559,19 +560,12 @@ pub trait IdbBufRead: IdbRead + BufRead {
 
 impl<R: BufRead> IdbBufRead for R {}
 
-pub trait IdbReadKind<K: IDAKind>: Read + IdbRead {
-    // TODO fix confusing names
-    fn read_word(&mut self) -> Result<K::Usize>
+pub trait IdbReadKind<K: IDAKind>: IdbRead {
+    fn read_usize(&mut self) -> Result<K::Usize>
     where
         Self: Sized,
     {
-        self.read_addr()
-    }
-    fn read_addr(&mut self) -> Result<K::Usize>
-    where
-        Self: Sized,
-    {
-        <K::Usize as IDAUsize>::from_reader(self)
+        <K::Usize as IDAUsize>::from_bytes_reader::<LE>(self)
     }
 
     fn unpack_usize(&mut self) -> Result<K::Usize>

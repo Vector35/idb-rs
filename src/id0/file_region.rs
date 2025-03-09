@@ -33,8 +33,8 @@ impl<K: IDAKind> FileRegions<K> {
         // TODO detect versions with more accuracy
         let (start, end, eva) = match version {
             ..=699 => {
-                let start = cursor.read_word()?;
-                let end = cursor.read_word()?;
+                let start = cursor.read_usize()?;
+                let end = cursor.read_usize()?;
                 let rva = cursor.read_u32()?;
                 // TODO avoid this into and make it a enum?
                 (start, end, rva.into())

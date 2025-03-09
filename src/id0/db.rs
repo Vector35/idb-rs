@@ -257,7 +257,7 @@ impl<K: IDAKind> ID0Section<K> {
             let Some(value) = K::Usize::from_bytes::<BE>(&sub_key[1..]) else {
                 return Ok(IDBRootInfo::Unknown(entry));
             };
-            match (sub_type, value.as_i64()) {
+            match (sub_type, value.into_i64()) {
                 (b'A', -6) => K::Usize::from_bytes::<LE>(&entry.value[..])
                     .ok_or_else(|| anyhow!("Unable to parse imagebase value"))
                     .map(ImageBase)
