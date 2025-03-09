@@ -19,7 +19,7 @@ use std::num::NonZeroU8;
 
 use anyhow::{anyhow, ensure, Context, Result};
 
-use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
+use crate::ida_reader::{IdbBufRead, IdbRead};
 
 use crate::til::array::{Array, ArrayRaw};
 use crate::til::bitfield::Bitfield;
@@ -135,7 +135,7 @@ pub(crate) struct TILTypeInfoRaw {
 
 impl TILTypeInfoRaw {
     pub(crate) fn read(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         til: &TILSectionHeader,
         is_last: bool,
     ) -> Result<Self> {
@@ -359,7 +359,7 @@ pub(crate) enum TypeVariantRaw {
 
 impl TypeRaw {
     pub fn read(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         til: &TILSectionHeader,
     ) -> Result<Self> {
         let metadata: u8 = input.read_u8()?;
@@ -448,7 +448,7 @@ impl TypeRaw {
     }
 
     pub fn read_ref(
-        input: &mut impl IdaGenericUnpack,
+        input: &mut impl IdbRead,
         header: &TILSectionHeader,
     ) -> Result<Self> {
         let mut bytes = input.unpack_dt_bytes()?;
@@ -617,7 +617,7 @@ pub enum TypedefRaw {
 }
 
 impl TypedefRaw {
-    fn read(input: &mut impl IdaGenericUnpack) -> Result<Self> {
+    fn read(input: &mut impl IdbRead) -> Result<Self> {
         let buf = input.unpack_dt_bytes()?;
         match &buf[..] {
             [b'#', data @ ..] => {
@@ -755,7 +755,7 @@ pub enum TILMacroValue {
 }
 
 impl TILMacro {
-    fn read(input: &mut impl IdaGenericBufUnpack) -> Result<Self> {
+    fn read(input: &mut impl IdbBufRead) -> Result<Self> {
         let name = input.read_c_string_raw()?;
         // TODO find what this is
         let flag: u16 = input.read_u16()?;

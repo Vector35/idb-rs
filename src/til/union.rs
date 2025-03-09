@@ -3,7 +3,7 @@ use anyhow::{anyhow, Context, Result};
 use std::collections::HashMap;
 use std::num::{NonZeroU16, NonZeroU8};
 
-use crate::ida_reader::IdaGenericBufUnpack;
+use crate::ida_reader::IdbBufRead;
 use crate::til::{Type, TypeRaw};
 use crate::IDBString;
 
@@ -76,7 +76,7 @@ pub(crate) struct UnionRaw {
 
 impl UnionRaw {
     pub fn read(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
     ) -> Result<TypeVariantRaw> {
         // TODO n == 0 && n_cond == false?

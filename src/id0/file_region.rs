@@ -1,62 +1,70 @@
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{anyhow, Result};
+use num_traits::CheckedAdd;
 
-use crate::ida_reader::{IdaUnpack, IdaUnpacker};
+use crate::ida_reader::IdbReadKind;
+use crate::IdbKind;
 
-use super::{ID0Entry, ID0Section};
+use super::{ID0Entry, NodeIdx};
 
 #[derive(Clone, Debug)]
-pub struct FileRegions {
-    pub start: u64,
-    pub end: u64,
-    pub eva: u64,
+pub struct FileRegions<K: IdbKind> {
+    pub start: K::Int,
+    pub end: K::Int,
+    pub eva: K::Int,
 }
 
-impl FileRegions {
-    fn read(
-        _key: &[u8],
-        data: &[u8],
+impl<K: IdbKind> FileRegions<K> {
+    fn read(_key: &[u8], data: &[u8], version: u16) -> Result<Self> {
+        let mut cursor = data;
+        let result = Self::innner_read(&mut cursor, version)?;
+        match (version, cursor) {
+            (..=699, &[]) => {}
+            // TODO some may include an extra 0 byte at the end?
+            (700.., &[] | &[0]) => {}
+            _ => return Err(anyhow!("Unknown data after the ID0 FileRegions")),
+        }
+        Ok(result)
+    }
+
+    fn innner_read(
+        cursor: &mut impl IdbReadKind<K>,
         version: u16,
-        is_64: bool,
     ) -> Result<Self> {
-        let mut input = IdaUnpacker::new(data, is_64);
         // TODO detect versions with more accuracy
         let (start, end, eva) = match version {
             ..=699 => {
-                let start = input.read_word()?;
-                let end = input.read_word()?;
-                let rva: u32 = bincode::deserialize_from(&mut input)?;
+                let start = cursor.read_word()?;
+                let end = cursor.read_word()?;
+                let rva = cursor.read_u32()?;
+                // TODO avoid this into and make it a enum?
                 (start, end, rva.into())
             }
             700.. => {
-                let start = input.unpack_usize()?;
-                let end = start.checked_add(input.unpack_usize()?).ok_or_else(
-                    || anyhow!("Overflow address in File Regions"),
-                )?;
-                let rva = input.unpack_usize()?;
-                // TODO some may include an extra 0 byte at the end?
-                if let Ok(_unknown) = input.unpack_usize() {
-                    ensure!(_unknown == 0);
-                }
+                let start = cursor.unpack_usize()?;
+                let len = cursor.unpack_usize()?;
+                let end = start.checked_add(&len).ok_or_else(|| {
+                    anyhow!("Overflow address in File Regions")
+                })?;
+                let rva = cursor.unpack_usize()?;
                 (start, end, rva)
             }
         };
-        ensure!(input.inner().is_empty());
         Ok(Self { start, end, eva })
     }
 }
 
-pub struct FileRegionIdx<'a>(pub(crate) &'a [u8]);
+pub struct FileRegionIdx<K: IdbKind>(pub(crate) NodeIdx<K>);
 
 #[derive(Clone, Copy)]
-pub struct FileRegionIter<'a> {
-    pub(crate) id0: &'a ID0Section,
+pub struct FileRegionIter<'a, K: IdbKind> {
+    pub(crate) _kind: std::marker::PhantomData<K>,
     pub(crate) segments: &'a [ID0Entry],
     pub(crate) key_len: usize,
     pub(crate) version: u16,
 }
 
-impl<'a> Iterator for FileRegionIter<'a> {
-    type Item = Result<FileRegions>;
+impl<'a, K: IdbKind> Iterator for FileRegionIter<'a, K> {
+    type Item = Result<FileRegions<K>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let Some((current, rest)) = self.segments.split_first() else {
@@ -64,11 +72,6 @@ impl<'a> Iterator for FileRegionIter<'a> {
         };
         self.segments = rest;
         let key = &current.key[self.key_len..];
-        Some(FileRegions::read(
-            key,
-            &current.value,
-            self.version,
-            self.id0.is_64,
-        ))
+        Some(FileRegions::read(key, &current.value, self.version))
     }
 }

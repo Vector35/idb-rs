@@ -2,10 +2,10 @@ use anyhow::{anyhow, ensure, Result};
 
 pub mod flag;
 
-use std::ops::Range;
+use std::ops::{Div, Range, Rem};
 
-use crate::ida_reader::IdaGenericUnpack;
-use crate::{IDBHeader, IDBSectionCompression, VaVersion};
+use crate::ida_reader::{IdbRead, IdbReadKind};
+use crate::{IDBSectionCompression, IdbKind, VaVersion};
 
 #[derive(Clone, Debug)]
 pub struct ID1Section {
@@ -13,24 +13,20 @@ pub struct ID1Section {
 }
 
 impl ID1Section {
-    pub(crate) fn read(
-        input: &mut impl IdaGenericUnpack,
-        header: &IDBHeader,
+    pub(crate) fn read<K: IdbKind>(
+        input: &mut impl IdbRead,
         compress: IDBSectionCompression,
     ) -> Result<Self> {
         match compress {
-            IDBSectionCompression::None => Self::read_inner(input, header),
+            IDBSectionCompression::None => Self::read_inner::<K>(input),
             IDBSectionCompression::Zlib => {
                 let mut input = flate2::read::ZlibDecoder::new(input);
-                Self::read_inner(&mut input, header)
+                Self::read_inner::<K>(&mut input)
             }
         }
     }
 
-    fn read_inner(
-        input: &mut impl IdaGenericUnpack,
-        header: &IDBHeader,
-    ) -> Result<Self> {
+    fn read_inner<K: IdbKind>(input: &mut impl IdbRead) -> Result<Self> {
         // TODO pages are always 0x2000?
         const PAGE_SIZE: usize = 0x2000;
         let mut buf = vec![0; PAGE_SIZE];
@@ -43,9 +39,8 @@ impl ID1Section {
             | VaVersion::Va2
             | VaVersion::Va3
             | VaVersion::Va4 => {
-                let nsegments: u16 =
-                    bincode::deserialize_from(&mut header_page)?;
-                let npages: u16 = bincode::deserialize_from(&mut header_page)?;
+                let nsegments = header_page.read_u16()?;
+                let npages = header_page.read_u16()?;
                 ensure!(
                     npages > 0,
                     "Invalid number of pages, net at least one for the header"
@@ -54,42 +49,21 @@ impl ID1Section {
 
                 // TODO the reference code uses the magic version, should it use
                 // the version itself instead?
-                let seglist: Vec<SegInfoVaNRaw> = if header
-                    .magic_version
-                    .is_64()
-                {
-                    (0..nsegments)
-                        .map(|_| {
-                            let start: u64 =
-                                bincode::deserialize_from(&mut header_page)?;
-                            let end: u64 =
-                                bincode::deserialize_from(&mut header_page)?;
-                            ensure!(start <= end);
-                            let offset: u64 =
-                                bincode::deserialize_from(&mut header_page)?;
-                            Ok(SegInfoVaNRaw {
-                                address: start..end,
-                                offset,
-                            })
+                let seglist: Vec<SegInfoVaNRaw<K>> = (0..nsegments)
+                    .map(|_| {
+                        let start =
+                            IdbReadKind::<K>::read_word(&mut header_page)?;
+                        let end =
+                            IdbReadKind::<K>::read_word(&mut header_page)?;
+                        ensure!(start <= end);
+                        let offset =
+                            IdbReadKind::<K>::read_word(&mut header_page)?;
+                        Ok(SegInfoVaNRaw {
+                            address: start..end,
+                            offset,
                         })
-                        .collect::<Result<_>>()?
-                } else {
-                    (0..nsegments)
-                        .map(|_| {
-                            let start: u32 =
-                                bincode::deserialize_from(&mut header_page)?;
-                            let end: u32 =
-                                bincode::deserialize_from(&mut header_page)?;
-                            ensure!(start <= end);
-                            let offset: u32 =
-                                bincode::deserialize_from(&mut header_page)?;
-                            Ok(SegInfoVaNRaw {
-                                address: start.into()..end.into(),
-                                offset: offset.into(),
-                            })
-                        })
-                        .collect::<Result<_>>()?
-                };
+                    })
+                    .collect::<Result<_>>()?;
                 (u32::from(npages), SegInfoRaw::VaN(seglist))
             }
             VaVersion::VaX => {
@@ -103,25 +77,14 @@ impl ID1Section {
                 ensure!(unknown_always2048 == 2048);
                 let npages: u32 = bincode::deserialize_from(&mut header_page)?;
 
-                let seglist: Vec<Range<u64>> = (0..nsegments)
+                let seglist = (0..nsegments)
                     // TODO the reference code uses the magic version, should it use
                     // the version itself instead?
                     .map(|_| {
-                        let (start, end) = match header.magic_version {
-                            crate::IDBMagic::IDA0 | crate::IDBMagic::IDA1 => {
-                                let startea: u32 = bincode::deserialize_from(
-                                    &mut header_page,
-                                )?;
-                                let endea: u32 = bincode::deserialize_from(
-                                    &mut header_page,
-                                )?;
-                                (startea.into(), endea.into())
-                            }
-                            crate::IDBMagic::IDA2 => (
-                                bincode::deserialize_from(&mut header_page)?,
-                                bincode::deserialize_from(&mut header_page)?,
-                            ),
-                        };
+                        let start =
+                            IdbReadKind::<K>::read_word(&mut header_page)?;
+                        let end =
+                            IdbReadKind::<K>::read_word(&mut header_page)?;
                         ensure!(start <= end);
                         Ok(start..end)
                     })
@@ -149,20 +112,25 @@ impl ID1Section {
         ensure!(!overlap);
 
         // make sure the data fits the available pages
-        let required_size: u64 =
-            overlay_check.iter().map(|s| (s.end - s.start) * 4).sum();
-        let required_pages =
-            required_size.div_ceil(u64::try_from(PAGE_SIZE).unwrap());
+        let required_size: K::Int = overlay_check
+            .iter()
+            .map(|s| (s.end - s.start) * K::Int::from(4u8))
+            .sum();
+        let round_up = required_size.rem(K::Int::try_from(PAGE_SIZE).unwrap())
+            != K::Int::from(0u8);
+        let required_pages = required_size
+            .div(K::Int::try_from(PAGE_SIZE).unwrap())
+            + K::Int::from(round_up as u8);
         // TODO if the extra data at the end of the section is identified, review replacing <= with ==
         // -1 because the first page is always the header
-        ensure!(required_pages <= u64::from(npages - 1));
+        ensure!(required_pages <= K::Int::from(npages - 1));
 
         // populated the seglist data using the pages
         let seglist = match seglist_raw {
             SegInfoRaw::VaN(mut segs) => {
                 // sort it by disk offset, so we can read one after the other
                 segs.sort_unstable_by_key(|s| s.offset);
-                let mut current_offset = u64::try_from(PAGE_SIZE).unwrap();
+                let mut current_offset = K::Int::try_from(PAGE_SIZE).unwrap();
                 segs.into_iter()
                     .map(|seg| {
                         // skip any gaps
@@ -176,7 +144,7 @@ impl ID1Section {
                                 ensure_all_bytes_are_zero(
                                     std::io::Read::take(
                                         &mut *input,
-                                        seg.offset - current_offset,
+                                        (seg.offset - current_offset).into(),
                                     ),
                                     &mut buf,
                                 )?;
@@ -185,10 +153,10 @@ impl ID1Section {
                             std::cmp::Ordering::Equal => {}
                         }
                         let len = seg.address.end - seg.address.start;
-                        let data = read_data(&mut *input, len)?;
-                        current_offset += len * 4;
+                        let data = read_data::<K>(&mut *input, len)?;
+                        current_offset += len * K::Int::from(4u8);
                         Ok(SegInfo {
-                            offset: seg.address.start,
+                            offset: (seg.address.start).into(),
                             data,
                         })
                     })
@@ -198,12 +166,12 @@ impl ID1Section {
                 // the data for the segments are stored sequentialy in disk
                 segs.into_iter()
                     .map(|address| {
-                        let data = read_data(
+                        let data = read_data::<K>(
                             &mut *input,
                             address.end - address.start,
                         )?;
                         Ok(SegInfo {
-                            offset: address.start,
+                            offset: (address.start).into(),
                             data,
                         })
                     })
@@ -549,19 +517,19 @@ impl InstOpInfo {
 }
 
 #[derive(Clone, Debug)]
-enum SegInfoRaw {
-    VaN(Vec<SegInfoVaNRaw>),
-    VaX(Vec<Range<u64>>),
+enum SegInfoRaw<K: IdbKind> {
+    VaN(Vec<SegInfoVaNRaw<K>>),
+    VaX(Vec<Range<K::Int>>),
 }
 
 #[derive(Clone, Debug)]
-struct SegInfoVaNRaw {
-    address: Range<u64>,
-    offset: u64,
+struct SegInfoVaNRaw<K: IdbKind> {
+    address: Range<K::Int>,
+    offset: K::Int,
 }
 
 fn ensure_all_bytes_are_zero(
-    mut input: impl IdaGenericUnpack,
+    mut input: impl IdbRead,
     buf: &mut [u8],
 ) -> Result<()> {
     loop {
@@ -579,10 +547,7 @@ fn ensure_all_bytes_are_zero(
     Ok(())
 }
 
-fn ignore_bytes(
-    mut input: impl IdaGenericUnpack,
-    buf: &mut [u8],
-) -> Result<()> {
+fn ignore_bytes(mut input: impl IdbRead, buf: &mut [u8]) -> Result<()> {
     loop {
         match input.read(buf) {
             // found EoF
@@ -598,8 +563,11 @@ fn ignore_bytes(
     Ok(())
 }
 
-fn read_data(mut input: impl IdaGenericUnpack, len: u64) -> Result<Vec<u32>> {
-    let len: usize = usize::try_from(len).unwrap();
+fn read_data<K: IdbKind>(
+    mut input: impl IdbRead,
+    len: K::Int,
+) -> Result<Vec<u32>> {
+    let len = <K::Int as TryInto<usize>>::try_into(len).unwrap();
     let mut data = vec![0u8; len * 4];
     input.read_exact(&mut data)?;
     Ok(data

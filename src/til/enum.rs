@@ -1,6 +1,6 @@
 use std::num::NonZeroU8;
 
-use crate::ida_reader::IdaGenericBufUnpack;
+use crate::ida_reader::IdbBufRead;
 use crate::til::{flag, TypeAttribute, TypeRaw, TypeVariantRaw};
 use crate::IDBString;
 use anyhow::{anyhow, ensure};
@@ -69,7 +69,7 @@ pub(crate) struct EnumRaw {
 impl EnumRaw {
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473a08
     pub(crate) fn read(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
     ) -> anyhow::Result<TypeVariantRaw> {
         use flag::tattr_enum::*;

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use crate::ida_reader::IdaGenericBufUnpack;
+use crate::ida_reader::IdbBufRead;
 use crate::til::{Type, TypeAttribute, TypeRaw};
 use crate::IDBString;
 
@@ -130,7 +130,7 @@ pub(crate) struct PointerRaw {
 
 impl PointerRaw {
     pub(crate) fn read(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
         metadata: u8,
     ) -> Result<Self> {
@@ -217,7 +217,7 @@ pub(crate) enum PointerTypeRaw {
 
 impl PointerTypeRaw {
     fn read(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
     ) -> Result<Self> {
         let closure_type = input.read_u8()?;

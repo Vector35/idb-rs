@@ -11,7 +11,7 @@ use idb_rs::til::{
     Basic, SClass, TILTypeInfo, TILTypeSizeSolver, Type, TypeVariant, Typeref,
     TyperefType, TyperefValue,
 };
-use idb_rs::{IDBParser, IDBSectionCompression, IDBString};
+use idb_rs::{IDBSectionCompression, IDBString, IdbParser};
 
 use std::fs::File;
 use std::io::{BufReader, Result, Write};
@@ -38,7 +38,7 @@ pub fn tilib_print(
             print_til_section(std::io::stdout(), &section, tilib_args)?;
         }
         FileType::Idb => {
-            let mut parser = IDBParser::new(input)?;
+            let mut parser = IdbParser::new(input)?;
             let til_offset = parser.til_section_offset().ok_or_else(|| {
                 anyhow::anyhow!("IDB file don't contains a TIL sector")
             })?;

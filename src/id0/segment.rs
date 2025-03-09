@@ -4,20 +4,22 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::num::{NonZeroU32, NonZeroU8};
 use std::ops::Range;
 
+use crate::ida_reader::IdbReadKind;
+
 use super::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct SegmentStringsIdx<'a>(pub(crate) &'a [u8]);
 
 #[derive(Clone, Debug)]
-pub struct Segment {
-    pub address: Range<u64>,
+pub struct Segment<K: IdbKind> {
+    pub address: Range<K::Int>,
     pub name: Option<SegmentNameIdx>,
     // TODO class String
-    _class_id: u64,
+    _class_id: K::Int,
     /// This field is IDP dependent.
     /// You may keep your information about the segment here
-    pub orgbase: u64,
+    pub orgbase: K::Int,
     /// See more at [flags](https://hex-rays.com//products/ida/support/sdkdoc/group___s_f_l__.html)
     pub flags: SegmentFlag,
     /// [Segment alignment codes](https://hex-rays.com//products/ida/support/sdkdoc/group__sa__.html)
@@ -36,10 +38,10 @@ pub struct Segment {
     /// Exception: 16bit OMF files may have several segments with the same selector,
     /// but this is not good (no way to denote a segment exactly) so it should be fixed in
     /// the future.
-    pub selector: u64,
+    pub selector: K::Int,
     /// Default segment register values.
     /// First element of this array keeps information about value of [processor_t::reg_first_sreg](https://hex-rays.com//products/ida/support/sdkdoc/structprocessor__t.html#a4206e35bf99d211c18d53bd1035eb2e3)
-    pub defsr: [u64; 16],
+    pub defsr: [K::Int; 16],
     /// the segment color
     pub color: u32,
 }
@@ -47,14 +49,22 @@ pub struct Segment {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SegmentNameIdx(pub(crate) NonZeroU32);
 
-impl Segment {
-    pub(crate) fn read(value: &[u8], is_64: bool) -> Result<Self> {
-        let mut cursor = IdaUnpacker::new(value, is_64);
+impl<K: IdbKind> Segment<K> {
+    pub(crate) fn read(value: &[u8]) -> Result<Self> {
+        let mut cursor = value;
+        let result = Self::inner_read(&mut cursor)?;
+        ensure!(cursor.is_empty());
+        Ok(result)
+    }
+
+    pub(crate) fn inner_read(cursor: &mut impl IdbReadKind<K>) -> Result<Self> {
         // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x330684
         let startea = cursor.unpack_usize()?;
         let size = cursor.unpack_usize()?;
         let name_id = cursor.unpack_usize()?;
-        let name_id = NonZeroU32::new(u32::try_from(name_id).unwrap());
+        let name_id = <K::Int as TryInto<u32>>::try_into(name_id)
+            .map(NonZeroU32::new)
+            .map_err(|_| anyhow!("Invalid ID0 Segment NameId value"))?;
         let name = name_id.map(SegmentNameIdx);
         // TODO AKA [sclass](https://hex-rays.com//products/ida/support/sdkdoc/classsegment__t.html)
         // I don't know what is this value or what it represents
@@ -88,7 +98,6 @@ impl Segment {
         let color = cursor.unpack_dd()?;
 
         // TODO maybe new versions include extra information and thid check fails
-        ensure!(cursor.inner().is_empty());
         Ok(Segment {
             address: startea..startea + size,
             name,
@@ -288,6 +297,8 @@ impl SegmentBitness {
     }
 }
 
+// Has segment a special type?. (#SEG_XTRN, #SEG_GRP, #SEG_ABSSYM, #SEG_COMM)
+// Does the address belong to a segment with a special type?.(#SEG_XTRN, #SEG_GRP, #SEG_ABSSYM, #SEG_COMM)
 #[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 pub enum SegmentType {
@@ -319,20 +330,20 @@ pub enum SegmentType {
     Imem = flag::segs::ty::SEG_IMEM,
 }
 
-pub struct SegmentIter<'a> {
-    pub(crate) id0: &'a ID0Section,
+pub struct SegmentIter<'a, K: IdbKind> {
+    pub(crate) _kind: std::marker::PhantomData<K>,
     pub(crate) segments: &'a [ID0Entry],
 }
 
-impl<'a> Iterator for SegmentIter<'a> {
-    type Item = Result<Segment>;
+impl<'a, K: IdbKind> Iterator for SegmentIter<'a, K> {
+    type Item = Result<Segment<K>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let Some((current, rest)) = self.segments.split_first() else {
             return None;
         };
         self.segments = rest;
-        Some(Segment::read(&current.value, self.id0.is_64))
+        Some(Segment::read(&current.value))
     }
 }
 

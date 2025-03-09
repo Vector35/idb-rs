@@ -2,56 +2,93 @@ use std::io::Read;
 
 use anyhow::Result;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use num_traits::{CheckedAdd, CheckedSub, WrappingAdd, WrappingSub};
 
-use crate::ida_reader::IdaUnpack;
+use crate::{ida_reader::IdbReadKind, IdbInt, IdbKind};
 
 use super::*;
 
 #[derive(Clone, Debug)]
-pub enum IDBRootInfo<'a> {
+pub enum IDBRootInfo<'a, K: IdbKind> {
     /// it's just the "Root Node" String
     RootNodeName,
     InputFile(&'a [u8]),
-    Crc(u64),
-    ImageBase(u64),
-    OpenCount(u64),
-    CreatedDate(u64),
-    Version(u64),
+    Crc(K::Int),
+    ImageBase(ImageBase<K>),
+    OpenCount(K::Int),
+    CreatedDate(K::Int),
+    Version(K::Int),
     Md5(&'a [u8; 16]),
     VersionString(&'a str),
     Sha256(&'a [u8; 32]),
-    IDAInfo(Box<IDBParam>),
+    IDAInfo(Box<IDBParam<K>>),
     Unknown(&'a ID0Entry),
 }
 
-#[derive(Clone, Debug)]
-pub enum IDBParam {
-    V1(IDBParam1),
-    V2(IDBParam2),
+#[derive(Copy, Clone, Debug)]
+pub struct ImageBase<K: IdbKind>(pub(crate) K::Int);
+impl<K: IdbKind> ImageBase<K> {
+    // TODO create a nodeidx_t type
+    pub fn ea2node(&self, ea: K::Int) -> Result<NodeIdx<K>> {
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1db9c0
+        if ea.is_max() {
+            return Ok(NodeIdx(ea));
+        }
+        if cfg!(feature = "restrictive") {
+            ea.checked_add(&self.0)
+                .map(NodeIdx)
+                .ok_or_else(|| anyhow!("Invalid address on ea2node"))
+        } else {
+            Ok(NodeIdx(ea.wrapping_add(&self.0)))
+        }
+    }
+    pub fn node2ea(&self, node: NodeIdx<K>) -> Result<K::Int> {
+        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1dba10
+        if cfg!(feature = "restrictive") {
+            node.0
+                .checked_sub(&self.0)
+                .ok_or_else(|| anyhow!("Invalid address on node2ea"))
+        } else {
+            Ok(node.0.wrapping_sub(&self.0))
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct NodeIdx<K: IdbKind>(pub(crate) K::Int);
+
+pub trait AsNodeIdx<K: IdbKind> {
+    fn as_node_idx(&self) -> NodeIdx<K>;
 }
 
 #[derive(Clone, Debug)]
-pub struct IDBParam1 {
+pub enum IDBParam<K: IdbKind> {
+    V1(IDBParam1<K>),
+    V2(IDBParam2<K>),
+}
+
+#[derive(Clone, Debug)]
+pub struct IDBParam1<K: IdbKind> {
     pub version: u16,
     pub cpu: Vec<u8>,
     pub lflags: u8,
     pub demnames: u8,
     pub filetype: u16,
-    pub fcoresize: u64,
-    pub corestart: u64,
+    pub fcoresize: K::Int,
+    pub corestart: K::Int,
     pub ostype: u16,
     pub apptype: u16,
-    pub startsp: u64,
+    pub startsp: K::Int,
     pub af: u16,
-    pub startip: u64,
-    pub startea: u64,
-    pub minea: u64,
-    pub maxea: u64,
-    pub ominea: u64,
-    pub omaxea: u64,
-    pub lowoff: u64,
-    pub highoff: u64,
-    pub maxref: u64,
+    pub startip: K::Int,
+    pub startea: K::Int,
+    pub minea: K::Int,
+    pub maxea: K::Int,
+    pub ominea: K::Int,
+    pub omaxea: K::Int,
+    pub lowoff: K::Int,
+    pub highoff: K::Int,
+    pub maxref: K::Int,
     pub ascii_break: u8,
     pub wide_high_byte_first: u8,
     pub indent: u8,
@@ -68,7 +105,7 @@ pub struct IDBParam1 {
     pub showpref: u8,
     pub prefseg: u8,
     pub asmtype: u8,
-    pub baseaddr: u64,
+    pub baseaddr: K::Int,
     pub xrefs: u8,
     pub binpref: u16,
     pub cmtflag: u8,
@@ -79,7 +116,7 @@ pub struct IDBParam1 {
     pub asciiflags: u8,
     pub listnames: u8,
     pub asciiprefs: [u8; 16],
-    pub asciisernum: u64,
+    pub asciisernum: K::Int,
     pub asciizeroes: u8,
     pub tribyte_order: u8,
     pub mf: u8,
@@ -87,13 +124,13 @@ pub struct IDBParam1 {
     pub assume: u8,
     pub checkarg: u8,
     // offset 131
-    pub start_ss: u64,
-    pub start_cs: u64,
-    pub main: u64,
-    pub short_dn: u64,
-    pub long_dn: u64,
-    pub datatypes: u64,
-    pub strtype: u64,
+    pub start_ss: K::Int,
+    pub start_cs: K::Int,
+    pub main: K::Int,
+    pub short_dn: K::Int,
+    pub long_dn: K::Int,
+    pub datatypes: K::Int,
+    pub strtype: K::Int,
     pub af2: u16,
     pub namelen: u16,
     pub margin: u16,
@@ -117,7 +154,7 @@ pub struct IDBParam1 {
 }
 
 #[derive(Clone, Debug)]
-pub struct IDBParam2 {
+pub struct IDBParam2<K: IdbKind> {
     pub version: u16,
     pub cpu: Vec<u8>,
     pub genflags: Inffl,
@@ -129,23 +166,23 @@ pub struct IDBParam2 {
     pub asmtype: u8,
     pub specsegs: u8,
     pub af: Af,
-    pub baseaddr: u64,
-    pub start_ss: u64,
-    pub start_cs: u64,
-    pub start_ip: u64,
-    pub start_ea: u64,
-    pub start_sp: u64,
-    pub main: u64,
-    pub min_ea: u64,
-    pub max_ea: u64,
-    pub omin_ea: u64,
-    pub omax_ea: u64,
-    pub lowoff: u64,
-    pub highoff: u64,
-    pub maxref: u64,
-    pub privrange_start_ea: u64,
-    pub privrange_end_ea: u64,
-    pub netdelta: u64,
+    pub baseaddr: K::Int,
+    pub start_ss: K::Int,
+    pub start_cs: K::Int,
+    pub start_ip: K::Int,
+    pub start_ea: K::Int,
+    pub start_sp: K::Int,
+    pub main: K::Int,
+    pub min_ea: K::Int,
+    pub max_ea: K::Int,
+    pub omin_ea: K::Int,
+    pub omax_ea: K::Int,
+    pub lowoff: K::Int,
+    pub highoff: K::Int,
+    pub maxref: K::Int,
+    pub privrange_start_ea: K::Int,
+    pub privrange_end_ea: K::Int,
+    pub netdelta: K::Int,
     pub xrefnum: u8,
     pub type_xrefnum: u8,
     pub refcmtnum: u8,
@@ -170,8 +207,8 @@ pub struct IDBParam2 {
     pub strlit_zeroes: u8,
     pub strtype: u32,
     pub strlit_pref: String,
-    pub strlit_sernum: u64,
-    pub datatypes: u64,
+    pub strlit_sernum: K::Int,
+    pub datatypes: K::Int,
     pub cc_id: Compiler,
     pub cc_guessed: bool,
     pub cc_cm: u8,
@@ -187,9 +224,9 @@ pub struct IDBParam2 {
     pub appcall_options: u32,
 }
 
-impl IDBParam {
-    pub(crate) fn read(data: &[u8], is_64: bool) -> Result<Self> {
-        let mut input = IdaUnpacker::new(data, is_64);
+impl<K: IdbKind> IDBParam<K> {
+    pub(crate) fn read(data: &[u8]) -> Result<Self> {
+        let mut input = data;
         let magic: [u8; 3] = bincode::deserialize_from(&mut input)?;
         let magic_old = match &magic[..] {
             b"ida" => {
@@ -225,37 +262,34 @@ impl IDBParam {
         match version {
             // TODO old version may contain extra data at the end with unknown purpose
             ..=699 => {}
-            700.. => ensure!(
-                input.inner().is_empty(),
-                "Data left after the IDBParam",
-            ),
+            700.. => ensure!(input.is_empty(), "Data left after the IDBParam",),
         }
         Ok(param)
     }
 
     pub(crate) fn read_v1(
-        mut input: &mut impl IdaUnpack,
+        mut input: &mut impl IdbReadKind<K>,
         version: u16,
         cpu: Vec<u8>,
     ) -> Result<Self> {
         let lflags: u8 = bincode::deserialize_from(&mut input)?;
         let demnames: u8 = bincode::deserialize_from(&mut input)?;
         let filetype: u16 = bincode::deserialize_from(&mut input)?;
-        let fcoresize: u64 = input.read_word()?;
-        let corestart: u64 = input.read_word()?;
+        let fcoresize = input.read_word()?;
+        let corestart = input.read_word()?;
         let ostype: u16 = bincode::deserialize_from(&mut input)?;
         let apptype: u16 = bincode::deserialize_from(&mut input)?;
-        let startsp: u64 = input.read_word()?;
+        let startsp = input.read_word()?;
         let af: u16 = bincode::deserialize_from(&mut input)?;
-        let startip: u64 = input.read_word()?;
-        let startea: u64 = input.read_word()?;
-        let minea: u64 = input.read_word()?;
-        let maxea: u64 = input.read_word()?;
-        let ominea: u64 = input.read_word()?;
-        let omaxea: u64 = input.read_word()?;
-        let lowoff: u64 = input.read_word()?;
-        let highoff: u64 = input.read_word()?;
-        let maxref: u64 = input.read_word()?;
+        let startip = input.read_word()?;
+        let startea = input.read_word()?;
+        let minea = input.read_word()?;
+        let maxea = input.read_word()?;
+        let ominea = input.read_word()?;
+        let omaxea = input.read_word()?;
+        let lowoff = input.read_word()?;
+        let highoff = input.read_word()?;
+        let maxref = input.read_word()?;
         let ascii_break: u8 = bincode::deserialize_from(&mut input)?;
         let wide_high_byte_first: u8 = bincode::deserialize_from(&mut input)?;
         let indent: u8 = bincode::deserialize_from(&mut input)?;
@@ -273,7 +307,7 @@ impl IDBParam {
         let showpref: u8 = bincode::deserialize_from(&mut input)?;
         let prefseg: u8 = bincode::deserialize_from(&mut input)?;
         let asmtype: u8 = bincode::deserialize_from(&mut input)?;
-        let baseaddr: u64 = input.read_word()?;
+        let baseaddr = input.read_word()?;
         let xrefs: u8 = bincode::deserialize_from(&mut input)?;
         let binpref: u16 = bincode::deserialize_from(&mut input)?;
         let cmtflag: u8 = bincode::deserialize_from(&mut input)?;
@@ -284,7 +318,7 @@ impl IDBParam {
         let asciiflags: u8 = bincode::deserialize_from(&mut input)?;
         let listnames: u8 = bincode::deserialize_from(&mut input)?;
         let asciiprefs: [u8; 16] = bincode::deserialize_from(&mut input)?;
-        let asciisernum: u64 = input.read_word()?;
+        let asciisernum = input.read_word()?;
         let asciizeroes: u8 = bincode::deserialize_from(&mut input)?;
         let _unknown2: u16 = bincode::deserialize_from(&mut input)?;
         let tribyte_order: u8 = bincode::deserialize_from(&mut input)?;
@@ -293,13 +327,13 @@ impl IDBParam {
         let assume: u8 = bincode::deserialize_from(&mut input)?;
         let checkarg: u8 = bincode::deserialize_from(&mut input)?;
         // offset 131
-        let start_ss: u64 = input.read_word()?;
-        let start_cs: u64 = input.read_word()?;
-        let main: u64 = input.read_word()?;
-        let short_dn: u64 = input.read_word()?;
-        let long_dn: u64 = input.read_word()?;
-        let datatypes: u64 = input.read_word()?;
-        let strtype: u64 = input.read_word()?;
+        let start_ss = input.read_word()?;
+        let start_cs = input.read_word()?;
+        let main = input.read_word()?;
+        let short_dn = input.read_word()?;
+        let long_dn = input.read_word()?;
+        let datatypes = input.read_word()?;
+        let strtype = input.read_word()?;
         let af2: u16 = bincode::deserialize_from(&mut input)?;
         let namelen: u16 = bincode::deserialize_from(&mut input)?;
         let margin: u16 = bincode::deserialize_from(&mut input)?;
@@ -408,7 +442,7 @@ impl IDBParam {
     }
 
     pub(crate) fn read_v2(
-        mut input: &mut impl IdaUnpack,
+        mut input: &mut impl IdbReadKind<K>,
         magic_old: bool,
         version: u16,
         cpu: Vec<u8>,

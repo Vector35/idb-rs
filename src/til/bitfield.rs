@@ -2,7 +2,7 @@ use std::num::NonZeroU8;
 
 use anyhow::Result;
 
-use crate::ida_reader::IdaGenericBufUnpack;
+use crate::ida_reader::IdbBufRead;
 
 use super::TypeAttribute;
 
@@ -28,7 +28,7 @@ pub struct Bitfield {
 
 impl Bitfield {
     pub(crate) fn read(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         metadata: u8,
     ) -> Result<Self> {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x472f3c print_til_type

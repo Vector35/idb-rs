@@ -1,7 +1,8 @@
 use anyhow::{ensure, Result};
+use byteorder::LE;
 
-use crate::ida_reader::IdaGenericUnpack;
-use crate::{IDBHeader, IDBSectionCompression, VaVersion};
+use crate::ida_reader::IdbRead;
+use crate::{IDBSectionCompression, IdbInt, IdbKind, VaVersion};
 
 #[derive(Debug, Clone)]
 pub struct NamSection {
@@ -9,22 +10,21 @@ pub struct NamSection {
 }
 
 impl NamSection {
-    pub(crate) fn read(
-        input: &mut impl IdaGenericUnpack,
-        header: &IDBHeader,
+    pub(crate) fn read<K: IdbKind>(
+        input: &mut impl IdbRead,
         compress: IDBSectionCompression,
     ) -> Result<Self> {
         match compress {
-            IDBSectionCompression::None => Self::read_inner(input, header),
+            IDBSectionCompression::None => Self::read_inner::<K>(input),
             IDBSectionCompression::Zlib => {
                 let mut input = flate2::read::ZlibDecoder::new(input);
-                Self::read_inner(&mut input, header)
+                Self::read_inner::<K>(&mut input)
             }
         }
     }
-    pub(crate) fn read_inner(
-        input: &mut impl IdaGenericUnpack,
-        header: &IDBHeader,
+
+    pub(crate) fn read_inner<K: IdbKind>(
+        input: &mut impl IdbRead,
     ) -> Result<Self> {
         // NOTE 64 should be enougth for all version, if a new version is implemented
         // review this value
@@ -45,21 +45,15 @@ impl NamSection {
             | VaVersion::Va4 => {
                 let always1: u16 = bincode::deserialize_from(&mut header_page)?;
                 ensure!(always1 == 1);
-                let npages: u64 = if header.magic_version.is_64() {
-                    bincode::deserialize_from(&mut header_page)?
-                } else {
-                    bincode::deserialize_from::<_, u32>(&mut header_page)?
-                        .into()
-                };
+                let npages = K::Int::from_bytes_reader::<LE>(&mut header_page)?;
                 let always0: u16 = bincode::deserialize_from(&mut header_page)?;
                 ensure!(always0 == 0);
-                let nnames: u64 = if header.magic_version.is_64() {
+                let mut nnames =
+                    K::Int::from_bytes_reader::<LE>(&mut header_page)?;
+                if K::Int::BYTES == 8 {
                     // TODO nnames / 2? Why?
-                    bincode::deserialize_from::<_, u64>(&mut header_page)? / 2
-                } else {
-                    bincode::deserialize_from::<_, u32>(&mut header_page)?
-                        .into()
-                };
+                    nnames /= K::Int::from(2u8);
+                }
                 let pagesize: u32 =
                     bincode::deserialize_from(&mut header_page)?;
                 ensure!(pagesize >= 64);
@@ -75,26 +69,21 @@ impl NamSection {
                 let always2048: u32 =
                     bincode::deserialize_from(&mut header_page)?;
                 ensure!(always2048 == 2048);
-                let npages: u64 = if header.magic_version.is_64() {
-                    bincode::deserialize_from(&mut header_page)?
-                } else {
-                    bincode::deserialize_from::<_, u32>(&mut header_page)?
-                        .into()
-                };
+                let npages = K::Int::from_bytes_reader::<LE>(&mut header_page)?;
                 let always0: u32 = bincode::deserialize_from(&mut header_page)?;
                 ensure!(always0 == 0);
-                let nnames: u64 = if header.magic_version.is_64() {
+                let mut nnames =
+                    K::Int::from_bytes_reader::<LE>(&mut header_page)?;
+                // TODO remove this HACK to find if the Type is u64
+                if K::Int::BYTES == 8 {
                     // TODO nnames / 2? Why?
-                    bincode::deserialize_from::<_, u64>(&mut header_page)? / 2
-                } else {
-                    bincode::deserialize_from::<_, u32>(&mut header_page)?
-                        .into()
-                };
+                    nnames /= K::Int::from(2u8);
+                }
                 (npages, nnames, DEFAULT_PAGE_SIZE.try_into().unwrap())
             }
         };
         ensure!(
-            npages >= 1,
+            npages >= K::Int::from(1u8),
             "Invalid number of pages, need at least one page for the header"
         );
 
@@ -103,12 +92,13 @@ impl NamSection {
         input.read_exact(&mut buf[64..])?;
         ensure!(buf[64..].iter().all(|b| *b == 0));
 
-        let name_len = if header.magic_version.is_64() { 8 } else { 4 };
+        let name_len: u32 = K::Int::BYTES.into();
         // ensure pages dont break a name
         ensure!(pagesize % name_len == 0);
         // names fit inside the pages
-        let size_required = nnames * u64::from(name_len);
-        let available_data = (npages - 1) * u64::from(pagesize);
+        let size_required = nnames * K::Int::from(name_len);
+        let available_data =
+            (npages - K::Int::from(1u8)) * K::Int::from(pagesize);
         ensure!(
             size_required <= available_data,
             "there is no enough size required {size_required} <= {available_data}"
@@ -116,30 +106,25 @@ impl NamSection {
 
         let mut names = Vec::with_capacity(nnames.try_into().unwrap());
         let mut current_nnames = nnames;
-        for _page in 1..npages {
+        for _page in 1u64..npages.into() {
             input.read_exact(&mut buf)?;
             let mut input = &buf[..];
             loop {
-                if current_nnames == 0 {
+                if current_nnames == K::Int::from(0u8) {
                     break;
                 };
-                let name = if header.magic_version.is_64() {
-                    bincode::deserialize_from::<_, u64>(&mut input)
-                } else {
-                    bincode::deserialize_from::<_, u32>(&mut input)
-                        .map(u64::from)
-                };
+                let name = K::Int::from_bytes_reader::<LE>(&mut input);
                 let Ok(name) = name else {
                     break;
                 };
-                names.push(name);
-                current_nnames -= 1;
+                names.push(name.into());
+                current_nnames -= K::Int::from(1u8);
             }
             // if anything is left, make sure it's all zeros
             ensure!(input.iter().all(|b| *b == 0));
         }
 
-        assert!(current_nnames == 0);
+        assert!(current_nnames == K::Int::from(0u8));
         Ok(Self { names })
     }
 }

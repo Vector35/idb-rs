@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::num::NonZeroU8;
 
-use crate::ida_reader::{IdaGenericBufUnpack, IdaGenericUnpack};
+use crate::ida_reader::{IdbBufRead, IdbRead};
 use crate::til::{Basic, Type, TypeRaw};
 use crate::IDBString;
 use anyhow::{anyhow, ensure, Context, Result};
@@ -184,7 +184,7 @@ impl FunctionRaw {
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473190 print_til_type
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47c8f0
     pub(crate) fn read(
-        input: &mut impl IdaGenericBufUnpack,
+        input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
         metadata: u8,
     ) -> Result<Self> {
@@ -302,7 +302,7 @@ impl FunctionRaw {
 }
 
 impl ArgLoc {
-    fn read(input: &mut impl IdaGenericUnpack) -> Result<Self> {
+    fn read(input: &mut impl IdbRead) -> Result<Self> {
         let t: u8 = input.read_u8()?;
         if t != 0xFF {
             let b = t & 0x7F;
@@ -546,9 +546,7 @@ pub enum CallMethod {
 
 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x476e60
 /// [BT_FUNC](https://hex-rays.com/products/ida/support/sdkdoc/group__tf__func.html#ga7b7fee21f21237beb6d91e854410e0fa)
-fn read_cc(
-    input: &mut impl IdaGenericBufUnpack,
-) -> Result<(u8, u16, Vec<(u16, u8)>)> {
+fn read_cc(input: &mut impl IdbBufRead) -> Result<(u8, u16, Vec<(u16, u8)>)> {
     let mut cc = input.read_u8()?;
     // TODO find the flag for that
     if cc & 0xF0 != 0xA0 {
@@ -593,7 +591,7 @@ fn read_cc(
 }
 
 fn read_cc_spoiled(
-    input: &mut impl IdaGenericBufUnpack,
+    input: &mut impl IdbBufRead,
     nspoiled: u16,
     spoiled: &mut Vec<(u16, u8)>,
 ) -> Result<()> {

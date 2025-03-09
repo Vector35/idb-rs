@@ -1,8 +1,11 @@
 use std::borrow::Cow;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, ensure, Result};
+use byteorder::BE;
+use num_traits::ToBytes;
 
-use crate::til;
+use crate::ida_reader::IdbRead;
+use crate::{til, IdbInt, IdbKind};
 
 use super::{
     flag, parse_maybe_cstr, FileRegionIter, FileRegions, ID0CStr, ID0Entry,
@@ -10,11 +13,11 @@ use super::{
 };
 
 #[derive(Clone, Debug)]
-pub enum AddressInfo<'a> {
+pub enum AddressInfo<'a, K: IdbKind> {
     Comment(Comments<'a>),
     Label(Cow<'a, str>),
     TilType(til::Type),
-    DefinedStruct(SubtypeId),
+    DefinedStruct(SubtypeId<K>),
     Other { key: &'a [u8], value: &'a [u8] },
 }
 
@@ -27,7 +30,7 @@ pub enum Comments<'a> {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct SubtypeId(pub(crate) u64);
+pub struct SubtypeId<K: IdbKind>(pub(crate) K::Int);
 
 impl<'a> Comments<'a> {
     /// The message on the comment, NOTE that IDA don't have a default character encoding
@@ -42,17 +45,15 @@ impl<'a> Comments<'a> {
 }
 
 #[derive(Clone, Copy)]
-pub struct SectionAddressInfoByAddressIter<'a> {
-    id0: &'a ID0Section,
-    regions: FileRegionIter<'a>,
+pub struct SectionAddressInfoByAddressIter<'a, K: IdbKind> {
+    id0: &'a ID0Section<K>,
+    regions: FileRegionIter<'a, K>,
     current_region: &'a [ID0Entry],
 }
 
-impl<'a> SectionAddressInfoByAddressIter<'a> {
-    pub fn new(id0: &'a ID0Section, version: u16) -> Result<Self> {
-        let idx = id0
-            .file_regions_idx()
-            .ok_or_else(|| anyhow!("Could not find $ fileregions"))?;
+impl<'a, K: IdbKind> SectionAddressInfoByAddressIter<'a, K> {
+    pub fn new(id0: &'a ID0Section<K>, version: u16) -> Result<Self> {
+        let idx = id0.file_regions_idx()?;
         let regions = id0.file_regions(idx, version);
         Ok(Self {
             id0,
@@ -71,54 +72,59 @@ impl<'a> SectionAddressInfoByAddressIter<'a> {
             })
         })
     }
-}
 
-impl<'a> Iterator for SectionAddressInfoByAddressIter<'a> {
-    type Item = Result<(u64, AddressInfoIter<'a>)>;
-
-    fn next(&mut self) -> Option<Self::Item> {
+    fn next_inner(
+        &mut self,
+    ) -> Result<Option<(K::Int, AddressInfoIter<'a, K>)>> {
         // get the next address of the current region, if nothing, next region
         let Some(first) = self.current_region.first() else {
-            match self.advance_region() {
-                Ok(Some(_)) => {}
+            if self.advance_region()?.is_none() {
                 // no more regions, end it
-                Ok(None) => return None,
-                Err(e) => return Some(Err(e)),
-            };
+                return Ok(None);
+            }
             // NOTE regions can be empty, so check if this new region have
             // elements by calling this function again
-            return self.next();
+            return self.next_inner();
         };
 
-        let addr_len = if self.id0.is_64 { 8 } else { 4 };
-        // 1.. because it starts with '.'
-        let key_start = addr_len + 1;
-        let key = &first.key[..key_start];
+        let mut cursor = &first.key[..];
+        // skip the '.'
+        ensure!(cursor.read_u8()? == b'.');
+        // read the key
+        let address = K::Int::from_bytes_reader::<BE>(&mut cursor)?;
+
         let end = self
             .current_region
             .iter()
-            .position(|e| !e.key.starts_with(&key))
+            .position(|e| !e.key.starts_with(address.to_be_bytes().as_ref()))
             .unwrap_or(self.current_region.len());
         let (current_addr, rest) = self.current_region.split_at(end);
         self.current_region = rest;
-        let address =
-            super::parse_number(&key[1..], true, self.id0.is_64).unwrap();
-        Some(Ok((address, AddressInfoIter::new(current_addr, &self.id0))))
+        Ok(Some((
+            address,
+            AddressInfoIter::new(current_addr, &self.id0),
+        )))
+    }
+}
+
+impl<'a, K: IdbKind> Iterator for SectionAddressInfoByAddressIter<'a, K> {
+    type Item = Result<(K::Int, AddressInfoIter<'a, K>)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next_inner().transpose()
     }
 }
 
 #[derive(Clone, Copy)]
-pub struct SectionAddressInfoIter<'a> {
-    id0: &'a ID0Section,
-    regions: FileRegionIter<'a>,
-    current_region: AddressInfoIter<'a>,
+pub struct SectionAddressInfoIter<'a, K: IdbKind> {
+    id0: &'a ID0Section<K>,
+    regions: FileRegionIter<'a, K>,
+    current_region: AddressInfoIter<'a, K>,
 }
 
-impl<'a> SectionAddressInfoIter<'a> {
-    pub fn new(id0: &'a ID0Section, version: u16) -> Result<Self> {
-        let idx = id0
-            .file_regions_idx()
-            .ok_or_else(|| anyhow!("Could not find $ fileregions"))?;
+impl<'a, K: IdbKind> SectionAddressInfoIter<'a, K> {
+    pub fn new(id0: &'a ID0Section<K>, version: u16) -> Result<Self> {
+        let idx = id0.file_regions_idx()?;
         let regions = id0.file_regions(idx, version);
         Ok(Self {
             id0,
@@ -139,8 +145,8 @@ impl<'a> SectionAddressInfoIter<'a> {
     }
 }
 
-impl<'a> Iterator for SectionAddressInfoIter<'a> {
-    type Item = Result<(u64, AddressInfo<'a>)>;
+impl<'a, K: IdbKind> Iterator for SectionAddressInfoIter<'a, K> {
+    type Item = Result<(K::Int, AddressInfo<'a, K>)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // next element in the current region, or next region
@@ -160,102 +166,85 @@ impl<'a> Iterator for SectionAddressInfoIter<'a> {
 }
 
 #[derive(Clone, Copy)]
-pub struct AddressInfoIter<'a> {
-    id0: &'a ID0Section,
+pub struct AddressInfoIter<'a, K: IdbKind> {
+    id0: &'a ID0Section<K>,
     entries: &'a [ID0Entry],
 }
 
-impl<'a> AddressInfoIter<'a> {
-    pub fn new(entries: &'a [ID0Entry], section: &'a ID0Section) -> Self {
+impl<'a, K: IdbKind> AddressInfoIter<'a, K> {
+    pub fn new(entries: &'a [ID0Entry], section: &'a ID0Section<K>) -> Self {
         Self {
             entries,
             id0: section,
         }
     }
-}
 
-impl<'a> Iterator for AddressInfoIter<'a> {
-    type Item = Result<(u64, AddressInfo<'a>)>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let (current, rest) = self.entries.split_first()?;
-        self.entries = rest;
-        let value = &current.value[..];
-        // 1.. because it starts with '.'
-        let addr_len = if self.id0.is_64 { 8 } else { 4 };
-        let key_start = addr_len + 1;
-        let address = super::parse_number(
-            &current.key[1..key_start],
-            true,
-            self.id0.is_64,
-        )
-        .unwrap();
-        let key = &current.key[key_start..];
-        let Some((sub_type, id_value)) =
-            id_subkey_from_idx(key, self.id0.is_64)
-        else {
-            return Some(Err(anyhow!("Missing SubType")));
+    fn next_inner(&mut self) -> Result<Option<(K::Int, AddressInfo<'a, K>)>> {
+        let Some((current, rest)) = self.entries.split_first() else {
+            return Ok(None);
         };
+        self.entries = rest;
+        let mut cursor = &current.key[..];
+        // skip the '.'
+        ensure!(cursor.read_u8()? == b'.');
+        // read the key
+        let address = K::Int::from_bytes_reader::<BE>(&mut cursor)?;
+        let (sub_type, subkey) = id_subkey_from_idx::<K>(cursor)
+            .ok_or_else(|| anyhow!("Missing SubType"))?;
 
         // Non UTF-8 comment: "C:\\Documents and Settings\\Administrator\\\xb9\xd9\xc5\xc1 \xc8\xad\xb8\xe9\ls"
         // \xb9\xd9\xc5\xc1 \xc8\xad\xb8\xe9 = "바탕 화면" = "Desktop" in Korean encoded using Extended Unix Code
         #[allow(clippy::wildcard_in_or_patterns)]
-        match (sub_type, id_value) {
+        match (sub_type, subkey.map(<K::Int as Into<u64>>::into)) {
             // Comments
             // NOTE
             // pre comments start at index 1000
             // post comments start at index 2000
             // if you create more then a 1000 pre/post comments ida start acting strange, BUG?
             (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(1000..=1999)) => {
-                let Some(comment) = parse_maybe_cstr(value) else {
-                    return Some(Err(anyhow!("Pre-Comment is not valid CStr")));
-                };
-                Some(Ok((address, AddressInfo::Comment(Comments::PreComment(comment)))))
+                let comment = parse_maybe_cstr(&current.value[..]).ok_or_else(||
+                    anyhow!("Pre-Comment is not valid CStr")
+                )?;
+                Ok(Some((address, AddressInfo::Comment(Comments::PreComment(comment)))))
             },
             (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(2000..=2999)) => {
-                let Some(comment) = parse_maybe_cstr(value) else {
-                    return Some(Err(anyhow!("Post-Comment is not valid CStr")));
-                };
-                Some(Ok((address, AddressInfo::Comment(Comments::PostComment(comment)))))
+                let comment = parse_maybe_cstr(&current.value[..]).ok_or_else(||
+                    anyhow!("Post-Comment is not valid CStr")
+                )?;
+                Ok(Some((address, AddressInfo::Comment(Comments::PostComment(comment)))))
             },
             (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(0x0)) => {
-                let Some(comment) = parse_maybe_cstr(value) else {
-                    return Some(Err(anyhow!("Comment is not valid CStr")));
-                };
-                Some(Ok((address, AddressInfo::Comment(Comments::Comment(comment)))))
+                let comment = parse_maybe_cstr(&current.value[..]).ok_or_else(||
+                    anyhow!("Comment is not valid CStr")
+                )?;
+                Ok(Some((address, AddressInfo::Comment(Comments::Comment(comment)))))
             },
             // Repeatable comment
             (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(0x1)) => {
-                let Some(comment) = parse_maybe_cstr(value) else {
-                    return Some(Err(anyhow!("Repeatable Comment is not valid CStr")));
-                };
-                Some(Ok((address, AddressInfo::Comment(Comments::RepeatableComment(comment)))))
+                let comment = parse_maybe_cstr(&current.value[..]).ok_or_else(||
+                    anyhow!("Repeatable Comment is not valid CStr")
+                )?;
+                Ok(Some((address, AddressInfo::Comment(Comments::RepeatableComment(comment)))))
             },
 
             // Type at this address
             (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(0x3000)) => {
                 // take the field names (optional?) and the continuation (optional!)
                 let last = rest.iter().position(|entry| {
-                    let Some((sub_type, id)) = entry.key[key_start..].split_first() else {
-                        return true
+                    let Some((_address, sub_type, Some(id))) = id_subkey_from_key::<K>(&entry.key[..]) else {
+                        return true;
                     };
-                    let id_value = id_from_key(id, self.id0.is_64);
-                    !matches!((*sub_type, id_value), (b'S', Some(0x3000..=0x3999)))
+                    !matches!((sub_type, <K::Int as Into<u64>>::into(id)), (b'S', 0x3000u64..=0x3999))
                 }).unwrap_or(rest.len());
                 self.entries = &rest[last..];
                 // TODO enforce sequential index for the id?
                 // get the entry for field names and rest of data
                 let (fields, continuation) = match &rest[..last] {
-                    [fields, rest @ ..] if matches!(id_subkey_from_idx(&fields.key[key_start..], self.id0.is_64), Some((b'S', Some(0x3001)))) => {
+                    [fields, rest @ ..] if id_subkey_from_key::<K>(&fields.key[..]) == Some((address, b'S', Some(K::Int::from(0x3001u16)))) => {
                         // convert the value into fields
                         // usually this string ends with \x00, but bmaybe there is no garanty for that.
-                        let Some(value) = parse_maybe_cstr(&fields.value) else {
-                            // TODO: maybe those fields are continuated by the next entry
-                            return Some(Err(anyhow!("Incomplete Fields for TIL Type")));
-                        };
-                        let Some(fields) = crate::ida_reader::split_strings_from_array(value) else {
-                            return Some(Err(anyhow!("Invalid Fields for TIL Type")));
-                        };
+                        let value = parse_maybe_cstr(&fields.value).ok_or_else(||anyhow!("Incomplete Fields for TIL Type"))?;
+                        let fields = crate::ida_reader::split_strings_from_array(value).ok_or_else(||anyhow!("Invalid Fields for TIL Type"))?;
                         (fields, rest)
                     }
                     rest => (vec![], rest),
@@ -264,54 +253,40 @@ impl<'a> Iterator for AddressInfoIter<'a> {
                 // condensate the data into a single buffer
                 let buf: Vec<u8> = current.value.iter().chain(continuation.iter().flat_map(|entry| &entry.value[..])).copied().collect();
                 // create the raw type
-                let til = match til::Type::new_from_id0(&buf[..], fields) {
-                    Ok(til) => til,
-                    Err(err) => return Some(Err(err)),
-                };
-                Some(Ok((address, AddressInfo::TilType(til))))
+                let til = til::Type::new_from_id0(&buf[..], fields)?;
+                Ok(Some((address, AddressInfo::TilType(til))))
             },
             // field names and continuation in from the previous til type [citation needed]
             (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(0x3001..=0x3999)) => {
-                Some(Err(anyhow!("ID0 Til type info without a previous TIL type")))
+                Err(anyhow!("ID0 Til type info without a previous TIL type"))
             },
 
             // Name, aka a label to this memory address
             (flag::netnode::nn_res::NAME_TAG, None) => {
-                let value = super::parse_cstr_or_subkey(value, self.id0.is_64);
-                let label_raw = match value {
-                    None => {
-                        return Some(Err(anyhow!("Label is not a valid CStr or ID0 Ref")))
-                    }
-                    Some(ID0CStr::CStr(label_raw)) => Cow::Borrowed(label_raw),
-                    Some(ID0CStr::Ref(label_ref)) => {
-                        let entries = match self.id0.address_info_value(label_ref) {
-                            Ok(entries) => entries,
-                            Err(e) => return Some(Err(e)),
-                        };
-                        Cow::Owned(entries.iter().flat_map(|x| &x.value[..]).copied().collect())
-                    },
-                };
-                let label = match label_raw {
-                    Cow::Borrowed(x) => {
-                        core::str::from_utf8(x).map_err(|_|
+                let value = ID0CStr::<'_, K>::parse_cstr_or_subkey(&current.value)
+                    .ok_or_else(|| anyhow!("Label is not a valid CStr or ID0 Ref"))?;
+                let label = match value {
+                    ID0CStr::CStr(label_raw) => {
+                        let label = core::str::from_utf8(label_raw).map_err(|_|
                             anyhow!("Label is not valid UTF-8")
-                        ).map(Cow::Borrowed)
+                        )?;
+                        Cow::Borrowed(label)
                     },
-                    Cow::Owned(x) => {
-                        String::from_utf8(x).map_err(|_| {
+                    ID0CStr::Ref(label_ref) => {
+                        let entries = self.id0.address_info_value(label_ref)?;
+                        let label_raw = entries.iter().flat_map(|x| &x.value[..]).copied().collect();
+                        let label = String::from_utf8(label_raw).map_err(|_| {
                             anyhow!("LabelRef is not valid UTF-8")
-                        }).map(Cow::Owned)
+                        })?;
+                        Cow::Owned(label)
                     },
                 };
-                match label {
-                    Err(e) => Some(Err(e)),
-                    Ok(label) => Some(Ok((address, AddressInfo::Label(label)))),
-                }
+                Ok(Some((address, AddressInfo::Label(label))))
             },
 
             // Used to define what struct is apply at the address
-            (flag::nalt::x::NALT_DREF_FROM, Some(subkey)) if &current.value[..] == &[0x03] => {
-                Some(Ok((address, AddressInfo::DefinedStruct(SubtypeId(subkey)))))
+            (flag::nalt::x::NALT_DREF_FROM, Some(_)) if &current.value[..] == &[0x03] => {
+                Ok(Some((address, AddressInfo::DefinedStruct(SubtypeId(subkey.unwrap())))))
             }
 
             // Seems related to datatype, maybe cstr, align and stuff like that
@@ -329,24 +304,32 @@ impl<'a> Iterator for AddressInfoIter<'a> {
             // The oposite of 'D", is a memory location that points to other
             (flag::nalt::x::NALT_DREF_FROM, Some(_)) |
             // other unknown values
-            _ => Some(Ok((address, AddressInfo::Other { key, value }))),
+            _ => Ok(Some((address, AddressInfo::Other { key: cursor, value: &current.value }))),
         }
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct AddressInfoIterAt<'a> {
-    iter: AddressInfoIter<'a>,
+impl<'a, K: IdbKind> Iterator for AddressInfoIter<'a, K> {
+    type Item = Result<(K::Int, AddressInfo<'a, K>)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next_inner().transpose()
+    }
 }
 
-impl<'a> AddressInfoIterAt<'a> {
-    pub fn new(iter: AddressInfoIter<'a>) -> Self {
+#[derive(Clone, Copy)]
+pub struct AddressInfoIterAt<'a, K: IdbKind> {
+    iter: AddressInfoIter<'a, K>,
+}
+
+impl<'a, K: IdbKind> AddressInfoIterAt<'a, K> {
+    pub fn new(iter: AddressInfoIter<'a, K>) -> Self {
         Self { iter }
     }
 }
 
-impl<'a> Iterator for AddressInfoIterAt<'a> {
-    type Item = Result<AddressInfo<'a>>;
+impl<'a, K: IdbKind> Iterator for AddressInfoIterAt<'a, K> {
+    type Item = Result<AddressInfo<'a, K>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // ignore the address, it will always be the same, the one request
@@ -354,25 +337,30 @@ impl<'a> Iterator for AddressInfoIterAt<'a> {
     }
 }
 
-fn id_subkey_from_idx(key: &[u8], is_64: bool) -> Option<(u8, Option<u64>)> {
+fn id_subkey_from_key<K: IdbKind>(
+    mut cursor: &[u8],
+) -> Option<(K::Int, u8, Option<K::Int>)> {
+    let Some(b'.') = cursor.read_u8().ok() else {
+        return None;
+    };
+    let Some(address) = K::Int::from_bytes_reader::<BE>(&mut cursor).ok()
+    else {
+        return None;
+    };
+    let Some((sub_type, id)) = id_subkey_from_idx::<K>(cursor) else {
+        return None;
+    };
+    Some((address, sub_type, id))
+}
+
+fn id_subkey_from_idx<K: IdbKind>(key: &[u8]) -> Option<(u8, Option<K::Int>)> {
     let (sub_type, id) = key.split_first()?;
-    Some((*sub_type, id_from_key(id, is_64)))
+    Some((*sub_type, K::Int::from_bytes::<BE>(id)))
 }
 
-fn id_from_key(key: &[u8], is_64: bool) -> Option<u64> {
-    if is_64 {
-        <[u8; 8]>::try_from(key).ok().map(u64::from_be_bytes)
-    } else {
-        <[u8; 4]>::try_from(key)
-            .ok()
-            .map(u32::from_be_bytes)
-            .map(u64::from)
-    }
-}
-
-fn advance_region<'a>(
-    id0: &'a ID0Section,
-    mut regions: impl Iterator<Item = Result<FileRegions>>,
+fn advance_region<'a, K: IdbKind>(
+    id0: &'a ID0Section<K>,
+    mut regions: impl Iterator<Item = Result<FileRegions<K>>>,
 ) -> Result<Option<&'a [ID0Entry]>> {
     // get the next region
     let region = match regions.next() {
@@ -382,23 +370,18 @@ fn advance_region<'a>(
         // return the error if err
         Some(Err(err)) => return Err(err),
     };
-    Ok(Some(get_next_address_region(
-        &region,
-        &id0.all_entries(),
-        id0.is_64,
-    )))
+    Ok(Some(get_next_address_region(&region, &id0.all_entries())))
 }
 
-fn get_next_address_region<'a>(
-    region: &FileRegions,
+fn get_next_address_region<'a, K: IdbKind>(
+    region: &FileRegions<K>,
     all_entries: &'a [ID0Entry],
-    is_64: bool,
 ) -> &'a [ID0Entry] {
     // get the next region
     let start_key: Vec<u8> =
-        crate::id0::key_from_address(region.start, is_64).collect();
+        crate::id0::key_from_address::<K>(region.start).collect();
     let end_key: Vec<u8> =
-        crate::id0::key_from_address(region.end, is_64).collect();
+        crate::id0::key_from_address::<K>(region.end).collect();
     let start = all_entries
         .binary_search_by_key(&&start_key[..], |b| &b.key[..])
         .unwrap_or_else(|start| start);
