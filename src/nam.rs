@@ -1,7 +1,6 @@
 use anyhow::{ensure, Result};
-use byteorder::LE;
 
-use crate::ida_reader::IdbRead;
+use crate::ida_reader::{IdbRead, IdbReadKind};
 use crate::{IDAKind, IDAUsize, IDBSectionCompression, VaVersion};
 
 #[derive(Debug, Clone)]
@@ -29,61 +28,10 @@ impl NamSection {
         // NOTE 64 should be enougth for all version, if a new version is implemented
         // review this value
         const MAX_HEADER_LEN: usize = 64;
-        const DEFAULT_PAGE_SIZE: usize = 0x2000;
-        //assert!(MAX_HEADER_LEN < DEFAULT_PAGE_SIZE);
 
         let mut buf = vec![0; MAX_HEADER_LEN];
         input.read_exact(&mut buf[..])?;
-        let mut header_page = &buf[..];
-        let version = VaVersion::read(&mut header_page)?;
-
-        let (npages, nnames, pagesize) = match version {
-            VaVersion::Va0
-            | VaVersion::Va1
-            | VaVersion::Va2
-            | VaVersion::Va3
-            | VaVersion::Va4 => {
-                let always1: u16 = bincode::deserialize_from(&mut header_page)?;
-                ensure!(always1 == 1);
-                let npages =
-                    K::Usize::from_bytes_reader::<LE>(&mut header_page)?;
-                let always0: u16 = bincode::deserialize_from(&mut header_page)?;
-                ensure!(always0 == 0);
-                let mut nnames =
-                    K::Usize::from_bytes_reader::<LE>(&mut header_page)?;
-                if K::Usize::BYTES == 8 {
-                    // TODO nnames / 2? Why?
-                    nnames /= K::Usize::from(2u8);
-                }
-                let pagesize: u32 =
-                    bincode::deserialize_from(&mut header_page)?;
-                ensure!(pagesize >= 64);
-                (npages, nnames, pagesize)
-            }
-            VaVersion::VaX => {
-                let always3: u32 = bincode::deserialize_from(&mut header_page)?;
-                ensure!(always3 == 3);
-                let one_or_zero: u32 =
-                    bincode::deserialize_from(&mut header_page)?;
-                ensure!([0, 1].contains(&one_or_zero));
-                // TODO always2048 have some relation to pagesize?
-                let always2048: u32 =
-                    bincode::deserialize_from(&mut header_page)?;
-                ensure!(always2048 == 2048);
-                let npages =
-                    K::Usize::from_bytes_reader::<LE>(&mut header_page)?;
-                let always0: u32 = bincode::deserialize_from(&mut header_page)?;
-                ensure!(always0 == 0);
-                let mut nnames =
-                    K::Usize::from_bytes_reader::<LE>(&mut header_page)?;
-                // TODO remove this HACK to find if the Type is u64
-                if K::Usize::BYTES == 8 {
-                    // TODO nnames / 2? Why?
-                    nnames /= K::Usize::from(2u8);
-                }
-                (npages, nnames, DEFAULT_PAGE_SIZE.try_into().unwrap())
-            }
-        };
+        let (npages, nnames, pagesize) = Self::read_header::<K>(&mut &buf[..])?;
         ensure!(
             npages >= K::Usize::from(1u8),
             "Invalid number of pages, need at least one page for the header"
@@ -91,8 +39,8 @@ impl NamSection {
 
         // read the rest of the header page and ensure it's all zeros
         buf.resize(pagesize.try_into().unwrap(), 0);
-        input.read_exact(&mut buf[64..])?;
-        ensure!(buf[64..].iter().all(|b| *b == 0));
+        input.read_exact(&mut buf[MAX_HEADER_LEN..])?;
+        ensure!(buf[MAX_HEADER_LEN..].iter().all(|b| *b == 0));
 
         let name_len: u32 = K::Usize::BYTES.into();
         // ensure pages dont break a name
@@ -115,7 +63,7 @@ impl NamSection {
                 if current_nnames == K::Usize::from(0u8) {
                     break;
                 };
-                let name = K::Usize::from_bytes_reader::<LE>(&mut input);
+                let name = K::Usize::from_le_reader(&mut input);
                 let Ok(name) = name else {
                     break;
                 };
@@ -128,5 +76,52 @@ impl NamSection {
 
         assert!(current_nnames == K::Usize::from(0u8));
         Ok(Self { names })
+    }
+
+    fn read_header<K: IDAKind>(
+        input: &mut impl IdbReadKind<K>,
+    ) -> Result<(K::Usize, K::Usize, u32)> {
+        const DEFAULT_PAGE_SIZE: usize = 0x2000;
+        //assert!(MAX_HEADER_LEN < DEFAULT_PAGE_SIZE);
+        match VaVersion::read(&mut *input)? {
+            VaVersion::Va0
+            | VaVersion::Va1
+            | VaVersion::Va2
+            | VaVersion::Va3
+            | VaVersion::Va4 => {
+                let always1 = input.read_u16()?;
+                ensure!(always1 == 1);
+                let npages = input.read_usize()?;
+                let always0 = input.read_u16()?;
+                ensure!(always0 == 0);
+                let mut nnames = input.read_usize()?;
+                if K::Usize::BYTES == 8 {
+                    // TODO nnames / 2? Why?
+                    nnames /= K::Usize::from(2u8);
+                }
+                let pagesize = input.read_u32()?;
+                ensure!(pagesize >= 64);
+                Ok((npages, nnames, pagesize))
+            }
+            VaVersion::VaX => {
+                let always3 = input.read_u32()?;
+                ensure!(always3 == 3);
+                let one_or_zero = input.read_u32()?;
+                ensure!([0, 1].contains(&one_or_zero));
+                // TODO always2048 have some relation to pagesize?
+                let always2048 = input.read_u32()?;
+                ensure!(always2048 == 2048);
+                let npages = input.read_usize()?;
+                let always0 = input.read_u32()?;
+                ensure!(always0 == 0);
+                let mut nnames = input.read_usize()?;
+                // TODO remove this HACK to find if the Type is u64
+                if K::Usize::BYTES == 8 {
+                    // TODO nnames / 2? Why?
+                    nnames /= K::Usize::from(2u8);
+                }
+                Ok((npages, nnames, DEFAULT_PAGE_SIZE.try_into().unwrap()))
+            }
+        }
     }
 }

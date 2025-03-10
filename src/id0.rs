@@ -6,7 +6,6 @@ use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
 use crate::{til, IDAKind, IDAUsize, IDBSectionCompression};
 
 use anyhow::{anyhow, ensure, Result};
-use byteorder::BE;
 
 pub mod flag;
 
@@ -82,7 +81,7 @@ impl<'a, K: IDAKind> FunctionsAndComments<'a, K> {
                 Ok(Self::Unknown { key, value })
             }
             b'C' => {
-                let address = K::Usize::from_bytes::<BE>(sub_key)
+                let address = K::Usize::from_be_bytes(sub_key)
                     .ok_or_else(|| anyhow!("Invalid Comment address"))?;
                 parse_maybe_cstr(value)
                     .map(|value| Self::Comment {
@@ -93,7 +92,7 @@ impl<'a, K: IDAKind> FunctionsAndComments<'a, K> {
             }
             b'R' => {
                 let address =
-                    K::Usize::from_bytes::<BE>(sub_key).ok_or_else(|| {
+                    K::Usize::from_be_bytes(sub_key).ok_or_else(|| {
                         anyhow!("Invalid Repetable Comment address")
                     })?;
                 parse_maybe_cstr(value)
@@ -199,7 +198,7 @@ impl<'a, K: IDAKind> EntryPointRaw<'a, K> {
             ensure!(parse_maybe_cstr(value) == Some(&b"$ entry points"[..]));
             return Ok(Self::Name);
         }
-        let Some(sub_key) = K::Usize::from_bytes::<BE>(sub_key) else {
+        let Some(sub_key) = K::Usize::from_be_bytes(sub_key) else {
             return Ok(Self::Unknown { key, value });
         };
         match *key_type {
@@ -271,9 +270,26 @@ impl<'a, K: IDAKind> ID0CStr<'a, K> {
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x4e20c0
         match data {
             [b'\x00', rest @ ..] => {
-                K::Usize::from_bytes::<BE>(rest).map(ID0CStr::Ref)
+                K::Usize::from_be_bytes(rest).map(ID0CStr::Ref)
             }
             _ => parse_maybe_cstr(data).map(ID0CStr::CStr),
         }
     }
+}
+
+fn read_addr_from_key<K: IDAKind>(
+    input: &mut impl IdbReadKind<K>,
+) -> Result<K::Usize> {
+    // skip the '.'
+    ensure!(input.read_u8()? == b'.');
+    // read the key
+    input.read_usize_be()
+}
+
+fn read_addr_and_tag_from_key<K: IDAKind>(
+    input: &mut impl IdbReadKind<K>,
+) -> Result<(K::Usize, u8)> {
+    let addr = read_addr_from_key::<K>(&mut *input)?;
+    let tag = input.read_u8()?;
+    Ok((addr, tag))
 }

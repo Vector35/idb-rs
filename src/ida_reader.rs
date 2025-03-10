@@ -1,5 +1,4 @@
 use anyhow::{anyhow, ensure, Result};
-use byteorder::LE;
 
 use std::io::{BufRead, ErrorKind, Read};
 use std::ops::Range;
@@ -565,7 +564,14 @@ pub trait IdbReadKind<K: IDAKind>: IdbRead {
     where
         Self: Sized,
     {
-        <K::Usize as IDAUsize>::from_bytes_reader::<LE>(self)
+        <K::Usize as IDAUsize>::from_le_reader(self)
+    }
+
+    fn read_usize_be(&mut self) -> Result<K::Usize>
+    where
+        Self: Sized,
+    {
+        <K::Usize as IDAUsize>::from_be_reader(self)
     }
 
     fn unpack_usize(&mut self) -> Result<K::Usize>

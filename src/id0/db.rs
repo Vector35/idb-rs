@@ -2,7 +2,6 @@ use std::borrow::Cow;
 use std::ffi::CStr;
 
 use anyhow::Result;
-use byteorder::{BE, LE};
 use num_traits::{AsPrimitive, PrimInt, ToBytes};
 
 use crate::{ida_reader::IdbReadKind, IDAUsize, IDAVariants, IDA32, IDA64};
@@ -224,7 +223,7 @@ impl<K: IDAKind> ID0Section<K> {
         let entry = self
             .get("NRoot Node")
             .ok_or_else(|| anyhow!("Unable to find entry Root Node"))?;
-        let node_idx = K::Usize::from_bytes::<LE>(&entry.value[..])
+        let node_idx = K::Usize::from_le_bytes(&entry.value[..])
             .ok_or_else(|| anyhow!("Invalid Root Node key value"))?;
         Ok(NodeIdx(node_idx))
     }
@@ -254,24 +253,24 @@ impl<K: IDAKind> ID0Section<K> {
                 (b'V', 1) => return Ok(IDBRootInfo::InputFile(&entry.value)),
                 _ => {}
             }
-            let Some(value) = K::Usize::from_bytes::<BE>(&sub_key[1..]) else {
+            let Some(value) = K::Usize::from_be_bytes(&sub_key[1..]) else {
                 return Ok(IDBRootInfo::Unknown(entry));
             };
             match (sub_type, value.into_i64()) {
-                (b'A', -6) => K::Usize::from_bytes::<LE>(&entry.value[..])
+                (b'A', -6) => K::Usize::from_le_bytes(&entry.value[..])
                     .ok_or_else(|| anyhow!("Unable to parse imagebase value"))
                     .map(ImageBase)
                     .map(IDBRootInfo::ImageBase),
-                (b'A', -5) => K::Usize::from_bytes::<LE>(&entry.value[..])
+                (b'A', -5) => K::Usize::from_le_bytes(&entry.value[..])
                     .ok_or_else(|| anyhow!("Unable to parse crc value"))
                     .map(IDBRootInfo::Crc),
-                (b'A', -4) => K::Usize::from_bytes::<LE>(&entry.value[..])
+                (b'A', -4) => K::Usize::from_le_bytes(&entry.value[..])
                     .ok_or_else(|| anyhow!("Unable to parse open_count value"))
                     .map(IDBRootInfo::OpenCount),
-                (b'A', -2) => K::Usize::from_bytes::<LE>(&entry.value[..])
+                (b'A', -2) => K::Usize::from_le_bytes(&entry.value[..])
                     .ok_or_else(|| anyhow!("Unable to parse CreatedDate value"))
                     .map(IDBRootInfo::CreatedDate),
-                (b'A', -1) => K::Usize::from_bytes::<LE>(&entry.value[..])
+                (b'A', -1) => K::Usize::from_le_bytes(&entry.value[..])
                     .ok_or_else(|| anyhow!("Unable to parse Version value"))
                     .map(IDBRootInfo::Version),
                 (b'S', 1302) => entry
@@ -320,7 +319,7 @@ impl<K: IDAKind> ID0Section<K> {
         let entry = self
             .get("N$ fileregions")
             .ok_or_else(|| anyhow!("Unable to find entry fileregions"))?;
-        let node_idx = K::Usize::from_bytes::<LE>(&entry.value[..])
+        let node_idx = K::Usize::from_le_bytes(&entry.value[..])
             .ok_or_else(|| anyhow!("Invalid fileregions key value"))?;
         Ok(FileRegionIdx(NodeIdx(node_idx)))
     }
@@ -487,7 +486,7 @@ impl<K: IDAKind> ID0Section<K> {
         let key_len = key.len();
         for entry in self.sub_values(key) {
             let key = &entry.key[key_len..];
-            let key = K::Usize::from_bytes::<BE>(key).unwrap();
+            let key = K::Usize::from_be_bytes(key).unwrap();
             // TODO handle other values for the key
             if key == key_find {
                 return til::Type::new_from_id0(&entry.value, vec![])
@@ -590,7 +589,7 @@ impl<K: IDAKind> ID0Section<K> {
             .collect();
         let key_len = key.len();
         let mut sub_values = self.sub_values(key).iter().map(|entry| {
-            let raw_idx = K::Usize::from_bytes::<BE>(&entry.key[key_len..])
+            let raw_idx = K::Usize::from_be_bytes(&entry.key[key_len..])
                 .ok_or_else(|| anyhow!("invalid dirtree entry key"))?;
             let idx = raw_idx >> 16;
             let sub_idx: u16 = (raw_idx & K::Usize::from(0xFFFFu16)).as_();
