@@ -1,10 +1,8 @@
 use std::borrow::Cow;
 
-use anyhow::{anyhow, ensure, Result};
-use byteorder::BE;
+use anyhow::{anyhow, Result};
 use num_traits::ToBytes;
 
-use crate::ida_reader::IdbRead;
 use crate::{til, IDAKind, IDAUsize};
 
 use super::{
@@ -87,11 +85,7 @@ impl<'a, K: IDAKind> SectionAddressInfoByAddressIter<'a, K> {
             return self.next_inner();
         };
 
-        let mut cursor = &first.key[..];
-        // skip the '.'
-        ensure!(cursor.read_u8()? == b'.');
-        // read the key
-        let address = K::Usize::from_bytes_reader::<BE>(&mut cursor)?;
+        let address = super::read_addr_from_key::<K>(&mut &first.key[..])?;
 
         let end = self
             .current_region
@@ -184,13 +178,9 @@ impl<'a, K: IDAKind> AddressInfoIter<'a, K> {
             return Ok(None);
         };
         self.entries = rest;
-        let mut cursor = &current.key[..];
-        // skip the '.'
-        ensure!(cursor.read_u8()? == b'.');
-        // read the key
-        let address = K::Usize::from_bytes_reader::<BE>(&mut cursor)?;
-        let (sub_type, subkey) = id_subkey_from_idx::<K>(cursor)
-            .ok_or_else(|| anyhow!("Missing SubType"))?;
+        let (address, sub_type, subkey) =
+            addr_id_subkey_from_key::<K>(&current.key[..])
+                .ok_or_else(|| anyhow!("Missing SubType"))?;
 
         // Non UTF-8 comment: "C:\\Documents and Settings\\Administrator\\\xb9\xd9\xc5\xc1 \xc8\xad\xb8\xe9\ls"
         // \xb9\xd9\xc5\xc1 \xc8\xad\xb8\xe9 = "바탕 화면" = "Desktop" in Korean encoded using Extended Unix Code
@@ -231,7 +221,7 @@ impl<'a, K: IDAKind> AddressInfoIter<'a, K> {
             (flag::netnode::nn_res::ARRAY_SUP_TAG, Some(0x3000)) => {
                 // take the field names (optional?) and the continuation (optional!)
                 let last = rest.iter().position(|entry| {
-                    let Some((_address, sub_type, Some(id))) = id_subkey_from_key::<K>(&entry.key[..]) else {
+                    let Some((_address, sub_type, Some(id))) = addr_id_subkey_from_key::<K>(&entry.key[..]) else {
                         return true;
                     };
                     !matches!((sub_type, <K::Usize as Into<u64>>::into(id)), (b'S', 0x3000u64..=0x3999))
@@ -240,7 +230,7 @@ impl<'a, K: IDAKind> AddressInfoIter<'a, K> {
                 // TODO enforce sequential index for the id?
                 // get the entry for field names and rest of data
                 let (fields, continuation) = match &rest[..last] {
-                    [fields, rest @ ..] if id_subkey_from_key::<K>(&fields.key[..]) == Some((address, b'S', Some(K::Usize::from(0x3001u16)))) => {
+                    [fields, rest @ ..] if addr_id_subkey_from_key::<K>(&fields.key[..]) == Some((address, b'S', Some(K::Usize::from(0x3001u16)))) => {
                         // convert the value into fields
                         // usually this string ends with \x00, but bmaybe there is no garanty for that.
                         let value = parse_maybe_cstr(&fields.value).ok_or_else(||anyhow!("Incomplete Fields for TIL Type"))?;
@@ -304,7 +294,7 @@ impl<'a, K: IDAKind> AddressInfoIter<'a, K> {
             // The oposite of 'D", is a memory location that points to other
             (flag::nalt::x::NALT_DREF_FROM, Some(_)) |
             // other unknown values
-            _ => Ok(Some((address, AddressInfo::Other { key: cursor, value: &current.value }))),
+            _ => Ok(Some((address, AddressInfo::Other { key: &current.key, value: &current.value }))),
         }
     }
 }
@@ -337,27 +327,12 @@ impl<'a, K: IDAKind> Iterator for AddressInfoIterAt<'a, K> {
     }
 }
 
-fn id_subkey_from_key<K: IDAKind>(
-    mut cursor: &[u8],
+fn addr_id_subkey_from_key<K: IDAKind>(
+    mut key: &[u8],
 ) -> Option<(K::Usize, u8, Option<K::Usize>)> {
-    let Some(b'.') = cursor.read_u8().ok() else {
-        return None;
-    };
-    let Some(address) = K::Usize::from_bytes_reader::<BE>(&mut cursor).ok()
-    else {
-        return None;
-    };
-    let Some((sub_type, id)) = id_subkey_from_idx::<K>(cursor) else {
-        return None;
-    };
-    Some((address, sub_type, id))
-}
-
-fn id_subkey_from_idx<K: IDAKind>(
-    key: &[u8],
-) -> Option<(u8, Option<K::Usize>)> {
-    let (sub_type, id) = key.split_first()?;
-    Some((*sub_type, K::Usize::from_bytes::<BE>(id)))
+    let (addr, tag) = super::read_addr_and_tag_from_key::<K>(&mut key).ok()?;
+    let subkey = K::Usize::from_be_bytes(key);
+    Some((addr, tag, subkey))
 }
 
 fn advance_region<'a, K: IDAKind>(

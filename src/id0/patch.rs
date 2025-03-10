@@ -3,7 +3,6 @@ use crate::{IDAKind, IDAUsize};
 use super::ID0Entry;
 
 use anyhow::{anyhow, Result};
-use byteorder::{BE, LE};
 use num_traits::AsPrimitive;
 
 #[derive(Clone, Copy, Debug)]
@@ -34,10 +33,10 @@ impl<'a, K: IDAKind> SegmentPatchOriginalValueIter<'a, K> {
         // TODO find the InnerRef for this
         let addr_raw = &entry.key[self.key_len..];
 
-        let address = K::Usize::from_bytes::<BE>(addr_raw)
+        let address = K::Usize::from_be_bytes(addr_raw)
             .ok_or_else(|| anyhow!("Invalid id1 entry address"))?;
 
-        let original_value = K::Usize::from_bytes::<LE>(&entry.value[..])
+        let original_value = K::Usize::from_le_bytes(&entry.value[..])
             .ok_or_else(|| anyhow!("Invalid id1 entry original value"))?;
         let original_byte = AsPrimitive::<u8>::as_(original_value) & 0xFF;
 

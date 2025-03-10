@@ -10,7 +10,6 @@ use std::io::{BufRead, Read, SeekFrom};
 use std::num::NonZeroU64;
 use std::{borrow::Cow, io::Seek};
 
-use byteorder::ByteOrder;
 use id0::{ID0Section, ID0SectionVariants};
 use ida_reader::{IdbBufRead, IdbRead};
 use serde::Deserialize;
@@ -1138,58 +1137,50 @@ pub trait IDAUsize:
     fn is_max(&self) -> bool {
         *self == Self::max_value()
     }
-    fn from_bytes<B: ByteOrder>(data: &[u8]) -> Option<Self>;
-    fn from_bytes_reader<B: ByteOrder>(
-        read: &mut impl std::io::Read,
-    ) -> Result<Self>;
+    // parse the bytes and only return Some if data is the exact size of type
+    fn from_le_bytes(data: &[u8]) -> Option<Self>;
+    fn from_be_bytes(data: &[u8]) -> Option<Self>;
+    // read the type from a reader
+    fn from_le_reader(data: &mut impl std::io::Read) -> Result<Self>;
+    fn from_be_reader(data: &mut impl std::io::Read) -> Result<Self>;
     fn unpack_from_reader(read: &mut impl std::io::Read) -> Result<Self>;
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct IDA32;
-impl IDAKind for IDA32 {
-    type Usize = u32;
-}
-impl IDAUsize for u32 {
-    type Isize = i32;
-    const BYTES: u8 = 4;
+macro_rules! declare_idb_kind {
+    ($bytes:literal, $utype:ident, $itype:ident, $name:ident, $unapack_fun:ident) => {
+        #[derive(Debug, Clone, Copy)]
+        pub struct $name;
+        impl IDAKind for $name {
+            type Usize = $utype;
+        }
+        impl IDAUsize for $utype {
+            type Isize = $itype;
+            const BYTES: u8 = $bytes;
 
-    fn from_bytes<B: ByteOrder>(data: &[u8]) -> Option<Self> {
-        (data.len() == 4).then(|| B::read_u32(data))
-    }
-    fn from_bytes_reader<B: ByteOrder>(
-        read: &mut impl std::io::Read,
-    ) -> Result<Self> {
-        // TODO replace this with `read.read_u32::<B>()`
-        let mut data = [0; 4];
-        read.read_exact(&mut data)?;
-        Ok(B::read_u32(&data))
-    }
-    fn unpack_from_reader(read: &mut impl std::io::Read) -> Result<Self> {
-        read.unpack_dd()
-    }
+            fn from_le_bytes(data: &[u8]) -> Option<Self> {
+                Some(Self::from_le_bytes(data.try_into().ok()?))
+            }
+            fn from_be_bytes(data: &[u8]) -> Option<Self> {
+                Some(Self::from_be_bytes(data.try_into().ok()?))
+            }
+            fn from_le_reader(read: &mut impl std::io::Read) -> Result<Self> {
+                let mut data = [0; $bytes];
+                read.read_exact(&mut data)?;
+                Ok(Self::from_le_bytes(data))
+            }
+            fn from_be_reader(read: &mut impl std::io::Read) -> Result<Self> {
+                let mut data = [0; $bytes];
+                read.read_exact(&mut data)?;
+                Ok(Self::from_be_bytes(data))
+            }
+            fn unpack_from_reader(
+                read: &mut impl std::io::Read,
+            ) -> Result<Self> {
+                read.$unapack_fun()
+            }
+        }
+    };
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct IDA64;
-impl IDAKind for IDA64 {
-    type Usize = u64;
-}
-impl IDAUsize for u64 {
-    type Isize = i64;
-    const BYTES: u8 = 8;
-    fn from_bytes<B: ByteOrder>(data: &[u8]) -> Option<Self> {
-        (data.len() == 8).then(|| B::read_u64(data))
-    }
-    fn from_bytes_reader<B: ByteOrder>(
-        read: &mut impl std::io::Read,
-    ) -> Result<Self> {
-        // TODO replace this with `read.read_u64::<B>()`
-        let mut data = [0; 8];
-        read.read_exact(&mut data)?;
-        Ok(B::read_u64(&data))
-    }
-    fn unpack_from_reader(read: &mut impl std::io::Read) -> Result<Self> {
-        read.unpack_dq()
-    }
-}
+declare_idb_kind!(4, u32, i32, IDA32, unpack_dd);
+declare_idb_kind!(8, u64, i64, IDA64, unpack_dq);
