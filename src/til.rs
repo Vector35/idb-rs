@@ -897,11 +897,11 @@ impl CommentType {
         }
         Ok(Some(match field[0] {
             5 if *field.last().unwrap() == b'.' => {
-                Self::Unknown5(u32::from_str_radix(
-                    std::str::from_utf8(&field[1..field.len() - 1])?,
-                    // TODO 10 or 16?
-                    10,
-                )?)
+                Self::Unknown5(
+                    // TODO base 10 or 16?
+                    std::str::from_utf8(&field[1..field.len() - 1])?
+                        .parse::<u32>()?,
+                )
             }
             cmt_type @ 0..=0x1F => {
                 return Err(anyhow!("Unknown comment type {cmt_type:#X}"))

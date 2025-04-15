@@ -63,13 +63,11 @@ pub struct FileRegionIter<'a, K: IDAKind> {
     pub(crate) version: u16,
 }
 
-impl<'a, K: IDAKind> Iterator for FileRegionIter<'a, K> {
+impl<K: IDAKind> Iterator for FileRegionIter<'_, K> {
     type Item = Result<FileRegions<K>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Some((current, rest)) = self.segments.split_first() else {
-            return None;
-        };
+        let (current, rest) = self.segments.split_first()?;
         self.segments = rest;
         let key = &current.key[self.key_len..];
         Some(FileRegions::read(key, &current.value, self.version))

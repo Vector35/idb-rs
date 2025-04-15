@@ -1,27 +1,26 @@
 use anyhow::{ensure, Result};
 
 use crate::ida_reader::{IdbRead, IdbReadKind};
-use crate::{IDAKind, IDAUsize, IDBSectionCompression, VaVersion};
+use crate::{IDAKind, IDAUsize, SectionReader, VaVersion};
 
 #[derive(Debug, Clone)]
 pub struct NamSection {
     pub names: Vec<u64>,
 }
 
-impl NamSection {
-    pub(crate) fn read<K: IDAKind>(
-        input: &mut impl IdbRead,
-        compress: IDBSectionCompression,
-    ) -> Result<Self> {
-        match compress {
-            IDBSectionCompression::None => Self::read_inner::<K>(input),
-            IDBSectionCompression::Zlib => {
-                let mut input = flate2::read::ZlibDecoder::new(input);
-                Self::read_inner::<K>(&mut input)
-            }
-        }
+impl<K: IDAKind> SectionReader<K> for NamSection {
+    type Result = Self;
+
+    fn read_section<I: IdbReadKind<K>>(input: &mut I) -> Result<Self> {
+        Self::read_inner::<K>(input)
     }
 
+    fn size_from_v910(header: &crate::IDBHeaderV910) -> u64 {
+        header.nam.unwrap().size.get()
+    }
+}
+
+impl NamSection {
     pub(crate) fn read_inner<K: IDAKind>(
         input: &mut impl IdbRead,
     ) -> Result<Self> {

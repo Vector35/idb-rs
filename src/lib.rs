@@ -5,13 +5,13 @@ pub(crate) mod ida_reader;
 pub mod nam;
 pub mod til;
 
+use std::borrow::Cow;
 use std::fmt::Write;
-use std::io::{BufRead, Read, SeekFrom};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use std::num::NonZeroU64;
-use std::{borrow::Cow, io::Seek};
 
 use id0::{ID0Section, ID0SectionVariants};
-use ida_reader::{IdbBufRead, IdbRead};
+use ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
 use serde::Deserialize;
 
 use crate::id1::ID1Section;
@@ -19,9 +19,19 @@ use crate::nam::NamSection;
 use crate::til::section::TILSection;
 use anyhow::{anyhow, ensure, Result};
 
-#[derive(Debug, Clone, Copy)]
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+
+#[derive(Debug, Clone)]
+enum IDBParserInput<I> {
+    File(I),
+    // TODO find a better way to handle Zstd data,
+    // this could be problematic with big files
+    Buffer(Vec<u8>),
+}
+
+#[derive(Debug, Clone)]
 pub struct IDBParser<I, K: IDAKind> {
-    input: I,
+    input: IDBParserInput<I>,
     header: IDBHeader,
     _kind: std::marker::PhantomData<K>,
 }
@@ -37,26 +47,26 @@ macro_rules! impl_idb_offset {
         impl Sealed for $name {}
         impl IDBOffset for $name {
             fn idb_offset(&self) -> u64 {
-                self.0.get()
+                self.0
             }
         }
     };
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ID0Offset(NonZeroU64);
+pub struct ID0Offset(u64);
 impl_idb_offset!(ID0Offset);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ID1Offset(NonZeroU64);
+pub struct ID1Offset(u64);
 impl_idb_offset!(ID1Offset);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct NamOffset(NonZeroU64);
+pub struct NamOffset(u64);
 impl_idb_offset!(NamOffset);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct TILOffset(NonZeroU64);
+pub struct TILOffset(u64);
 impl_idb_offset!(TILOffset);
 
 macro_rules! call_parser_discrimiant {
@@ -74,6 +84,26 @@ pub type IDBParserVariants<I> =
 impl<I: BufRead + Seek> IDBParserVariants<I> {
     pub fn new(mut input: I) -> Result<Self> {
         let header = IDBHeader::read(&mut input)?;
+        let input = match &header.version {
+            IDBHeaderVersion::V910(h)
+                if h.compression != IDBSectionCompression::None =>
+            {
+                let mut output = vec![];
+                input.seek(SeekFrom::Start(h.data_start.get()))?;
+                match h.compression {
+                    IDBSectionCompression::None => unreachable!(),
+                    IDBSectionCompression::Zlib => {
+                        flate2::read::ZlibDecoder::new(input)
+                            .read_to_end(&mut output)?;
+                    }
+                    IDBSectionCompression::Zstd => {
+                        zstd::Decoder::new(input)?.read_to_end(&mut output)?;
+                    }
+                }
+                IDBParserInput::Buffer(output)
+            }
+            _ => IDBParserInput::File(input),
+        };
         if header.magic_version.is_64() {
             Ok(Self::IDA64(IDBParser {
                 input,
@@ -143,57 +173,81 @@ impl<I: BufRead + Seek> IDBParserVariants<I> {
 
 impl<I: BufRead + Seek, K: IDAKind> IDBParser<I, K> {
     pub fn id0_section_offset(&self) -> Option<ID0Offset> {
-        self.header.id0_offset.map(ID0Offset)
+        match self.header.version {
+            IDBHeaderVersion::V1(v) => v.id0_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V4(v) => v.id0_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V5(v) => v.id0_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V6(v) => v.id0_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V910(v) => v.id0.map(|x| x.offset),
+        }
+        .map(ID0Offset)
     }
 
     pub fn id1_section_offset(&self) -> Option<ID1Offset> {
-        self.header.id1_offset.map(ID1Offset)
+        match self.header.version {
+            IDBHeaderVersion::V1(v) => v.id1_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V4(v) => v.id1_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V5(v) => v.id1_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V6(v) => v.id1_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V910(v) => v.id1.map(|x| x.offset),
+        }
+        .map(ID1Offset)
     }
 
     pub fn nam_section_offset(&self) -> Option<NamOffset> {
-        self.header.nam_offset.map(NamOffset)
+        match self.header.version {
+            IDBHeaderVersion::V1(v) => v.nam_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V4(v) => v.nam_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V5(v) => v.nam_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V6(v) => v.nam_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V910(v) => v.nam.map(|x| x.offset),
+        }
+        .map(NamOffset)
     }
 
     pub fn til_section_offset(&self) -> Option<TILOffset> {
-        self.header.til_offset.map(TILOffset)
+        match self.header.version {
+            IDBHeaderVersion::V1(v) => v.til_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V4(v) => v.til_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V5(v) => v.til_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V6(v) => v.til_offset.map(NonZeroU64::get),
+            IDBHeaderVersion::V910(v) => v.til.map(|x| x.offset),
+        }
+        .map(TILOffset)
     }
 
     pub fn read_id0_section(
         &mut self,
         id0: ID0Offset,
     ) -> Result<ID0Section<K>> {
-        read_section(
+        read_section_from_main_header::<ID0Section<K>, I, K>(
             &mut self.input,
+            id0.0,
             &self.header,
-            id0.0.get(),
-            ID0Section::<K>::read,
         )
     }
 
     pub fn read_id1_section(&mut self, id1: ID1Offset) -> Result<ID1Section> {
-        read_section(
+        read_section_from_main_header::<ID1Section, I, K>(
             &mut self.input,
+            id1.0,
             &self.header,
-            id1.0.get(),
-            ID1Section::read::<K>,
         )
     }
 
     pub fn read_nam_section(&mut self, nam: NamOffset) -> Result<NamSection> {
-        read_section(
+        read_section_from_main_header::<NamSection, I, K>(
             &mut self.input,
+            nam.0,
             &self.header,
-            nam.0.get(),
-            NamSection::read::<K>,
         )
     }
 
     pub fn read_til_section(&mut self, til: TILOffset) -> Result<TILSection> {
-        read_section(
+        read_section_from_main_header::<TILSection, I, K>(
             &mut self.input,
+            til.0,
             &self.header,
-            til.0.get(),
-            TILSection::read,
         )
     }
 
@@ -202,22 +256,45 @@ impl<I: BufRead + Seek, K: IDAKind> IDBParser<I, K> {
         offset: impl IDBOffset,
         output: &mut impl std::io::Write,
     ) -> Result<()> {
-        self.input.seek(SeekFrom::Start(offset.idb_offset()))?;
-        let section_header =
-            IDBSectionHeader::read(&self.header, &mut self.input)?;
-        // makes sure the reader doesn't go out-of-bounds
-        let mut input =
-            std::io::Read::take(&mut self.input, section_header.len);
-        match section_header.compress {
-            IDBSectionCompression::Zlib => {
-                let mut input = flate2::bufread::ZlibDecoder::new(input);
-                let _ = std::io::copy(&mut input, output)?;
+        match &mut self.input {
+            IDBParserInput::Buffer(buf) => {
+                let offset = usize::try_from(offset.idb_offset()).unwrap();
+                let IDBHeaderVersion::V910(h) = &self.header.version else {
+                    unreachable!();
+                };
+                let size = usize::try_from(h.til.unwrap().size.get()).unwrap();
+                output
+                    .write_all(&buf[offset..offset + size])
+                    .map_err(anyhow::Error::from)
             }
-            IDBSectionCompression::None => {
-                let _ = std::io::copy(&mut input, output)?;
+            IDBParserInput::File(input) => {
+                input.seek(SeekFrom::Start(offset.idb_offset()))?;
+                let section_header =
+                    IDBSectionHeader::read(&self.header, &mut *input)?;
+                // makes sure the reader doesn't go out-of-bounds
+                match section_header.compress {
+                    IDBSectionCompression::Zlib => {
+                        let input =
+                            std::io::Read::take(input, section_header.len);
+                        let mut input =
+                            flate2::bufread::ZlibDecoder::new(input);
+                        let _ = std::io::copy(&mut input, output)?;
+                    }
+                    IDBSectionCompression::None => {
+                        let mut input =
+                            std::io::Read::take(input, section_header.len);
+                        let _ = std::io::copy(&mut input, output)?;
+                    }
+                    IDBSectionCompression::Zstd => {
+                        let input = zstd::Decoder::new(input)?;
+                        let mut input =
+                            std::io::Read::take(input, section_header.len);
+                        let _ = std::io::copy(&mut input, output)?;
+                    }
+                }
+                Ok(())
             }
         }
-        Ok(())
     }
 
     pub fn decompress_til_section(
@@ -225,43 +302,147 @@ impl<I: BufRead + Seek, K: IDAKind> IDBParser<I, K> {
         til: TILOffset,
         output: &mut impl std::io::Write,
     ) -> Result<()> {
-        self.input.seek(SeekFrom::Start(til.0.get()))?;
-        let section_header =
-            IDBSectionHeader::read(&self.header, &mut self.input)?;
-        // makes sure the reader doesn't go out-of-bounds
-        let mut input =
-            std::io::Read::take(&mut self.input, section_header.len);
-        TILSection::decompress(&mut input, output, section_header.compress)
+        let offset = til.0;
+        match &mut self.input {
+            IDBParserInput::Buffer(buf) => {
+                let offset = usize::try_from(offset).unwrap();
+                let IDBHeaderVersion::V910(h) = &self.header.version else {
+                    unreachable!();
+                };
+                let size = usize::try_from(h.til.unwrap().size.get()).unwrap();
+                output
+                    .write_all(&buf[offset..offset + size])
+                    .map_err(anyhow::Error::from)
+            }
+            IDBParserInput::File(input) => {
+                input.seek(SeekFrom::Start(offset))?;
+                let section_header =
+                    IDBSectionHeader::read(&self.header, &mut *input)?;
+                // makes sure the reader doesn't go out-of-bounds
+                let mut input = std::io::Read::take(input, section_header.len);
+                TILSection::decompress(
+                    &mut input,
+                    output,
+                    section_header.compress,
+                )
+            }
+        }
     }
 }
 
-fn read_section<'a, I, T, F>(
-    input: &'a mut I,
-    header: &IDBHeader,
+trait SectionReader<K: IDAKind> {
+    type Result;
+    fn read_section<I: IdbReadKind<K> + IdbBufRead>(
+        reader: &mut I,
+    ) -> Result<Self::Result>;
+    fn size_from_v910(header: &IDBHeaderV910) -> u64;
+}
+
+// decided, based on the version, where the size compress data is stored
+fn read_section_from_main_header<F, I, K>(
+    input: &mut IDBParserInput<I>,
     offset: u64,
-    mut process: F,
-) -> Result<T>
+    header: &IDBHeader,
+) -> Result<F::Result>
 where
     I: IdbBufRead + Seek,
-    F: FnMut(&mut std::io::Take<&'a mut I>, IDBSectionCompression) -> Result<T>,
+    K: IDAKind,
+    F: SectionReader<K>,
 {
-    input.seek(SeekFrom::Start(offset))?;
-    let section_header = IDBSectionHeader::read(header, &mut *input)?;
-    // makes sure the reader doesn't go out-of-bounds
-    let mut input = std::io::Read::take(input, section_header.len);
-    let result = process(&mut input, section_header.compress)?;
+    match input {
+        IDBParserInput::Buffer(buf) => {
+            let offset = usize::try_from(offset).unwrap();
+            let IDBHeaderVersion::V910(h) = &header.version else {
+                unreachable!();
+            };
+            let size = usize::try_from(F::size_from_v910(h)).unwrap();
+            read_section::<F, _, _>(
+                &mut &buf[offset..offset + size],
+                IDBSectionCompression::None,
+                F::size_from_v910(h),
+            )
+        }
+        IDBParserInput::File(input) => {
+            input.seek(SeekFrom::Start(offset))?;
+            match &header.version {
+                IDBHeaderVersion::V910(h) => read_section::<F, _, _>(
+                    input,
+                    h.compression,
+                    F::size_from_v910(h),
+                ),
+                IDBHeaderVersion::V1(_)
+                | IDBHeaderVersion::V4(_)
+                | IDBHeaderVersion::V5(_)
+                | IDBHeaderVersion::V6(_) => {
+                    read_section_from_header::<F, _, _>(input, header)
+                }
+            }
+        }
+    }
+}
 
-    // TODO seems its normal to have a few extra bytes at the end of the sector, maybe
-    // because of the compressions stuff, anyway verify that
-    ensure!(
-        if matches!(section_header.compress, IDBSectionCompression::None) {
-            input.limit() == 0
-        } else {
-            input.limit() <= 16
-        },
-        "Sector have more data then expected, left {} bytes",
-        input.limit()
-    );
+// read the header from the disk
+fn read_section_from_header<F, I, K>(
+    input: &mut I,
+    header: &IDBHeader,
+) -> Result<F::Result>
+where
+    I: IdbBufRead,
+    K: IDAKind,
+    F: SectionReader<K>,
+{
+    let section_header = IDBSectionHeader::read(header, &mut *input)?;
+    read_section::<F, _, _>(input, section_header.compress, section_header.len)
+}
+
+fn read_section<F, I, K>(
+    input: &mut I,
+    compress: IDBSectionCompression,
+    len: u64,
+) -> Result<F::Result>
+where
+    I: IdbBufRead,
+    K: IDAKind,
+    F: SectionReader<K>,
+{
+    let result = match compress {
+        IDBSectionCompression::None => {
+            let mut input = std::io::Read::take(input, len);
+            let result = F::read_section(&mut input)?;
+            ensure!(
+                input.limit() == 0,
+                "Sector have more data then expected, left {} bytes",
+                input.limit()
+            );
+            result
+        }
+        IDBSectionCompression::Zlib => {
+            // TODO seems its normal to have a few extra bytes at the end of the sector, maybe
+            // because of the compressions stuff, anyway verify that
+            let input = std::io::Read::take(input, len);
+            let mut flate_reader =
+                BufReader::new(flate2::read::ZlibDecoder::new(input));
+            let result = F::read_section(&mut flate_reader)?;
+            let limit = flate_reader.into_inner().into_inner().limit();
+            ensure!(
+                limit <= 16,
+                "Compressed Zlib Sector have more data then expected, left {limit} bytes",
+            );
+            result
+        }
+        IDBSectionCompression::Zstd => {
+            let zstd_reader = BufReader::new(zstd::Decoder::new(input)?);
+            let mut input = std::io::Read::take(zstd_reader, len);
+            let result = F::read_section(&mut input)?;
+            let limit = input.limit();
+            ensure!(
+                limit <= 16,
+                "Compressed Zlib Sector have more data then expected, left {limit} bytes",
+            );
+            result
+        }
+    };
+
     Ok(result)
 }
 
@@ -272,14 +453,14 @@ enum IDBMagic {
     IDA2,
 }
 
-impl TryFrom<[u8; 4]> for IDBMagic {
+impl TryFrom<[u8; 5]> for IDBMagic {
     type Error = anyhow::Error;
 
-    fn try_from(value: [u8; 4]) -> Result<Self, Self::Error> {
+    fn try_from(value: [u8; 5]) -> Result<Self, Self::Error> {
         match &value {
-            b"IDA0" => Ok(IDBMagic::IDA0),
-            b"IDA1" => Ok(IDBMagic::IDA1),
-            b"IDA2" => Ok(IDBMagic::IDA2),
+            b"IDA0\x00" => Ok(IDBMagic::IDA0),
+            b"IDA1\x00" => Ok(IDBMagic::IDA1),
+            b"IDA2\x00" => Ok(IDBMagic::IDA2),
             _ => Err(anyhow!("Invalid IDB Magic number")),
         }
     }
@@ -294,76 +475,114 @@ impl IDBMagic {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, IntoPrimitive, TryFromPrimitive,
+)]
+#[repr(u16)]
 enum IDBVersion {
     // TODO add other versions
-    V1,
-    V4,
-    V5,
-    V6,
+    V1 = 1,
+    V4 = 4,
+    V5 = 5,
+    V6 = 6,
+    V910 = 910,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct IDBHeader {
     magic_version: IDBMagic,
-    version: IDBVersion,
-    id0_offset: Option<NonZeroU64>,
-    id1_offset: Option<NonZeroU64>,
-    nam_offset: Option<NonZeroU64>,
-    til_offset: Option<NonZeroU64>,
-    checksums: [u32; 3],
-    unk0_checksum: u32,
-    data: IDBHeaderVersion,
+    version: IDBHeaderVersion,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum IDBHeaderVersion {
-    V1 {
-        seg_offset: Option<NonZeroU64>,
-    },
-    V4 {
-        seg_offset: Option<NonZeroU64>,
-    },
-    V5 {
-        unk16: u32,
-        unk1_checksum: u32,
-    },
-    V6 {
-        unk16: u32,
-        id2_offset: Option<NonZeroU64>,
-        unk1_checksum: u32,
-    },
+    V1(IDBHeaderV1),
+    V4(IDBHeaderV4),
+    V5(IDBHeaderV5),
+    V6(IDBHeaderV6),
+    V910(IDBHeaderV910),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct IDBHeaderV1 {
+    pub id0_offset: Option<NonZeroU64>,
+    pub id1_offset: Option<NonZeroU64>,
+    pub nam_offset: Option<NonZeroU64>,
+    pub seg_offset: Option<NonZeroU64>,
+    pub til_offset: Option<NonZeroU64>,
+    pub checksums: [u32; 5],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct IDBHeaderV4 {
+    pub id0_offset: Option<NonZeroU64>,
+    pub id1_offset: Option<NonZeroU64>,
+    pub nam_offset: Option<NonZeroU64>,
+    pub seg_offset: Option<NonZeroU64>,
+    pub til_offset: Option<NonZeroU64>,
+    pub checksums: [u32; 5],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct IDBHeaderV5 {
+    pub id0_offset: Option<NonZeroU64>,
+    pub id1_offset: Option<NonZeroU64>,
+    pub nam_offset: Option<NonZeroU64>,
+    pub til_offset: Option<NonZeroU64>,
+    pub checksums: [u32; 5],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct IDBHeaderV6 {
+    pub id0_offset: Option<NonZeroU64>,
+    pub id1_offset: Option<NonZeroU64>,
+    pub id2_offset: Option<std::num::NonZero<u64>>,
+    pub nam_offset: Option<NonZeroU64>,
+    pub til_offset: Option<NonZeroU64>,
+    pub checksums: [u32; 5],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct IDBHeaderV910 {
+    pub compression: IDBSectionCompression,
+    pub data_start: NonZeroU64,
+    pub id0: Option<IDBHeaderV910Sector>,
+    pub id1: Option<IDBHeaderV910Sector>,
+    pub id2: Option<IDBHeaderV910Sector>,
+    pub nam: Option<IDBHeaderV910Sector>,
+    pub til: Option<IDBHeaderV910Sector>,
+    pub seg: Option<IDBHeaderV910Sector>,
+    pub md5: [u8; 16],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct IDBHeaderV910Sector {
+    pub offset: u64,
+    pub size: NonZeroU64,
+}
+
+// NOTE V910 ditched the SectionHeader
 #[derive(Debug, Clone, Copy)]
 struct IDBSectionHeader {
     compress: IDBSectionCompression,
     len: u64,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, IntoPrimitive, TryFromPrimitive,
+)]
 #[repr(u8)]
 pub enum IDBSectionCompression {
     None = 0,
     Zlib = 2,
-}
-
-impl TryFrom<u8> for IDBSectionCompression {
-    type Error = ();
-
-    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Self::None),
-            2 => Ok(Self::Zlib),
-            _ => Err(()),
-        }
-    }
+    /// Introduced in version 9.1
+    Zstd = 3,
 }
 
 #[derive(Debug, Deserialize)]
 struct IDBHeaderRaw {
-    magic: [u8; 4],
-    _padding_0: u16,
+    magic: [u8; 5],
+    _padding_0: u8,
     offsets: [u32; 5],
     signature: u32,
     version: u16,
@@ -372,6 +591,10 @@ struct IDBHeaderRaw {
 
 impl IDBHeader {
     pub fn read(mut input: impl Read) -> Result<Self> {
+        // InnerRef fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x77eef0
+        // InnerRef expects the file to be at least 112 bytes,
+        // always read 109 bytes at the start
+        // read 32 bytes
         let header_raw: IDBHeaderRaw = bincode::deserialize_from(&mut input)?;
         let magic = IDBMagic::try_from(header_raw.magic)?;
         ensure!(
@@ -380,62 +603,68 @@ impl IDBHeader {
             header_raw.signature
         );
         // TODO associate header.version and magic?
-        match header_raw.version {
-            1 => Self::read_v1(&header_raw, magic, input),
-            4 => Self::read_v4(&header_raw, magic, input),
-            5 => Self::read_v5(&header_raw, magic, input),
-            6 => Self::read_v6(&header_raw, magic, input),
-            v => Err(anyhow!("Unable to parse version `{v}`")),
-        }
+        let version = match IDBVersion::try_from_primitive(header_raw.version)
+            .map_err(|_| {
+            anyhow!("Unable to parse version `{}`", header_raw.version)
+        })? {
+            IDBVersion::V1 => {
+                IDBHeaderVersion::V1(Self::read_v1(&header_raw, input)?)
+            }
+            IDBVersion::V4 => {
+                IDBHeaderVersion::V4(Self::read_v4(&header_raw, input)?)
+            }
+            IDBVersion::V5 => {
+                IDBHeaderVersion::V5(Self::read_v5(&header_raw, input)?)
+            }
+            IDBVersion::V6 => {
+                IDBHeaderVersion::V6(Self::read_v6(&header_raw, input)?)
+            }
+            IDBVersion::V910 => {
+                IDBHeaderVersion::V910(Self::read_v910(&header_raw, input)?)
+            }
+        };
+        Ok(Self {
+            magic_version: magic,
+            version,
+        })
     }
 
     fn read_v1(
         header_raw: &IDBHeaderRaw,
-        magic: IDBMagic,
         input: impl Read,
-    ) -> Result<Self> {
+    ) -> Result<IDBHeaderV1> {
         #[derive(Debug, Deserialize)]
         struct V1Raw {
             _id2_offset: u32,
-            checksums: [u32; 3],
-            _unk30_zeroed: u32,
-            unk33_checksum: u32,
+            checksums: [u32; 5],
         }
 
         let v1_raw: V1Raw = bincode::deserialize_from(input)?;
+
+        // TODO ensure all offsets point to after the header
         #[cfg(feature = "restrictive")]
         {
-            ensure!(v1_raw._unk30_zeroed == 0, "unk30 not zeroed");
             ensure!(v1_raw._id2_offset == 0, "id2 in V1 is not zeroed");
         }
-        // TODO ensure all offsets point to after the header
 
-        Ok(Self {
-            magic_version: magic,
-            version: IDBVersion::V1,
+        Ok(IDBHeaderV1 {
             id0_offset: NonZeroU64::new(header_raw.offsets[0].into()),
             id1_offset: NonZeroU64::new(header_raw.offsets[1].into()),
             nam_offset: NonZeroU64::new(header_raw.offsets[2].into()),
+            seg_offset: NonZeroU64::new(header_raw.offsets[3].into()),
             til_offset: NonZeroU64::new(header_raw.offsets[4].into()),
             checksums: v1_raw.checksums,
-            unk0_checksum: v1_raw.unk33_checksum,
-            data: IDBHeaderVersion::V1 {
-                seg_offset: NonZeroU64::new(header_raw.offsets[3].into()),
-            },
         })
     }
 
     fn read_v4(
         header_raw: &IDBHeaderRaw,
-        magic: IDBMagic,
         input: impl Read,
-    ) -> Result<Self> {
+    ) -> Result<IDBHeaderV4> {
         #[derive(Debug, Deserialize)]
         struct V4Raw {
             _id2_offset: u32,
-            checksums: [u32; 3],
-            _unk30_zeroed: u32,
-            unk33_checksum: u32,
+            checksums: [u32; 5],
             _unk38_zeroed: [u8; 8],
             _unk40_v5c: u32,
         }
@@ -444,43 +673,34 @@ impl IDBHeader {
 
         #[cfg(feature = "restrictive")]
         {
-            ensure!(v4_raw._unk30_zeroed == 0, "unk30 not zeroed");
             ensure!(v4_raw._id2_offset == 0, "id2 in V4 is not zeroed");
             ensure!(v4_raw._unk38_zeroed == [0; 8], "unk38 is not zeroed");
             ensure!(v4_raw._unk40_v5c == 0x5c, "unk40 is not 0x5C");
         }
         // TODO ensure all offsets point to after the header
 
-        Ok(Self {
-            magic_version: magic,
-            version: IDBVersion::V4,
+        Ok(IDBHeaderV4 {
             id0_offset: NonZeroU64::new(header_raw.offsets[0].into()),
             id1_offset: NonZeroU64::new(header_raw.offsets[1].into()),
             nam_offset: NonZeroU64::new(header_raw.offsets[2].into()),
+            seg_offset: NonZeroU64::new(header_raw.offsets[3].into()),
             til_offset: NonZeroU64::new(header_raw.offsets[4].into()),
             checksums: v4_raw.checksums,
-            unk0_checksum: v4_raw.unk33_checksum,
-            data: IDBHeaderVersion::V4 {
-                seg_offset: NonZeroU64::new(header_raw.offsets[3].into()),
-            },
         })
     }
 
     fn read_v5(
         header_raw: &IDBHeaderRaw,
-        magic: IDBMagic,
         input: impl Read,
-    ) -> Result<Self> {
+    ) -> Result<IDBHeaderV5> {
         #[derive(Debug, Deserialize)]
         struct V5Raw {
             nam_offset: u64,
             _seg_offset_zeroed: u64,
             til_offset: u64,
-            initial_checksums: [u32; 3],
-            _unk4_zeroed: u32,
-            unk_checksum: u32,
+            checksums: [u32; 5],
             _id2_offset_zeroed: u64,
-            final_checksum: u32,
+            _final_checksum: u32,
             _unk0_v7c: u32,
         }
         let v5_raw: V5Raw = bincode::deserialize_from(input)?;
@@ -496,44 +716,33 @@ impl IDBHeader {
         // TODO Final checksum is always zero on v5?
         #[cfg(feature = "restrictive")]
         {
-            ensure!(v5_raw._unk4_zeroed == 0, "unk4 not zeroed");
             ensure!(v5_raw._id2_offset_zeroed == 0, "id2 in V5 is not zeroed");
             ensure!(v5_raw._seg_offset_zeroed == 0, "seg in V5 is not zeroed");
             ensure!(v5_raw._unk0_v7c == 0x7C, "unk0 not 0x7C");
         }
         // TODO ensure all offsets point to after the header
 
-        Ok(Self {
-            magic_version: magic,
-            version: IDBVersion::V5,
+        Ok(IDBHeaderV5 {
             id0_offset: NonZeroU64::new(id0_offset),
             id1_offset: NonZeroU64::new(id1_offset),
             nam_offset: NonZeroU64::new(v5_raw.nam_offset),
             til_offset: NonZeroU64::new(v5_raw.til_offset),
-            checksums: v5_raw.initial_checksums,
-            unk0_checksum: v5_raw.unk_checksum,
-            data: IDBHeaderVersion::V5 {
-                unk16: header_raw.offsets[4],
-                unk1_checksum: v5_raw.final_checksum,
-            },
+            checksums: v5_raw.checksums,
         })
     }
 
     fn read_v6(
         header_raw: &IDBHeaderRaw,
-        magic: IDBMagic,
         input: impl Read,
-    ) -> Result<Self> {
+    ) -> Result<IDBHeaderV6> {
         #[derive(Debug, Deserialize)]
         struct V6Raw {
             nam_offset: u64,
             _seg_offset_zeroed: u64,
             til_offset: u64,
-            initial_checksums: [u32; 3],
-            _unk4_zeroed: [u8; 4],
-            unk5_checksum: u32,
+            checksums: [u32; 5],
             id2_offset: u64,
-            final_checksum: u32,
+            _final_checksum: u32,
             _unk0_v7c: u32,
         }
         let v6_raw: V6Raw = bincode::deserialize_from(input)?;
@@ -548,34 +757,103 @@ impl IDBHeader {
 
         #[cfg(feature = "restrictive")]
         {
-            ensure!(v6_raw._unk4_zeroed == [0; 4], "unk4 not zeroed");
             ensure!(v6_raw._seg_offset_zeroed == 0, "seg in V6 is not zeroed");
             ensure!(v6_raw._unk0_v7c == 0x7C, "unk0 not 0x7C");
         }
         // TODO ensure all offsets point to after the header
 
-        Ok(Self {
-            magic_version: magic,
-            version: IDBVersion::V6,
+        Ok(IDBHeaderV6 {
             id0_offset: NonZeroU64::new(id0_offset),
             id1_offset: NonZeroU64::new(id1_offset),
+            id2_offset: NonZeroU64::new(v6_raw.id2_offset),
             nam_offset: NonZeroU64::new(v6_raw.nam_offset),
             til_offset: NonZeroU64::new(v6_raw.til_offset),
-            checksums: v6_raw.initial_checksums,
-            unk0_checksum: v6_raw.unk5_checksum,
-            data: IDBHeaderVersion::V6 {
-                unk16: header_raw.offsets[4],
-                id2_offset: NonZeroU64::new(v6_raw.id2_offset),
-                unk1_checksum: v6_raw.final_checksum,
-            },
+            checksums: v6_raw.checksums,
+        })
+    }
+
+    fn read_v910(
+        header_raw: &IDBHeaderRaw,
+        input: impl Read,
+    ) -> Result<IDBHeaderV910> {
+        #[derive(Debug, Deserialize)]
+        struct V91Raw {
+            compression: u8,
+            sectors: [u64; 6],
+            _unk1: u64,
+            _unk2: u32,
+            md5: [u8; 16],
+        }
+        let raw: V91Raw = bincode::deserialize_from(input)?;
+        let header_size = u64::from_le(
+            u64::from(header_raw.offsets[1]) << 32
+                | u64::from(header_raw.offsets[0]),
+        );
+        let data_start = u64::from_le(
+            u64::from(header_raw.offsets[3]) << 32
+                | u64::from(header_raw.offsets[2]),
+        );
+        // TODO find meanings, seeing value 0 and 2
+        let _unk3 = header_raw.offsets[4];
+        #[cfg(feature = "restrictive")]
+        {
+            ensure!(raw._unk1 == 0);
+            ensure!(raw._unk2 == 0);
+        }
+
+        ensure!(header_size != 0);
+        // TODO ensure other header data is empty based on the header_size
+
+        let data_start = NonZeroU64::new(data_start)
+            .ok_or_else(|| anyhow!("Invalid Header data start offset"))?;
+
+        // InnerRef fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x077f669 read
+        // InnerRef fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x077ebf9 unpack
+        let mut current_offset =
+            if raw.compression != IDBSectionCompression::None.into() {
+                0
+            } else {
+                data_start.get()
+            };
+        let sectors: [Option<IDBHeaderV910Sector>; 6] = raw
+            .sectors
+            .iter()
+            .copied()
+            .map(|size| {
+                let sector =
+                    NonZeroU64::new(size).map(|size| IDBHeaderV910Sector {
+                        offset: current_offset,
+                        size,
+                    });
+                current_offset += size;
+                Ok(sector)
+            })
+            .collect::<anyhow::Result<Vec<_>>>()?
+            .try_into()
+            .unwrap();
+
+        let compression =
+            IDBSectionCompression::try_from_primitive(raw.compression)
+                .map_err(|_| anyhow!("Invalid V910 header compression"))?;
+
+        Ok(IDBHeaderV910 {
+            compression,
+            data_start,
+            id0: sectors[0],
+            id1: sectors[1],
+            nam: sectors[2],
+            id2: sectors[3],
+            til: sectors[4],
+            seg: sectors[5],
+            md5: raw.md5,
         })
     }
 }
 
 impl IDBSectionHeader {
-    pub fn read(header: &IDBHeader, input: impl Read) -> Result<Self> {
+    fn read(header: &IDBHeader, input: impl Read) -> Result<Self> {
         match header.version {
-            IDBVersion::V1 | IDBVersion::V4 => {
+            IDBHeaderVersion::V1(_) | IDBHeaderVersion::V4(_) => {
                 #[derive(Debug, Deserialize)]
                 struct Section32Raw {
                     compress: u8,
@@ -590,7 +868,7 @@ impl IDBSectionHeader {
                     len: header.len.into(),
                 })
             }
-            IDBVersion::V5 | IDBVersion::V6 => {
+            IDBHeaderVersion::V5(_) | IDBHeaderVersion::V6(_) => {
                 #[derive(Debug, Deserialize)]
                 struct Section64Raw {
                     compress: u8,
@@ -604,6 +882,9 @@ impl IDBSectionHeader {
                         .map_err(|_| anyhow!("Invalid compression code"))?,
                     len: header.len,
                 })
+            }
+            IDBHeaderVersion::V910(_) => {
+                unreachable!()
             }
         }
     }
@@ -1024,7 +1305,7 @@ mod test {
                 // makes sure it don't read out-of-bounds
                 let mut input = BufReader::new(File::open(file)?);
                 // TODO make a SmartReader
-                TILSection::read(&mut input, IDBSectionCompression::None).and_then(|_til| {
+                TILSection::read(&mut input).and_then(|_til| {
                     let current = input.seek(SeekFrom::Current(0))?;
                     let end = input.seek(SeekFrom::End(0))?;
                     ensure!(
@@ -1126,16 +1407,16 @@ pub trait IDAUsize:
     const BYTES: u8;
 
     /// helper fo call into u64
-    fn into_u64(&self) -> u64 {
-        (*self).into()
+    fn into_u64(self) -> u64 {
+        self.into()
     }
     /// cast the inner type as a signed version of itself, then call into i64
-    fn into_i64(&self) -> i64 {
+    fn into_i64(self) -> i64 {
         let signed: Self::Isize = self.as_();
         signed.into()
     }
-    fn is_max(&self) -> bool {
-        *self == Self::max_value()
+    fn is_max(self) -> bool {
+        self == Self::max_value()
     }
     // parse the bytes and only return Some if data is the exact size of type
     fn from_le_bytes(data: &[u8]) -> Option<Self>;

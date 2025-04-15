@@ -5,27 +5,26 @@ pub mod flag;
 use std::ops::{Div, Range, Rem};
 
 use crate::ida_reader::{IdbRead, IdbReadKind};
-use crate::{IDAKind, IDBSectionCompression, VaVersion};
+use crate::{IDAKind, SectionReader, VaVersion};
 
 #[derive(Clone, Debug)]
 pub struct ID1Section {
     pub seglist: Vec<SegInfo>,
 }
 
-impl ID1Section {
-    pub(crate) fn read<K: IDAKind>(
-        input: &mut impl IdbRead,
-        compress: IDBSectionCompression,
-    ) -> Result<Self> {
-        match compress {
-            IDBSectionCompression::None => Self::read_inner::<K>(input),
-            IDBSectionCompression::Zlib => {
-                let mut input = flate2::read::ZlibDecoder::new(input);
-                Self::read_inner::<K>(&mut input)
-            }
-        }
+impl<K: IDAKind> SectionReader<K> for ID1Section {
+    type Result = Self;
+
+    fn read_section<I: IdbReadKind<K>>(input: &mut I) -> Result<Self> {
+        Self::read_inner::<K>(input)
     }
 
+    fn size_from_v910(header: &crate::IDBHeaderV910) -> u64 {
+        header.id1.unwrap().size.get()
+    }
+}
+
+impl ID1Section {
     fn read_inner<K: IDAKind>(input: &mut impl std::io::Read) -> Result<Self> {
         // TODO pages are always 0x2000?
         const PAGE_SIZE: usize = 0x2000;
@@ -239,7 +238,7 @@ impl ByteInfoRaw {
 
     pub fn byte_value(&self) -> Option<u8> {
         (self.0 & flag::byte::FF_IVL != 0)
-            .then(|| (self.0 & flag::byte::MS_VAL) as u8)
+            .then_some((self.0 & flag::byte::MS_VAL) as u8)
     }
 
     pub fn byte_type(&self) -> ByteRawType {
@@ -373,14 +372,14 @@ impl CodeData {
             return Err(anyhow!("Invalid id1 CodeData flag"));
         }
         let operands = [
-            InstOpInfo::from_raw(value.into(), 7)?,
-            InstOpInfo::from_raw(value.into(), 6)?,
-            InstOpInfo::from_raw(value.into(), 5)?,
-            InstOpInfo::from_raw(value.into(), 4)?,
-            InstOpInfo::from_raw(value.into(), 3)?,
-            InstOpInfo::from_raw(value.into(), 2)?,
-            InstOpInfo::from_raw(value.into(), 1)?,
-            InstOpInfo::from_raw(value.into(), 0)?,
+            InstOpInfo::from_raw(value, 7)?,
+            InstOpInfo::from_raw(value, 6)?,
+            InstOpInfo::from_raw(value, 5)?,
+            InstOpInfo::from_raw(value, 4)?,
+            InstOpInfo::from_raw(value, 3)?,
+            InstOpInfo::from_raw(value, 2)?,
+            InstOpInfo::from_raw(value, 1)?,
+            InstOpInfo::from_raw(value, 0)?,
         ];
         Ok(CodeData {
             is_func_start,
@@ -570,10 +569,7 @@ fn read_data<K: IDAKind>(
     input.read_exact(&mut data)?;
     Ok(data
         .chunks(4)
-        .map(|b| {
-            let data = u32::from_le_bytes(b.try_into().unwrap());
-            data
-        })
+        .map(|b| u32::from_le_bytes(b.try_into().unwrap()))
         .collect())
 }
 

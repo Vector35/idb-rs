@@ -347,7 +347,7 @@ pub mod tf_enum {
     ///   - 'de' mask (has name)
     ///   - 'dt' cnt
     ///   - cnt records of 'de' values
-    ///      (cnt CAN be 0)
+    ///     (cnt CAN be 0)
     ///
     /// NOTE: delta for ALL subsegment is ONE
     pub const BTE_BITFIELD: BteT = 0x10;

@@ -11,7 +11,7 @@ use idb_rs::til::{
     Basic, SClass, TILTypeInfo, TILTypeSizeSolver, Type, TypeVariant, Typeref,
     TyperefType, TyperefValue,
 };
-use idb_rs::{IDBSectionCompression, IDBString, IDAVariants};
+use idb_rs::{IDAVariants, IDBString};
 
 use std::fs::File;
 use std::io::{BufReader, Result, Write};
@@ -33,8 +33,7 @@ pub fn tilib_print(
     let mut input = BufReader::new(File::open(&args.input)?);
     match args.input_type() {
         FileType::Til => {
-            let section =
-                TILSection::read(&mut input, IDBSectionCompression::None)?;
+            let section = TILSection::read(&mut input)?;
             print_til_section(std::io::stdout(), &section, tilib_args)?;
         }
         FileType::Idb => {
@@ -1295,12 +1294,13 @@ fn print_til_struct_member_att(
             }
             _ => {}
         },
-        TypeVariant::Array(array) => match &array.elem_type.type_variant {
-            TypeVariant::Basic(Basic::Char) => {
+        TypeVariant::Array(array) => {
+            if let TypeVariant::Basic(Basic::Char) =
+                &array.elem_type.type_variant
+            {
                 print_til_struct_member_string_att(fmt, att)?
             }
-            _ => {}
-        },
+        }
         _ => {}
     }
     Ok(())

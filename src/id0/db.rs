@@ -4,7 +4,9 @@ use std::ffi::CStr;
 use anyhow::Result;
 use num_traits::{AsPrimitive, PrimInt, ToBytes};
 
-use crate::{ida_reader::IdbReadKind, IDAUsize, IDAVariants, IDA32, IDA64};
+use crate::{
+    ida_reader::IdbReadKind, IDAUsize, IDAVariants, SectionReader, IDA32, IDA64,
+};
 
 use super::*;
 
@@ -23,12 +25,15 @@ pub struct ID0Entry {
     pub value: Vec<u8>,
 }
 
-impl<K: IDAKind> ID0Section<K> {
-    pub(crate) fn read(
-        input: &mut impl IdbReadKind<K>,
-        compress: IDBSectionCompression,
-    ) -> Result<Self> {
-        ID0BTree::read(input, compress)
+impl<K: IDAKind> SectionReader<K> for ID0Section<K> {
+    type Result = ID0Section<K>;
+
+    fn read_section<I: IdbReadKind<K> + IdbBufRead>(
+        input: &mut I,
+    ) -> Result<Self::Result> {
+        let mut output = vec![];
+        input.read_to_end(&mut output)?;
+        ID0BTree::read_inner(&output[..])
             .map(ID0BTree::into_vec)
             .map(|entries| Self {
                 _kind: std::marker::PhantomData,
@@ -36,6 +41,12 @@ impl<K: IDAKind> ID0Section<K> {
             })
     }
 
+    fn size_from_v910(header: &crate::IDBHeaderV910) -> u64 {
+        header.id0.unwrap().size.get()
+    }
+}
+
+impl<K: IDAKind> ID0Section<K> {
     pub fn all_entries(&self) -> &[ID0Entry] {
         &self.entries
     }
@@ -669,5 +680,5 @@ fn key_from_address_and_subtype<K: IDAKind>(
     address: K::Usize,
     subtype: u8,
 ) -> impl Iterator<Item = u8> {
-    key_from_address::<K>(address).chain([subtype].into_iter())
+    key_from_address::<K>(address).chain([subtype])
 }

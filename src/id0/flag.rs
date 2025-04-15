@@ -399,16 +399,19 @@ pub mod swi {
     pub const SWI_USER: u32 = 0x00000010;
     /// default case is an entry in the jump table.
     /// This flag is applicable in 2 cases:
-    /// - The sparse indirect switch (i.e. a switch with a values table)
-    ///    {jump table size} == {value table size} + 1.
-    ///    The default case entry is the last one in the table
-    ///    (or the first one in the case of an inversed jump table).
-    /// - The switch with insns in the jump table.
-    ///   The default case entry is before the first entry of the table. \n
+    ///
+    /// * The sparse indirect switch (i.e. a switch with a values table)
+    ///
+    /// {jump table size} == {value table size} + 1.
+    /// The default case entry is the last one in the table
+    /// (or the first one in the case of an inversed jump table).
+    ///
+    /// * The switch with insns in the jump table.
+    ///
+    /// The default case entry is before the first entry of the table.
     /// See also the find_defjump_from_table() helper function.
     pub const SWI_DEF_IN_TBL: u32 = 0x00000020;
-    /// jumptable is inversed. (last entry is
-    /// for first entry in values table)
+    /// jumptable is inversed. (last entry is for first entry in values table)
     pub const SWI_JMP_INV: u32 = 0x00000040;
     /// use formula (element<<shift) + elbase to find jump targets
     pub const SWI_SHIFT_MASK: u32 = 0x00000180;

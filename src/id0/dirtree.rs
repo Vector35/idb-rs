@@ -136,7 +136,10 @@ where
         .unwrap();
     let name = root.name;
     ensure!(name.is_empty(), "DirTree With a named root");
-    ensure!(root.parent == K::Usize::from(0u8), "Dirtree Root with parent");
+    ensure!(
+        root.parent == K::Usize::from(0u8),
+        "Dirtree Root with parent"
+    );
     let dirs = dirtree_directory_from_raw(
         &mut entries_raw,
         K::Usize::from(0u8),

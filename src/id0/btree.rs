@@ -1,4 +1,4 @@
-use std::io::{BufRead, Read};
+use std::io::BufRead;
 
 use anyhow::Result;
 use num_traits::ToBytes;
@@ -356,39 +356,23 @@ pub(crate) struct ID0BTreePages {
 }
 
 impl ID0BTree {
-    pub(crate) fn read(
-        input: &mut impl Read,
-        compress: IDBSectionCompression,
-    ) -> Result<Self> {
-        let mut buf = vec![];
-        match compress {
-            IDBSectionCompression::None => {
-                input.read_to_end(&mut buf)?;
-                Self::read_inner(&buf[..])
-            }
-            IDBSectionCompression::Zlib => {
-                let mut flate_reader = flate2::read::ZlibDecoder::new(input);
-                flate_reader.read_to_end(&mut buf)?;
-                Self::read_inner(&mut buf[..])
-            }
-        }
-    }
-
     // NOTE this was written this way to validate the data in each file, so it's clear that no
     // data is being parsed incorrectly or is left unparsed. There way too many validations
     // and non-necessary parsing is done on delete data.
-    fn read_inner(input: &[u8]) -> Result<Self> {
+    pub(crate) fn read_inner(input: &[u8]) -> Result<Self> {
         let mut reader = input;
 
         // pages size are usually around that size
         let mut buf = Vec::with_capacity(0x2000);
         let header = ID0Header::read(&mut reader, &mut buf)?;
 
-        let page_size = usize::try_from(header.page_size).unwrap();
-        ensure!(input.len() % page_size == 0);
-        let pages_in_section = input.len() / page_size as usize;
+        let page_count: usize = header.page_count.try_into().unwrap();
+        let page_size: usize = header.page_size.into();
+        // in compressed sectors extra data can be present
+        //ensure!(input.len() % page_size == 0);
+        let pages_in_section = input.len() / page_size;
         // +1 for the header, some times there is more space then pages, usually empty pages at the end
-        ensure!(header.page_count as usize + 1 <= pages_in_section);
+        ensure!(page_count + 1 <= pages_in_section);
 
         let Some(root) = header.root_page else {
             ensure!(header.record_count == 0);
