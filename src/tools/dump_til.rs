@@ -22,10 +22,7 @@ pub fn dump_til(args: &Args) -> Result<()> {
         }
         FileType::Til => {
             let mut input = BufReader::new(File::open(&args.input)?);
-            idb_rs::til::section::TILSection::read(
-                &mut input,
-                idb_rs::IDBSectionCompression::None,
-            )?
+            idb_rs::til::section::TILSection::read(&mut input)?
         }
     };
 

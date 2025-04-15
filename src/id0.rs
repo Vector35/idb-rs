@@ -3,7 +3,7 @@ use std::num::NonZeroU32;
 use std::ops::Range;
 
 use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
-use crate::{til, IDAKind, IDAUsize, IDBSectionCompression};
+use crate::{til, IDAKind, IDAUsize};
 
 use anyhow::{anyhow, ensure, Result};
 

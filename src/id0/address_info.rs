@@ -63,12 +63,8 @@ impl<'a, K: IDAKind> SectionAddressInfoByAddressIter<'a, K> {
 
     fn advance_region(&mut self) -> Result<Option<()>> {
         // get the next region
-        advance_region(&self.id0, &mut self.regions).map(|x| {
-            x.map(|x| {
-                self.current_region = x;
-                ()
-            })
-        })
+        advance_region(self.id0, &mut self.regions)
+            .map(|x| x.map(|x| self.current_region = x))
     }
 
     fn next_inner(
@@ -96,7 +92,7 @@ impl<'a, K: IDAKind> SectionAddressInfoByAddressIter<'a, K> {
         self.current_region = rest;
         Ok(Some((
             address,
-            AddressInfoIter::new(current_addr, &self.id0),
+            AddressInfoIter::new(current_addr, self.id0),
         )))
     }
 }
@@ -130,11 +126,8 @@ impl<'a, K: IDAKind> SectionAddressInfoIter<'a, K> {
 
     fn advance_region(&mut self) -> Result<Option<()>> {
         // get the next region
-        advance_region(&self.id0, &mut self.regions).map(|x| {
-            x.map(|x| {
-                self.current_region = AddressInfoIter::new(x, &self.id0);
-                ()
-            })
+        advance_region(self.id0, &mut self.regions).map(|x| {
+            x.map(|x| self.current_region = AddressInfoIter::new(x, self.id0))
         })
     }
 }
@@ -275,7 +268,7 @@ impl<'a, K: IDAKind> AddressInfoIter<'a, K> {
             },
 
             // Used to define what struct is apply at the address
-            (flag::nalt::x::NALT_DREF_FROM, Some(_)) if &current.value[..] == &[0x03] => {
+            (flag::nalt::x::NALT_DREF_FROM, Some(_)) if current.value[..] == [0x03] => {
                 Ok(Some((address, AddressInfo::DefinedStruct(SubtypeId(subkey.unwrap())))))
             }
 
@@ -335,10 +328,10 @@ fn addr_id_subkey_from_key<K: IDAKind>(
     Some((addr, tag, subkey))
 }
 
-fn advance_region<'a, K: IDAKind>(
-    id0: &'a ID0Section<K>,
+fn advance_region<K: IDAKind>(
+    id0: &ID0Section<K>,
     mut regions: impl Iterator<Item = Result<FileRegions<K>>>,
-) -> Result<Option<&'a [ID0Entry]>> {
+) -> Result<Option<&[ID0Entry]>> {
     // get the next region
     let region = match regions.next() {
         Some(Ok(region)) => region,
@@ -347,7 +340,7 @@ fn advance_region<'a, K: IDAKind>(
         // return the error if err
         Some(Err(err)) => return Err(err),
     };
-    Ok(Some(get_next_address_region(&region, &id0.all_entries())))
+    Ok(Some(get_next_address_region(&region, id0.all_entries())))
 }
 
 fn get_next_address_region<'a, K: IDAKind>(

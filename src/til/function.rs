@@ -198,7 +198,11 @@ impl FunctionRaw {
         };
 
         // TODO InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473bf1 print_til_type
-        let (cc, flags, _spoiled) = read_cc(&mut *input)?;
+        let FunctionCC {
+            cc,
+            flags,
+            _spoiled,
+        } = read_cc(&mut *input)?;
         let cc = CallingConvention::from_cm_raw(cc)?;
 
         // TODO investigate why this don't hold true
@@ -544,13 +548,23 @@ pub enum CallMethod {
     Int,
 }
 
+struct FunctionCC {
+    cc: u8,
+    flags: u16,
+    _spoiled: Vec<(u16, u8)>,
+}
+
 // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x476e60
 /// [BT_FUNC](https://hex-rays.com/products/ida/support/sdkdoc/group__tf__func.html#ga7b7fee21f21237beb6d91e854410e0fa)
-fn read_cc(input: &mut impl IdbBufRead) -> Result<(u8, u16, Vec<(u16, u8)>)> {
+fn read_cc(input: &mut impl IdbBufRead) -> Result<FunctionCC> {
     let mut cc = input.read_u8()?;
     // TODO find the flag for that
     if cc & 0xF0 != 0xA0 {
-        return Ok((cc, 0, vec![]));
+        return Ok(FunctionCC {
+            cc,
+            flags: 0,
+            _spoiled: vec![],
+        });
     }
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x46de7c
     let pbyte2 = input.peek_u8()?;
@@ -572,7 +586,11 @@ fn read_cc(input: &mut impl IdbBufRead) -> Result<(u8, u16, Vec<(u16, u8)>)> {
 
             cc = input.read_u8()?;
             if cc & 0xF0 != 0xA0 {
-                return Ok((cc, flags.into(), spoiled));
+                return Ok(FunctionCC {
+                    cc,
+                    flags: flags.into(),
+                    _spoiled: spoiled,
+                });
             }
         }
     } else {
@@ -586,7 +604,11 @@ fn read_cc(input: &mut impl IdbBufRead) -> Result<(u8, u16, Vec<(u16, u8)>)> {
         }
         let cc = input.read_u8()?;
         // TODO is this `&` realy necessary? Should we allow invalid flags?
-        Ok((cc, (flag & 0x1E3F) as u16, spoiled))
+        Ok(FunctionCC {
+            cc,
+            flags: (flag & 0x1E3F) as u16,
+            _spoiled: spoiled,
+        })
     }
 }
 

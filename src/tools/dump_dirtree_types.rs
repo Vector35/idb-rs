@@ -12,9 +12,7 @@ use idb_rs::{IDAKind, IDAVariants};
 pub fn dump_dirtree_types(args: &Args) -> Result<()> {
     // parse the id0 sector/file
     match args.input_type() {
-        FileType::Til => {
-            return Err(anyhow!("TIL don't contains any ID0 data"))
-        }
+        FileType::Til => Err(anyhow!("TIL don't contains any ID0 data")),
         FileType::Idb => {
             let input = BufReader::new(File::open(&args.input)?);
             let mut parser = IDAVariants::new(input)?;

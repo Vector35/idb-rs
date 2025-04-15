@@ -1,7 +1,7 @@
 use crate::id0::{Compiler, Id0TilOrd};
-use crate::ida_reader::{IdbBufRead, IdbRead};
+use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
 use crate::til::{flag, TILMacro, TILTypeInfo, TILTypeInfoRaw};
-use crate::{IDBSectionCompression, IDBString};
+use crate::{IDAKind, IDBSectionCompression, IDBString, SectionReader};
 use anyhow::{anyhow, ensure, Result};
 use serde::{Deserialize, Serialize};
 
@@ -20,6 +20,20 @@ pub struct TILSection {
     pub symbols: Vec<TILTypeInfo>,
     pub types: Vec<TILTypeInfo>,
     pub macros: Option<Vec<TILMacro>>,
+}
+
+impl<K: IDAKind> SectionReader<K> for TILSection {
+    type Result = Self;
+
+    fn read_section<I: IdbReadKind<K> + IdbBufRead>(
+        input: &mut I,
+    ) -> Result<Self> {
+        Self::read(input)
+    }
+
+    fn size_from_v910(header: &crate::IDBHeaderV910) -> u64 {
+        header.til.unwrap().size.get()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -147,21 +161,7 @@ pub struct TILSectionHeader2 {
 }
 
 impl TILSectionRaw {
-    pub(crate) fn read(
-        input: &mut impl IdbBufRead,
-        compress: IDBSectionCompression,
-    ) -> Result<Self> {
-        match compress {
-            IDBSectionCompression::None => Self::read_inner(input),
-            IDBSectionCompression::Zlib => {
-                let mut input =
-                    BufReader::new(flate2::bufread::ZlibDecoder::new(input));
-                Self::read_inner(&mut input)
-            }
-        }
-    }
-
-    fn read_inner(input: &mut impl IdbBufRead) -> Result<Self> {
+    fn read(input: &mut impl IdbBufRead) -> Result<Self> {
         let header_raw = Self::read_header(&mut *input)?;
 
         // TODO verify that is always false?
@@ -526,6 +526,11 @@ impl TILSection {
             IDBSectionCompression::None => {
                 Self::decompress_inner(input, output)
             }
+            IDBSectionCompression::Zstd => {
+                let mut input =
+                    BufReader::new(zstd::Decoder::with_buffer(input)?);
+                Self::decompress_inner(&mut input, output)
+            }
         }
     }
 
@@ -708,11 +713,8 @@ impl TILSection {
 }
 
 impl TILSection {
-    pub fn read(
-        input: &mut impl IdbBufRead,
-        compress: IDBSectionCompression,
-    ) -> Result<TILSection> {
-        let type_info_raw = TILSectionRaw::read(input, compress)?;
+    pub fn read(input: &mut impl IdbBufRead) -> Result<TILSection> {
+        let type_info_raw = TILSectionRaw::read(input)?;
         // TODO check for dups?
         let type_by_name = type_info_raw
             .types

@@ -132,9 +132,9 @@ fn produce_idc_inner<K: IDAKind>(
 
     if _unknown_value1 {
         writeln!(fmt)?;
-        produce_gen_info(fmt, &id0, til)?;
+        produce_gen_info(fmt, id0, til)?;
         writeln!(fmt)?;
-        produce_segments(fmt, &id0)?;
+        produce_segments(fmt, id0)?;
     }
 
     if _unknown_value2 {
@@ -142,21 +142,21 @@ fn produce_idc_inner<K: IDAKind>(
         produce_types(fmt, til)?;
     }
 
-    produce_patches(fmt, &id0, id1)?;
+    produce_patches(fmt, id0, id1)?;
 
     writeln!(fmt)?;
-    produce_bytes_info(fmt, &id0, id1, til)?;
+    produce_bytes_info(fmt, id0, id1, til)?;
 
-    produce_functions(fmt, &id0, til)?;
-
-    writeln!(fmt)?;
-    produce_seg_regs(fmt, &id0, til)?;
+    produce_functions(fmt, id0, til)?;
 
     writeln!(fmt)?;
-    produce_all_patches(fmt, &id0, til)?;
+    produce_seg_regs(fmt, id0, til)?;
 
     writeln!(fmt)?;
-    produce_bytes(fmt, &id0, til)?;
+    produce_all_patches(fmt, id0, til)?;
+
+    writeln!(fmt)?;
+    produce_bytes(fmt, id0, til)?;
 
     writeln!(fmt)?;
     writeln!(fmt, "// End of file.")?;
@@ -705,7 +705,7 @@ fn produce_bytes_info<K: IDAKind>(
                         writeln!(
                             fmt,
                             "  create_struct({address:#X}, -1, \"{}\");",
-                            core::str::from_utf8(&struct_name).unwrap()
+                            core::str::from_utf8(struct_name).unwrap()
                         )?;
                     }
                     ByteDataType::Align => {
@@ -903,20 +903,16 @@ fn count_tails<I>(bytes: &mut Peekable<I>) -> usize
 where
     I: Iterator<Item = (u64, ByteInfoRaw)>,
 {
-    let mut num = 1;
-    while let Some(_) =
-        bytes.next_if(|(_a, b)| b.byte_type() == ByteRawType::Tail)
-    {
-        num += 1;
-    }
-    return num;
+    bytes
+        .take_while(|(_a, b)| b.byte_type() == ByteRawType::Tail)
+        .count()
 }
 
 fn count_element<I>(bytes: &mut Peekable<I>, ele_len: usize) -> Result<usize>
 where
     I: Iterator<Item = (u64, ByteInfoRaw)>,
 {
-    let len = count_tails(bytes);
+    let len = count_tails(bytes) + 1;
     ensure!(len >= ele_len, "Expected more ID1 Tail entries");
     ensure!(
         len % ele_len == 0,

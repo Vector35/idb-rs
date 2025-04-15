@@ -335,13 +335,11 @@ pub struct SegmentIter<'a, K: IDAKind> {
     pub(crate) segments: &'a [ID0Entry],
 }
 
-impl<'a, K: IDAKind> Iterator for SegmentIter<'a, K> {
+impl<K: IDAKind> Iterator for SegmentIter<'_, K> {
     type Item = Result<Segment<K>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let Some((current, rest)) = self.segments.split_first() else {
-            return None;
-        };
+        let (current, rest) = self.segments.split_first()?;
         self.segments = rest;
         Some(Segment::read(&current.value))
     }

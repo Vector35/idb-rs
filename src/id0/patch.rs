@@ -38,7 +38,7 @@ impl<'a, K: IDAKind> SegmentPatchOriginalValueIter<'a, K> {
 
         let original_value = K::Usize::from_le_bytes(&entry.value[..])
             .ok_or_else(|| anyhow!("Invalid id1 entry original value"))?;
-        let original_byte = AsPrimitive::<u8>::as_(original_value) & 0xFF;
+        let original_byte = AsPrimitive::<u8>::as_(original_value);
 
         // TODO the rest of the value is unknown, it's not the id1 flag...
         let _rest_byte = original_value >> 8;
