@@ -1249,8 +1249,10 @@ mod test {
         };
 
         let _: Vec<_> = id0.segments().unwrap().map(Result::unwrap).collect();
-        let _: Vec<_> =
-            id0.loader_name().unwrap().map(Result::unwrap).collect();
+        let _: Option<Vec<_>> = id0
+            .loader_name()
+            .unwrap()
+            .map(|iter| iter.map(Result::unwrap).collect());
         let root_info_idx = id0.root_info_node().unwrap();
         let _: Vec<_> = id0
             .root_info(root_info_idx)

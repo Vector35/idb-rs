@@ -213,10 +213,12 @@ impl<K: IDAKind> ID0Section<K> {
     }
 
     /// read the `$ loader name` entries of the database
-    pub fn loader_name(&self) -> Result<impl Iterator<Item = Result<&str>>> {
-        let entry = self
-            .get("N$ loader name")
-            .ok_or_else(|| anyhow!("Unable to find entry loader name"))?;
+    pub fn loader_name(
+        &self,
+    ) -> Result<Option<impl Iterator<Item = Result<&str>>>> {
+        let Some(entry) = self.get("N$ loader name") else {
+            return Ok(None);
+        };
         // TODO check that keys are 0 => plugin, or 1 => format
         let key: Vec<u8> = b"."
             .iter()
@@ -224,10 +226,9 @@ impl<K: IDAKind> ID0Section<K> {
             .chain(b"S")
             .copied()
             .collect();
-        Ok(self
-            .sub_values(key)
-            .iter()
-            .map(|e| Ok(CStr::from_bytes_with_nul(&e.value)?.to_str()?)))
+        Ok(Some(self.sub_values(key).iter().map(|e| {
+            Ok(CStr::from_bytes_with_nul(&e.value)?.to_str()?)
+        })))
     }
 
     pub fn root_info_node(&self) -> Result<NodeIdx<K>> {
