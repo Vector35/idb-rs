@@ -15,11 +15,13 @@ pub struct Enum {
     pub is_64: bool,
     pub output_format: EnumFormat,
     pub members: Vec<EnumMember>,
+    pub pseudo_members: Vec<Option<IDBString>>,
     pub groups: Option<Vec<u16>>,
     pub storage_size: Option<NonZeroU8>,
     // TODO parse type attributes
     //others: StructMemberRaw,
 }
+
 impl Enum {
     pub(crate) fn new(
         _til: &TILSectionHeader,
@@ -27,6 +29,16 @@ impl Enum {
         fields: &mut impl Iterator<Item = Option<IDBString>>,
         comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> anyhow::Result<Self> {
+        let members = value.members.len();
+        let group_members: Option<usize> = value
+            .groups
+            .as_ref()
+            .map(|groups| groups.iter().map(|count| usize::from(*count)).sum());
+        // if there is more member groups then members, then we have some pseudo
+        // members
+        let pseudo_members_num =
+            group_members.unwrap_or(0).saturating_sub(members);
+
         let members = value
             .members
             .into_iter()
@@ -36,12 +48,14 @@ impl Enum {
                 value: member,
             })
             .collect();
+        let pseudo_members = fields.take(pseudo_members_num).collect();
         Ok(Self {
             is_signed: value.is_signed,
             is_unsigned: value.is_unsigned,
             is_64: value.is_64,
             output_format: value.output_format,
             members,
+            pseudo_members,
             groups: value.groups,
             storage_size: value.storage_size,
         })
