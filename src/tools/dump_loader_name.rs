@@ -14,9 +14,13 @@ pub fn dump_loader_name(args: &Args) -> Result<()> {
 }
 
 fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
-    println!("Loader Name AKA `$ loader name`: ");
-    for name in id0.loader_name()? {
-        println!("  {}", name?);
+    if let Some(loader_name) = id0.loader_name()? {
+        println!("Loader Name AKA `$ loader name`: ");
+        for name in loader_name {
+            println!("  {}", name?);
+        }
+    } else {
+        println!("No Loader Name AKA `$ loader name` present");
     }
 
     Ok(())
