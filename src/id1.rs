@@ -18,10 +18,6 @@ impl<K: IDAKind> SectionReader<K> for ID1Section {
     fn read_section<I: IdbReadKind<K>>(input: &mut I) -> Result<Self> {
         Self::read_inner::<K>(input)
     }
-
-    fn size_from_v910(header: &crate::IDBHeaderV910) -> u64 {
-        header.id1.unwrap().size.get()
-    }
 }
 
 impl ID1Section {

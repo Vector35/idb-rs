@@ -40,10 +40,6 @@ impl<K: IDAKind> SectionReader<K> for ID0Section<K> {
                 entries,
             })
     }
-
-    fn size_from_v910(header: &crate::IDBHeaderV910) -> u64 {
-        header.id0.unwrap().size.get()
-    }
 }
 
 impl<K: IDAKind> ID0Section<K> {

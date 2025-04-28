@@ -1,7 +1,7 @@
 use crate::id0::{Compiler, Id0TilOrd};
 use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
 use crate::til::{flag, TILMacro, TILTypeInfo, TILTypeInfoRaw};
-use crate::{IDAKind, IDBSectionCompression, IDBString, SectionReader};
+use crate::{IDAKind, IDBString, SectionReader};
 use anyhow::{anyhow, ensure, Result};
 use serde::{Deserialize, Serialize};
 
@@ -29,10 +29,6 @@ impl<K: IDAKind> SectionReader<K> for TILSection {
         input: &mut I,
     ) -> Result<Self> {
         Self::read(input)
-    }
-
-    fn size_from_v910(header: &crate::IDBHeaderV910) -> u64 {
-        header.til.unwrap().size.get()
     }
 }
 
@@ -512,33 +508,11 @@ impl TILSectionRaw {
 }
 
 impl TILSection {
-    pub fn decompress(
-        input: &mut impl IdbBufRead,
-        output: &mut impl Write,
-        compress: IDBSectionCompression,
+    pub fn decompress<I: IdbBufRead, O: Write>(
+        mut input: I,
+        mut output: O,
     ) -> Result<()> {
-        match compress {
-            IDBSectionCompression::Zlib => {
-                let mut input =
-                    BufReader::new(flate2::bufread::ZlibDecoder::new(input));
-                Self::decompress_inner(&mut input, output)
-            }
-            IDBSectionCompression::None => {
-                Self::decompress_inner(input, output)
-            }
-            IDBSectionCompression::Zstd => {
-                let mut input =
-                    BufReader::new(zstd::Decoder::with_buffer(input)?);
-                Self::decompress_inner(&mut input, output)
-            }
-        }
-    }
-
-    fn decompress_inner(
-        input: &mut impl IdbBufRead,
-        output: &mut impl Write,
-    ) -> Result<()> {
-        let mut header = TILSectionRaw::read_header(&mut *input)?;
+        let mut header = TILSectionRaw::read_header(&mut input)?;
         let og_flags = header.flags;
         // disable the zip flag
         header.flags.set_zip(false);
@@ -566,20 +540,20 @@ impl TILSection {
             size_enum: header.size_enum.map(NonZeroU8::get).unwrap_or(0),
             def_align,
         };
-        header1.serialize(&mut *output)?;
-        crate::write_string_len_u8(&mut *output, &header.description)?;
-        crate::write_string_len_u8(&mut *output, &header.dependencies)?;
-        bincode::serialize_into(&mut *output, &header2)?;
+        header1.serialize(&mut output)?;
+        crate::write_string_len_u8(&mut output, &header.description)?;
+        crate::write_string_len_u8(&mut output, &header.dependencies)?;
+        bincode::serialize_into(&mut output, &header2)?;
         if header.flags.have_extended_sizeof_info() {
             let sizes = header.extended_sizeof_info.unwrap();
-            bincode::serialize_into(&mut *output, &sizes.size_short.get())?;
-            bincode::serialize_into(&mut *output, &sizes.size_long.get())?;
-            bincode::serialize_into(&mut *output, &sizes.size_long_long.get())?;
+            bincode::serialize_into(&mut output, &sizes.size_short.get())?;
+            bincode::serialize_into(&mut output, &sizes.size_long.get())?;
+            bincode::serialize_into(&mut output, &sizes.size_long_long.get())?;
         }
 
         if header.flags.has_size_long_double() {
             bincode::serialize_into(
-                &mut *output,
+                &mut output,
                 &header.size_long_double.unwrap().get(),
             )?;
         }
@@ -587,7 +561,7 @@ impl TILSection {
         if let Some(def_align) = header.def_align {
             let value = def_align.trailing_zeros() + 1;
             bincode::serialize_into(
-                &mut *output,
+                &mut output,
                 &u8::try_from(value).unwrap(),
             )?;
         }
@@ -595,28 +569,28 @@ impl TILSection {
         // if not zipped, just copy the rest of the data, there is no possible zip
         // block inside a bucket
         if !og_flags.is_zip() {
-            std::io::copy(&mut *input, output)?;
+            std::io::copy(&mut input, &mut output)?;
             return Ok(());
         }
 
         // symbols
-        Self::decompress_bucket(&mut *input, &mut *output)?;
+        Self::decompress_bucket(&mut input, &mut output)?;
         let _type_ordinal_numbers: Option<u32> = header
             .flags
             .has_ordinal()
             .then(|| -> Result<u32> {
                 let result = input.read_u32()?;
-                bincode::serialize_into(&mut *output, &result)?;
+                bincode::serialize_into(&mut output, &result)?;
                 Ok(result)
             })
             .transpose()?;
         // types
-        Self::decompress_bucket(&mut *input, &mut *output)?;
+        Self::decompress_bucket(&mut input, &mut output)?;
         // macros
         header
             .flags
             .has_macro_table()
-            .then(|| Self::decompress_bucket(&mut *input, &mut *output))
+            .then(|| Self::decompress_bucket(&mut input, &mut output))
             .transpose()?;
 
         Ok(())
