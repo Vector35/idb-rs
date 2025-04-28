@@ -134,6 +134,7 @@ pub(crate) struct TILTypeInfoRaw {
 }
 
 impl TILTypeInfoRaw {
+    // InnerRef fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x707120
     pub(crate) fn read(
         input: &mut impl IdbBufRead,
         til: &TILSectionHeader,

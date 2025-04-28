@@ -1,30 +1,13 @@
-use std::fs::File;
-use std::io::BufReader;
-
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 use idb_rs::til::section::{TILSection, TILSectionExtendedSizeofInfo};
 use idb_rs::til::TILMacro;
-use idb_rs::IDAVariants;
 
-use crate::{Args, FileType};
+use crate::{get_til_section, Args};
 
 pub fn dump_til(args: &Args) -> Result<()> {
     // parse the til sector/file
-    let til = match args.input_type() {
-        FileType::Idb => {
-            let input = BufReader::new(File::open(&args.input)?);
-            let mut parser = IDAVariants::new(input)?;
-            let til_offset = parser.til_section_offset().ok_or_else(|| {
-                anyhow!("IDB file don't contains a TIL sector")
-            })?;
-            parser.read_til_section(til_offset)?
-        }
-        FileType::Til => {
-            let mut input = BufReader::new(File::open(&args.input)?);
-            idb_rs::til::section::TILSection::read(&mut input)?
-        }
-    };
+    let til = get_til_section(args)?;
 
     // this deconstruction is to changes on TILSection to force a review on this code
     let TILSection {

@@ -14,10 +14,6 @@ impl<K: IDAKind> SectionReader<K> for NamSection {
     fn read_section<I: IdbReadKind<K>>(input: &mut I) -> Result<Self> {
         Self::read_inner::<K>(input)
     }
-
-    fn size_from_v910(header: &crate::IDBHeaderV910) -> u64 {
-        header.nam.unwrap().size.get()
-    }
 }
 
 impl NamSection {
