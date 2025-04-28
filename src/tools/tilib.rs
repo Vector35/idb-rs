@@ -11,13 +11,12 @@ use idb_rs::til::{
     Basic, SClass, TILTypeInfo, TILTypeSizeSolver, Type, TypeVariant, Typeref,
     TyperefType, TyperefValue,
 };
-use idb_rs::{IDAVariants, IDBString};
+use idb_rs::IDBString;
 
-use std::fs::File;
-use std::io::{BufReader, Result, Write};
+use std::io::{Result, Write};
 use std::num::NonZeroU8;
 
-use crate::{Args, FileType, PrintTilibArgs};
+use crate::{get_til_section, Args, PrintTilibArgs};
 
 const AFTER_SPACE: &str = "";
 const INDENT_LEN: usize = 2;
@@ -29,22 +28,8 @@ pub fn tilib_print(
     args: &Args,
     tilib_args: &PrintTilibArgs,
 ) -> anyhow::Result<()> {
-    // parse the id0 sector/file
-    let mut input = BufReader::new(File::open(&args.input)?);
-    match args.input_type() {
-        FileType::Til => {
-            let section = TILSection::read(&mut input)?;
-            print_til_section(std::io::stdout(), &section, tilib_args)?;
-        }
-        FileType::Idb => {
-            let mut parser = IDAVariants::new(input)?;
-            let til_offset = parser.til_section_offset().ok_or_else(|| {
-                anyhow::anyhow!("IDB file don't contains a TIL sector")
-            })?;
-            let section = parser.read_til_section(til_offset)?;
-            print_til_section(std::io::stdout(), &section, tilib_args)?;
-        }
-    }
+    let til = get_til_section(args)?;
+    print_til_section(std::io::stdout(), &til, tilib_args)?;
     Ok(())
 }
 
