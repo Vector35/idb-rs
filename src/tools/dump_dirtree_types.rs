@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufReader, Cursor};
+use std::io::{BufRead, BufReader, Cursor, Seek};
 
 use crate::{dump_dirtree::print_dirtree, Args, FileType};
 
@@ -7,7 +7,7 @@ use anyhow::{anyhow, Result};
 
 use idb_rs::id0::{ID0Section, Id0TilOrd};
 use idb_rs::til::section::TILSection;
-use idb_rs::{IDAKind, IDAVariants};
+use idb_rs::{IDAKind, IDAVariants, IDBFormat};
 
 pub fn dump_dirtree_types(args: &Args) -> Result<()> {
     // parse the id0 sector/file
@@ -15,60 +15,41 @@ pub fn dump_dirtree_types(args: &Args) -> Result<()> {
         FileType::Til => Err(anyhow!("TIL don't contains any ID0 data")),
         FileType::Idb => {
             let mut input = BufReader::new(File::open(&args.input)?);
-            let format = idb_rs::IDBFormat::identify_file(&mut input)?;
-            let (id0, til) = match format {
-                idb_rs::IDBFormat::SeparatedSections(sections) => {
-                    let id0 =
-                        idb_rs::read_id0_separated(&mut input, &sections)?
-                            .ok_or_else(|| {
-                                anyhow!("IDB file don't contains a ID0 sector")
-                            })?;
-                    let til =
-                        idb_rs::read_til_separated(&mut input, &sections)?
-                            .ok_or_else(|| {
-                                anyhow!("IDB file don't contains a TIL sector")
-                            })?;
-                    (id0, til)
+            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
+            match format {
+                idb_rs::IDBFormats::Separated(sections) => {
+                    dump_sections(sections, input)
                 }
-                idb_rs::IDBFormat::InlineSections(
-                    idb_rs::InlineSectionsTypes::Uncompressed(sections),
-                ) => {
-                    let id0 = idb_rs::read_id0_inlined(&mut input, &sections)?
-                        .ok_or_else(|| {
-                            anyhow!("IDB file don't contains a ID0 sector")
-                        })?;
-                    let til = idb_rs::read_til_inlined(&mut input, &sections)?
-                        .ok_or_else(|| {
-                            anyhow!("IDB file don't contains a TIL sector")
-                        })?;
-                    (id0, til)
+                idb_rs::IDBFormats::InlineUncompressed(sections) => {
+                    dump_sections(sections, input)
                 }
-                idb_rs::IDBFormat::InlineSections(
-                    idb_rs::InlineSectionsTypes::Compressed(compressed),
-                ) => {
+                idb_rs::IDBFormats::InlineCompressed(compressed) => {
                     let mut decompressed = Vec::new();
                     let sections = compressed
                         .decompress_into_memory(input, &mut decompressed)
                         .unwrap();
-                    let mut decompressed = Cursor::new(decompressed);
-                    let id0 =
-                        idb_rs::read_id0_inlined(&mut decompressed, &sections)?
-                            .ok_or_else(|| {
-                                anyhow!("IDB file don't contains a ID0 sector")
-                            })?;
-                    let til =
-                        idb_rs::read_til_inlined(&mut decompressed, &sections)?
-                            .ok_or_else(|| {
-                                anyhow!("IDB file don't contains a TIL sector")
-                            })?;
-                    (id0, til)
+                    dump_sections(sections, Cursor::new(decompressed))
                 }
-            };
-            match id0 {
-                IDAVariants::IDA32(id0) => dump(&id0, &til),
-                IDAVariants::IDA64(id0) => dump(&id0, &til),
             }
         }
+    }
+}
+
+fn dump_sections<R: IDBFormat, I: BufRead + Seek>(
+    read: R,
+    mut input: I,
+) -> Result<()> {
+    let id0_location = read
+        .id0_location()
+        .ok_or_else(|| anyhow!("IDB file don't contains a ID0 sector"))?;
+    let til_location = read
+        .til_location()
+        .ok_or_else(|| anyhow!("IDB file don't contains a TIL sector"))?;
+    let id0 = read.read_id0(&mut input, id0_location)?;
+    let til = read.read_til(&mut input, til_location)?;
+    match id0 {
+        IDAVariants::IDA32(id0) => dump(&id0, &til),
+        IDAVariants::IDA64(id0) => dump(&id0, &til),
     }
 }
 
