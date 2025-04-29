@@ -581,7 +581,7 @@ impl SeparatedSection {
             (0, 1..) => Ok(None),
             #[cfg(feature = "restrictive")]
             (0, 1..) => {
-                Err(anywho!("Missing section offset with set checksum"))
+                Err(anyhow!("Missing section offset with set checksum"))
             }
         }
     }
