@@ -18,132 +18,70 @@ use crate::nam::NamSection;
 use crate::til::section::TILSection;
 use anyhow::{anyhow, ensure, Result};
 
-pub fn identify_idb_file<I: Read>(input: &mut I) -> Result<IDBFormat> {
-    IDBFormat::identify_file(input)
-}
+trait Sealed {}
 
-/// Decode the ID0 section from the IDB file.
-pub fn read_id0_separated<I: BufRead + Seek>(
-    input: &mut I,
-    sections: &SeparatedSections,
-) -> Result<Option<ID0SectionVariants>> {
-    sections
-        .id0_section_offset()
-        .map(|offset| sections.read_id0(input, offset))
-        .transpose()
-}
-
-pub fn read_id0_inlined<I: BufRead + Seek>(
-    input: &mut I,
-    sections: &InlineUnCompressedSections,
-) -> Result<Option<ID0SectionVariants>> {
-    sections
-        .id0_section_location()
-        .map(|location| sections.read_id0(input, location))
-        .transpose()
-}
-
-pub fn read_id1_separated<I: BufRead + Seek>(
-    input: &mut I,
-    sections: &SeparatedSections,
-) -> Result<Option<ID1Section>> {
-    sections
-        .id1_section_offset()
-        .map(|offset| sections.read_id1(input, offset))
-        .transpose()
-}
-
-pub fn read_id1_inlined<I: BufRead + Seek>(
-    input: &mut I,
-    sections: &InlineUnCompressedSections,
-) -> Result<Option<ID1Section>> {
-    sections
-        .id1_section_location()
-        .map(|location| sections.read_id1(input, location))
-        .transpose()
-}
-
-pub fn read_nam_separated<I: BufRead + Seek>(
-    input: &mut I,
-    sections: &SeparatedSections,
-) -> Result<Option<NamSection>> {
-    sections
-        .nam_section_offset()
-        .map(|offset| sections.read_nam(input, offset))
-        .transpose()
-}
-
-pub fn read_nam_inlined<I: BufRead + Seek>(
-    input: &mut I,
-    sections: &InlineUnCompressedSections,
-) -> Result<Option<NamSection>> {
-    sections
-        .nam_section_location()
-        .map(|location| sections.read_nam(input, location))
-        .transpose()
-}
-
-pub fn read_til_separated<I: BufRead + Seek>(
-    input: &mut I,
-    sections: &SeparatedSections,
-) -> Result<Option<TILSection>> {
-    sections
-        .til_section_offset()
-        .map(|offset| sections.read_til(input, offset))
-        .transpose()
-}
-
-pub fn read_til_inlined<I: BufRead + Seek>(
-    input: &mut I,
-    sections: &InlineUnCompressedSections,
-) -> Result<Option<TILSection>> {
-    sections
-        .til_section_location()
-        .map(|location| sections.read_til(input, location))
-        .transpose()
-}
-
-pub fn decompress_til_separated<I: BufRead + Seek, O: Write>(
-    input: &mut I,
-    output: &mut O,
-    sections: &SeparatedSections,
-) -> Result<Option<()>> {
-    sections
-        .til_section_offset()
-        .map(|offset| sections.decompress_til(input, output, offset))
-        .transpose()
-}
-
-pub fn decompress_til_inlined<I: BufRead + Seek, O: Write>(
-    input: &mut I,
-    output: &mut O,
-    sections: &InlineUnCompressedSections,
-) -> Result<Option<()>> {
-    sections
-        .til_section_location()
-        .map(|location| sections.decompress_til(input, output, location))
-        .transpose()
+pub fn identify_idb_file<I: Read>(input: &mut I) -> Result<IDBFormats> {
+    IDBFormats::identify_file(input)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum IDBFormat {
+pub enum IDBFormats {
     /// File that contains sections, the header will contain the header offsets,
     /// and each section will be preceded by a section-header containing a size
     /// and a compression (if any), each section can be accessed separately
     /// and can always be read directly from the IDB file.
-    SeparatedSections(SeparatedSections),
+    Separated(SeparatedSections),
     /// File that's fully inlined, version v9.1 started using this by
     /// default.
     ///
     /// The file have a header and the rest is composed of sections one after
     /// the other with no section-header.
-    ///
-    /// It can be compressed or not, because the section sizes are for the
-    /// decompressed sections, if compressed, it's necessary to
-    /// decompress the data into a separated file or ram memory before accessing
-    /// the section data.
-    InlineSections(InlineSectionsTypes),
+    InlineUncompressed(InlineUnCompressedSections),
+    /// The same as InlineSectionsCompressed, but compressed, because
+    /// the section sizes are for the decompressed sections,
+    /// it's necessary to decompress the data into a separated file or ram
+    /// memory before accessing the section data.
+    InlineCompressed(InlineCompressedSections),
 }
+
+#[allow(private_bounds)]
+pub trait IDBFormat: Sealed {
+    type ID0Location;
+    type ID1Location;
+    type NamLocation;
+    type TilLocation;
+    fn id0_location(&self) -> Option<Self::ID0Location>;
+    fn read_id0<I: BufRead + Seek>(
+        &self,
+        input: I,
+        id0: Self::ID0Location,
+    ) -> Result<ID0SectionVariants>;
+    fn id1_location(&self) -> Option<Self::ID1Location>;
+    fn read_id1<I: BufRead + Seek>(
+        &self,
+        input: I,
+        id1: Self::ID1Location,
+    ) -> Result<ID1Section>;
+    fn nam_location(&self) -> Option<Self::NamLocation>;
+    fn read_nam<I: BufRead + Seek>(
+        &self,
+        input: I,
+        nam: Self::NamLocation,
+    ) -> Result<NamSection>;
+    fn til_location(&self) -> Option<Self::TilLocation>;
+    fn read_til<I: BufRead + Seek>(
+        &self,
+        input: I,
+        til: Self::TilLocation,
+    ) -> Result<TILSection>;
+    fn decompress_til<I: BufRead + Seek, O: Write>(
+        &self,
+        input: I,
+        output: O,
+        til: Self::TilLocation,
+    ) -> Result<()>;
+}
+impl<S: IDBFormat> Sealed for S {}
 
 #[derive(Deserialize)]
 struct IDBHeaderRaw {
@@ -154,7 +92,7 @@ struct IDBHeaderRaw {
     version: IDBVersion,
 }
 
-impl IDBFormat {
+impl IDBFormats {
     /// Identify the file IDB format.
     pub fn identify_file<I: Read>(input: &mut I) -> Result<Self> {
         // InnerRef fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x77eef0
@@ -172,15 +110,82 @@ impl IDBFormat {
             IDBVersion::PreV910(
                 version @ (IDBSeparatedVersion::V1 | IDBSeparatedVersion::V4),
             ) => SeparatedSections::read_v1_4(raw, version, input)
-                .map(IDBFormat::SeparatedSections),
+                .map(IDBFormats::Separated),
             IDBVersion::PreV910(
                 version @ (IDBSeparatedVersion::V5 | IDBSeparatedVersion::V6),
             ) => SeparatedSections::read_v5_6(raw, version, input)
-                .map(IDBFormat::SeparatedSections),
+                .map(IDBFormats::Separated),
             IDBVersion::PostV910(version @ IDBInlineVersion::V910) => {
-                InlineSectionsTypes::read_910(raw, version, input)
-                    .map(IDBFormat::InlineSections)
+                Self::read_post_910(raw, version, input)
             }
+        }
+    }
+
+    fn read_post_910(
+        raw_header: IDBHeaderRaw,
+        version: IDBInlineVersion,
+        input: impl Read,
+    ) -> Result<Self> {
+        #[derive(Debug, Deserialize)]
+        struct V910Raw {
+            compression: u8,
+            sectors: [u64; 6],
+            _unk1: u64,
+            _unk2: u32,
+            md5: [u8; 16],
+        }
+        let raw: V910Raw = bincode::deserialize_from(input)?;
+
+        let header_size =
+            u64::from_le_bytes(raw_header.offsets[0..8].try_into().unwrap());
+        let data_start =
+            u64::from_le_bytes(raw_header.offsets[8..16].try_into().unwrap());
+        let _unk3 =
+            u32::from_le_bytes(raw_header.offsets[16..20].try_into().unwrap());
+        // TODO find meanings of _unk3, seeing value 0 and 2
+        #[cfg(feature = "restrictive")]
+        {
+            ensure!(raw._unk1 == 0);
+            ensure!(raw._unk2 == 0);
+        }
+
+        ensure!(header_size != 0);
+        // TODO ensure other header data is empty based on the header_size
+
+        let data_start = NonZeroU64::new(data_start)
+            .ok_or_else(|| anyhow!("Invalid Header data start offset"))?;
+
+        // InnerRef fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x077f669 read
+        // InnerRef fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x077ebf9 unpack
+        let sectors: [Option<_>; 6] = raw.sectors.map(NonZeroU64::new);
+
+        let compression = IDBSectionCompression::from_raw(raw.compression)
+            .map_err(|_| anyhow!("Invalid V910 header compression"))?;
+
+        let sections = InlineSections {
+            magic: raw_header.magic,
+            version,
+            id0_size: sectors[0],
+            id1_size: sectors[1],
+            nam_size: sectors[2],
+            id2_size: sectors[3],
+            til_size: sectors[4],
+            seg_size: sectors[5],
+            md5: raw.md5,
+        };
+
+        match compression {
+            Some(compression) => {
+                Ok(Self::InlineCompressed(InlineCompressedSections {
+                    compression,
+                    data_start,
+                    sections,
+                }))
+            }
+            None => Ok(Self::InlineUncompressed(InlineUnCompressedSections {
+                data_start: data_start.get(),
+                sections,
+            })),
         }
     }
 }
@@ -198,19 +203,19 @@ pub struct SeparatedSections {
 }
 
 impl SeparatedSections {
-    pub fn id0_section_offset(&self) -> Option<ID0Offset> {
+    pub fn id0_location(&self) -> Option<ID0Offset> {
         self.id0.map(|x| x.offset.get()).map(ID0Offset)
     }
 
-    pub fn id1_section_offset(&self) -> Option<ID1Offset> {
+    pub fn id1_location(&self) -> Option<ID1Offset> {
         self.id1.map(|x| x.offset.get()).map(ID1Offset)
     }
 
-    pub fn nam_section_offset(&self) -> Option<NamOffset> {
+    pub fn nam_location(&self) -> Option<NamOffset> {
         self.nam.map(|x| x.offset.get()).map(NamOffset)
     }
 
-    pub fn til_section_offset(&self) -> Option<TILOffset> {
+    pub fn til_location(&self) -> Option<TILOffset> {
         self.til.map(|x| x.offset.get()).map(TILOffset)
     }
 
@@ -317,6 +322,70 @@ impl SeparatedSections {
                 TILSection::decompress(&mut input, output)
             }
         }
+    }
+}
+
+impl IDBFormat for SeparatedSections {
+    type ID0Location = ID0Offset;
+    type ID1Location = ID1Offset;
+    type NamLocation = NamOffset;
+    type TilLocation = TILOffset;
+
+    fn id0_location(&self) -> Option<Self::ID0Location> {
+        self.id0_location()
+    }
+
+    fn read_id0<I: IdbBufRead + Seek>(
+        &self,
+        input: I,
+        id0: Self::ID0Location,
+    ) -> Result<ID0SectionVariants> {
+        self.read_id0(input, id0)
+    }
+
+    fn id1_location(&self) -> Option<Self::ID1Location> {
+        self.id1_location()
+    }
+
+    fn read_id1<I: IdbBufRead + Seek>(
+        &self,
+        input: I,
+        id1: Self::ID1Location,
+    ) -> Result<ID1Section> {
+        self.read_id1(input, id1)
+    }
+
+    fn nam_location(&self) -> Option<Self::NamLocation> {
+        self.nam_location()
+    }
+
+    fn read_nam<I: IdbBufRead + Seek>(
+        &self,
+        input: I,
+        nam: Self::NamLocation,
+    ) -> Result<NamSection> {
+        self.read_nam(input, nam)
+    }
+
+    fn til_location(&self) -> Option<Self::TilLocation> {
+        self.til_location()
+    }
+
+    fn read_til<I: IdbBufRead + Seek>(
+        &self,
+        input: I,
+        til: Self::TilLocation,
+    ) -> Result<TILSection> {
+        self.read_til(input, til)
+    }
+
+    fn decompress_til<I: BufRead + Seek, O: Write>(
+        &self,
+        input: I,
+        output: O,
+        til: Self::TilLocation,
+    ) -> Result<()> {
+        self.decompress_til(input, output, til)
     }
 }
 
@@ -524,78 +593,6 @@ pub enum InlineSectionsTypes {
     Uncompressed(InlineUnCompressedSections),
 }
 
-impl InlineSectionsTypes {
-    fn read_910(
-        raw_header: IDBHeaderRaw,
-        version: IDBInlineVersion,
-        input: impl Read,
-    ) -> Result<Self> {
-        #[derive(Debug, Deserialize)]
-        struct V910Raw {
-            compression: u8,
-            sectors: [u64; 6],
-            _unk1: u64,
-            _unk2: u32,
-            md5: [u8; 16],
-        }
-        let raw: V910Raw = bincode::deserialize_from(input)?;
-
-        let header_size =
-            u64::from_le_bytes(raw_header.offsets[0..8].try_into().unwrap());
-        let data_start =
-            u64::from_le_bytes(raw_header.offsets[8..16].try_into().unwrap());
-        let _unk3 =
-            u32::from_le_bytes(raw_header.offsets[16..20].try_into().unwrap());
-        // TODO find meanings of _unk3, seeing value 0 and 2
-        #[cfg(feature = "restrictive")]
-        {
-            ensure!(raw._unk1 == 0);
-            ensure!(raw._unk2 == 0);
-        }
-
-        ensure!(header_size != 0);
-        // TODO ensure other header data is empty based on the header_size
-
-        let data_start = NonZeroU64::new(data_start)
-            .ok_or_else(|| anyhow!("Invalid Header data start offset"))?;
-
-        // InnerRef fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x077f669 read
-        // InnerRef fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x077ebf9 unpack
-        let sectors: [Option<_>; 6] = raw.sectors.map(NonZeroU64::new);
-
-        let compression = IDBSectionCompression::from_raw(raw.compression)
-            .map_err(|_| anyhow!("Invalid V910 header compression"))?;
-
-        let sections = InlineSections {
-            magic: raw_header.magic,
-            version,
-            id0_size: sectors[0],
-            id1_size: sectors[1],
-            nam_size: sectors[2],
-            id2_size: sectors[3],
-            til_size: sectors[4],
-            seg_size: sectors[5],
-            md5: raw.md5,
-        };
-
-        match compression {
-            Some(compression) => {
-                Ok(InlineSectionsTypes::Compressed(InlineCompressedSections {
-                    compression,
-                    data_start,
-                    sections,
-                }))
-            }
-            None => Ok(InlineSectionsTypes::Uncompressed(
-                InlineUnCompressedSections {
-                    data_start: data_start.get(),
-                    sections,
-                },
-            )),
-        }
-    }
-}
-
 #[allow(private_bounds)]
 pub trait IDBLocation: Sealed {
     fn idb_offset(&self) -> u64;
@@ -685,7 +682,7 @@ pub struct InlineUnCompressedSections {
 }
 
 impl InlineUnCompressedSections {
-    pub fn id0_section_location(&self) -> Option<ID0Location> {
+    pub fn id0_location(&self) -> Option<ID0Location> {
         self.sections.id0_size.map(|size| {
             ID0Location(
                 self.sections.id0_offset_raw(self.data_start),
@@ -694,7 +691,7 @@ impl InlineUnCompressedSections {
         })
     }
 
-    pub fn id1_section_location(&self) -> Option<ID1Location> {
+    pub fn id1_location(&self) -> Option<ID1Location> {
         self.sections.id1_size.map(|size| {
             ID1Location(
                 self.sections.id1_offset_raw(self.data_start),
@@ -703,7 +700,7 @@ impl InlineUnCompressedSections {
         })
     }
 
-    pub fn nam_section_location(&self) -> Option<NamLocation> {
+    pub fn nam_location(&self) -> Option<NamLocation> {
         self.sections.nam_size.map(|size| {
             NamLocation(
                 self.sections.nam_offset_raw(self.data_start),
@@ -712,7 +709,7 @@ impl InlineUnCompressedSections {
         })
     }
 
-    pub fn til_section_location(&self) -> Option<TILLocation> {
+    pub fn til_location(&self) -> Option<TILLocation> {
         self.sections.til_size.map(|size| {
             TILLocation(
                 self.sections.til_offset_raw(self.data_start),
@@ -793,6 +790,70 @@ impl InlineUnCompressedSections {
     }
 }
 
+impl IDBFormat for InlineUnCompressedSections {
+    type ID0Location = ID0Location;
+    type ID1Location = ID1Location;
+    type NamLocation = NamLocation;
+    type TilLocation = TILLocation;
+
+    fn id0_location(&self) -> Option<Self::ID0Location> {
+        self.id0_location()
+    }
+
+    fn read_id0<I: BufRead + Seek>(
+        &self,
+        input: I,
+        id0: Self::ID0Location,
+    ) -> Result<ID0SectionVariants> {
+        self.read_id0(input, id0)
+    }
+
+    fn id1_location(&self) -> Option<Self::ID1Location> {
+        self.id1_location()
+    }
+
+    fn read_id1<I: BufRead + Seek>(
+        &self,
+        input: I,
+        id1: Self::ID1Location,
+    ) -> Result<ID1Section> {
+        self.read_id1(input, id1)
+    }
+
+    fn nam_location(&self) -> Option<Self::NamLocation> {
+        self.nam_location()
+    }
+
+    fn read_nam<I: BufRead + Seek>(
+        &self,
+        input: I,
+        nam: Self::NamLocation,
+    ) -> Result<NamSection> {
+        self.read_nam(input, nam)
+    }
+
+    fn til_location(&self) -> Option<Self::TilLocation> {
+        self.til_location()
+    }
+
+    fn read_til<I: BufRead + Seek>(
+        &self,
+        input: I,
+        til: Self::TilLocation,
+    ) -> Result<TILSection> {
+        self.read_til(input, til)
+    }
+
+    fn decompress_til<I: BufRead + Seek, O: Write>(
+        &self,
+        input: I,
+        output: O,
+        til: Self::TilLocation,
+    ) -> Result<()> {
+        self.decompress_til(input, output, til)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct InlineSections {
     magic: IDBMagic,
@@ -847,7 +908,6 @@ impl InlineSections {
     }
 }
 
-trait Sealed {}
 #[allow(private_bounds)]
 pub trait IDBOffset: Sealed {
     fn idb_offset(&self) -> u64;
@@ -1417,17 +1477,15 @@ mod test {
         let filename = filename.as_ref();
         println!("{}", filename.to_str().unwrap());
         let mut input = BufReader::new(File::open(&filename).unwrap());
-        let format = IDBFormat::identify_file(&mut input).unwrap();
+        let format = IDBFormats::identify_file(&mut input).unwrap();
         match format {
-            IDBFormat::SeparatedSections(sections) => {
+            IDBFormats::Separated(sections) => {
                 parse_idb_separated(&mut input, &sections)
             }
-            IDBFormat::InlineSections(InlineSectionsTypes::Uncompressed(
-                sections,
-            )) => parse_idb_inlined(&mut input, &sections),
-            IDBFormat::InlineSections(InlineSectionsTypes::Compressed(
-                compressed,
-            )) => {
+            IDBFormats::InlineUncompressed(sections) => {
+                parse_idb_inlined(&mut input, &sections)
+            }
+            IDBFormats::InlineCompressed(compressed) => {
                 let mut decompressed = Vec::new();
                 let sections = compressed
                     .decompress_into_memory(input, &mut decompressed)
@@ -1443,20 +1501,20 @@ mod test {
     {
         // parse sectors
         let id0 = sections
-            .read_id0(&mut *input, sections.id0_section_offset().unwrap())
+            .read_id0(&mut *input, sections.id0_location().unwrap())
             .unwrap();
         let til = sections
-            .til_section_offset()
+            .til_location()
             .map(|til| sections.read_til(&mut *input, til).unwrap());
         match id0 {
             IDAVariants::IDA32(id0_32) => parse_idb_data(&id0_32, til.as_ref()),
             IDAVariants::IDA64(id0_64) => parse_idb_data(&id0_64, til.as_ref()),
         }
         let _ = sections
-            .id1_section_offset()
+            .id1_location()
             .map(|idx| sections.read_id1(&mut *input, idx));
         let _ = sections
-            .nam_section_offset()
+            .nam_location()
             .map(|idx| sections.read_nam(&mut *input, idx));
     }
 
@@ -1468,20 +1526,20 @@ mod test {
     {
         // parse sectors
         let id0 = sections
-            .read_id0(&mut *input, sections.id0_section_location().unwrap())
+            .read_id0(&mut *input, sections.id0_location().unwrap())
             .unwrap();
         let til = sections
-            .til_section_location()
+            .til_location()
             .map(|til| sections.read_til(&mut *input, til).unwrap());
         match id0 {
             IDAVariants::IDA32(id0_32) => parse_idb_data(&id0_32, til.as_ref()),
             IDAVariants::IDA64(id0_64) => parse_idb_data(&id0_64, til.as_ref()),
         }
         let _ = sections
-            .id1_section_location()
+            .id1_location()
             .map(|idx| sections.read_id1(&mut *input, idx));
         let _ = sections
-            .nam_section_location()
+            .nam_location()
             .map(|idx| sections.read_nam(&mut *input, idx));
     }
 
