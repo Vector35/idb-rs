@@ -235,7 +235,10 @@ fn get_id1_section_fmt<F: IDBFormat, I: BufRead + Seek>(
 
 fn get_til_section(args: &Args) -> Result<TILSection> {
     match args.input_type() {
-        FileType::Til => Err(anyhow!("TIL don't contains any ID0 data")),
+        FileType::Til => {
+            let mut input = BufReader::new(File::open(&args.input)?);
+            TILSection::read(&mut input)
+        }
         FileType::Idb => {
             let mut input = BufReader::new(File::open(&args.input)?);
             let format = idb_rs::IDBFormats::identify_file(&mut input)?;

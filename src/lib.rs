@@ -1,3 +1,4 @@
+// TODO fix dependencies not being solved
 #![forbid(unsafe_code)]
 pub mod id0;
 pub mod id1;
@@ -107,14 +108,10 @@ impl IDBFormats {
         // TODO associate header.version and magic?
         match raw.version {
             // TODO what about 2 and 3?
-            IDBVersion::PreV910(
-                version @ (IDBSeparatedVersion::V1 | IDBSeparatedVersion::V4),
-            ) => SeparatedSections::read_v1_4(raw, version, input)
-                .map(IDBFormats::Separated),
-            IDBVersion::PreV910(
-                version @ (IDBSeparatedVersion::V5 | IDBSeparatedVersion::V6),
-            ) => SeparatedSections::read_v5_6(raw, version, input)
-                .map(IDBFormats::Separated),
+            IDBVersion::PreV910(version) => {
+                SeparatedSections::read(raw, version, input)
+                    .map(IDBFormats::Separated)
+            }
             IDBVersion::PostV910(version @ IDBInlineVersion::V910) => {
                 Self::read_post_910(raw, version, input)
             }
@@ -473,6 +470,21 @@ fn get_section(offset: u64, checksum: u32) -> Result<Option<SeparatedSection>> {
 }
 
 impl SeparatedSections {
+    fn read<I: Read>(
+        raw_header: IDBHeaderRaw,
+        version: IDBSeparatedVersion,
+        input: I,
+    ) -> Result<Self> {
+        match version {
+            IDBSeparatedVersion::V1 | IDBSeparatedVersion::V4 => {
+                SeparatedSections::read_v1_4(raw_header, version, input)
+            }
+            IDBSeparatedVersion::V5 | IDBSeparatedVersion::V6 => {
+                SeparatedSections::read_v5_6(raw_header, version, input)
+            }
+        }
+    }
+
     fn read_v1_4<I: Read>(
         raw_header: IDBHeaderRaw,
         version: IDBSeparatedVersion,
