@@ -795,29 +795,40 @@ fn print_til_type_array(
     if til_type.is_const {
         write!(fmt, "const ")?;
     }
+    let mut lens = vec![til_array.nelem];
+    // in an Array of Array the nelem is printed from outside in.
+    let mut current_array = til_array;
+    while let TypeVariant::Array(inner_array) =
+        &current_array.elem_type.type_variant
+    {
+        lens.push(inner_array.nelem);
+        current_array = inner_array;
+    }
     print_til_type(
         fmt,
         &DEFAULT_TILIB_ARGS,
         0,
         section,
         None,
-        &til_array.elem_type,
+        &current_array.elem_type,
         false,
         print_pointer_space,
         true,
     )?;
     if let Some(name) = name {
         // only print space if not a pointer
-        match &til_array.elem_type.type_variant {
+        match &current_array.elem_type.type_variant {
             TypeVariant::Pointer(_) => {}
             _ => write!(fmt, " ")?,
         }
         fmt.write_all(name)?;
     }
-    if let Some(nelem) = til_array.nelem {
-        write!(fmt, "[{nelem}]")?;
-    } else {
-        write!(fmt, "[]")?;
+    for nelem in lens {
+        if let Some(nelem) = nelem {
+            write!(fmt, "[{nelem}]")?;
+        } else {
+            write!(fmt, "[]")?;
+        }
     }
     Ok(())
 }
