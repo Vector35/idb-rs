@@ -6,6 +6,8 @@ pub(crate) mod ida_reader;
 pub mod nam;
 pub mod til;
 
+pub mod api;
+
 use std::borrow::Cow;
 use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
 use std::num::NonZeroU64;
