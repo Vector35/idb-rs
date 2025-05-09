@@ -181,17 +181,41 @@ impl ID1Section {
         }
     }
 
-    pub fn byte_by_address(&self, address: u64) -> Option<ByteInfoRaw> {
-        for seg in &self.seglist {
-            let addr_range =
-                seg.offset..seg.offset + u64::try_from(seg.data.len()).unwrap();
-            if addr_range.contains(&address) {
-                return Some(ByteInfoRaw(
-                    seg.data[usize::try_from(address - seg.offset).unwrap()],
-                ));
+    pub(crate) fn segment_idx_by_address(
+        &self,
+        address: u64,
+    ) -> Result<usize, usize> {
+        self.seglist.binary_search_by(|seg| {
+            let seg_end = seg.offset + u64::try_from(seg.data.len()).unwrap();
+            use std::cmp::Ordering::*;
+            // this segment is
+            match (address.cmp(&seg.offset), address.cmp(&seg_end)) {
+                // after the address, get one prior
+                (Less, Less) => Greater,
+                // contains the addrss, get this one
+                (Equal | Greater, Less) => Equal,
+                // before the address, get one after
+                (Greater, Greater | Equal) => Less,
+                // unreachable if range is valid and not empty segments exist
+                (Less | Equal, Equal) | (Equal, Greater) | (Less, Greater) => {
+                    unreachable!()
+                }
             }
-        }
-        None
+        })
+    }
+
+    pub fn segment_by_address(&self, address: u64) -> Option<&SegInfo> {
+        self.segment_idx_by_address(address)
+            .ok()
+            .map(|idx| &self.seglist[idx])
+    }
+
+    pub fn byte_by_address(&self, address: u64) -> Option<ByteInfoRaw> {
+        self.segment_by_address(address).map(|seg| {
+            ByteInfoRaw(
+                seg.data[usize::try_from(address - seg.offset).unwrap()],
+            )
+        })
     }
 
     pub fn all_bytes(
@@ -210,6 +234,13 @@ pub struct SegInfo {
     pub offset: u64,
     // data and flags
     data: Vec<u32>,
+}
+
+impl SegInfo {
+    /// len of the segment in bytes
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
