@@ -1,6 +1,15 @@
-use crate::{id1::ID1Section, IDAKind};
+use crate::id1::{ID1Section, SegInfo};
+use crate::IDAKind;
 
 use super::pro::ea_t;
+
+// InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x874c10
+pub(crate) fn rangeset_t_find_range<K: IDAKind>(
+    id1: &ID1Section,
+    address: ea_t<K>,
+) -> Option<&SegInfo> {
+    id1.segment_by_address(address.as_u64())
+}
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x874da0
 pub(crate) fn rangeset_t_next_range<K: IDAKind>(

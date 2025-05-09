@@ -34,3 +34,21 @@ pub fn prev_chunk<K: IDAKind>(
 ) -> Option<ea_t<K>> {
     crate::api::range::rangeset_t_prev_range(id1, address)
 }
+
+// InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4decf0
+pub fn chunk_start<K: IDAKind>(
+    id1: &ID1Section,
+    address: ea_t<K>,
+) -> Option<ea_t<K>> {
+    crate::api::range::rangeset_t_find_range(id1, address)
+        .map(|seg| ea_t::try_from_u64(seg.offset).unwrap())
+}
+
+// InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4dede0
+pub fn chunk_size<K: IDAKind>(
+    id1: &ID1Section,
+    address: ea_t<K>,
+) -> Option<ea_t<K>> {
+    crate::api::range::rangeset_t_find_range(id1, address)
+        .map(|seg| ea_t::try_from_u64(seg.len().try_into().unwrap()).unwrap())
+}
