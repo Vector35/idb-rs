@@ -33,6 +33,7 @@ pub fn tilib_print(
     Ok(())
 }
 
+// InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x413360
 fn print_til_section(
     mut fmt: impl Write,
     section: &TILSection,
@@ -911,6 +912,9 @@ fn print_til_type_struct(
     }
     if til_struct.is_cppobj() {
         write!(fmt, " __cppobj")?;
+    }
+    if til_struct.is_fixed {
+        write!(fmt, " __fixed")?;
     }
     if til_struct.is_vft {
         write!(fmt, " /*VFT*/")?;
