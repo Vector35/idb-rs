@@ -24,6 +24,8 @@ pub struct Struct {
     is_cppobj: bool,
     /// Virtual function table
     pub is_vft: bool,
+    /// struct have a fixed len
+    pub is_fixed: bool,
     /// Unknown meaning, use at your own risk
     pub is_uknown_8: bool,
     /// Alignment in bytes
@@ -60,6 +62,7 @@ impl Struct {
             is_msstruct: value.is_msstruct,
             is_cppobj: value.is_cppobj,
             is_vft: value.is_vft,
+            is_fixed: value.is_fixed,
             is_uknown_8: value.is_unknown_8,
             alignment: value.alignment,
         })
@@ -87,6 +90,8 @@ pub(crate) struct StructRaw {
     is_cppobj: bool,
     /// Virtual function table
     is_vft: bool,
+    /// struct have a fixed len
+    is_fixed: bool,
     // TODO unknown meaning
     is_unknown_8: bool,
     /// Alignment in bytes
@@ -202,6 +207,7 @@ impl StructRaw {
             is_msstruct,
             is_cppobj,
             is_vft,
+            is_fixed,
             is_unknown_8,
             alignment,
         }))
