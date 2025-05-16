@@ -1680,7 +1680,7 @@ pub enum IDAVariants<I32, I64> {
     IDA64(I64),
 }
 
-pub trait IDAKind: std::fmt::Debug + Clone + Copy {
+pub trait IDAKind: std::fmt::Debug + Clone + Copy + 'static {
     type Usize: IDAUsize;
 }
 
@@ -1707,7 +1707,6 @@ pub trait IDAUsize:
     + num_traits::WrappingSub
     + num_traits::FromBytes
     + num_traits::ToBytes
-    + num_traits::ToBytes
     + num_traits::AsPrimitive<u8>
     + num_traits::AsPrimitive<u16>
     + num_traits::AsPrimitive<u32>
@@ -1725,7 +1724,11 @@ pub trait IDAUsize:
     + TryFrom<usize, Error: std::fmt::Debug>
     + Into<i128>
 {
-    type Isize: num_traits::Signed + Into<i64> + Copy;
+    type Isize: num_traits::Signed
+        + Into<i64>
+        + Copy
+        + num_traits::FromPrimitive
+        + num_traits::AsPrimitive<Self>;
     const BYTES: u8;
 
     /// helper fo call into u64

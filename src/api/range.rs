@@ -67,8 +67,7 @@ pub(crate) fn rangeset_t_prev_addr<K: IDAKind>(
                 // first addr of this segment, the prev segment have the addr
                 Equal => segment_idx
                     .checked_sub(1)
-                    .map(|idx| id1.seglist.get(idx))
-                    .flatten()
+                    .and_then(|idx| id1.seglist.get(idx))
                     .map(|seg| {
                         let segment_len = u64::try_from(seg.len()).unwrap();
                         ea_t::try_from_u64((seg.offset + segment_len) - 1)
@@ -81,8 +80,7 @@ pub(crate) fn rangeset_t_prev_addr<K: IDAKind>(
         Err(next_segment_idx) => {
             let segment = next_segment_idx
                 .checked_sub(1)
-                .map(|idx| id1.seglist.get(idx))
-                .flatten()?;
+                .and_then(|idx| id1.seglist.get(idx))?;
             let segment_len = u64::try_from(segment.len()).unwrap();
             Some(
                 ea_t::try_from_u64((segment.offset + segment_len) - 1).unwrap(),
