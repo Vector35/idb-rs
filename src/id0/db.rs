@@ -55,19 +55,43 @@ impl<K: IDAKind> ID0Section<K> {
         self.entries.binary_search_by_key(&key, |b| &b.key[..])
     }
 
-    fn binary_search_end(&self, key: impl AsRef<[u8]>) -> Result<usize, usize> {
+    pub(crate) fn binary_search_end(&self, key: impl AsRef<[u8]>) -> usize {
         let key = key.as_ref();
-        self.entries.binary_search_by(|b| {
-            if b.key.starts_with(key) {
-                std::cmp::Ordering::Less
-            } else {
-                b.key.as_slice().cmp(key)
-            }
-        })
+        self.entries
+            .binary_search_by(|b| {
+                if b.key.starts_with(key) {
+                    std::cmp::Ordering::Less
+                } else {
+                    b.key.as_slice().cmp(key)
+                }
+            })
+            .unwrap_or_else(|idx| idx)
     }
 
     pub fn get(&self, key: impl AsRef<[u8]>) -> Option<&ID0Entry> {
         self.binary_search(key).ok().map(|i| &self.entries[i])
+    }
+
+    pub fn binary_search_any_of(
+        &self,
+        subkey: impl AsRef<[u8]>,
+    ) -> Result<usize, usize> {
+        let subkey = subkey.as_ref();
+        self.entries.binary_search_by(|entry| {
+            let len = subkey.len().min(entry.key.len());
+            entry.key[..len].cmp(&subkey[..len])
+        })
+    }
+
+    pub fn range_start(&self, key: impl AsRef<[u8]>) -> Option<&ID0Entry> {
+        let key = key.as_ref();
+        match self.binary_search(key) {
+            Ok(idx) => Some(&self.entries[idx]),
+            Err(idx) => {
+                let entry = &self.entries[idx];
+                (entry.key.starts_with(key)).then_some(entry)
+            }
+        }
     }
 
     /// search for entries in this inclusive range
@@ -77,7 +101,7 @@ impl<K: IDAKind> ID0Section<K> {
         end: impl AsRef<[u8]>,
     ) -> &[ID0Entry] {
         let start = self.binary_search(start).unwrap_or_else(|start| start);
-        let end = self.binary_search_end(end).unwrap_or_else(|end| end);
+        let end = self.binary_search_end(end);
 
         &self.entries[start..end]
     }
@@ -85,7 +109,7 @@ impl<K: IDAKind> ID0Section<K> {
     pub fn sub_values(&self, key: impl AsRef<[u8]>) -> &[ID0Entry] {
         let key = key.as_ref();
         let start = self.binary_search(key).unwrap_or_else(|start| start);
-        let end = self.binary_search_end(key).unwrap_or_else(|end| end);
+        let end = self.binary_search_end(key);
 
         &self.entries[start..end]
     }
@@ -234,6 +258,20 @@ impl<K: IDAKind> ID0Section<K> {
         let node_idx = K::Usize::from_le_bytes(&entry.value[..])
             .ok_or_else(|| anyhow!("Invalid Root Node key value"))?;
         Ok(NodeIdx(node_idx))
+    }
+
+    pub fn image_base(&self, idx: NodeIdx<K>) -> Result<ImageBase<K>> {
+        let key: Vec<u8> = key_from_address_tag_sup::<K>(
+            idx.0,
+            flag::netnode::nn_res::ARRAY_ALT_TAG,
+            // pure poetry...
+            <<K::Usize as IDAUsize>::Isize as num_traits::FromPrimitive>::from_i32(flag::ridx::RIDX_ALT_IMAGEBASE.as_()).unwrap().as_(),
+        )
+        .collect();
+        self.get(&key)
+            .and_then(|entry| K::Usize::from_le_bytes(&entry.value[..]))
+            .map(ImageBase)
+            .ok_or_else(|| anyhow!("Unable to parse imagebase value"))
     }
 
     /// read the `Root Node` entries of the database
@@ -528,7 +566,7 @@ impl<K: IDAKind> ID0Section<K> {
         let address = address.as_u64();
         let key: Vec<u8> = key_from_address::<K>(address).collect();
         let start = self.binary_search(&key).unwrap_or_else(|start| start);
-        let end = self.binary_search_end(&key).unwrap_or_else(|end| end);
+        let end = self.binary_search_end(&key);
 
         let entries = &self.entries[start..end];
         Ok(AddressInfoIterAt::new(AddressInfoIter::new(entries, self)))
