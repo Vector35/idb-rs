@@ -241,6 +241,14 @@ impl SegInfo {
     pub fn len(&self) -> usize {
         self.data.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    pub(crate) fn get(&self, idx: usize) -> Option<ByteInfoRaw> {
+        self.data.get(idx).copied().map(ByteInfoRaw)
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

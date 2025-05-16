@@ -1,6 +1,10 @@
-use crate::id1::ID1Section;
+use crate::api::netnode::netnode_supstr;
+use crate::api::pro::nodeidx_t;
+use crate::id0::{self, ID0Section};
+use crate::id1::{ByteInfoRaw, ByteRawType, ID1Section};
 use crate::IDAKind;
 
+use super::nalt::ea2node;
 use super::pro::{asize_t, ea_t};
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4de950
@@ -51,6 +55,36 @@ pub fn chunk_size<K: IDAKind>(
 ) -> Option<ea_t<K>> {
     crate::api::range::rangeset_t_find_range(id1, address)
         .map(|seg| ea_t::try_from_u64(seg.len().try_into().unwrap()).unwrap())
+}
+
+// InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4e2230
+pub fn prev_not_tail<K: IDAKind>(
+    id1: &ID1Section,
+    ea: ea_t<K>,
+) -> Option<ea_t<K>> {
+    let ea = ea.as_u64();
+    let (seg, seg_idx) = match id1.segment_idx_by_address(ea) {
+        // if the segment that contains the offset,
+        Ok(idx) if id1.seglist[idx].offset == ea => {
+            let seg = &id1.seglist[idx];
+            (seg, ea - seg.offset)
+        }
+        // if first address of the segment, or part of any segment,
+        // use the previous segment
+        Ok(idx) | Err(idx) => {
+            let seg = id1.seglist.get(idx.checked_sub(1)?)?;
+            (seg, seg.offset + seg.len() as u64)
+        }
+    };
+    (0..seg_idx)
+        .rev()
+        .find(|idx| {
+            seg.get(usize::try_from(*idx).unwrap()).unwrap().byte_type()
+                != ByteRawType::Tail
+        })
+        .map(|idx| {
+            ea_t::from_raw(K::Usize::try_from(seg.offset + idx).unwrap())
+        })
 }
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x665b50
@@ -105,4 +139,40 @@ pub fn find_free_chunk<K: IDAKind>(
         }
     }
     None
+}
+// InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4e0f10
+pub fn get_flags_ex<K: IDAKind>(
+    id1: &ID1Section,
+    ea: ea_t<K>,
+    _how: u32,
+) -> Option<ByteInfoRaw> {
+    id1.byte_by_address(ea.as_u64())
+}
+
+pub fn get_flags<K: IDAKind>(
+    id1: &ID1Section,
+    ea: ea_t<K>,
+) -> Option<ByteInfoRaw> {
+    get_flags_ex(id1, ea, 0)
+}
+
+// InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4e2b60
+pub fn get_cmt<'a, K: IDAKind>(
+    id0: &'a ID0Section<K>,
+    id1: &ID1Section,
+    ea: ea_t<K>,
+    rptble: bool,
+) -> Option<&'a [u8]> {
+    let byte = get_flags_ex(id1, ea, 0)?;
+    let ea = match byte.byte_type() {
+        ByteRawType::Tail => prev_not_tail(id1, ea)?,
+        _ => ea,
+    };
+    let node = ea2node(id0, ea)?;
+    netnode_supstr(
+        id0,
+        node,
+        nodeidx_t::from_u32(rptble.into()),
+        id0::flag::netnode::nn_res::ARRAY_SUP_TAG.into(),
+    )
 }
