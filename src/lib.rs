@@ -6,6 +6,7 @@ pub(crate) mod ida_reader;
 pub mod nam;
 pub mod til;
 
+#[allow(non_camel_case_types)]
 pub mod api;
 
 use std::borrow::Cow;
@@ -1724,11 +1725,26 @@ pub trait IDAUsize:
     + TryFrom<usize, Error: std::fmt::Debug>
     + Into<i128>
 {
-    type Isize: num_traits::Signed
-        + Into<i64>
+    type Isize: Sized
+        + Sync
+        + Send
+        + 'static
         + Copy
+        + Clone
+        + std::fmt::Debug
+        + std::fmt::Display
+        + std::fmt::LowerHex
+        + std::fmt::UpperHex
+        + PartialEq
+        + Eq
+        + PartialOrd
+        + Ord
+        + Into<i64>
+        + core::hash::Hash
         + num_traits::FromPrimitive
-        + num_traits::AsPrimitive<Self>;
+        + num_traits::AsPrimitive<Self>
+        + num_traits::Signed;
+
     const BYTES: u8;
 
     /// helper fo call into u64

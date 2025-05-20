@@ -3,6 +3,13 @@ use crate::IDAKind;
 
 use super::pro::ea_t;
 
+pub enum range_kind_t {
+    RANGE_KIND_UNKNOWN,
+    RANGE_KIND_FUNC,
+    RANGE_KIND_SEGMENT,
+    RANGE_KIND_HIDDEN_RANGE,
+}
+
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x874c10
 pub(crate) fn rangeset_t_find_range<K: IDAKind>(
     id1: &ID1Section,

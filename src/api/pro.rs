@@ -1,7 +1,6 @@
-use crate::IDAKind;
+use crate::{IDAKind, IDAUsize};
 
 /// Address is represented as u32/u64 on 32/64bits
-#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct ida_usize_t<K: IDAKind>(K::Usize);
 impl<K: IDAKind> ida_usize_t<K> {
@@ -28,9 +27,25 @@ impl<K: IDAKind> ida_usize_t<K> {
     }
 }
 
-#[allow(non_camel_case_types)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct ida_isize_t<K: IDAKind>(<K::Usize as IDAUsize>::Isize);
+impl<K: IDAKind> ida_isize_t<K> {
+    pub(crate) fn from_raw(value: <K::Usize as IDAUsize>::Isize) -> Self {
+        Self(value)
+    }
+
+    pub(crate) fn as_raw(&self) -> <K::Usize as IDAUsize>::Isize {
+        self.0
+    }
+}
+
 pub type ea_t<K> = ida_usize_t<K>;
-#[allow(non_camel_case_types)]
 pub type asize_t<K> = ida_usize_t<K>;
-#[allow(non_camel_case_types)]
 pub type nodeidx_t<K> = ida_usize_t<K>;
+pub type sel_t<K> = ida_usize_t<K>;
+pub type adiff_t<K> = ida_isize_t<K>;
+pub type uval_t<K> = asize_t<K>;
+pub type sval_t<K> = adiff_t<K>;
+
+pub type bgcolor_t = u32;
+pub const DEFCOLOR: bgcolor_t = u32::MAX;

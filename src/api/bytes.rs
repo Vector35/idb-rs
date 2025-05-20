@@ -4,8 +4,20 @@ use crate::id0::{self, ID0Section};
 use crate::id1::{ByteInfoRaw, ByteRawType, ID1Section};
 use crate::IDAKind;
 
+use std::ops::Range;
+
 use super::nalt::ea2node;
-use super::pro::{asize_t, ea_t};
+use super::pro::{asize_t, bgcolor_t, ea_t};
+
+#[derive(Clone, Debug)]
+pub struct hidden_range_t<'a, K: IDAKind> {
+    pub range: Range<K::Usize>,
+    pub description: &'a [u8],
+    pub header: &'a [u8],
+    pub footer: &'a [u8],
+    pub visible: bool,
+    pub color: bgcolor_t,
+}
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4de950
 pub fn next_addr<K: IDAKind>(

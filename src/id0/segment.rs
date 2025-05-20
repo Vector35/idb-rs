@@ -16,7 +16,7 @@ pub struct Segment<K: IDAKind> {
     pub address: Range<K::Usize>,
     pub name: Option<SegmentNameIdx>,
     // TODO class String
-    _class_id: K::Usize,
+    pub(crate) _class_id: K::Usize,
     /// This field is IDP dependent.
     /// You may keep your information about the segment here
     pub orgbase: K::Usize,
@@ -97,7 +97,6 @@ impl<K: IDAKind> Segment<K> {
             .unwrap();
         let color = cursor.unpack_dd()?;
 
-        // TODO maybe new versions include extra information and thid check fails
         Ok(Segment {
             address: startea..startea + size,
             name,
@@ -124,6 +123,10 @@ impl SegmentFlag {
             return None;
         }
         Some(Self(value as u8))
+    }
+
+    pub(crate) fn into_raw(self) -> u8 {
+        self.0
     }
 
     /// IDP dependent field (IBM PC: if set, ORG directive is not commented out)
@@ -250,6 +253,10 @@ impl SegmentPermission {
         Some(NonZeroU8::new(value as u8).map(Self))
     }
 
+    pub(crate) fn into_raw(self) -> u8 {
+        self.0.get()
+    }
+
     pub fn can_execute(&self) -> bool {
         self.0.get() & 1 != 0
     }
@@ -279,21 +286,17 @@ impl core::fmt::Debug for SegmentPermission {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive)]
+#[repr(u8)]
 pub enum SegmentBitness {
-    S16Bits,
-    S32Bits,
-    S64Bits,
+    S16Bits = 0,
+    S32Bits = 1,
+    S64Bits = 2,
 }
 
 impl SegmentBitness {
     fn from_raw(value: u32) -> Option<Self> {
-        match value {
-            0 => Some(Self::S16Bits),
-            1 => Some(Self::S32Bits),
-            2 => Some(Self::S64Bits),
-            _ => None,
-        }
+        Self::try_from_primitive(value.try_into().ok()?).ok()
     }
 }
 

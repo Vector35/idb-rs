@@ -8,7 +8,6 @@ use crate::{IDAKind, IDAUsize};
 
 use super::pro::nodeidx_t;
 
-#[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug)]
 pub struct netnode<K: IDAKind>(nodeidx_t<K>);
 
