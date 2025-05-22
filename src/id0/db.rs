@@ -8,6 +8,7 @@ use crate::{
     ida_reader::IdbReadKind, IDAUsize, IDAVariants, SectionReader, IDA32, IDA64,
 };
 
+use super::function::*;
 use super::*;
 
 pub type ID0SectionVariants = IDAVariants<ID0Section<IDA32>, ID0Section<IDA64>>;
@@ -66,6 +67,11 @@ impl<K: IDAKind> ID0Section<K> {
                 }
             })
             .unwrap_or_else(|idx| idx)
+    }
+
+    pub fn get_idx(&self, key: impl AsRef<[u8]>) -> Option<Option<K::Usize>> {
+        self.get(key)
+            .map(|entry| K::Usize::from_le_bytes(&entry.value))
     }
 
     pub fn get(&self, key: impl AsRef<[u8]>) -> Option<&ID0Entry> {
@@ -389,23 +395,24 @@ impl<K: IDAKind> ID0Section<K> {
         }
     }
 
+    /// read the `$ funcs` idx entries of the database
+    pub fn funcs_idx(&self) -> Result<Option<FuncIdx<K>>> {
+        funcs_idx(self)
+    }
+
     /// read the `$ funcs` entries of the database
     pub fn functions_and_comments(
         &self,
+        idx: FuncIdx<K>,
     ) -> Result<impl Iterator<Item = Result<FunctionsAndComments<'_, K>>>> {
-        let entry = self
-            .get("N$ funcs")
-            .ok_or_else(|| anyhow!("Unable to find functions"))?;
-        let key: Vec<u8> = b"."
-            .iter()
-            .chain(entry.value.iter().rev())
-            .copied()
-            .collect();
-        let key_len = key.len();
-        Ok(self.sub_values(key).iter().map(move |e| {
-            let key = &e.key[key_len..];
-            FunctionsAndComments::read(key, &e.value)
-        }))
+        functions_and_comments(self, idx)
+    }
+
+    pub fn fchunks(
+        &self,
+        idx: FuncIdx<K>,
+    ) -> Result<impl Iterator<Item = Result<IDBFunction<K>>> + use<'_, K>> {
+        fchunks(self, idx)
     }
 
     // TODO implement $ fixups
