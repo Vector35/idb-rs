@@ -5,7 +5,8 @@ use std::{fs::File, io::Write};
 
 use anyhow::{anyhow, ensure, Context, Result};
 
-use idb_rs::id0::{AddressInfo, Comments, FunctionsAndComments, ID0Section};
+use idb_rs::id0::function::{IDBFunctionNonTail, IDBFunctionTail};
+use idb_rs::id0::{AddressInfo, Comments, ID0Section};
 use idb_rs::id1::{
     ByteData, ByteDataType, ByteInfoRaw, ByteRawType, ByteType, ID1Section,
     InstOpInfo,
@@ -813,11 +814,15 @@ fn produce_functions<K: IDAKind>(
     id0: &ID0Section<K>,
     _til: &TILSection,
 ) -> Result<()> {
-    use idb_rs::id0::FunctionsAndComments::*;
-    use idb_rs::id0::IDBFunctionExtra::*;
+    use idb_rs::id0::function::FunctionsAndComments;
+    use idb_rs::id0::function::FunctionsAndComments::*;
+    use idb_rs::id0::function::IDBFunctionType::*;
 
     // TODO find the InnerRef for this, maybe it's just `$ dirtree/funcs`
-    let id0_funcs = id0.functions_and_comments()?;
+    let Some(idx) = id0.funcs_idx()? else {
+        return Ok(());
+    };
+    let id0_funcs = id0.functions_and_comments(idx)?;
     let funcs: Vec<_> = id0_funcs
         .filter_map(|fun| match fun {
             Err(e) => Some(Err(e)),
@@ -844,21 +849,25 @@ fn produce_functions<K: IDAKind>(
         writeln!(fmt, "  set_func_flags({addr:#X}, {:#x});", fun.flags)?;
         writeln!(fmt, "  apply_type({addr:#X}, \"TODO\");")?;
         match &fun.extra {
-            NonTail { frame } => {
-                writeln!(fmt, "  set_frame_size({addr:#X}, {frame:#X?});")?;
+            Tail(IDBFunctionTail {
+                owner,
+                _unknown4,
+                _unknown5,
+            }) => {
+                writeln!(fmt, "  set_frame_size({addr:#X}, {owner:#X?});")?;
             }
-            Tail {
-                owner: _,
-                refqty,
-                _unknown1,
-                _unknown2,
-            } if *refqty != K::Usize::from(0u8) => {
+            NonTail(IDBFunctionNonTail {
+                frsize,
+                frregs,
+                argsize,
+                ..
+            }) if *frsize != K::Usize::from(0u8) => {
                 writeln!(
                     fmt,
-                    "  set_frame_size({addr:#X}, {refqty:#X}, {_unknown1}, {_unknown2:#X});"
+                    "  set_frame_size({addr:#X}, {frsize:#X}, {frregs}, {argsize:#X});"
                 )?;
             }
-            Tail { .. } => {}
+            NonTail(_) => {}
         }
     }
     writeln!(fmt, "}}")?;
