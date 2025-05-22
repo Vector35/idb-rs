@@ -111,3 +111,19 @@ pub fn get_fchunk<'a, K: IDAKind>(
     }
     Ok(None)
 }
+
+// InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x6903e0
+pub fn get_func<'a, K: IDAKind>(
+    id0: &'a ID0Section<K>,
+    ea: ea_t<K>,
+) -> Result<Option<func_t<'a, K>>> {
+    let Some(func) = get_fchunk(id0, ea)? else {
+        return Ok(None);
+    };
+    if let func_t_type::T2(func_t_2 { owner, referers: _ }) = &func.func_t_type
+    {
+        get_fchunk(id0, *owner)
+    } else {
+        Ok(Some(func))
+    }
+}
