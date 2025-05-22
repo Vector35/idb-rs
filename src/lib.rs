@@ -1585,11 +1585,13 @@ mod test {
             .file_regions(file_regions_idx, version)
             .map(Result::unwrap)
             .collect();
-        let _: Vec<_> = id0
-            .functions_and_comments()
-            .unwrap()
-            .map(Result::unwrap)
-            .collect();
+        if let Some(func_idx) = id0.funcs_idx().unwrap() {
+            let _: Vec<_> = id0
+                .functions_and_comments(func_idx)
+                .unwrap()
+                .map(Result::unwrap)
+                .collect();
+        }
         let _ = id0.entry_points().unwrap();
         let _ = id0.dirtree_bpts().unwrap();
         let _ = id0.dirtree_enums().unwrap();
@@ -1706,6 +1708,7 @@ pub trait IDAUsize:
     + num_traits::NumAssign
     + num_traits::WrappingAdd
     + num_traits::WrappingSub
+    + num_traits::Bounded
     + num_traits::FromBytes
     + num_traits::ToBytes
     + num_traits::AsPrimitive<u8>
@@ -1743,6 +1746,7 @@ pub trait IDAUsize:
         + core::hash::Hash
         + num_traits::FromPrimitive
         + num_traits::AsPrimitive<Self>
+        + num_traits::Bounded
         + num_traits::Signed;
 
     const BYTES: u8;

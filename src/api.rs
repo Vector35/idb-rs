@@ -10,3 +10,8 @@ pub mod segment;
 
 // TODO
 //pub mod loader;
+
+pub enum DataFetch<T> {
+    Qty(u16),
+    Data(Vec<T>),
+}

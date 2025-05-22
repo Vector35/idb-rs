@@ -30,10 +30,12 @@ impl<K: IDAKind> ida_usize_t<K> {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct ida_isize_t<K: IDAKind>(<K::Usize as IDAUsize>::Isize);
 impl<K: IDAKind> ida_isize_t<K> {
+    #[allow(dead_code)]
     pub(crate) fn from_raw(value: <K::Usize as IDAUsize>::Isize) -> Self {
         Self(value)
     }
 
+    #[allow(dead_code)]
     pub(crate) fn as_raw(&self) -> <K::Usize as IDAUsize>::Isize {
         self.0
     }

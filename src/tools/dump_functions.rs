@@ -2,7 +2,8 @@ use crate::{dump_dirtree_funcs::print_function, get_id0_section, Args};
 
 use anyhow::Result;
 
-use idb_rs::id0::{Comments, EntryPoint, ID0Section, Id0AddressKey};
+use idb_rs::id0::function::{EntryPoint, FunctionsAndComments};
+use idb_rs::id0::{Comments, ID0Section, Id0AddressKey};
 use idb_rs::{IDAKind, IDAVariants};
 
 pub fn dump_functions(args: &Args) -> Result<()> {
@@ -15,16 +16,19 @@ pub fn dump_functions(args: &Args) -> Result<()> {
 
 fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
     println!("Function and Comments AKA `$ funcs`: ");
-    for entry in id0.functions_and_comments()? {
+    let Some(idx) = id0.funcs_idx()? else {
+        return Ok(());
+    };
+    for entry in id0.functions_and_comments(idx)? {
         match entry? {
-            idb_rs::id0::FunctionsAndComments::Name => {}
-            idb_rs::id0::FunctionsAndComments::Function(idbfunction) => {
+            FunctionsAndComments::Name => {}
+            FunctionsAndComments::Function(idbfunction) => {
                 println!(
                     "  Function at {:#x}..{:#x}",
                     idbfunction.address.start, idbfunction.address.end
                 );
             }
-            idb_rs::id0::FunctionsAndComments::Comment {
+            FunctionsAndComments::Comment {
                 address,
                 comment: Comments::Comment(value),
             } => {
@@ -33,7 +37,7 @@ fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
                     String::from_utf8_lossy(value)
                 );
             }
-            idb_rs::id0::FunctionsAndComments::Comment {
+            FunctionsAndComments::Comment {
                 address,
                 comment: Comments::RepeatableComment(value),
             } => {
@@ -43,13 +47,13 @@ fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
                 );
             }
             // There is no Pre/Post comments on funcs
-            idb_rs::id0::FunctionsAndComments::Comment {
+            FunctionsAndComments::Comment {
                 address: _,
                 comment: Comments::PreComment(_) | Comments::PostComment(_),
             } => {
                 unreachable!()
             }
-            idb_rs::id0::FunctionsAndComments::Unknown { .. } => {}
+            FunctionsAndComments::Unknown { .. } => {}
         }
     }
 
