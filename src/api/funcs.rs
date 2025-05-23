@@ -66,7 +66,7 @@ pub fn get_fchunk<'a, K: IDAKind>(
         if chunk.address.contains(&ea.as_raw()) {
             return Ok(Some(func_t {
                 range: chunk.address,
-                flags: chunk.flags.into(),
+                flags: chunk.flags.into_raw().into(),
                 func_t_type: match chunk.extra {
                     IDBFunctionType::Tail(IDBFunctionTail {
                         owner,

@@ -1,4 +1,3 @@
-// TODO fix dependencies not being solved
 #![forbid(unsafe_code)]
 pub mod id0;
 pub mod id1;
@@ -21,6 +20,42 @@ use crate::id1::ID1Section;
 use crate::nam::NamSection;
 use crate::til::section::TILSection;
 use anyhow::{anyhow, ensure, Result};
+
+#[macro_export]
+macro_rules! flag_to_function {
+    ($flag_name:ident $fun_name:ident $comment:literal) => {
+        #[doc = $comment]
+        pub fn $fun_name(&self) -> bool {
+            self.0 & $flag_name != 0
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! flags_to_struct {
+    ($struct_name:ident, $struct_type:ty, $($flag_name:ident $flag_fun_name:ident $flag_doc:literal),* $(,)?) => {
+        #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+        pub struct $struct_name($struct_type);
+        impl $struct_name {
+            pub(crate) fn from_raw(value: $struct_type) -> Result<Self> {
+                let invalid_bits = value & !(0 $(| $flag_name)*);
+                if invalid_bits != 0 {
+                    Err(anyhow!("Flag {} with invalid bits {invalid_bits:X}", stringify!($struct_name)))
+                } else {
+                    Ok(Self(value))
+                }
+            }
+
+            pub fn into_raw(&self) -> $struct_type {
+                self.0
+            }
+
+            $(
+                $crate::flag_to_function!($flag_name $flag_fun_name $flag_doc);
+            )*
+        }
+    }
+}
 
 trait Sealed {}
 
