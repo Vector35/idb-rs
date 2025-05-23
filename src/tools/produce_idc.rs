@@ -846,7 +846,11 @@ fn produce_functions<K: IDAKind>(
     for fun in funcs {
         let addr = fun.address.start;
         writeln!(fmt, "  add_func({addr:#X}, {:#X});", fun.address.end)?;
-        writeln!(fmt, "  set_func_flags({addr:#X}, {:#x});", fun.flags)?;
+        writeln!(
+            fmt,
+            "  set_func_flags({addr:#X}, {:#x});",
+            fun.flags.into_raw()
+        )?;
         writeln!(fmt, "  apply_type({addr:#X}, \"TODO\");")?;
         match &fun.extra {
             Tail(IDBFunctionTail {
