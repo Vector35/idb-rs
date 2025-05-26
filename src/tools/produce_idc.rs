@@ -13,7 +13,7 @@ use idb_rs::id1::{
 };
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
-use idb_rs::{IDAKind, IDAVariants, IDBFormat};
+use idb_rs::{IDAKind, IDAUsize, IDAVariants, IDBFormat};
 
 use crate::{Args, FileType, ProduceIdcArgs};
 
@@ -370,23 +370,40 @@ fn produce_segments<K: IDAKind>(
             name.as_ref().unwrap_or(&Cow::Borrowed(""))
         )?;
 
-        let seg_class_name = match seg.seg_type {
-            idb_rs::id0::SegmentType::Norm if name.is_some() => {
-                name.as_ref().unwrap().borrow()
-            }
-            idb_rs::id0::SegmentType::Norm => "NORM",
-            idb_rs::id0::SegmentType::Xtrn => "XTRN",
-            idb_rs::id0::SegmentType::Code => "CODE",
-            idb_rs::id0::SegmentType::Data => "DATA",
-            idb_rs::id0::SegmentType::Imp => "IMP",
-            idb_rs::id0::SegmentType::Grp => "GRP",
-            idb_rs::id0::SegmentType::Null => "NULL",
-            idb_rs::id0::SegmentType::Undf => "UNDF",
-            idb_rs::id0::SegmentType::Bss => "BSS",
-            idb_rs::id0::SegmentType::Abssym => "ABSSYM",
-            idb_rs::id0::SegmentType::Comm => "COMM",
-            idb_rs::id0::SegmentType::Imem => "IMEM",
-        };
+        let seg_strings = id0
+            .segment_strings_idx()
+            .map(|idx| id0.segment_strings(idx))
+            .map(|segs| -> Result<Option<_>> {
+                for seg_entry in segs {
+                    let (idx, name) = seg_entry?;
+                    if u64::from(idx.0.get()) == seg._class_id.into_u64() {
+                        return Ok(Some(name));
+                    }
+                }
+                Ok(None)
+            })
+            .transpose()?
+            .flatten()
+            .map(|name| String::from_utf8_lossy(name));
+        let seg_class_name = seg_strings.unwrap_or_else(|| {
+            Cow::Borrowed(match seg.seg_type {
+                idb_rs::id0::SegmentType::Norm if name.is_some() => {
+                    name.as_ref().unwrap().borrow()
+                }
+                idb_rs::id0::SegmentType::Norm => "NORM",
+                idb_rs::id0::SegmentType::Xtrn => "XTRN",
+                idb_rs::id0::SegmentType::Code => "CODE",
+                idb_rs::id0::SegmentType::Data => "DATA",
+                idb_rs::id0::SegmentType::Imp => "IMP",
+                idb_rs::id0::SegmentType::Grp => "GRP",
+                idb_rs::id0::SegmentType::Null => "NULL",
+                idb_rs::id0::SegmentType::Undf => "UNDF",
+                idb_rs::id0::SegmentType::Bss => "BSS",
+                idb_rs::id0::SegmentType::Abssym => "ABSSYM",
+                idb_rs::id0::SegmentType::Comm => "COMM",
+                idb_rs::id0::SegmentType::Imem => "IMEM",
+            })
+        });
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7699
         writeln!(fmt, "  set_segm_class({startea:#X}, \"{seg_class_name}\");")?;
 
