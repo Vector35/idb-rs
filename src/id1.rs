@@ -26,9 +26,10 @@ impl ID1Section {
         const PAGE_SIZE: usize = 0x2000;
         let mut buf = vec![0; PAGE_SIZE];
         input.read_exact(&mut buf[..])?;
-        let (npages, seglist_raw) = Self::read_header::<K>(&mut &buf[..])?;
+        let mut cursor = &buf[..];
+        let (npages, seglist_raw) = Self::read_header::<K>(&mut cursor)?;
         // make sure the unused values a all zero
-        ensure!(buf.iter().all(|b| *b == 0));
+        ensure!(cursor.iter().all(|b| *b == 0));
 
         // sort segments by address
         let mut overlay_check = match &seglist_raw {
