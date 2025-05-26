@@ -16,7 +16,7 @@ pub struct Segment<K: IDAKind> {
     pub address: Range<K::Usize>,
     pub name: Option<SegmentNameIdx>,
     // TODO class String
-    pub(crate) _class_id: K::Usize,
+    pub _class_id: K::Usize,
     /// This field is IDP dependent.
     /// You may keep your information about the segment here
     pub orgbase: K::Usize,
@@ -47,7 +47,7 @@ pub struct Segment<K: IDAKind> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct SegmentNameIdx(pub(crate) NonZeroU32);
+pub struct SegmentNameIdx(pub NonZeroU32);
 
 impl<K: IDAKind> Segment<K> {
     pub(crate) fn read(value: &[u8]) -> Result<Self> {
