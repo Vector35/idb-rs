@@ -168,9 +168,9 @@ impl<K: IDAKind> IDBFunction<K> {
         let flags = IDBFunctionFlag::from_raw(input.unpack_dw()?)?;
 
         let extra = if flags.is_tail() {
-            Self::read_extra_non_tail(&mut input, address.start)?
-        } else {
             Self::read_extra_tail(&mut input, address.start)?
+        } else {
+            Self::read_extra_non_tail(&mut input, address.start)?
         };
 
         // TODO Undestand the InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f9d8 data
