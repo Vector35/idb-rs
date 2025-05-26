@@ -935,9 +935,14 @@ fn count_tails<I>(bytes: &mut Peekable<I>) -> usize
 where
     I: Iterator<Item = (u64, ByteInfoRaw)>,
 {
-    bytes
-        .take_while(|(_a, b)| b.byte_type() == ByteRawType::Tail)
-        .count()
+    let mut acc = 0;
+    while bytes
+        .next_if(|(_a, b)| b.byte_type() == ByteRawType::Tail)
+        .is_some()
+    {
+        acc += 1
+    }
+    acc
 }
 
 fn count_element<I>(bytes: &mut Peekable<I>, ele_len: usize) -> Result<usize>
