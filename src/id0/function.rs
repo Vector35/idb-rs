@@ -162,10 +162,14 @@ impl<'a, K: IDAKind> FunctionsAndComments<'a, K> {
 impl<K: IDAKind> IDBFunction<K> {
     // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x37dd30
     // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f810
+    // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f810
+    // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x68bbc0
     pub(crate) fn read(_key: &[u8], value: &[u8]) -> Result<Self> {
         let mut input = value;
         let address = IdbReadKind::<K>::unpack_address_range(&mut input)?;
-        let flags = IDBFunctionFlag::from_raw(input.unpack_dw()?)?;
+        // Partial flag, the rest is set below
+        let flags_part1 = input.unpack_dw()?;
+        let mut flags = IDBFunctionFlag::from_raw(flags_part1.into())?;
 
         let extra = if flags.is_tail() {
             Self::read_extra_tail(&mut input, address.start)?
@@ -174,6 +178,14 @@ impl<K: IDAKind> IDBFunction<K> {
         };
 
         // TODO Undestand the InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f9d8 data
+        if !input.is_empty() {
+            let flags_full = IdbReadKind::<K>::unpack_usize(&mut input)?;
+            ensure!(
+                flags_full.into_u64() as u16 == flags_part1,
+                "Full flag conflict with partial flag"
+            );
+            flags = IDBFunctionFlag::from_raw(flags_full.into())?;
+        }
         // TODO make sure all the data is parsed
         ensure!(
             input.is_empty(),
@@ -250,7 +262,7 @@ impl<K: IDAKind> IDBFunction<K> {
 }
 
 flags_to_struct!(
-    IDBFunctionFlag, u16,
+    IDBFunctionFlag, u64,
     FUNC_NORET is_no_return "Function doesn't return",
     FUNC_FAR is_far "Far function",
     FUNC_LIB is_lib "Library function",
@@ -261,11 +273,16 @@ flags_to_struct!(
     FUNC_THUNK is_thunk "Thunk (jump) function",
     FUNC_BOTTOMBP is_bot_tombp "BP points to the bottom of the stack frame",
     FUNC_NORET_PENDING is_noret_pending "Function 'non-return' analysis must be performed. This flag is verified upon func_does_return()",
-    FUNC_SP_READY is_sp_ready "SP-analysis has been performed.",
+    FUNC_SP_READY is_sp_ready "SP-analysis has been performed",
     FUNC_FUZZY_SP is_fuzzy_sp "Function changes SP in untraceable way, eg: `and esp, 0FFFFFFF0h`",
     FUNC_PROLOG_OK is_prolog_ok "Prolog analysis has been performed by last SP-analysis",
-    FUNC_PURGED_OK is_purged_ok "'argsize' field has been validated. If this bit is clear and 'argsize' is 0, then we do not known the real number of bytes removed from the stack. This bit is handled by the processor module.",
-    FUNC_TAIL is_tail "This is a function tail. Other bits must be clear (except #FUNC_HIDDEN).",
+    FUNC_PURGED_OK is_purged_ok "'argsize' field has been validated. If this bit is clear and 'argsize' is 0, then we do not known the real number of bytes removed from the stack. This bit is handled by the processor module",
+    FUNC_TAIL is_tail "This is a function tail. Other bits must be clear (except #FUNC_HIDDEN)",
+    FUNC_LUMINA is_lumina "Function info is provided by Lumina",
+    FUNC_OUTLINE is_outline "Outlined code, not a real function",
+    FUNC_REANALYZE is_reanalyze "Function frame changed, request to reanalyze the function after the last insn is analyzed",
+    FUNC_UNWIND is_unwind_handler "function is an exception unwind handler",
+    FUNC_CATCH is_catch_handler "function is an exception catch handler",
 );
 
 #[derive(Clone, Debug)]
