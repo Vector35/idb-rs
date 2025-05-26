@@ -673,47 +673,47 @@ pub mod segs {
 
 pub mod func {
     /// Function doesn't return
-    pub const FUNC_NORET: u16 = 1;
+    pub const FUNC_NORET: u64 = 1;
     /// Far function
-    pub const FUNC_FAR: u16 = 2;
+    pub const FUNC_FAR: u64 = 2;
     /// Library function
-    pub const FUNC_LIB: u16 = 4;
+    pub const FUNC_LIB: u64 = 4;
     /// Static function
-    pub const FUNC_STATICDEF: u16 = 8;
+    pub const FUNC_STATICDEF: u64 = 8;
     /// Function uses frame pointer (BP)
-    pub const FUNC_FRAME: u16 = 16;
+    pub const FUNC_FRAME: u64 = 16;
     /// User has specified far-ness of the function
-    pub const FUNC_USERFAR: u16 = 32;
+    pub const FUNC_USERFAR: u64 = 32;
     /// A hidden function chunk
-    pub const FUNC_HIDDEN: u16 = 64;
+    pub const FUNC_HIDDEN: u64 = 64;
     /// Thunk (jump) function
-    pub const FUNC_THUNK: u16 = 128;
+    pub const FUNC_THUNK: u64 = 128;
     /// BP points to the bottom of the stack frame
-    pub const FUNC_BOTTOMBP: u16 = 256;
+    pub const FUNC_BOTTOMBP: u64 = 256;
     /// Function 'non-return' analysis must be performed. This flag is verified
     /// upon func_does_return()
-    pub const FUNC_NORET_PENDING: u16 = 512;
+    pub const FUNC_NORET_PENDING: u64 = 512;
     /// SP-analysis has been performed.
-    pub const FUNC_SP_READY: u16 = 1024;
+    pub const FUNC_SP_READY: u64 = 1024;
     /// Function changes SP in untraceable way, eg: `and esp, 0FFFFFFF0h`
-    pub const FUNC_FUZZY_SP: u16 = 2048;
+    pub const FUNC_FUZZY_SP: u64 = 2048;
     /// Prolog analysis has been performed by last SP-analysis
-    pub const FUNC_PROLOG_OK: u16 = 4096;
+    pub const FUNC_PROLOG_OK: u64 = 4096;
     /// 'argsize' field has been validated. If this bit is clear and 'argsize'
     /// is 0, then we do not known the real number of bytes removed from
     /// the stack. This bit is handled by the processor module.
-    pub const FUNC_PURGED_OK: u16 = 16384;
+    pub const FUNC_PURGED_OK: u64 = 16384;
     /// This is a function tail. Other bits must be clear (except #FUNC_HIDDEN).
-    pub const FUNC_TAIL: u16 = 32768;
+    pub const FUNC_TAIL: u64 = 32768;
     /// Function info is provided by Lumina.
-    pub const FUNC_LUMINA: u32 = 65536;
+    pub const FUNC_LUMINA: u64 = 65536;
     /// Outlined code, not a real function.
-    pub const FUNC_OUTLINE: u32 = 131072;
+    pub const FUNC_OUTLINE: u64 = 131072;
     /// Function frame changed, request to reanalyze the function after the last
     /// insn is analyzed.
-    pub const FUNC_REANALYZE: u32 = 262144;
+    pub const FUNC_REANALYZE: u64 = 262144;
     /// function is an exception unwind handler
-    pub const FUNC_UNWIND: u32 = 524288;
+    pub const FUNC_UNWIND: u64 = 524288;
     /// function is an exception catch handler
-    pub const FUNC_CATCH: u32 = 1048576;
+    pub const FUNC_CATCH: u64 = 1048576;
 }
