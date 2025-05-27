@@ -1,4 +1,4 @@
-use std::borrow::{Borrow, Cow};
+use std::borrow::Cow;
 use std::io::{BufRead, BufReader, Cursor, Seek};
 use std::iter::Peekable;
 use std::{fs::File, io::Write};
@@ -154,7 +154,7 @@ fn produce_idc_inner<K: IDAKind>(
         writeln!(fmt)?;
         produce_gen_info(fmt, id0, til)?;
         writeln!(fmt)?;
-        produce_segments(fmt, id0)?;
+        produce_segments(fmt, id0, id1)?;
     }
 
     if _unknown_value2 {
@@ -318,6 +318,7 @@ fn produce_gen_info<K: IDAKind>(
 fn produce_segments<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
+    id1: &ID1Section,
 ) -> Result<()> {
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// Information about segmentation")?;
@@ -350,7 +351,11 @@ fn produce_segments<K: IDAKind>(
         // TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb754f
         let comb = 2;
         // TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7544
-        let flags = if false { "|ADDSEG_SPARSE" } else { "" };
+        let flags = if id1.segment_by_address(startea.into_u64()).is_none() {
+            "|ADDSEG_SPARSE"
+        } else {
+            ""
+        };
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb75f4
         // https://docs.hex-rays.com/developer-guide/idc/idc-api-reference/alphabetical-list-of-idc-functions/299
         writeln!(
@@ -385,11 +390,8 @@ fn produce_segments<K: IDAKind>(
             .transpose()?
             .flatten()
             .map(|name| String::from_utf8_lossy(name));
-        let seg_class_name = seg_strings.unwrap_or_else(|| {
+        let seg_class_name = seg_strings.or(name).unwrap_or_else(|| {
             Cow::Borrowed(match seg.seg_type {
-                idb_rs::id0::SegmentType::Norm if name.is_some() => {
-                    name.as_ref().unwrap().borrow()
-                }
                 idb_rs::id0::SegmentType::Norm => "NORM",
                 idb_rs::id0::SegmentType::Xtrn => "XTRN",
                 idb_rs::id0::SegmentType::Code => "CODE",
