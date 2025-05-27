@@ -19,8 +19,8 @@ fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
         return Ok(());
     };
     for entry in id0.segment_strings(idx) {
-        let (_name_idx, name) = entry?;
-        println!("  {}", String::from_utf8_lossy(name));
+        let (name_idx, name) = entry?;
+        println!("  {} {}", name_idx.0, String::from_utf8_lossy(name));
     }
 
     Ok(())
