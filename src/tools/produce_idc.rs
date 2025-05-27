@@ -241,7 +241,7 @@ fn produce_gen_info<K: IDAKind>(
     };
     writeln!(
         fmt,
-        "  set_processor_type(\"{}\", SETPROC_USER);",
+        "  set_processor_type({:?}, SETPROC_USER);",
         String::from_utf8_lossy(cpu)
     )?;
     let compiler = match &info {
@@ -308,7 +308,7 @@ fn produce_gen_info<K: IDAKind>(
     };
     writeln!(fmt, "  set_inf_attr(INF_MAXREF, {max_ref:#X});")?;
     for dep in &til.header.dependencies {
-        writeln!(fmt, "  add_default_til(\"{}\");", dep.as_utf8_lossy())?;
+        writeln!(fmt, "  add_default_til({:?});", dep.as_utf8_lossy())?;
     }
     writeln!(fmt, "}}")?;
 
@@ -371,7 +371,7 @@ fn produce_segments<K: IDAKind>(
             .transpose()?;
         writeln!(
             fmt,
-            "  set_segm_name({startea:#X}, \"{}\");",
+            "  set_segm_name({startea:#X}, {:?});",
             name.as_ref().unwrap_or(&Cow::Borrowed(""))
         )?;
 
@@ -407,11 +407,11 @@ fn produce_segments<K: IDAKind>(
             })
         });
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7699
-        writeln!(fmt, "  set_segm_class({startea:#X}, \"{seg_class_name}\");")?;
+        writeln!(fmt, "  set_segm_class({startea:#X}, {seg_class_name:?});")?;
 
         //// TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb76ac
         //for _def_ref in seg.defsr.iter().filter(|x| **x != 0) {
-        //    writeln!(fmt, "SegDefReg({startea:#X}, \"{seg_class_raw}\", {:X});")?;
+        //    writeln!(fmt, "SegDefReg({startea:#X}, {seg_class_raw:?}, {:X});")?;
         //    todo!();
         //}
 
@@ -512,14 +512,14 @@ fn produce_type_load(
         writeln!(fmt, "  p_fields = \"TODO\";")?;
     }
     if let Some(cmt) = &ty.tinfo.comment {
-        writeln!(fmt, "  p_cmt = \"{}\";", cmt.as_utf8_lossy())?;
+        writeln!(fmt, "  p_cmt = {:?};", cmt.as_utf8_lossy())?;
     }
     if have_fldcmts {
         writeln!(fmt, "  p_fldcmts = \"TODO\";")?;
     }
     let ord = ty.ordinal;
     let name = ty.name.as_utf8_lossy();
-    write!(fmt, "  load_type(ltf, {ord}, \"{name}\", p_type")?;
+    write!(fmt, "  load_type(ltf, {ord}, {name:?}, p_type")?;
     if have_fields {
         write!(fmt, ", p_fields")?;
     }
@@ -565,7 +565,7 @@ fn produce_bytes_info<K: IDAKind>(
             if let AddressInfo::Comment(Comments::Comment(cmt)) = addr_info? {
                 writeln!(
                     fmt,
-                    "  set_cmt({address:#X}, \"{}\", 0);",
+                    "  set_cmt({address:#X}, {:?}, 0);",
                     String::from_utf8_lossy(cmt)
                 )?;
             }
@@ -583,7 +583,7 @@ fn produce_bytes_info<K: IDAKind>(
             for (i, cmt) in pre_cmts.enumerate() {
                 writeln!(
                     fmt,
-                    "  update_extra_cmt({address:#X}, E_PREV + {i:>3}, \"{}\");",
+                    "  update_extra_cmt({address:#X}, E_PREV + {i:>3}, {:?});",
                     String::from_utf8_lossy(cmt?)
                 )?;
             }
@@ -598,7 +598,7 @@ fn produce_bytes_info<K: IDAKind>(
             for (i, cmt) in post_cmts.enumerate() {
                 writeln!(
                     fmt,
-                    "  update_extra_cmt({address:#X}, E_NEXT + {i:>3}, \"{}\");",
+                    "  update_extra_cmt({address:#X}, E_NEXT + {i:>3}, {:?});",
                     String::from_utf8_lossy(cmt?)
                 )?;
             }
@@ -743,7 +743,7 @@ fn produce_bytes_info<K: IDAKind>(
                             .unwrap_or(b"BAD_STRUCT");
                         writeln!(
                             fmt,
-                            "  create_struct({address:#X}, -1, \"{}\");",
+                            "  create_struct({address:#X}, -1, {:?});",
                             core::str::from_utf8(struct_name).unwrap()
                         )?;
                     }
@@ -810,7 +810,7 @@ fn produce_bytes_info<K: IDAKind>(
                 if let AddressInfo::Label(name) = addr_info? {
                     writeln!(
                         fmt,
-                        "  set_name({address:#X}, \"{}\");",
+                        "  set_name({address:#X}, {:?});",
                         String::from_utf8_lossy(name.as_bytes())
                     )?;
                 }
