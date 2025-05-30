@@ -1,7 +1,6 @@
 use crate::{get_id1_section, Args};
 
-use idb_rs::id1::ByteInfo;
-use idb_rs::id1::ByteType;
+use idb_rs::id1::{ByteOp, ByteType};
 
 use anyhow::Result;
 
@@ -18,37 +17,38 @@ pub fn dump_id1(args: &Args) -> Result<()> {
     for (address, byte_info) in id1.all_bytes() {
         print!("{address:08X}: {:#010X} ", byte_info.as_raw());
 
-        let ByteInfo {
-            byte_value: _,
-            has_comment,
-            has_reference,
-            has_comment_ext,
-            has_name,
-            has_dummy_name,
-            exec_flow_from_prev_inst,
-            op_invert_sig,
-            op_bitwise_negation,
-            is_unused_set,
-            byte_type,
-        } = byte_info.decode().unwrap();
-        print_char_if_bool!(has_comment, 'C');
-        print_char_if_bool!(has_comment_ext, 'Ĉ');
-        print_char_if_bool!(has_reference, 'R');
-        print_char_if_bool!(has_name, 'N');
-        print_char_if_bool!(has_dummy_name, 'Ñ');
-        print_char_if_bool!(exec_flow_from_prev_inst, 'X');
-        print_char_if_bool!(op_invert_sig, 'S');
-        print_char_if_bool!(op_bitwise_negation, 'B');
-        print_char_if_bool!(is_unused_set, 'U');
+        print_char_if_bool!(byte_info.has_comment(), 'C');
+        print_char_if_bool!(byte_info.has_comment_ext(), 'Ĉ');
+        print_char_if_bool!(byte_info.has_reference(), 'R');
+        print_char_if_bool!(byte_info.has_name(), 'N');
+        print_char_if_bool!(byte_info.has_dummy_name(), 'Ñ');
+        print_char_if_bool!(byte_info.exec_flow_from_prev_inst(), 'X');
+        print_char_if_bool!(byte_info.op_invert_sig(), 'S');
+        print_char_if_bool!(byte_info.op_bitwise_negation(), 'B');
+        print_char_if_bool!(byte_info.is_unused_set(), 'U');
 
         print!("| ");
+        let byte_type = byte_info.byte_type();
+        fn print_op(op: Option<ByteOp>, n: u8) {
+            if let Some(op) = op {
+                print!("OP{n}({op:?}) ");
+            }
+        }
         match byte_type {
             ByteType::Data(data) => {
                 print!("D ");
-                print!("{data:?} ");
+                print_op(data.operand0()?, 0);
             }
-            ByteType::Code(_code) => print!("C "),
-            ByteType::Tail => print!("T "),
+            ByteType::Code(code) => {
+                print!("C ");
+                print_char_if_bool!(code.is_func_start(), 'F');
+                print_char_if_bool!(code.has_func_reserved_set(), 'R');
+                print_char_if_bool!(code.has_immediate_value(), 'I');
+                print_char_if_bool!(code.has_jump_table(), 'J');
+                print_op(code.operand0()?, 0);
+                print_op(code.operand0()?, 1);
+            }
+            ByteType::Tail(_) => print!("T "),
             ByteType::Unknown => print!("U "),
         }
 

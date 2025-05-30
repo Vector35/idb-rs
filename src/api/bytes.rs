@@ -1,7 +1,7 @@
 use crate::api::netnode::netnode_supstr;
 use crate::api::pro::nodeidx_t;
 use crate::id0::{self, ID0Section};
-use crate::id1::{ByteInfoRaw, ByteRawType, ID1Section};
+use crate::id1::{ByteInfo, ByteType, ID1Section};
 use crate::IDAKind;
 
 use std::ops::Range;
@@ -91,8 +91,10 @@ pub fn prev_not_tail<K: IDAKind>(
     (0..seg_idx)
         .rev()
         .find(|idx| {
-            seg.get(usize::try_from(*idx).unwrap()).unwrap().byte_type()
-                != ByteRawType::Tail
+            !matches!(
+                seg.get(usize::try_from(*idx).unwrap()).unwrap().byte_type(),
+                ByteType::Tail(_)
+            )
         })
         .map(|idx| {
             ea_t::from_raw(K::Usize::try_from(seg.offset + idx).unwrap())
@@ -157,14 +159,14 @@ pub fn get_flags_ex<K: IDAKind>(
     id1: &ID1Section,
     ea: ea_t<K>,
     _how: u32,
-) -> Option<ByteInfoRaw> {
+) -> Option<ByteInfo> {
     id1.byte_by_address(ea.as_u64())
 }
 
 pub fn get_flags<K: IDAKind>(
     id1: &ID1Section,
     ea: ea_t<K>,
-) -> Option<ByteInfoRaw> {
+) -> Option<ByteInfo> {
     get_flags_ex(id1, ea, 0)
 }
 
@@ -177,7 +179,7 @@ pub fn get_cmt<'a, K: IDAKind>(
 ) -> Option<&'a [u8]> {
     let byte = get_flags_ex(id1, ea, 0)?;
     let ea = match byte.byte_type() {
-        ByteRawType::Tail => prev_not_tail(id1, ea)?,
+        ByteType::Tail(_) => prev_not_tail(id1, ea)?,
         _ => ea,
     };
     let node = ea2node(id0, ea)?;

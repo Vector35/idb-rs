@@ -1,9 +1,12 @@
 use anyhow::{anyhow, ensure, Result};
+use flag::flags::inst_info::*;
+use num_traits::ToBytes;
 
 pub mod flag;
 
 use std::ops::{Div, Range, Rem};
 
+use crate::id0::ID0Section;
 use crate::ida_reader::{IdbRead, IdbReadKind};
 use crate::{IDAKind, SectionReader, VaVersion};
 
@@ -211,20 +214,16 @@ impl ID1Section {
             .map(|idx| &self.seglist[idx])
     }
 
-    pub fn byte_by_address(&self, address: u64) -> Option<ByteInfoRaw> {
+    pub fn byte_by_address(&self, address: u64) -> Option<ByteInfo> {
         self.segment_by_address(address).map(|seg| {
-            ByteInfoRaw(
-                seg.data[usize::try_from(address - seg.offset).unwrap()],
-            )
+            ByteInfo(seg.data[usize::try_from(address - seg.offset).unwrap()])
         })
     }
 
-    pub fn all_bytes(
-        &self,
-    ) -> impl Iterator<Item = (u64, ByteInfoRaw)> + use<'_> {
+    pub fn all_bytes(&self) -> impl Iterator<Item = (u64, ByteInfo)> + use<'_> {
         self.seglist.iter().flat_map(|seg| {
             seg.data.iter().enumerate().map(|(i, b)| {
-                (seg.offset + u64::try_from(i).unwrap(), ByteInfoRaw(*b))
+                (seg.offset + u64::try_from(i).unwrap(), ByteInfo(*b))
             })
         })
     }
@@ -247,45 +246,56 @@ impl SegInfo {
         self.data.is_empty()
     }
 
-    pub(crate) fn get(&self, idx: usize) -> Option<ByteInfoRaw> {
-        self.data.get(idx).copied().map(ByteInfoRaw)
+    pub(crate) fn get(&self, idx: usize) -> Option<ByteInfo> {
+        self.data.get(idx).copied().map(ByteInfo)
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub struct ByteInfoRaw(u32);
+// ByteInfo Information
+// ALL:
+// 0x0000_00ff 0b00000000_00000000__00000000_11111111 -> byte data if any
+// 0x0000_0100 0b00000000_00000000__00000001_00000000 -> byte have data
+// 0x0000_0600 0b00000000_00000000__00000110_00000000 -> type of byte
+// 0x0007_f800 0b00000000_00000111__11111000_00000000 -> byte info
+// 0x0008_0000 0b00000000_00001000__00000000_00000000 -> unused bit
+//
+// DATA:
+// 0xf000_0000 0b11110000_00000000__00000000_00000000 -> data type
+// 0x00f0_0000 0b00000000_11110000__00000000_00000000 -> operand 0
+//
+// CODE:
+// 0x00f0_0000 0b00000000_11110000__00000000_00000000 -> operand 0
+// 0x0f00_0000 0b00001111_00000000__00000000_00000000 -> operand 1
+// 0xf000_0000 0b11110000_00000000__00000000_00000000 -> code info
+//
+// CODE with extended info, aka id0 entry:
+// 0x0000_000f__0000_0000 -> operand 2
+// 0x0000_00f0__0000_0000 -> operand 3
+// 0x0000_0f00__0000_0000 -> operand 4
+// 0x0000_f000__0000_0000 -> operand 5
+// 0x000f_0000__0000_0000 -> operand 6
+// 0x00f0_0000__0000_0000 -> operand 7
+// 0xff00_0000__0000_0000 -> TODO ???
+//
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ByteInfo(u32);
 
-impl ByteInfoRaw {
+impl ByteInfo {
     pub fn as_raw(&self) -> u32 {
         self.0
     }
 
-    pub fn byte_raw(&self) -> u8 {
-        (self.0 & flag::byte::MS_VAL) as u8
+    pub fn has_data(&self) -> bool {
+        self.0 & flag::byte::FF_IVL != 0
     }
 
-    pub fn flags_raw(&self) -> u32 {
-        self.0 & !flag::byte::MS_VAL
-    }
-
-    pub fn decode(&self) -> Result<ByteInfo> {
-        ByteInfo::from_raw(*self)
-    }
-
-    pub fn byte_value(&self) -> Option<u8> {
-        (self.0 & flag::byte::FF_IVL != 0)
+    pub fn data(&self) -> Option<u8> {
+        self.has_data()
             .then_some((self.0 & flag::byte::MS_VAL) as u8)
     }
 
-    pub fn byte_type(&self) -> ByteRawType {
-        use flag::flags::byte_type::*;
-        match self.0 & MS_CLS {
-            FF_DATA => ByteRawType::Data,
-            FF_CODE => ByteRawType::Code,
-            FF_TAIL => ByteRawType::Tail,
-            FF_UNK => ByteRawType::Unknown,
-            _ => unreachable!(),
-        }
+    pub fn byte_type(self) -> ByteType {
+        ByteType::from_raw(self)
     }
 
     pub fn has_comment(&self) -> bool {
@@ -315,130 +325,254 @@ impl ByteInfoRaw {
     pub fn is_unused_set(&self) -> bool {
         self.0 & flag::flags::byte_info::FF_UNUSED != 0
     }
+
+    pub fn operand0(&self) -> Result<Option<ByteOp>> {
+        ByteOp::from_raw((self.0 >> 20) as u8 & MS_N_TYPE)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct ByteInfo {
-    pub byte_value: Option<u8>,
-    pub has_comment: bool,
-    pub has_reference: bool,
-    pub has_comment_ext: bool,
-    pub has_name: bool,
-    pub has_dummy_name: bool,
-    pub exec_flow_from_prev_inst: bool,
-    pub op_invert_sig: bool,
-    pub op_bitwise_negation: bool,
-    pub is_unused_set: bool,
-    pub byte_type: ByteType,
+pub struct ByteCode(ByteInfo);
+impl core::ops::Deref for ByteCode {
+    type Target = ByteInfo;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
+impl ByteCode {
+    pub fn operand1(&self) -> Result<Option<ByteOp>> {
+        ByteOp::from_raw((self.0 .0 >> 24) as u8 & MS_N_TYPE)
+    }
 
-impl ByteInfo {
-    fn from_raw(value: ByteInfoRaw) -> Result<Self> {
-        let byte_type = ByteType::from_raw(value)?;
-        Ok(Self {
-            byte_value: value.byte_value(),
-            has_comment: value.has_comment(),
-            has_reference: value.has_reference(),
-            has_comment_ext: value.has_comment_ext(),
-            has_name: value.has_name(),
-            has_dummy_name: value.has_dummy_name(),
-            exec_flow_from_prev_inst: value.exec_flow_from_prev_inst(),
-            op_invert_sig: value.op_invert_sig(),
-            op_bitwise_negation: value.op_bitwise_negation(),
-            is_unused_set: value.is_unused_set(),
-            byte_type,
+    pub fn is_func_start(&self) -> bool {
+        self.0 .0 & flag::flags::code_info::FF_FUNC != 0
+    }
+    pub fn has_func_reserved_set(&self) -> bool {
+        self.0 .0 & flag::flags::code_info::FF_RESERVED != 0
+    }
+    pub fn has_immediate_value(&self) -> bool {
+        self.0 .0 & flag::flags::code_info::FF_IMMD != 0
+    }
+    pub fn has_jump_table(&self) -> bool {
+        self.0 .0 & flag::flags::code_info::FF_JUMP != 0
+    }
+
+    pub fn extend<K: IDAKind>(
+        self,
+        id0: &ID0Section<K>,
+        ea: K::Usize,
+    ) -> Result<ByteExtended<Self>> {
+        let root_info = id0.root_info_node()?;
+        let node_idx = id0.image_base(root_info)?;
+        let node = node_idx.ea2node(ea)?;
+        let node_bytes = node.0.to_be_bytes();
+        let num = K::Usize::from(0x25u8).to_be_bytes();
+        let key: Vec<u8> = b"."
+            .iter()
+            .copied()
+            .chain(node_bytes.as_ref().to_vec())
+            .chain([crate::id0::flag::netnode::nn_res::ARRAY_ALT_TAG])
+            .chain(num.as_ref().to_vec())
+            .collect();
+        let value = id0
+            .get(&key)
+            .map(|entry| {
+                entry
+                    .key
+                    .as_slice()
+                    .try_into()
+                    .map_err(|_| anyhow!("Invalid extended id1 value"))
+                    .map(u32::from_le_bytes)
+            })
+            .transpose()?;
+        Ok(ByteExtended {
+            byte: self,
+            extended: value.unwrap_or(0),
         })
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum ByteRawType {
-    Code,
-    Data,
-    Tail,
-    Unknown,
+pub struct ByteExtended<B> {
+    byte: B,
+    extended: u32,
+}
+
+impl<B> core::ops::Deref for ByteExtended<B> {
+    type Target = B;
+    fn deref(&self) -> &Self::Target {
+        &self.byte
+    }
+}
+
+impl<B> ByteExtended<B> {
+    fn op_tail(&self, n: u8) -> Result<Option<ByteOp>> {
+        ByteOp::from_raw((self.extended >> (n * 4)) as u8 & MS_N_TYPE)
+    }
+
+    pub fn operand2(&self) -> Result<Option<ByteOp>> {
+        self.op_tail(0)
+    }
+
+    pub fn operand3(&self) -> Result<Option<ByteOp>> {
+        self.op_tail(1)
+    }
+
+    pub fn operand4(&self) -> Result<Option<ByteOp>> {
+        self.op_tail(2)
+    }
+
+    pub fn operand5(&self) -> Result<Option<ByteOp>> {
+        self.op_tail(3)
+    }
+
+    pub fn operand6(&self) -> Result<Option<ByteOp>> {
+        self.op_tail(4)
+    }
+
+    pub fn operand7(&self) -> Result<Option<ByteOp>> {
+        self.op_tail(5)
+    }
+}
+
+impl ByteExtended<ByteCode> {
+    pub fn operand_n(&self, n: u8) -> Result<Option<ByteOp>> {
+        match n {
+            0 => self.operand0(),
+            1 => self.operand1(),
+            2 => self.operand2(),
+            3 => self.operand3(),
+            4 => self.operand4(),
+            5 => self.operand5(),
+            6 => self.operand6(),
+            7 => self.operand7(),
+            _ => Err(anyhow!("Invalid operand number")),
+        }
+    }
+
+    pub fn is_invsign(&self, n: u8) -> Result<bool> {
+        if !self.op_invert_sig() {
+            return Ok(false);
+        }
+
+        match n {
+            0 => Ok(self.operand7()? == Some(ByteOp::Hex)),
+            1..8 => Ok(self.operand7()? == Some(ByteOp::Dec)),
+            0xf => {
+                Ok(matches!(self.operand7()?, Some(ByteOp::Hex | ByteOp::Dec)))
+            }
+            #[cfg(feature = "restrictive")]
+            8..0xf | 0x10.. => panic!(),
+            #[cfg(not(feature = "restrictive"))]
+            8..0xf | 0x10.. => Ok(true),
+        }
+    }
+
+    pub fn is_bnot(&self, n: u8) -> Result<bool> {
+        if !self.op_bitwise_negation() {
+            return Ok(false);
+        }
+        match n {
+            0 => Ok(self.operand4()? == Some(ByteOp::Hex)),
+            1..8 => Ok(self.operand4()? == Some(ByteOp::Dec)),
+            0xf => {
+                Ok(matches!(self.operand4()?, Some(ByteOp::Hex | ByteOp::Dec)))
+            }
+            #[cfg(feature = "restrictive")]
+            8..0xf | 0x10.. => panic!(),
+            #[cfg(not(feature = "restrictive"))]
+            8..0xf | 0x10.. => Ok(true),
+        }
+    }
+
+    pub fn forced_operand<'a, K: IDAKind>(
+        &self,
+        id0: &'a ID0Section<K>,
+        ea: K::Usize,
+        n: u8,
+    ) -> Result<Option<&'a [u8]>> {
+        if self.operand_n(n)? != Some(ByteOp::ForceOp) {
+            return Ok(None);
+        }
+        get_forced_operand(id0, ea, n)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ByteData(ByteInfo);
+impl core::ops::Deref for ByteData {
+    type Target = ByteInfo;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl ByteData {
+    pub fn data_type(&self) -> ByteDataType {
+        ByteDataType::from_raw(self.0 .0)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ByteTail(ByteInfo);
+impl core::ops::Deref for ByteTail {
+    type Target = ByteInfo;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+pub trait ID1Byte {
+    fn byte_info(&self) -> &ByteInfo;
+}
+
+impl ID1Byte for ByteData {
+    fn byte_info(&self) -> &ByteInfo {
+        self
+    }
+}
+
+impl ID1Byte for ByteExtended<ByteCode> {
+    fn byte_info(&self) -> &ByteInfo {
+        self
+    }
+}
+
+fn get_default_radix() -> u32 {
+    // TODO
+    16
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ByteType {
-    Code(CodeData),
+    Code(ByteCode),
     Data(ByteData),
-    Tail,
+    Tail(ByteTail),
     Unknown,
 }
 
 impl ByteType {
-    fn from_raw(value: ByteInfoRaw) -> Result<Self> {
-        match value.byte_type() {
-            // TODO find the InnerRef for this decoding, this is not correct
-            ByteRawType::Code => {
-                Ok(ByteType::Code(CodeData::from_raw(value.0.into())?))
-            }
-            ByteRawType::Data => {
-                Ok(ByteType::Data(ByteData::from_raw(value.0)?))
-            }
-            ByteRawType::Tail => Ok(ByteType::Tail),
-            ByteRawType::Unknown => Ok(ByteType::Unknown),
+    pub(crate) fn from_raw(value: ByteInfo) -> ByteType {
+        use flag::flags::byte_type::*;
+        match value.0 & MS_CLS {
+            FF_DATA => ByteType::Data(ByteData(value)),
+            FF_CODE => ByteType::Code(ByteCode(value)),
+            FF_TAIL => ByteType::Tail(ByteTail(value)),
+            FF_UNK => ByteType::Unknown,
+            _ => unreachable!(),
         }
     }
-}
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct CodeData {
-    pub operands: [InstOpInfo; 8],
-    pub is_func_start: bool,
-    pub is_reserved_set: bool,
-    pub is_immediate_value: bool,
-    pub is_jump_table: bool,
-}
-
-impl CodeData {
-    fn from_raw(value: u64) -> Result<Self> {
-        use flag::flags::code_info::*;
-        let is_func_start = value & FF_FUNC as u64 != 0;
-        let is_reserved_set = value & FF_RESERVED as u64 != 0;
-        let is_immediate_value = value & FF_IMMD as u64 != 0;
-        let is_jump_table = value & FF_JUMP as u64 != 0;
-        #[cfg(feature = "restrictive")]
-        if value
-            & (MS_CODE as u64)
-            & !((FF_FUNC | FF_RESERVED | FF_IMMD | FF_JUMP) as u64)
-            != 0
-        {
-            return Err(anyhow!("Invalid id1 CodeData flag"));
-        }
-        let operands = [
-            InstOpInfo::from_raw(value, 7)?,
-            InstOpInfo::from_raw(value, 6)?,
-            InstOpInfo::from_raw(value, 5)?,
-            InstOpInfo::from_raw(value, 4)?,
-            InstOpInfo::from_raw(value, 3)?,
-            InstOpInfo::from_raw(value, 2)?,
-            InstOpInfo::from_raw(value, 1)?,
-            InstOpInfo::from_raw(value, 0)?,
-        ];
-        Ok(CodeData {
-            is_func_start,
-            is_reserved_set,
-            is_immediate_value,
-            is_jump_table,
-            operands,
-        })
+    pub fn is_code(&self) -> bool {
+        matches!(self, Self::Code(_))
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct ByteData {
-    pub data_type: ByteDataType,
-    pub print_info: InstOpInfo,
-}
-
-impl ByteData {
-    fn from_raw(value: u32) -> Result<Self> {
-        Ok(Self {
-            data_type: ByteDataType::from_raw(value),
-            print_info: InstOpInfo::from_raw(value.into(), 0)?,
-        })
+    pub fn is_data(&self) -> bool {
+        matches!(self, Self::Data(_))
+    }
+    pub fn is_tail(&self) -> bool {
+        matches!(self, Self::Tail(_))
+    }
+    pub fn is_unknown(&self) -> bool {
+        matches!(self, Self::Unknown)
     }
 }
 
@@ -488,65 +622,104 @@ impl ByteDataType {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum InstOpInfo {
-    /// Void (unknown)
-    Void,
-    /// Hexadecimal number
+pub enum ByteOp {
+    /// 0x01 Hexadecimal number
     Hex,
-    /// Decimal number
+    /// 0x02 Decimal number
     Dec,
-    /// Char
+    /// 0x03 Char
     Char,
-    /// Segment
+    /// 0x04 Segment
     Seg,
-    /// Offset
-    Off,
-    /// Binary number
+    /// 0x05 Offset
+    Offset,
+    /// 0x06 Binary number
     Bin,
-    /// Octal number
+    /// 0x07 Octal number
     Oct,
-    /// Enumeration
+    /// 0x08 Enumeration
     Enum,
-    /// Forced operand
-    Fop,
-    /// Struct offset
-    StrOff,
-    /// Stack variable
-    StackVar,
-    /// Floating point number
+    /// 0x09 Forced operand
+    ForceOp,
+    /// 0x0a Struct offset
+    StructOffset,
+    /// 0x0b Stack variable
+    StackVariable,
+    /// 0x0c Floating point number
     Float,
-    /// Custom representation
+    /// 0x0d Custom representation
     Custom,
 }
 
-impl InstOpInfo {
-    fn from_raw(value: u64, n: u32) -> Result<Self> {
+impl ByteOp {
+    fn from_raw(value: u8) -> Result<Option<Self>> {
         use flag::flags::inst_info::*;
-        Ok(
-            match ((value >> get_operand_type_shift(n)) as u8) & MS_N_TYPE {
-                FF_N_VOID => Self::Void,
-                FF_N_NUMH => Self::Hex,
-                FF_N_NUMD => Self::Dec,
-                FF_N_CHAR => Self::Char,
-                FF_N_SEG => Self::Seg,
-                FF_N_OFF => Self::Off,
-                FF_N_NUMB => Self::Bin,
-                FF_N_NUMO => Self::Oct,
-                FF_N_ENUM => Self::Enum,
-                FF_N_FOP => Self::Fop,
-                FF_N_STRO => Self::StrOff,
-                FF_N_STK => Self::StackVar,
-                FF_N_FLT => Self::Float,
-                FF_N_CUST => Self::Custom,
-                // TODO reserved values?
-                #[cfg(not(feature = "restrictive"))]
-                0xE | 0xF => Self::Custom,
-                #[cfg(feature = "restrictive")]
-                0xE | 0xF => return Err(anyhow!("Invalid ID1 operand value")),
-                _ => unreachable!(),
-            },
-        )
+        Ok(Some(match value {
+            FF_N_VOID => return Ok(None),
+            FF_N_NUMH => Self::Hex,
+            FF_N_NUMD => Self::Dec,
+            FF_N_CHAR => Self::Char,
+            FF_N_SEG => Self::Seg,
+            FF_N_OFF => Self::Offset,
+            FF_N_NUMB => Self::Bin,
+            FF_N_NUMO => Self::Oct,
+            FF_N_ENUM => Self::Enum,
+            FF_N_FOP => Self::ForceOp,
+            FF_N_STRO => Self::StructOffset,
+            FF_N_STK => Self::StackVariable,
+            FF_N_FLT => Self::Float,
+            FF_N_CUST => Self::Custom,
+            // TODO reserved values?
+            #[cfg(not(feature = "restrictive"))]
+            0xE | 0xF => Self::Custom,
+            #[cfg(feature = "restrictive")]
+            0xE | 0xF => return Err(anyhow!("Invalid ID1 operand value")),
+            _ => unreachable!(),
+        }))
     }
+
+    pub fn get_radix(&self) -> u32 {
+        match self {
+            Self::Hex => 16,
+            Self::Dec => 10,
+            Self::Oct => 8,
+            Self::Bin => 2,
+            _ => get_default_radix(),
+        }
+    }
+}
+
+fn get_forced_operand<K: IDAKind>(
+    id0: &ID0Section<K>,
+    ea: K::Usize,
+    n: u8,
+) -> Result<Option<&[u8]>> {
+    let alt_value = <K::Usize as From<u8>>::from(match n {
+        0 => 0x02,
+        1 => 0x03,
+        2 => 0x07,
+        3 => 0x12,
+        4 => 0x13,
+        5 => 0x14,
+        6 => 0x1f,
+        7 => 0x20,
+        #[cfg(not(feature = "restrictive"))]
+        _ => return Ok(None),
+        #[cfg(feature = "restrictive")]
+        _ => unreachable!(),
+    });
+    let root_info = id0.root_info_node()?;
+    let base = id0.image_base(root_info)?;
+    let ea = base.ea2node(ea)?;
+
+    let key: Vec<u8> = b"."
+        .iter()
+        .chain(ea.0.to_be_bytes().as_ref())
+        .chain([crate::id0::flag::netnode::nn_res::ARRAY_SUP_TAG].iter())
+        .chain(alt_value.to_be_bytes().as_ref())
+        .copied()
+        .collect();
+    Ok(id0.get(&key).map(|entry| &entry.value[..]))
 }
 
 #[derive(Clone, Debug)]
@@ -607,9 +780,4 @@ fn read_data<K: IDAKind>(
         .chunks(4)
         .map(|b| u32::from_le_bytes(b.try_into().unwrap()))
         .collect())
-}
-
-const fn get_operand_type_shift(n: u32) -> u32 {
-    let n_mod = (n > 1) as u32;
-    20 + (4 * (n + n_mod))
 }
