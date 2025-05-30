@@ -1,15 +1,15 @@
 use std::borrow::Cow;
-use std::io::{BufRead, BufReader, Cursor, Seek};
+use std::fs::File;
+use std::io::{BufRead, BufReader, Cursor, Seek, Write};
 use std::iter::Peekable;
-use std::{fs::File, io::Write};
 
 use anyhow::{anyhow, ensure, Context, Result};
 
 use idb_rs::id0::function::{IDBFunctionNonTail, IDBFunctionTail};
 use idb_rs::id0::{AddressInfo, Comments, ID0Section};
 use idb_rs::id1::{
-    ByteData, ByteDataType, ByteInfoRaw, ByteRawType, ByteType, ID1Section,
-    InstOpInfo,
+    ByteCode, ByteData, ByteDataType, ByteExtended, ByteInfo, ByteOp, ByteType,
+    ID1Section,
 };
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
@@ -490,7 +490,7 @@ fn produce_patches<K: IDAKind>(
         let address = patch.address;
         let value = id1
             .byte_by_address(patch.address.into())
-            .map(|x| x.byte_raw())
+            .map(|x| x.as_raw())
             .unwrap_or(0);
         writeln!(fmt, "  patch_byte({address:#X}, {value:#X});")?;
     }
@@ -551,11 +551,11 @@ fn produce_bytes_info<K: IDAKind>(
 
     let mut all_bytes = id1.all_bytes().peekable();
     loop {
-        let Some((address, byte_info_raw)) = all_bytes.next() else {
+        let Some((address, byte_info)) = all_bytes.next() else {
             break;
         };
+        let byte_info_type = byte_info.byte_type();
 
-        let byte_info = byte_info_raw.decode().unwrap();
         let addr_info =
             id0.address_info_at(K::Usize::try_from(address).unwrap())?;
         // print comments
@@ -572,7 +572,7 @@ fn produce_bytes_info<K: IDAKind>(
         }
 
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1ddd
-        if byte_info.has_comment_ext {
+        if byte_info.has_comment_ext() {
             let pre_cmts = addr_info.filter_map(|x| match x {
                 Ok(AddressInfo::Comment(Comments::PreComment(cmt))) => {
                     Some(Ok(cmt))
@@ -613,110 +613,184 @@ fn produce_bytes_info<K: IDAKind>(
         //   !is_numop(byte_type, 0xf))
         //   "x=\"\"" | ""
         // }
-        let set_x = match byte_info.byte_type {
-            ByteType::Data(ByteData {
-                print_info:
-                    InstOpInfo::Hex
-                    | InstOpInfo::Dec
-                    | InstOpInfo::Bin
-                    | InstOpInfo::Oct,
-                data_type: _,
-            }) => "x=",
-            _ => "",
-        };
 
-        match byte_info.byte_type {
-            // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1dee
-            ByteType::Code(code) => {
-                let _len = count_tails(&mut all_bytes) + 1;
-                if !byte_info.exec_flow_from_prev_inst || code.is_func_start
-                //  || TODO: byte_info.is_manual()
-                {
-                    writeln!(fmt, "  create_insn({set_x}{address:#X});")?;
+        let set_x = if byte_info.op_invert_sig()
+            || byte_info.op_bitwise_negation()
+        {
+            true
+        } else {
+            fn is_set_x(value: Option<ByteOp>) -> bool {
+                matches!(
+                    value,
+                    Some(
+                        ByteOp::Offset
+                            | ByteOp::Seg
+                            | ByteOp::Char
+                            | ByteOp::Enum
+                            | ByteOp::StructOffset
+                            | ByteOp::StackVariable
+                            | ByteOp::Hex
+                            | ByteOp::Dec
+                            | ByteOp::Bin
+                            | ByteOp::Oct
+                    )
+                )
+            }
+            match byte_info_type {
+                ByteType::Data(byte_data) => is_set_x(byte_data.operand0()?),
+                ByteType::Code(byte_code) => {
+                    let byte_code =
+                        byte_code.extend(id0, address.try_into().unwrap())?;
+                    (0..8)
+                        .map(|i| byte_code.operand_n(i).map(is_set_x))
+                        .find_map(|x| match x {
+                            Err(x) => Some(Err(x)),
+                            Ok(true) => Some(Ok(())),
+                            Ok(false) => None,
+                        })
+                        .transpose()?
+                        .is_some()
                 }
+                ByteType::Tail(_) | ByteType::Unknown => false,
+            }
+        };
+        let set_x_value = (set_x).then_some("x=").unwrap_or("");
+
+        match byte_info_type {
+            // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1dee
+            ByteType::Code(byte_code) => {
+                let byte_code =
+                    byte_code.extend(id0, address.try_into().unwrap())?;
+                let _len = count_element(&mut all_bytes, 1);
+                if !byte_code.exec_flow_from_prev_inst()
+                    || byte_code.is_func_start()
+                    || set_x
+                {
+                    writeln!(fmt, "  create_insn({set_x_value}{address:#X});",)?;
+                }
+                produce_bytes_info_op_code(fmt, id0, id1, byte_code)?;
             }
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1e37
-            ByteType::Data(data) => {
-                match data.data_type {
+            ByteType::Data(byte_data) => {
+                match byte_data.data_type() {
                     ByteDataType::Strlit => {
-                        let len = count_tails(&mut all_bytes);
+                        let len = count_element(&mut all_bytes, 1)?;
                         writeln!(
                             fmt,
-                            "  create_strlit({set_x}{address:#X}, {len:#X});"
+                            "  create_strlit({set_x_value}{address:#X}, {len:#X});"
                         )?
                     }
                     ByteDataType::Dword => {
-                        let len = count_element(&mut all_bytes, 4)?;
-                        writeln!(fmt, "  create_dword({set_x}{address:#X});")?;
-                        if len > 1 {
-                            writeln!(
-                                fmt,
-                                "  make_array({address:#X}, {len:#X});"
-                            )?
-                        }
+                        writeln!(
+                            fmt,
+                            "  create_dword({set_x_value}{address:#X});"
+                        )?;
+                        produce_bytes_info_array(
+                            fmt,
+                            &mut all_bytes,
+                            address,
+                            set_x,
+                            4,
+                        )?;
+                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Byte => {
-                        let len = count_tails(&mut all_bytes);
-                        writeln!(fmt, "  create_byte({set_x}{address:#X});")?;
-                        if len > 1 {
-                            writeln!(
-                                fmt,
-                                "  make_array({address:#X}, {len:#X});"
-                            )?
-                        }
+                        writeln!(
+                            fmt,
+                            "  create_byte({set_x_value}{address:#X});"
+                        )?;
+                        produce_bytes_info_array(
+                            fmt,
+                            &mut all_bytes,
+                            address,
+                            set_x,
+                            1,
+                        )?;
+                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Word => {
-                        let len = count_element(&mut all_bytes, 2)?;
-                        writeln!(fmt, "  create_word({set_x}{address:#X});")?;
-                        if len > 1 {
-                            writeln!(
-                                fmt,
-                                "  make_array({address:#X}, {len:#X});"
-                            )?
-                        }
+                        writeln!(
+                            fmt,
+                            "  create_word({set_x_value}{address:#X});"
+                        )?;
+                        produce_bytes_info_array(
+                            fmt,
+                            &mut all_bytes,
+                            address,
+                            set_x,
+                            2,
+                        )?;
+                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Qword => {
-                        let len = count_element(&mut all_bytes, 8)?;
-                        writeln!(fmt, "  create_qword({set_x}{address:#X});")?;
-                        if len > 1 {
-                            writeln!(
-                                fmt,
-                                "  make_array({address:#X}, {len:#X});"
-                            )?
-                        }
+                        writeln!(
+                            fmt,
+                            "  create_qword({set_x_value}{address:#X});"
+                        )?;
+                        produce_bytes_info_array(
+                            fmt,
+                            &mut all_bytes,
+                            address,
+                            set_x,
+                            8,
+                        )?;
+                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Tbyte => {
-                        let _len = count_tails(&mut all_bytes);
+                        let _len = count_element(&mut all_bytes, 1)?;
                         // TODO make array?
-                        writeln!(fmt, "  create_tbyte({set_x}{address:#X});")?
+                        writeln!(
+                            fmt,
+                            "  create_tbyte({set_x_value}{address:#X});"
+                        )?;
+                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Float => {
-                        let _len = count_tails(&mut all_bytes);
+                        let _len = count_element(&mut all_bytes, 1)?;
                         // TODO make array?
-                        writeln!(fmt, "  create_float({set_x}{address:#X});")?
+                        writeln!(
+                            fmt,
+                            "  create_float({set_x_value}{address:#X});"
+                        )?;
+                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
-                    ByteDataType::Packreal => writeln!(
-                        fmt,
-                        "  create_pack_real({set_x}{address:#X});"
-                    )?,
+                    ByteDataType::Packreal => {
+                        writeln!(
+                            fmt,
+                            "  create_pack_real({set_x_value}{address:#X});"
+                        )?;
+                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                    }
                     ByteDataType::Yword => {
-                        let _len = count_tails(&mut all_bytes);
+                        let _len = count_element(&mut all_bytes, 1)?;
                         // TODO make array?
-                        writeln!(fmt, "  create_yword({set_x}{address:#X});")?
+                        writeln!(
+                            fmt,
+                            "  create_yword({set_x_value}{address:#X});"
+                        )?;
+                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Double => {
-                        let _len = count_tails(&mut all_bytes);
+                        let _len = count_element(&mut all_bytes, 1)?;
                         // TODO make array?
-                        writeln!(fmt, "  create_double({set_x}{address:#X});")?
+                        writeln!(
+                            fmt,
+                            "  create_double({set_x_value}{address:#X});"
+                        )?;
+                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Oword => {
-                        let _len = count_tails(&mut all_bytes);
+                        let _len = count_element(&mut all_bytes, 1)?;
                         // TODO make array?
-                        writeln!(fmt, "  create_oword({set_x}{address:#X});")?
+                        writeln!(
+                            fmt,
+                            "  create_oword({set_x_value}{address:#X});"
+                        )?;
+                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2690
                     ByteDataType::Struct => {
-                        let _len = count_tails(&mut all_bytes);
+                        let _len = count_element(&mut all_bytes, 1)?;
                         // TODO ensure struct have the same len that _len
                         // TODO make a struct_def_at
                         // TODO make array?
@@ -746,45 +820,29 @@ fn produce_bytes_info<K: IDAKind>(
                             "  create_struct({address:#X}, -1, {:?});",
                             core::str::from_utf8(struct_name).unwrap()
                         )?;
+                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Align => {
-                        let len = count_tails(&mut all_bytes);
-                        if len > 1 {
-                            writeln!(
-                                fmt,
-                                "  make_array({address:#X}, {len:#X});"
-                            )?
-                        }
+                        produce_bytes_info_array(
+                            fmt,
+                            &mut all_bytes,
+                            address,
+                            set_x,
+                            1,
+                        )?;
                     }
                     ByteDataType::Zword | ByteDataType::Custom => {
-                        let _len = count_tails(&mut all_bytes);
+                        let _len = count_element(&mut all_bytes, 1)?;
                         //TODO
                     }
                     ByteDataType::Reserved => {
                         todo!();
                     }
                 }
-                match data.print_info {
-                    InstOpInfo::Hex => writeln!(fmt, "  op_hex(x, 0);")?,
-                    InstOpInfo::Dec => writeln!(fmt, "  op_dec(x, 0);")?,
-                    InstOpInfo::Bin => writeln!(fmt, "  op_bin(x, 0);")?,
-                    InstOpInfo::Oct => writeln!(fmt, "  op_oct(x, 0);")?,
-                    InstOpInfo::Void
-                    | InstOpInfo::Char
-                    | InstOpInfo::Seg
-                    | InstOpInfo::Off
-                    | InstOpInfo::Enum
-                    | InstOpInfo::Fop
-                    | InstOpInfo::StrOff
-                    | InstOpInfo::StackVar
-                    | InstOpInfo::Float
-                    | InstOpInfo::Custom => {}
-                }
                 // TODO  get_data_elsize
-                // TODO make_array
                 // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2622
             }
-            ByteType::Tail => {
+            ByteType::Tail(_) => {
                 return Err(anyhow!("Unexpected ID1 Tail entry: {address:#X}"))
             }
             ByteType::Unknown => {}
@@ -805,7 +863,7 @@ fn produce_bytes_info<K: IDAKind>(
         //}
 
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2160
-        if byte_info.has_name {
+        if byte_info.has_name() {
             for addr_info in addr_info {
                 if let AddressInfo::Label(name) = addr_info? {
                     writeln!(
@@ -825,6 +883,99 @@ fn produce_bytes_info<K: IDAKind>(
     // TODO getn_fchunk related stuff
 
     writeln!(fmt, "}}")?;
+    Ok(())
+}
+
+fn produce_bytes_info_array<I>(
+    fmt: &mut impl Write,
+    all_bytes: &mut Peekable<I>,
+    address: u64,
+    set_x: bool,
+    data_len: usize,
+) -> Result<()>
+where
+    I: Iterator<Item = (u64, ByteInfo)>,
+{
+    let len = count_element(all_bytes, data_len)?;
+    if len > 1 {
+        if set_x {
+            writeln!(fmt, "  make_array(x, {len:#X});")?
+        } else {
+            writeln!(fmt, "  make_array({address:#X}, {len:#X});")?
+        }
+    }
+    Ok(())
+}
+
+fn produce_bytes_info_op_code<K: IDAKind>(
+    fmt: &mut impl Write,
+    _id0: &ID0Section<K>,
+    _id1: &ID1Section,
+    code: ByteExtended<ByteCode>,
+) -> Result<()> {
+    for n in 0..8 {
+        if code.is_invsign(n)? {
+            writeln!(fmt, "  toggle_sign(x, {n});")?;
+        }
+        if code.is_bnot(n)? {
+            writeln!(fmt, "  toggle_sign(x, {n});")?;
+        }
+
+        if let Some(op) = code.operand_n(n)? {
+            produce_bytes_info_op_op(fmt, _id0, _id1, op, n)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn produce_bytes_info_op_data<K: IDAKind>(
+    fmt: &mut impl Write,
+    _id0: &ID0Section<K>,
+    _id1: &ID1Section,
+    data: ByteData,
+) -> Result<()> {
+    if data.op_invert_sig() {
+        writeln!(fmt, "  toggle_sign(x, 0);")?;
+    }
+    if data.op_bitwise_negation() {
+        writeln!(fmt, "  toggle_sign(x, 0);")?;
+    }
+
+    if let Some(op) = data.operand0()? {
+        produce_bytes_info_op_op(fmt, _id0, _id1, op, 0)?;
+    };
+    Ok(())
+}
+
+fn produce_bytes_info_op_op<K: IDAKind>(
+    fmt: &mut impl Write,
+    _id0: &ID0Section<K>,
+    _id1: &ID1Section,
+    data: ByteOp,
+    n: u8,
+) -> Result<()> {
+    match data {
+        ByteOp::Char => writeln!(fmt, "  op_char(x, {n});")?,
+        ByteOp::Seg => writeln!(fmt, "  op_seg(x, {n});")?,
+        ByteOp::Offset => {
+            writeln!(fmt, "  op_offset(x, {n}, 0xTODO, TODO, TODO, 0xTODO);")?;
+            writeln!(fmt, "  op_offset(x, TODO, 0xTODO, TODO, TODO, 0xTODO);")?;
+        }
+        ByteOp::Enum => {
+            writeln!(fmt, "  op_enum(x, {n}, get_enum(\"TODO\"), TODO);")?
+        }
+        ByteOp::ForceOp => todo!(),
+        ByteOp::StructOffset => {
+            writeln!(fmt, "  op_stroff(x, {n}, get_struc_id(\"TODO\"), TODO);")?
+        }
+        ByteOp::StackVariable => writeln!(fmt, "  op_stkvar(x, {n});")?,
+        ByteOp::Hex => writeln!(fmt, "  op_hex(x, {n});")?,
+        ByteOp::Dec => writeln!(fmt, "  op_dec(x, {n});")?,
+        ByteOp::Oct => writeln!(fmt, "  op_oct(x, {n});")?,
+        ByteOp::Bin => writeln!(fmt, "  op_bin(x, {n});")?,
+        ByteOp::Float | ByteOp::Custom => {}
+    }
     Ok(())
 }
 
@@ -952,11 +1103,11 @@ fn produce_bytes<K: IDAKind>(
 
 fn count_tails<I>(bytes: &mut Peekable<I>) -> usize
 where
-    I: Iterator<Item = (u64, ByteInfoRaw)>,
+    I: Iterator<Item = (u64, ByteInfo)>,
 {
     let mut acc = 0;
     while bytes
-        .next_if(|(_a, b)| b.byte_type() == ByteRawType::Tail)
+        .next_if(|(_a, b)| matches!(b.byte_type(), ByteType::Tail(_)))
         .is_some()
     {
         acc += 1
@@ -966,7 +1117,7 @@ where
 
 fn count_element<I>(bytes: &mut Peekable<I>, ele_len: usize) -> Result<usize>
 where
-    I: Iterator<Item = (u64, ByteInfoRaw)>,
+    I: Iterator<Item = (u64, ByteInfo)>,
 {
     let len = count_tails(bytes) + 1;
     ensure!(len >= ele_len, "Expected more ID1 Tail entries");
