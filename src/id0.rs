@@ -100,10 +100,7 @@ pub(crate) fn key_from_netnode_tag_hash<K: IDAKind>(
 fn parse_maybe_cstr(data: &[u8]) -> Option<&[u8]> {
     // find the end of the string
     let end_pos = data.iter().position(|b| *b == 0).unwrap_or(data.len());
-    // make sure there is no data after the \x00
-    if data[end_pos..].iter().any(|b| *b != 0) {
-        return None;
-    }
+    // Return the slice up to the first null byte
     Some(&data[..end_pos])
 }
 

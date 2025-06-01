@@ -444,8 +444,9 @@ impl<K: IDAKind> IDBParam<K> {
         let genflags = Inffl::new(input.unpack_dw()?)?;
         let lflags = Lflg::new(input.unpack_dd()?)?;
         let database_change_count = input.unpack_dd()?;
-        let filetype = FileType::from_value(input.unpack_dw()?)
-            .ok_or_else(|| anyhow!("Invalid FileType value"))?;
+        let filetype_val = input.unpack_dw()?;
+        let filetype = FileType::from_value(filetype_val)
+            .ok_or_else(|| anyhow!("Invalid FileType value: {}", filetype_val))?;
         let ostype = input.unpack_dw()?;
         let apptype = input.unpack_dw()?;
         let asmtype = input.read_u8()?;
@@ -608,7 +609,7 @@ impl<K: IDAKind> IDBParam<K> {
 pub struct Inffl(u8);
 impl Inffl {
     fn new(value: u16) -> Result<Self> {
-        ensure!(value < 0x100, "Invalid INFFL flag");
+        ensure!(value < 0x3000, "Invalid INFFL flag: 0x{:x}", value);
         // TODO check for unused flags?
         Ok(Self(value as u8))
     }
@@ -651,7 +652,7 @@ impl Inffl {
 pub struct Lflg(u16);
 impl Lflg {
     fn new(value: u32) -> Result<Self> {
-        ensure!(value < 0x1000, "Invalid LFLG flag");
+        ensure!(value < u16::MAX as u32, "Invalid LFLG flag value: {:#b}", value);
         Ok(Self(value as u16))
     }
 
@@ -703,6 +704,9 @@ impl Lflg {
     pub fn is_kernel_mode(&self) -> bool {
         self.0 & 0x0800 != 0
     }
+    // TODO: Figure out what this flag is.
+    /// Unknown flag found in `resources/idbs/v7.0b/kernel32.i64`.
+    pub fn _unk_flag_0x2000(&self) -> bool { self.0 & 0x2000 != 0 }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1259,8 +1263,10 @@ impl FileType {
             0x13 => Self::W32run,
             0x14 => Self::Aout,
             0x15 => Self::Palmpilot,
-            0x16 => Self::MsdosExe,
-            0x17 => Self::MsdosCom,
+            // 0x0 is for older ida version.
+            0x0 | 0x16 => Self::MsdosExe,
+            // 0x1 is for older ida version.
+            0x1 | 0x17 => Self::MsdosCom,
             0x18 => Self::Aixar,
             0x19 => Self::Macho,
             0x1A => Self::Psxobj,
