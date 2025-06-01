@@ -349,12 +349,14 @@ impl<K: IDAKind> IDBParam<K> {
         let sizeof_short = input.read_u8()?;
         let sizeof_long = input.read_u8()?;
         let sizeof_llong = input.read_u8()?;
-        let change_counter = input.read_u32()?;
-        let sizeof_ldbl = input.read_u8()?;
-        let _unknown_3 = input.read_u32()?;
-        let abiname: [u8; 16] = bincode::deserialize_from(&mut input)?;
-        let abibits = input.read_u32()?;
-        let refcmts = input.read_u8()?;
+        // TODO: These are optional, thus we allow them to fail.
+        // TODO: Find out when these were added.
+        let change_counter = input.read_u32();
+        let sizeof_ldbl = input.read_u8();
+        let _unknown_3 = input.read_u32();
+        let abiname = bincode::deserialize_from::<_, [u8; 16]>(&mut input);
+        let abibits = input.read_u32();
+        let refcmts = input.read_u8();
 
         Ok(IDBParam::V1(IDBParam1 {
             version,
@@ -433,11 +435,11 @@ impl<K: IDAKind> IDBParam<K> {
             sizeof_short,
             sizeof_long,
             sizeof_llong,
-            change_counter,
-            sizeof_ldbl,
-            abiname,
-            abibits,
-            refcmts,
+            change_counter: change_counter.unwrap_or(0),
+            sizeof_ldbl: sizeof_ldbl.unwrap_or(0),
+            abiname: abiname.unwrap_or([0; 16]),
+            abibits: abibits.unwrap_or(0),
+            refcmts: refcmts.unwrap_or(0),
         }))
     }
 
