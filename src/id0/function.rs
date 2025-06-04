@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use crate::id0::parse_maybe_cstr;
 use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
-use crate::{flags_to_struct, til, IDAKind, IDAUsize};
+use crate::{flags_to_struct, til, IDAKind};
 
 use super::flag::func::*;
 use super::flag::netnode::nn_res::ARRAY_SUP_TAG;
