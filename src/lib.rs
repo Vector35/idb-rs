@@ -122,7 +122,7 @@ pub trait IDBFormat: Sealed {
 }
 impl<S: IDBFormat> Sealed for S {}
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Copy, Deserialize)]
 struct IDBHeaderRaw {
     magic: IDBMagic,
     _padding_0: u16,
@@ -165,7 +165,10 @@ impl IDBFormats {
         struct V910Raw {
             compression: u8,
             sectors: [u64; 6],
+            // TODO the offset of the unknown data betwen the header and
+            // compressed data
             _unk1: u64,
+            // TODO the strange data from _unk1 seems to be this number of u64s
             _unk2: u32,
             md5: [u8; 16],
         }
@@ -177,12 +180,6 @@ impl IDBFormats {
             u64::from_le_bytes(raw_header.offsets[8..16].try_into().unwrap());
         let _unk3 =
             u32::from_le_bytes(raw_header.offsets[16..20].try_into().unwrap());
-        // TODO find meanings of _unk3, seeing value 0 and 2
-        #[cfg(feature = "restrictive")]
-        {
-            ensure!(raw._unk1 == 0);
-            ensure!(raw._unk2 == 0);
-        }
 
         ensure!(header_size != 0);
         // TODO ensure other header data is empty based on the header_size
@@ -424,7 +421,7 @@ impl IDBFormat for SeparatedSections {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum IDBVersion {
     PreV910(IDBSeparatedVersion),
     PostV910(IDBInlineVersion),
