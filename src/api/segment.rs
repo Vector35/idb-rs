@@ -29,7 +29,10 @@ pub(crate) fn getseg_inner<K: IDAKind>(
     id0: &ID0Section<K>,
     ea: ea_t<K>,
 ) -> Result<Option<Segment<K>>> {
-    for seg in id0.segments()? {
+    let Some(seg_idx) = id0.segments_idx()? else {
+        return Ok(None);
+    };
+    for seg in id0.segments(seg_idx) {
         let seg = seg?;
         if seg.address.contains(&ea.as_raw()) {
             return Ok(Some(seg));

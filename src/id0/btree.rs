@@ -1,7 +1,6 @@
 use std::io::BufRead;
 
 use anyhow::Result;
-use num_traits::ToBytes;
 
 use crate::ida_reader::{IdbBufRead, IdbRead};
 
@@ -323,31 +322,6 @@ impl ID0Page {
         let freeptr: u16 = bincode::deserialize_from(input)?;
         Ok(freeptr)
     }
-}
-
-// TODO improve this function, maybe make a one liner
-pub(crate) fn key_from_address<K: IDAKind>(
-    address: K::Usize,
-) -> impl Iterator<Item = u8> {
-    b".".iter()
-        .copied()
-        .chain(address.to_be_bytes().as_ref().to_vec())
-}
-
-pub(crate) fn key_from_address_tag<K: IDAKind>(
-    address: K::Usize,
-    tag: u8,
-) -> impl Iterator<Item = u8> {
-    key_from_address::<K>(address).chain(Some(tag))
-}
-
-pub(crate) fn key_from_address_tag_sup<K: IDAKind>(
-    address: K::Usize,
-    tag: u8,
-    alt: K::Usize,
-) -> impl Iterator<Item = u8> {
-    key_from_address_tag::<K>(address, tag)
-        .chain(alt.to_be_bytes().as_ref().to_vec())
 }
 
 pub trait Id0AddressKey<K: IDAUsize> {

@@ -14,9 +14,11 @@ pub fn dump_segments(args: &Args) -> Result<()> {
 }
 
 fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
-    println!("Segments AKA `$ segs`: ");
-    for entry in id0.segments()? {
-        println!("  {:x?}", entry?);
+    if let Some(segs_idx) = id0.segments_idx()? {
+        println!("Segments AKA `$ segs`: ");
+        for entry in id0.segments(segs_idx) {
+            println!("  {:x?}", entry?);
+        }
     }
 
     // TODO create a function for that in ida_info

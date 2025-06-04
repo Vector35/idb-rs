@@ -5,59 +5,42 @@ use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
 use crate::{flags_to_struct, til, IDAKind, IDAUsize};
 
 use super::flag::func::*;
-use super::{flag, AsNodeIdx, Comments, ID0Section, NodeIdx};
+use super::flag::netnode::nn_res::ARRAY_SUP_TAG;
+use super::{flag, Comments, ID0Section, NetnodeIdx};
 
 use anyhow::{anyhow, ensure, Result};
-use num_traits::{ToBytes, WrappingSub};
+use num_traits::WrappingSub;
 
 #[derive(Copy, Clone, Debug)]
 pub struct FuncIdx<K: IDAKind>(pub(crate) K::Usize);
+impl<K: IDAKind> From<FuncIdx<K>> for NetnodeIdx<K> {
+    fn from(value: FuncIdx<K>) -> Self {
+        Self(value.0)
+    }
+}
 
 pub(crate) fn funcs_idx<K: IDAKind>(
     id0: &ID0Section<K>,
 ) -> Result<Option<FuncIdx<K>>> {
-    match id0.get_idx("N$ funcs") {
-        None => Ok(None),
-        Some(None) => Err(anyhow!("Invalid func entry value")),
-        Some(Some(idx)) => Ok(Some(FuncIdx(idx))),
-    }
+    Ok(id0.netnode_idx_by_name("$ funcs")?.map(|x| FuncIdx(x.0)))
 }
 
 pub(crate) fn functions_and_comments<K: IDAKind>(
     id0: &ID0Section<K>,
     idx: FuncIdx<K>,
-) -> Result<impl Iterator<Item = Result<FunctionsAndComments<'_, K>>>> {
-    let key_bytes = idx.0.to_be_bytes();
-    let key: Vec<u8> = b".".iter().chain(key_bytes.as_ref()).copied().collect();
-    let key_len = key.len();
-    Ok(id0.sub_values(key).iter().map(move |e| {
-        let key = &e.key[key_len..];
-        FunctionsAndComments::read(key, &e.value)
-    }))
+) -> impl Iterator<Item = Result<FunctionsAndComments<'_, K>>> {
+    id0.netnode_range(idx.into())
+        .map(move |(key, value)| FunctionsAndComments::read(key, value))
 }
 
 pub(crate) fn fchunks<K: IDAKind>(
     id0: &ID0Section<K>,
     idx: FuncIdx<K>,
-) -> Result<impl Iterator<Item = Result<IDBFunction<K>>> + use<'_, K>> {
-    let key_bytes = idx.0.to_be_bytes();
-    let key: Vec<u8> = b"."
+) -> impl Iterator<Item = Result<IDBFunction<K>>> + use<'_, K> {
+    let entries = id0.sup_range(idx.into(), ARRAY_SUP_TAG).entries;
+    entries
         .iter()
-        .chain(key_bytes.as_ref())
-        .chain(&[flag::netnode::nn_res::ARRAY_SUP_TAG])
-        .copied()
-        .collect();
-    let key_len = key.len();
-    Ok(id0.sub_values(key).iter().map(move |e| {
-        let key = &e.key[key_len..];
-        IDBFunction::read(key, &e.value)
-    }))
-}
-
-impl<K: IDAKind> AsNodeIdx<K> for FuncIdx<K> {
-    fn as_node_idx(&self) -> NodeIdx<K> {
-        NodeIdx(self.0)
-    }
+        .map(move |value| IDBFunction::read(&value.value[..]))
 }
 
 #[derive(Clone, Debug)]
@@ -125,14 +108,14 @@ impl<'a, K: IDAKind> FunctionsAndComments<'a, K> {
                 Ok(Self::Name)
             }
             flag::netnode::nn_res::ARRAY_SUP_TAG => {
-                IDBFunction::read(sub_key, value).map(Self::Function)
+                IDBFunction::read(value).map(Self::Function)
             }
             // some kind of style setting, maybe setting font and background color
             b'R' | b'C' if value.starts_with(&[4, 3, 2, 1]) => {
                 Ok(Self::Unknown { key, value })
             }
             b'C' => {
-                let address = <K::Usize as IDAUsize>::from_be_bytes(sub_key)
+                let address = K::usize_try_from_be_bytes(sub_key)
                     .ok_or_else(|| anyhow!("Invalid Comment address"))?;
                 parse_maybe_cstr(value)
                     .map(|value| Self::Comment {
@@ -142,8 +125,8 @@ impl<'a, K: IDAKind> FunctionsAndComments<'a, K> {
                     .ok_or_else(|| anyhow!("Invalid Comment string"))
             }
             b'R' => {
-                let address = <K::Usize as IDAUsize>::from_be_bytes(sub_key)
-                    .ok_or_else(|| {
+                let address =
+                    K::usize_try_from_be_bytes(sub_key).ok_or_else(|| {
                         anyhow!("Invalid Repetable Comment address")
                     })?;
                 parse_maybe_cstr(value)
@@ -164,7 +147,7 @@ impl<K: IDAKind> IDBFunction<K> {
     // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f810
     // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f810
     // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x68bbc0
-    pub(crate) fn read(_key: &[u8], value: &[u8]) -> Result<Self> {
+    pub(crate) fn read(value: &[u8]) -> Result<Self> {
         let mut input = value;
         let address = IdbReadKind::<K>::unpack_address_range(&mut input)?;
         // Partial flag, the rest is set below
@@ -224,8 +207,8 @@ impl<K: IDAKind> IDBFunction<K> {
         // offset of the function owner in relation to the function start
         let owner_offset = input.unpack_usize()?;
         // TODO maybe this is some kind of flag
-        let high_bit: K::Usize = K::Usize::from(1u8)
-            << (usize::from(<K::Usize as IDAUsize>::BYTES - 1) * 8);
+        let high_bit: K::Usize =
+            K::Usize::from(1u8) << (usize::from(K::BYTES - 1) * 8);
         // TODO this is not correct
         let frame = match owner_offset {
             _ if owner_offset == address_start | high_bit => address_start,
@@ -305,8 +288,7 @@ impl<'a, K: IDAKind> EntryPointRaw<'a, K> {
             ensure!(parse_maybe_cstr(value) == Some(&b"$ entry points"[..]));
             return Ok(Self::Name);
         }
-        let Some(sub_key) = <K::Usize as IDAUsize>::from_be_bytes(sub_key)
-        else {
+        let Some(sub_key) = K::usize_try_from_be_bytes(sub_key) else {
             return Ok(Self::Unknown { key, value });
         };
         match *key_type {
