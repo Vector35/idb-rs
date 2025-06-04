@@ -15,7 +15,7 @@ pub fn dump_root_info(args: &Args) -> Result<()> {
 
 fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
     println!("Segments AKA `Root Node`: ");
-    let root_node = id0.root_info_node()?;
+    let root_node = id0.root_node()?;
     for entry in id0.root_info(root_node)? {
         println!("  {:x?}", entry?);
     }

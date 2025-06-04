@@ -29,20 +29,20 @@ pub enum IDBRootInfo<'a, K: IDAKind> {
 pub struct ImageBase<K: IDAKind>(pub(crate) K::Usize);
 impl<K: IDAKind> ImageBase<K> {
     // TODO create a nodeidx_t type
-    pub fn ea2node(&self, ea: K::Usize) -> Result<NodeIdx<K>> {
+    pub fn ea2node(&self, ea: K::Usize) -> Result<NetnodeIdx<K>> {
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1db9c0
         if ea.is_max() {
-            return Ok(NodeIdx(ea));
+            return Ok(NetnodeIdx(ea));
         }
         if cfg!(feature = "restrictive") {
             ea.checked_add(&self.0)
-                .map(NodeIdx)
+                .map(NetnodeIdx)
                 .ok_or_else(|| anyhow!("Invalid address on ea2node"))
         } else {
-            Ok(NodeIdx(ea.wrapping_add(&self.0)))
+            Ok(NetnodeIdx(ea.wrapping_add(&self.0)))
         }
     }
-    pub fn node2ea(&self, node: NodeIdx<K>) -> Result<K::Usize> {
+    pub fn node2ea(&self, node: NetnodeIdx<K>) -> Result<K::Usize> {
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1dba10
         if cfg!(feature = "restrictive") {
             node.0
@@ -52,13 +52,6 @@ impl<K: IDAKind> ImageBase<K> {
             Ok(node.0.wrapping_sub(&self.0))
         }
     }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct NodeIdx<K: IDAKind>(pub(crate) K::Usize);
-
-pub trait AsNodeIdx<K: IDAKind> {
-    fn as_node_idx(&self) -> NodeIdx<K>;
 }
 
 #[derive(Clone, Debug)]

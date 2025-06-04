@@ -1,12 +1,17 @@
-use crate::{IDAKind, IDAUsize};
+use crate::IDAKind;
 
-use super::ID0Entry;
+use super::{ID0Entry, NetnodeIdx};
 
 use anyhow::{anyhow, Result};
 use num_traits::AsPrimitive;
 
 #[derive(Clone, Copy, Debug)]
-pub struct SegmentPatchIdx<'a>(pub(crate) &'a [u8]);
+pub struct SegmentPatchIdx<K: IDAKind>(pub(crate) K::Usize);
+impl<K: IDAKind> From<SegmentPatchIdx<K>> for NetnodeIdx<K> {
+    fn from(value: SegmentPatchIdx<K>) -> Self {
+        Self(value.0)
+    }
+}
 
 pub struct Patch<K: IDAKind> {
     pub address: K::Usize,
@@ -17,26 +22,24 @@ pub struct Patch<K: IDAKind> {
 pub struct SegmentPatchOriginalValueIter<'a, K: IDAKind> {
     _kind: std::marker::PhantomData<K>,
     pub(crate) entries: &'a [ID0Entry],
-    pub(crate) key_len: usize,
     //pub(crate) segment_strings: SegmentStringsIter<'a>,
 }
 impl<'a, K: IDAKind> SegmentPatchOriginalValueIter<'a, K> {
-    pub(crate) fn new(entries: &'a [ID0Entry], key_len: usize) -> Self {
+    pub(crate) fn new(entries: &'a [ID0Entry]) -> Self {
         Self {
             _kind: std::marker::PhantomData,
             entries,
-            key_len,
         }
     }
 
     fn patch_from_entry(&self, entry: &ID0Entry) -> Result<Patch<K>> {
         // TODO find the InnerRef for this
-        let addr_raw = &entry.key[self.key_len..];
+        let addr_raw = &entry.key[1 + usize::from(K::BYTES)..];
 
-        let address = K::Usize::from_be_bytes(addr_raw)
+        let address = K::usize_try_from_be_bytes(addr_raw)
             .ok_or_else(|| anyhow!("Invalid id1 entry address"))?;
 
-        let original_value = K::Usize::from_le_bytes(&entry.value[..])
+        let original_value = K::usize_try_from_le_bytes(&entry.value[..])
             .ok_or_else(|| anyhow!("Invalid id1 entry original value"))?;
         let original_byte = AsPrimitive::<u8>::as_(original_value);
 

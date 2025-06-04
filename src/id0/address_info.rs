@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use anyhow::{anyhow, Result};
 use num_traits::ToBytes;
 
-use crate::{til, IDAKind, IDAUsize};
+use crate::{til, IDAKind};
 
 use super::{
     flag, parse_maybe_cstr, FileRegionIter, FileRegions, ID0CStr, ID0Entry,
@@ -324,7 +324,7 @@ fn addr_id_subkey_from_key<K: IDAKind>(
     mut key: &[u8],
 ) -> Option<(K::Usize, u8, Option<K::Usize>)> {
     let (addr, tag) = super::read_addr_and_tag_from_key::<K>(&mut key).ok()?;
-    let subkey = K::Usize::from_be_bytes(key);
+    let subkey = K::usize_try_from_be_bytes(key);
     Some((addr, tag, subkey))
 }
 
@@ -349,9 +349,9 @@ fn get_next_address_region<'a, K: IDAKind>(
 ) -> &'a [ID0Entry] {
     // get the next region
     let start_key: Vec<u8> =
-        crate::id0::key_from_address::<K>(region.start).collect();
+        crate::id0::key_from_netnode::<K>(region.start).collect();
     let end_key: Vec<u8> =
-        crate::id0::key_from_address::<K>(region.end).collect();
+        crate::id0::key_from_netnode::<K>(region.end).collect();
     let start = all_entries
         .binary_search_by_key(&&start_key[..], |b| &b.key[..])
         .unwrap_or_else(|start| start);

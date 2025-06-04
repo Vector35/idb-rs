@@ -1,8 +1,8 @@
-use crate::{IDAKind, IDAUsize};
+use crate::IDAKind;
 
 /// Address is represented as u32/u64 on 32/64bits
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
-pub struct ida_usize_t<K: IDAKind>(K::Usize);
+pub struct ida_usize_t<K: IDAKind>(pub(crate) K::Usize);
 impl<K: IDAKind> ida_usize_t<K> {
     pub(crate) fn from_raw(value: K::Usize) -> Self {
         Self(value)
@@ -28,15 +28,15 @@ impl<K: IDAKind> ida_usize_t<K> {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, PartialOrd, Ord)]
-pub struct ida_isize_t<K: IDAKind>(<K::Usize as IDAUsize>::Isize);
+pub struct ida_isize_t<K: IDAKind>(K::Isize);
 impl<K: IDAKind> ida_isize_t<K> {
     #[allow(dead_code)]
-    pub(crate) fn from_raw(value: <K::Usize as IDAUsize>::Isize) -> Self {
+    pub(crate) fn from_raw(value: K::Isize) -> Self {
         Self(value)
     }
 
     #[allow(dead_code)]
-    pub(crate) fn as_raw(&self) -> <K::Usize as IDAUsize>::Isize {
+    pub(crate) fn as_raw(&self) -> K::Isize {
         self.0
     }
 }

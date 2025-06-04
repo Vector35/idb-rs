@@ -62,7 +62,9 @@ fn dump<K: IDAKind>(id0: &ID0Section<K>, til: &TILSection) -> Result<()> {
             print!("NonExisting til");
         }
     };
-    print_dirtree(print_til, &dirtree);
+    if let Some(dirtree) = dirtree {
+        print_dirtree(print_til, &dirtree);
+    }
 
     Ok(())
 }

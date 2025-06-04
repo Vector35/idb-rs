@@ -61,7 +61,7 @@ pub fn get_fchunk<'a, K: IDAKind>(
     let Some(idx) = id0.funcs_idx()? else {
         return Ok(None);
     };
-    for chunk in id0.fchunks(idx)? {
+    for chunk in id0.fchunks(idx) {
         let chunk = chunk?;
         if chunk.address.contains(&ea.as_raw()) {
             return Ok(Some(func_t {

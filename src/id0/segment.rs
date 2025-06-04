@@ -9,7 +9,20 @@ use crate::ida_reader::IdbReadKind;
 use super::*;
 
 #[derive(Clone, Copy, Debug)]
-pub struct SegmentStringsIdx<'a>(pub(crate) &'a [u8]);
+pub struct SegmentIdx<K: IDAKind>(pub(crate) K::Usize);
+impl<K: IDAKind> From<SegmentIdx<K>> for NetnodeIdx<K> {
+    fn from(value: SegmentIdx<K>) -> Self {
+        Self(value.0)
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct SegmentStringsIdx<K: IDAKind>(pub(crate) K::Usize);
+impl<K: IDAKind> From<SegmentStringsIdx<K>> for NetnodeIdx<K> {
+    fn from(value: SegmentStringsIdx<K>) -> Self {
+        Self(value.0)
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct Segment<K: IDAKind> {
@@ -333,18 +346,19 @@ pub enum SegmentType {
     Imem = flag::segs::ty::SEG_IMEM,
 }
 
-pub struct SegmentIter<'a, K: IDAKind> {
+pub struct SegmentIter<'a, K> {
     pub(crate) _kind: std::marker::PhantomData<K>,
     pub(crate) segments: &'a [ID0Entry],
 }
 
-impl<K: IDAKind> Iterator for SegmentIter<'_, K> {
+impl<'a, K: IDAKind> Iterator for SegmentIter<'a, K> {
     type Item = Result<Segment<K>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let (current, rest) = self.segments.split_first()?;
         self.segments = rest;
-        Some(Segment::read(&current.value))
+
+        Some(Segment::read(&current.value[..]))
     }
 }
 

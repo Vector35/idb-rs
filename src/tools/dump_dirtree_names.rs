@@ -14,19 +14,20 @@ pub fn dump_dirtree_names(args: &Args) -> Result<()> {
 }
 
 fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
-    let dirtree = id0.dirtree_names()?;
-    print_dirtree(
-        |address| {
-            print!("{:#x}:", address.as_u64());
-            let label = id0.label_at(*address);
-            if let Some(name) = label.unwrap() {
-                print!("{}", String::from_utf8_lossy(&name));
-            } else {
-                print!("[Label Not Found]");
-            }
-        },
-        &dirtree,
-    );
+    if let Some(dirtree) = id0.dirtree_names()? {
+        print_dirtree(
+            |address| {
+                print!("{:#x}:", address.as_u64());
+                let label = id0.label_at(*address);
+                if let Some(name) = label.unwrap() {
+                    print!("{}", String::from_utf8_lossy(&name));
+                } else {
+                    print!("[Label Not Found]");
+                }
+            },
+            &dirtree,
+        );
+    }
 
     Ok(())
 }

@@ -4,7 +4,7 @@ use num_traits::CheckedAdd;
 use crate::ida_reader::IdbReadKind;
 use crate::IDAKind;
 
-use super::{ID0Entry, NodeIdx};
+use super::{entry_iter::NetnodeSupRangeIter, NetnodeIdx};
 
 #[derive(Clone, Debug)]
 pub struct FileRegions<K: IDAKind> {
@@ -14,7 +14,7 @@ pub struct FileRegions<K: IDAKind> {
 }
 
 impl<K: IDAKind> FileRegions<K> {
-    fn read(_key: &[u8], data: &[u8], version: u16) -> Result<Self> {
+    fn read(data: &[u8], version: u16) -> Result<Self> {
         let mut cursor = data;
         let result = Self::innner_read(&mut cursor, version)?;
         match (version, cursor) {
@@ -53,13 +53,17 @@ impl<K: IDAKind> FileRegions<K> {
     }
 }
 
-pub struct FileRegionIdx<K: IDAKind>(pub(crate) NodeIdx<K>);
+pub struct FileRegionIdx<K: IDAKind>(pub(crate) K::Usize);
+impl<K: IDAKind> From<FileRegionIdx<K>> for NetnodeIdx<K> {
+    fn from(value: FileRegionIdx<K>) -> Self {
+        Self(value.0)
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct FileRegionIter<'a, K: IDAKind> {
     pub(crate) _kind: std::marker::PhantomData<K>,
-    pub(crate) segments: &'a [ID0Entry],
-    pub(crate) key_len: usize,
+    pub(crate) segments: NetnodeSupRangeIter<'a, K>,
     pub(crate) version: u16,
 }
 
@@ -67,9 +71,11 @@ impl<K: IDAKind> Iterator for FileRegionIter<'_, K> {
     type Item = Result<FileRegions<K>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let (current, rest) = self.segments.split_first()?;
-        self.segments = rest;
-        let key = &current.key[self.key_len..];
-        Some(FileRegions::read(key, &current.value, self.version))
+        match self.segments.next()? {
+            Ok((_addr, current)) => {
+                Some(FileRegions::read(&current, self.version))
+            }
+            Err(e) => Some(Err(e)),
+        }
     }
 }

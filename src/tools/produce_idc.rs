@@ -327,7 +327,11 @@ fn produce_segments<K: IDAKind>(
     writeln!(fmt, "{{")?;
     // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7480
     // https://docs.hex-rays.com/developer-guide/idc/idc-api-reference/alphabetical-list-of-idc-functions/292
-    let segs: Vec<_> = id0.segments()?.collect::<Result<_, _>>()?;
+    let segs_idx = id0.segments_idx()?;
+    let segs: Vec<_> = segs_idx
+        .map(|idx| id0.segments(idx).collect::<Result<Vec<_>, _>>())
+        .transpose()?
+        .unwrap_or_default();
     let mut segs_sorted: Vec<&_> = segs.iter().collect();
     segs_sorted.sort_unstable_by_key(|seg| seg.selector);
     for seg in segs_sorted {
@@ -376,7 +380,7 @@ fn produce_segments<K: IDAKind>(
         )?;
 
         let seg_strings = id0
-            .segment_strings_idx()
+            .segment_strings_idx()?
             .map(|idx| id0.segment_strings(idx))
             .map(|segs| -> Result<Option<_>> {
                 for seg_entry in segs {
@@ -467,7 +471,7 @@ fn produce_patches<K: IDAKind>(
     id0: &ID0Section<K>,
     id1: &ID1Section,
 ) -> Result<()> {
-    let Some(patches_idx) = id0.segment_patches_idx() else {
+    let Some(patches_idx) = id0.segment_patches_idx()? else {
         return Ok(());
     };
     let patches = id0.segment_patches_original_value(patches_idx);
@@ -992,7 +996,7 @@ fn produce_functions<K: IDAKind>(
     let Some(idx) = id0.funcs_idx()? else {
         return Ok(());
     };
-    let id0_funcs = id0.functions_and_comments(idx)?;
+    let id0_funcs = id0.functions_and_comments(idx);
     let funcs: Vec<_> = id0_funcs
         .filter_map(|fun| match fun {
             Err(e) => Some(Err(e)),

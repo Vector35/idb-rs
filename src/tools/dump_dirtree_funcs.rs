@@ -13,8 +13,9 @@ pub fn dump_dirtree_funcs(args: &Args) -> Result<()> {
 }
 
 fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
-    let dirtree = id0.dirtree_function_address()?;
-    print_dirtree(|entry| print_function(&id0, *entry).unwrap(), &dirtree);
+    if let Some(dirtree) = id0.dirtree_function_address()? {
+        print_dirtree(|entry| print_function(&id0, *entry).unwrap(), &dirtree);
+    }
 
     Ok(())
 }
