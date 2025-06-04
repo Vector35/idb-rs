@@ -1,8 +1,8 @@
 use crate::id0::{
     entry_iter::*, get_hash_from_key, get_netnode_from_key, get_sup_from_key,
-    is_key_netnode, key_from_netnode_tag, key_len_netnode_tag,
+    is_key_netnode,
 };
-use crate::id0::{flag, ID0Entry, ID0Section, NetnodeIdx};
+use crate::id0::{flag, ID0Section, NetnodeIdx};
 use crate::IDAKind;
 
 use super::pro::nodeidx_t;

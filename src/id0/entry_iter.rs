@@ -70,7 +70,7 @@ impl<'a, K: IDAKind> Iterator for NetnodeRangeIter<'a, K> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct NetnodeSupRangeIter<'a, K> {
     pub(crate) entries: &'a [ID0Entry],
     _kind: PhantomData<K>,
