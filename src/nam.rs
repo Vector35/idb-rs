@@ -1,7 +1,7 @@
 use anyhow::{ensure, Result};
 
 use crate::ida_reader::{IdbRead, IdbReadKind};
-use crate::{IDAKind, IDAUsize, SectionReader, VaVersion};
+use crate::{IDAKind, SectionReader, VaVersion};
 
 #[derive(Debug, Clone)]
 pub struct NamSection {
@@ -37,7 +37,7 @@ impl NamSection {
         input.read_exact(&mut buf[MAX_HEADER_LEN..])?;
         ensure!(buf[MAX_HEADER_LEN..].iter().all(|b| *b == 0));
 
-        let name_len: u32 = K::Usize::BYTES.into();
+        let name_len: u32 = K::BYTES.into();
         // ensure pages dont break a name
         ensure!(pagesize % name_len == 0);
         // names fit inside the pages
@@ -58,8 +58,14 @@ impl NamSection {
                 if current_nnames == K::Usize::from(0u8) {
                     break;
                 };
-                let name = K::Usize::from_le_reader(&mut input);
-                let Ok(name) = name else {
+                let name_bytes =
+                    <K::AddrBytes as crate::IDAUsizeBytes>::from_reader(
+                        &mut input,
+                    )
+                    .map(|x| {
+                        <K::Usize as num_traits::FromBytes>::from_le_bytes(&x)
+                    });
+                let Ok(name) = name_bytes else {
                     break;
                 };
                 names.push(name.into());
@@ -90,7 +96,7 @@ impl NamSection {
                 let always0 = input.read_u16()?;
                 ensure!(always0 == 0);
                 let mut nnames = input.read_usize()?;
-                if K::Usize::BYTES == 8 {
+                if K::BYTES == 8 {
                     // TODO nnames / 2? Why?
                     nnames /= K::Usize::from(2u8);
                 }
@@ -111,7 +117,7 @@ impl NamSection {
                 ensure!(always0 == 0);
                 let mut nnames = input.read_usize()?;
                 // TODO remove this HACK to find if the Type is u64
-                if K::Usize::BYTES == 8 {
+                if K::BYTES == 8 {
                     // TODO nnames / 2? Why?
                     nnames /= K::Usize::from(2u8);
                 }

@@ -1604,12 +1604,13 @@ mod test {
             id0::IDBParam::V2(x) => x.version,
         };
 
-        let _: Vec<_> = id0.segments().unwrap().map(Result::unwrap).collect();
+        let seg_idx = id0.segments_idx().unwrap().unwrap();
+        let _: Vec<_> = id0.segments(seg_idx).map(Result::unwrap).collect();
         let _: Option<Vec<_>> = id0
             .loader_name()
             .unwrap()
             .map(|iter| iter.map(Result::unwrap).collect());
-        let root_info_idx = id0.root_info_node().unwrap();
+        let root_info_idx = id0.root_node().unwrap();
         let _: Vec<_> = id0
             .root_info(root_info_idx)
             .unwrap()
@@ -1623,20 +1624,21 @@ mod test {
         if let Some(func_idx) = id0.funcs_idx().unwrap() {
             let _: Vec<_> = id0
                 .functions_and_comments(func_idx)
-                .unwrap()
                 .map(Result::unwrap)
                 .collect();
         }
         let _ = id0.entry_points().unwrap();
         let _ = id0.dirtree_bpts().unwrap();
         let _ = id0.dirtree_enums().unwrap();
-        let _dirtree_names = id0.dirtree_names().unwrap();
-        _dirtree_names.visit_leafs(|addr| {
-            // NOTE it's know that some label are missing in some databases
-            let _name = id0.label_at(*addr).unwrap();
-        });
-        let _dirtree_tinfos = id0.dirtree_tinfos().unwrap();
-        if let Some(til) = til {
+        if let Some(_dirtree_names) = id0.dirtree_names().unwrap() {
+            _dirtree_names.visit_leafs(|addr| {
+                // NOTE it's know that some label are missing in some databases
+                let _name = id0.label_at(*addr).unwrap();
+            });
+        }
+        if let Some((_dirtree_tinfos, til)) =
+            id0.dirtree_tinfos().unwrap().zip(til)
+        {
             _dirtree_tinfos.visit_leafs(|ord| {
                 let _til = til.get_ord(*ord).unwrap();
             });
@@ -1719,7 +1721,44 @@ pub enum IDAVariants<I32, I64> {
 }
 
 pub trait IDAKind: std::fmt::Debug + Clone + Copy + 'static {
-    type Usize: IDAUsize;
+    const BYTES: u8;
+    type Usize: IDAUsize
+        + num_traits::AsPrimitive<Self::Isize>
+        + num_traits::FromBytes<Bytes = Self::AddrBytes>;
+    type Isize: IDAIsize
+        + num_traits::AsPrimitive<Self::Usize>
+        + num_traits::FromBytes<Bytes = Self::AddrBytes>;
+    type AddrBytes: IDAUsizeBytes;
+
+    /// helper function, try convert bytes into Usize
+    fn usize_try_from_be_bytes<'a, I: IntoIterator<Item = &'a u8>>(
+        bytes: I,
+    ) -> Option<Self::Usize> {
+        let bytes: Self::AddrBytes = bytes
+            .into_iter()
+            .copied()
+            .collect::<Vec<u8>>()
+            .try_into()
+            .ok()?;
+        let value =
+            <Self::Usize as num_traits::FromBytes>::from_be_bytes(&bytes);
+        Some(value)
+    }
+
+    /// helper function, try convert bytes into Usize
+    fn usize_try_from_le_bytes<'a, I: IntoIterator<Item = &'a u8>>(
+        bytes: I,
+    ) -> Option<Self::Usize> {
+        let bytes: Self::AddrBytes = bytes
+            .into_iter()
+            .copied()
+            .collect::<Vec<u8>>()
+            .try_into()
+            .ok()?;
+        let value =
+            <Self::Usize as num_traits::FromBytes>::from_le_bytes(&bytes);
+        Some(value)
+    }
 }
 
 pub trait IDAUsize:
@@ -1750,7 +1789,6 @@ pub trait IDAUsize:
     + num_traits::AsPrimitive<u16>
     + num_traits::AsPrimitive<u32>
     + num_traits::AsPrimitive<u64>
-    + num_traits::AsPrimitive<Self::Isize>
     + TryInto<usize, Error: std::fmt::Debug>
     + Into<u64>
     + TryInto<u32, Error: std::fmt::Debug>
@@ -1762,49 +1800,68 @@ pub trait IDAUsize:
     + TryFrom<u64, Error: std::fmt::Debug>
     + TryFrom<usize, Error: std::fmt::Debug>
     + Into<i128>
+    + TryFrom<i128>
 {
-    type Isize: Sized
-        + Sync
-        + Send
-        + 'static
-        + Copy
-        + Clone
-        + std::fmt::Debug
-        + std::fmt::Display
-        + std::fmt::LowerHex
-        + std::fmt::UpperHex
-        + PartialEq
-        + Eq
-        + PartialOrd
-        + Ord
-        + Into<i64>
-        + core::hash::Hash
-        + num_traits::FromPrimitive
-        + num_traits::AsPrimitive<Self>
-        + num_traits::Bounded
-        + num_traits::Signed;
-
-    const BYTES: u8;
-
     /// helper fo call into u64
     fn into_u64(self) -> u64 {
         self.into()
     }
-    /// cast the inner type as a signed version of itself, then call into i64
-    fn into_i64(self) -> i64 {
-        let signed: Self::Isize = self.as_();
-        signed.into()
-    }
     fn is_max(self) -> bool {
         self == Self::max_value()
     }
-    // parse the bytes and only return Some if data is the exact size of type
-    fn from_le_bytes(data: &[u8]) -> Option<Self>;
-    fn from_be_bytes(data: &[u8]) -> Option<Self>;
-    // read the type from a reader
-    fn from_le_reader(data: &mut impl std::io::Read) -> Result<Self>;
-    fn from_be_reader(data: &mut impl std::io::Read) -> Result<Self>;
     fn unpack_from_reader(read: &mut impl std::io::Read) -> Result<Self>;
+}
+
+pub trait IDAIsize:
+    Sized
+    + Sync
+    + Send
+    + 'static
+    + Copy
+    + Clone
+    + std::fmt::Debug
+    + std::fmt::Display
+    + std::fmt::LowerHex
+    + std::fmt::UpperHex
+    + PartialEq
+    + Eq
+    + PartialOrd
+    + Ord
+    + core::hash::Hash
+    + core::iter::Sum
+    + num_traits::PrimInt
+    + num_traits::NumAssign
+    + num_traits::WrappingAdd
+    + num_traits::WrappingSub
+    + num_traits::Bounded
+    + num_traits::FromBytes
+    + num_traits::ToBytes
+    + num_traits::AsPrimitive<i8>
+    + num_traits::AsPrimitive<i16>
+    + num_traits::AsPrimitive<i32>
+    + num_traits::AsPrimitive<i64>
+    + TryInto<usize, Error: std::fmt::Debug>
+    + Into<i64>
+    + TryInto<u32, Error: std::fmt::Debug>
+    + TryInto<u16, Error: std::fmt::Debug>
+    + TryInto<u8, Error: std::fmt::Debug>
+    + From<i8>
+    + From<i16>
+    + From<i32>
+    + TryFrom<i64, Error: std::fmt::Debug>
+    + TryFrom<usize, Error: std::fmt::Debug>
+    + Into<i128>
+    + TryFrom<i128>
+{
+}
+
+pub trait IDAUsizeBytes:
+    'static
+    + AsRef<[u8]>
+    + TryFrom<Vec<u8>, Error: core::fmt::Debug>
+    + for<'a> TryFrom<&'a [u8], Error: core::fmt::Debug>
+{
+    fn from_reader(read: &mut impl std::io::Read) -> Result<Self>;
 }
 
 macro_rules! declare_idb_kind {
@@ -1812,32 +1869,25 @@ macro_rules! declare_idb_kind {
         #[derive(Debug, Clone, Copy)]
         pub struct $name;
         impl IDAKind for $name {
+            const BYTES: u8 = $bytes;
             type Usize = $utype;
+            type Isize = $itype;
+            type AddrBytes = [u8; $bytes];
         }
         impl IDAUsize for $utype {
-            type Isize = $itype;
-            const BYTES: u8 = $bytes;
-
-            fn from_le_bytes(data: &[u8]) -> Option<Self> {
-                Some(Self::from_le_bytes(data.try_into().ok()?))
-            }
-            fn from_be_bytes(data: &[u8]) -> Option<Self> {
-                Some(Self::from_be_bytes(data.try_into().ok()?))
-            }
-            fn from_le_reader(read: &mut impl std::io::Read) -> Result<Self> {
-                let mut data = [0; $bytes];
-                read.read_exact(&mut data)?;
-                Ok(Self::from_le_bytes(data))
-            }
-            fn from_be_reader(read: &mut impl std::io::Read) -> Result<Self> {
-                let mut data = [0; $bytes];
-                read.read_exact(&mut data)?;
-                Ok(Self::from_be_bytes(data))
-            }
             fn unpack_from_reader(
                 read: &mut impl std::io::Read,
             ) -> Result<Self> {
                 read.$unapack_fun()
+            }
+        }
+        impl IDAIsize for $itype {}
+
+        impl IDAUsizeBytes for [u8; $bytes] {
+            fn from_reader(read: &mut impl std::io::Read) -> Result<Self> {
+                let mut data = [0; $bytes];
+                read.read_exact(&mut data)?;
+                Ok(data)
             }
         }
     };

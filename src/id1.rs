@@ -1,11 +1,11 @@
 use anyhow::{anyhow, ensure, Result};
 use flag::flags::inst_info::*;
-use num_traits::ToBytes;
 
 pub mod flag;
 
 use std::ops::{Div, Range, Rem};
 
+use crate::id0::flag::netnode::nn_res::*;
 use crate::id0::ID0Section;
 use crate::ida_reader::{IdbRead, IdbReadKind};
 use crate::{IDAKind, SectionReader, VaVersion};
@@ -362,24 +362,13 @@ impl ByteCode {
         id0: &ID0Section<K>,
         ea: K::Usize,
     ) -> Result<ByteExtended<Self>> {
-        let root_info = id0.root_info_node()?;
+        let root_info = id0.root_node()?;
         let node_idx = id0.image_base(root_info)?;
         let node = node_idx.ea2node(ea)?;
-        let node_bytes = node.0.to_be_bytes();
-        let num = K::Usize::from(0x25u8).to_be_bytes();
-        let key: Vec<u8> = b"."
-            .iter()
-            .copied()
-            .chain(node_bytes.as_ref().to_vec())
-            .chain([crate::id0::flag::netnode::nn_res::ARRAY_ALT_TAG])
-            .chain(num.as_ref().to_vec())
-            .collect();
         let value = id0
-            .get(&key)
+            .sup_value(node, K::Usize::from(0x25u8), ARRAY_ALT_TAG)
             .map(|entry| {
                 entry
-                    .key
-                    .as_slice()
                     .try_into()
                     .map_err(|_| anyhow!("Invalid extended id1 value"))
                     .map(u32::from_le_bytes)
@@ -708,18 +697,12 @@ fn get_forced_operand<K: IDAKind>(
         #[cfg(feature = "restrictive")]
         _ => unreachable!(),
     });
-    let root_info = id0.root_info_node()?;
+    let root_info = id0.root_node()?;
     let base = id0.image_base(root_info)?;
-    let ea = base.ea2node(ea)?;
+    let node = base.ea2node(ea)?;
 
-    let key: Vec<u8> = b"."
-        .iter()
-        .chain(ea.0.to_be_bytes().as_ref())
-        .chain([crate::id0::flag::netnode::nn_res::ARRAY_SUP_TAG].iter())
-        .chain(alt_value.to_be_bytes().as_ref())
-        .copied()
-        .collect();
-    Ok(id0.get(&key).map(|entry| &entry.value[..]))
+    let entries = id0.sup_value(node, alt_value, ARRAY_SUP_TAG);
+    Ok(entries)
 }
 
 #[derive(Clone, Debug)]
