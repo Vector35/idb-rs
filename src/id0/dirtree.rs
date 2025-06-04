@@ -126,14 +126,13 @@ where
             return Err(anyhow!("Duplicated dirtree index entry"));
         };
     }
+    let Some(root_idx) = root_idx else {
+        return Ok(DirTreeRoot { entries: vec![] });
+    };
 
     // assemble the raw_entries into a tree
     // first entry is always the root
-    let root = entries_raw
-        .get_mut(&root_idx.unwrap())
-        .unwrap()
-        .take()
-        .unwrap();
+    let root = entries_raw.get_mut(&root_idx).unwrap().take().unwrap();
     let name = root.name;
     ensure!(name.is_empty(), "DirTree With a named root");
     ensure!(

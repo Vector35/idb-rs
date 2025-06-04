@@ -85,9 +85,16 @@ impl<K: IDAKind> ID0Section<K> {
     /// Get the range for the index of all entries that match (start_with) the
     /// provided key
     fn binary_search_range(&self, key: &[u8]) -> Range<usize> {
-        let Some(start) = self.binary_search(&key).ok() else {
-            // No entry match this key, empty range
-            return 0..0;
+        let start = match self.binary_search(&key) {
+            Ok(idx) => idx,
+            Err(idx) => {
+                let entry_key = &self.entries[idx].key;
+                if !entry_key.starts_with(key) {
+                    // No entry match this key, empty range
+                    return 0..0;
+                }
+                idx
+            }
         };
         let end = self.binary_search_end(&key);
         start..end
