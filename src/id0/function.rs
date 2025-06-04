@@ -162,12 +162,12 @@ impl<K: IDAKind> IDBFunction<K> {
 
         // TODO Undestand the InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x28f9d8 data
         if !input.is_empty() {
-            let flags_full = IdbReadKind::<K>::unpack_usize(&mut input)?;
+            let flags_full = input.unpack_dq()?;
             ensure!(
-                flags_full.into_u64() as u16 == flags_part1,
+                flags_full as u16 == flags_part1,
                 "Full flag conflict with partial flag"
             );
-            flags = IDBFunctionFlag::from_raw(flags_full.into())?;
+            flags = IDBFunctionFlag::from_raw(flags_full)?;
         }
         // TODO make sure all the data is parsed
         ensure!(
