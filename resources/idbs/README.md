@@ -37,8 +37,6 @@ For each reference there may be an associated license, if a file is listed under
    - [v6.8/kernel32.idb](v6.8/kernel32.idb)
    - [v6.95/kernel32.i64](v6.95/kernel32.i64)
    - [v6.95/kernel32.idb](v6.95/kernel32.idb)
-   - [v7.0b/kernel32.i64](v7.0b/kernel32.i64)
-   - [v7.0b/kernel32.idb](v7.0b/kernel32.idb)
    - [v7.2/kernel32.i64](v7.2/kernel32.i64)
    - [v7.2/kernel32.idb](v7.2/kernel32.idb)
    - [v7.3/kernel32.i64](v7.3/kernel32.i64)
