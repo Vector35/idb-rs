@@ -573,7 +573,7 @@ impl SeparatedSections {
             til_offset: u64,
             checksums: [u32; 5],
             id2_offset: u64,
-            id2_checksum: u32,
+            _unk2: u32,
         }
         let raw: Raw = bincode::deserialize_from(input)?;
 
@@ -591,7 +591,8 @@ impl SeparatedSections {
         let nam = SeparatedSection::new(raw.nam_offset, raw.checksums[2])?;
         let seg = SeparatedSection::new(raw.seg_offset, raw.checksums[3])?;
         let til = SeparatedSection::new(raw.til_offset, raw.checksums[4])?;
-        let id2 = SeparatedSection::new(raw.id2_offset, raw.id2_checksum)?;
+        // TODO find the checksums
+        let id2 = SeparatedSection::new(raw.id2_offset, 0)?;
 
         Ok(Self {
             magic: raw_header.magic,
