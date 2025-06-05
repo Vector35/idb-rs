@@ -3,7 +3,7 @@ use idb_rs::til::array::Array;
 use idb_rs::til::bitfield::Bitfield;
 use idb_rs::til::function::{CallingConvention, Function};
 use idb_rs::til::pointer::Pointer;
-use idb_rs::til::r#enum::Enum;
+use idb_rs::til::r#enum::{Enum, EnumMember, EnumMembers};
 use idb_rs::til::r#struct::{Struct, StructMemberAtt};
 use idb_rs::til::section::TILSection;
 use idb_rs::til::union::Union;
@@ -1207,37 +1207,69 @@ fn print_til_type_enum(
         write!(fmt, " {{")?;
     }
     let indent = indent + INDENT_LEN;
-    for member in &til_enum.members {
-        if tilib_args.dump_struct_layout == Some(true) {
-            write!(fmt, "{AFTER_SPACE:>indent$}")?;
+    match &til_enum.members {
+        EnumMembers::Regular(members) => {
+            members.iter().try_for_each(|member| {
+                print_til_type_enum_member(
+                    fmt, tilib_args, indent, til_enum, member,
+                )
+            })?;
         }
-        if let Some(member_name) = &member.name {
-            fmt.write_all(member_name.as_bytes())?;
-        }
-        write!(fmt, " = ")?;
-        let value = member.value;
-        match til_enum.output_format {
-            Char if value <= 0xFF => write!(fmt, "'{}'", value as u8 as char)?,
-            Char => write!(fmt, "'\\xu{value:X}'")?,
-            Hex => write!(fmt, "{value:#X}")?,
-            SignedDecimal if til_enum.is_64 => write!(fmt, "{}", value as i64)?,
-            SignedDecimal /*if !til_enum.is_64*/ => write!(fmt, "{}", value as i32)?,
-            UnsignedDecimal => write!(fmt, "{value:X}")?,
-        }
-        // TODO find this in InnerRef
-        if let Some(8) = til_enum.storage_size.map(NonZeroU8::get) {
-            write!(fmt, "LL")?;
-        }
-        write!(fmt, ",")?;
-        if tilib_args.dump_struct_layout == Some(true) {
-            writeln!(fmt)?;
-        }
+        EnumMembers::Groups(groups) => groups.iter().try_for_each(|group| {
+            print_til_type_enum_member(
+                fmt,
+                tilib_args,
+                indent,
+                til_enum,
+                &group.field,
+            )?;
+            group.sub_fields.iter().try_for_each(|member| {
+                print_til_type_enum_member(
+                    fmt, tilib_args, indent, til_enum, member,
+                )
+            })
+        })?,
     }
     let indent = indent - INDENT_LEN;
     if tilib_args.dump_struct_layout == Some(true) {
         write!(fmt, "{AFTER_SPACE:>indent$}}}")?;
     } else {
         write!(fmt, "}}")?;
+    }
+    Ok(())
+}
+
+fn print_til_type_enum_member(
+    fmt: &mut impl Write,
+    tilib_args: &PrintTilibArgs,
+    indent: usize,
+    til_enum: &Enum,
+    member: &EnumMember,
+) -> Result<()> {
+    use idb_rs::til::r#enum::EnumFormat::*;
+    if tilib_args.dump_struct_layout == Some(true) {
+        write!(fmt, "{AFTER_SPACE:>indent$}")?;
+    }
+    if let Some(member_name) = &member.name {
+        fmt.write_all(member_name.as_bytes())?;
+    }
+    write!(fmt, " = ")?;
+    let value = member.value;
+    match til_enum.output_format {
+        Char if value <= 0xFF => write!(fmt, "'{}'", value as u8 as char)?,
+        Char => write!(fmt, "'\\xu{value:X}'")?,
+        Hex => write!(fmt, "{value:#X}")?,
+        SignedDecimal if til_enum.is_64 => write!(fmt, "{}", value as i64)?,
+        SignedDecimal /*if !til_enum.is_64*/ => write!(fmt, "{}", value as i32)?,
+        UnsignedDecimal => write!(fmt, "{value:X}")?,
+    }
+    // TODO find this in InnerRef
+    if let Some(8) = til_enum.storage_size.map(NonZeroU8::get) {
+        write!(fmt, "LL")?;
+    }
+    write!(fmt, ",")?;
+    if tilib_args.dump_struct_layout == Some(true) {
+        writeln!(fmt)?;
     }
     Ok(())
 }

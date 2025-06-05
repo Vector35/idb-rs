@@ -3,7 +3,7 @@ use std::num::NonZeroU8;
 use crate::ida_reader::IdbBufRead;
 use crate::til::{flag, TypeAttribute, TypeRaw, TypeVariantRaw};
 use crate::IDBString;
-use anyhow::{anyhow, ensure};
+use anyhow::{anyhow, ensure, Result};
 
 use super::section::TILSectionHeader;
 use super::CommentType;
@@ -14,9 +14,7 @@ pub struct Enum {
     pub is_unsigned: bool,
     pub is_64: bool,
     pub output_format: EnumFormat,
-    pub members: Vec<EnumMember>,
-    pub pseudo_members: Vec<Option<IDBString>>,
-    pub groups: Option<Vec<u16>>,
+    pub members: EnumMembers,
     pub storage_size: Option<NonZeroU8>,
     // TODO parse type attributes
     //others: StructMemberRaw,
@@ -28,38 +26,66 @@ impl Enum {
         value: EnumRaw,
         fields: &mut impl Iterator<Item = Option<IDBString>>,
         comments: &mut impl Iterator<Item = Option<CommentType>>,
-    ) -> anyhow::Result<Self> {
-        let members = value.members.len();
-        let group_members: Option<usize> = value
-            .groups
-            .as_ref()
-            .map(|groups| groups.iter().map(|count| usize::from(*count)).sum());
-        // if there is more member groups then members, then we have some pseudo
-        // members
-        let pseudo_members_num =
-            group_members.unwrap_or(0).saturating_sub(members);
-
-        let members = value
-            .members
-            .into_iter()
-            .map(|member| EnumMember {
-                name: fields.next().flatten(),
-                comment: comments.next().flatten(),
-                value: member,
-            })
-            .collect();
-        let pseudo_members = fields.take(pseudo_members_num).collect();
+    ) -> Result<Self> {
+        let members = match value.members {
+            EnumMembersRaw::Regular(members) => EnumMembers::Regular(
+                members
+                    .into_iter()
+                    .map(|member| {
+                        Self::new_enum_member(member, fields, comments)
+                    })
+                    .collect(),
+            ),
+            EnumMembersRaw::BitMask(members) => EnumMembers::Groups(
+                members
+                    .into_iter()
+                    .map(|(mask, members)| {
+                        let field =
+                            Self::new_enum_member(mask, fields, comments);
+                        let sub_fields = members
+                            .into_iter()
+                            .map(|member| {
+                                Self::new_enum_member(member, fields, comments)
+                            })
+                            .collect();
+                        EnumGroup { field, sub_fields }
+                    })
+                    .collect(),
+            ),
+        };
         Ok(Self {
             is_signed: value.is_signed,
             is_unsigned: value.is_unsigned,
             is_64: value.is_64,
             output_format: value.output_format,
             members,
-            pseudo_members,
-            groups: value.groups,
             storage_size: value.storage_size,
         })
     }
+
+    pub(crate) fn new_enum_member(
+        value: u64,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
+    ) -> EnumMember {
+        EnumMember {
+            name: fields.next().flatten(),
+            comment: comments.next().flatten(),
+            value,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum EnumMembers {
+    Regular(Vec<EnumMember>),
+    Groups(Vec<EnumGroup>),
+}
+
+#[derive(Clone, Debug)]
+pub struct EnumGroup {
+    pub field: EnumMember,
+    pub sub_fields: Vec<EnumMember>,
 }
 
 #[derive(Clone, Debug)]
@@ -71,13 +97,18 @@ pub struct EnumMember {
 
 #[derive(Clone, Debug)]
 pub(crate) struct EnumRaw {
-    is_signed: bool,
-    is_unsigned: bool,
-    is_64: bool,
-    output_format: EnumFormat,
-    groups: Option<Vec<u16>>,
-    members: Vec<u64>,
-    storage_size: Option<NonZeroU8>,
+    pub(crate) is_signed: bool,
+    pub(crate) is_unsigned: bool,
+    pub(crate) is_64: bool,
+    pub(crate) output_format: EnumFormat,
+    pub(crate) members: EnumMembersRaw,
+    pub(crate) storage_size: Option<NonZeroU8>,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) enum EnumMembersRaw {
+    Regular(Vec<u64>),
+    BitMask(Vec<(u64, Vec<u64>)>),
 }
 
 impl EnumRaw {
@@ -85,7 +116,7 @@ impl EnumRaw {
     pub(crate) fn read(
         input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
-    ) -> anyhow::Result<TypeVariantRaw> {
+    ) -> Result<TypeVariantRaw> {
         use flag::tattr_enum::*;
         use flag::tf_enum::*;
 
@@ -155,7 +186,6 @@ impl EnumRaw {
             bte & BTE_RESERVED == 0,
             "Enum BTE including the Always off sub-field"
         );
-        let have_subarrays = bte & BTE_BITFIELD != 0;
         let output_format_raw = bte & BTE_OUT_MASK;
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452312 deserialize_enum
         ensure!(
@@ -189,30 +219,15 @@ impl EnumRaw {
             _ => unreachable!(),
         };
 
-        let mut low_acc: u32 = 0;
-        let mut high_acc: u32 = 0;
-        let mut group_acc = 0;
-        let mut groups = have_subarrays.then_some(vec![]);
-        let members = (0..member_num)
-            .map(|_member_idx| {
-                if let Some(groups) = &mut groups {
-                    // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452527 deserialize_enum
-                    if group_acc == 0 {
-                        group_acc = input.read_dt()?;
-                        groups.push(group_acc);
-                    }
-                    group_acc -= 1;
-                }
-                // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45242f deserialize_enum
-                // NOTE this is originaly i32, but wrapping_add a u32/i32 have the same result
-                low_acc = low_acc.wrapping_add(input.read_de()?);
-                if is_64 {
-                    high_acc = high_acc.wrapping_add(input.read_de()?);
-                }
-                // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452472 deserialize_enum
-                Ok((((high_acc as u64) << 32) | low_acc as u64) & mask)
-            })
-            .collect::<anyhow::Result<_>>()?;
+        let members = if bte & BTE_BITFIELD != 0 {
+            EnumMembersRaw::BitMask(Self::read_members_bitmask(
+                input, member_num, mask, is_64,
+            )?)
+        } else {
+            EnumMembersRaw::Regular(Self::read_member_regular(
+                input, member_num, mask, is_64,
+            )?)
+        };
 
         Ok(TypeVariantRaw::Enum(EnumRaw {
             is_signed,
@@ -220,9 +235,67 @@ impl EnumRaw {
             is_64,
             output_format,
             members,
-            groups,
             storage_size,
         }))
+    }
+
+    fn read_member_regular(
+        input: &mut impl IdbBufRead,
+        member_num: u32,
+        mask: u64,
+        is_64: bool,
+    ) -> Result<Vec<u64>> {
+        let mut low_acc: u32 = 0;
+        let mut high_acc: u32 = 0;
+        (0..member_num)
+            .map(|_member_idx| {
+                // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45242f deserialize_enum
+                // NOTE this is originaly i32, but wrapping_add a u32/i32 have the same result
+                low_acc = low_acc.wrapping_add(input.read_de()?);
+                if is_64 {
+                    high_acc = high_acc.wrapping_add(input.read_de()?);
+                }
+
+                // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452472 deserialize_enum
+                Ok((((high_acc as u64) << 32) | low_acc as u64) & mask)
+            })
+            .collect()
+    }
+
+    fn read_members_bitmask(
+        input: &mut impl IdbBufRead,
+        member_num: u32,
+        mask: u64,
+        is_64: bool,
+    ) -> Result<Vec<(u64, Vec<u64>)>> {
+        (0..member_num)
+            .map(|_i| {
+                // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452527 deserialize_enum
+                let group_num = input.read_dt()?;
+                ensure!(group_num != 0);
+
+                let mask_low = input.read_de()?;
+                let mask_high = if is_64 { input.read_de()? } else { 0 };
+                let mask =
+                    (((mask_high as u64) << 32) | mask_low as u64) & mask;
+                let mut acc_low: u32 = 0;
+                let mut acc_high: u32 = 0;
+                let sub_members = (0..group_num - 1)
+                    .map(|_i| {
+                        // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45242f deserialize_enum
+                        // NOTE this is originaly i32, but wrapping_add a u32/i32 have the same result
+                        acc_low = acc_low.wrapping_add(input.read_de()?);
+                        if is_64 {
+                            acc_high = acc_high.wrapping_add(input.read_de()?);
+                        }
+
+                        // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452472 deserialize_enum
+                        Ok((((acc_high as u64) << 32) | acc_low as u64) & mask)
+                    })
+                    .collect::<Result<_>>()?;
+                Ok((mask, sub_members))
+            })
+            .collect()
     }
 }
 
