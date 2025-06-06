@@ -15,7 +15,8 @@ pub fn dump_addr_info(args: &Args) -> Result<()> {
 
 fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
     // TODO create a function for that in ida_info
-    let version = match id0.ida_info()? {
+    let root_netnode = id0.root_node()?;
+    let version = match id0.ida_info(root_netnode.into())? {
         idb_rs::id0::IDBParam::V1(idb_rs::id0::IDBParam1 {
             version, ..
         }) => version,

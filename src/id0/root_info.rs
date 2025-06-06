@@ -8,21 +8,12 @@ use crate::{ida_reader::IdbReadKind, IDAKind, IDAUsize};
 
 use super::*;
 
-#[derive(Clone, Debug)]
-pub enum IDBRootInfo<'a, K: IDAKind> {
-    /// it's just the "Root Node" String
-    RootNodeName,
-    InputFile(&'a [u8]),
-    Crc(K::Usize),
-    ImageBase(ImageBase<K>),
-    OpenCount(K::Usize),
-    CreatedDate(K::Usize),
-    Version(K::Usize),
-    Md5(&'a [u8; 16]),
-    VersionString(&'a str),
-    Sha256(&'a [u8; 32]),
-    IDAInfo(Box<IDBParam<K>>),
-    Unknown(&'a ID0Entry),
+#[derive(Copy, Clone, Debug)]
+pub struct RootNodeIdx<K: IDAKind>(pub(crate) K::Usize);
+impl<K: IDAKind> From<RootNodeIdx<K>> for NetnodeIdx<K> {
+    fn from(value: RootNodeIdx<K>) -> Self {
+        Self(value.0)
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -445,8 +436,9 @@ impl<K: IDAKind> IDBParam<K> {
         let lflags = Lflg::new(input.unpack_dd()?)?;
         let database_change_count = input.unpack_dd()?;
         let filetype_val = input.unpack_dw()?;
-        let filetype = FileType::from_value(filetype_val)
-            .ok_or_else(|| anyhow!("Invalid FileType value: {}", filetype_val))?;
+        let filetype = FileType::from_value(filetype_val).ok_or_else(|| {
+            anyhow!("Invalid FileType value: {}", filetype_val)
+        })?;
         let ostype = input.unpack_dw()?;
         let apptype = input.unpack_dw()?;
         let asmtype = input.read_u8()?;
@@ -652,7 +644,10 @@ impl Inffl {
 pub struct Lflg(u16);
 impl Lflg {
     fn new(value: u32) -> Result<Self> {
-        ensure!(value < u16::MAX as u32, "Invalid LFLG flag value: {:#b}", value);
+        ensure!(
+            value < u16::MAX as u32,
+            "Invalid LFLG flag value: {value:#b}"
+        );
         Ok(Self(value as u16))
     }
 
@@ -706,7 +701,9 @@ impl Lflg {
     }
     // TODO: Figure out what this flag is.
     /// Unknown flag found in `resources/idbs/v7.0b/kernel32.i64`.
-    pub fn _unk_flag_0x2000(&self) -> bool { self.0 & 0x2000 != 0 }
+    pub fn _unk_flag_0x2000(&self) -> bool {
+        self.0 & 0x2000 != 0
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

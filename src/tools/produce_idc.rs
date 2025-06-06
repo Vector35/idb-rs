@@ -228,7 +228,8 @@ fn produce_gen_info<K: IDAKind>(
     id0: &ID0Section<K>,
     til: &TILSection,
 ) -> Result<()> {
-    let info = id0.ida_info()?;
+    let root_netnode = id0.root_node()?;
+    let info = id0.ida_info(root_netnode.into())?;
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// General information")?;
     writeln!(fmt)?;
@@ -428,7 +429,8 @@ fn produce_segments<K: IDAKind>(
     }
 
     // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb8c35
-    let ida_info = id0.ida_info()?;
+    let root_netnode = id0.root_node()?;
+    let ida_info = id0.ida_info(root_netnode.into())?;
     let low_off = match &ida_info {
         idb_rs::id0::IDBParam::V1(x) => x.lowoff,
         idb_rs::id0::IDBParam::V2(x) => x.lowoff,

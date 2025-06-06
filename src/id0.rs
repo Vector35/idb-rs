@@ -41,7 +41,7 @@ pub(crate) const fn key_len_netnode_tag<K: IDAKind>() -> usize {
     key_len_netnode::<K>() + 1
 }
 
-pub(crate) fn is_key_netnode<K: IDAKind>(key: &[u8]) -> bool {
+pub(crate) fn is_key_netnode(key: &[u8]) -> bool {
     key.get(0).map(|i| *i == NETNODE_PREFIX).unwrap_or(false)
 }
 
@@ -49,6 +49,11 @@ pub(crate) fn get_netnode_from_key<K: IDAKind>(key: &[u8]) -> Option<K::Usize> {
     let key_len = key_len_netnode::<K>();
     key.get(1..key_len)
         .and_then(|key| K::usize_try_from_be_bytes(key))
+}
+
+pub(crate) fn get_tag_from_key<K: IDAKind>(key: &[u8]) -> Option<u8> {
+    let key_start = key_len_netnode::<K>();
+    key.get(key_start).copied()
 }
 
 pub(crate) fn get_sup_from_key<K: IDAKind>(key: &[u8]) -> Option<K::Usize> {
