@@ -1551,16 +1551,16 @@ mod test {
         let id0 = sections
             .read_id0(&mut *input, sections.id0_location().unwrap())
             .unwrap();
+        let id1 = sections
+            .read_id1(&mut *input, sections.id1_location().unwrap())
+            .unwrap();
         let til = sections
             .til_location()
             .map(|til| sections.read_til(&mut *input, til).unwrap());
         match id0 {
-            IDAVariants::IDA32(id0_32) => parse_idb_data(&id0_32, til.as_ref()),
-            IDAVariants::IDA64(id0_64) => parse_idb_data(&id0_64, til.as_ref()),
+            IDAVariants::IDA32(id0) => parse_idb_data(&id0, &id1, til.as_ref()),
+            IDAVariants::IDA64(id0) => parse_idb_data(&id0, &id1, til.as_ref()),
         }
-        let _ = sections
-            .id1_location()
-            .map(|idx| sections.read_id1(&mut *input, idx));
         let _ = sections
             .nam_location()
             .map(|idx| sections.read_nam(&mut *input, idx));
@@ -1576,27 +1576,35 @@ mod test {
         let id0 = sections
             .read_id0(&mut *input, sections.id0_location().unwrap())
             .unwrap();
+        let id1 = sections
+            .read_id1(&mut *input, sections.id1_location().unwrap())
+            .unwrap();
         let til = sections
             .til_location()
             .map(|til| sections.read_til(&mut *input, til).unwrap());
         match id0 {
-            IDAVariants::IDA32(id0_32) => parse_idb_data(&id0_32, til.as_ref()),
-            IDAVariants::IDA64(id0_64) => parse_idb_data(&id0_64, til.as_ref()),
+            IDAVariants::IDA32(id0_32) => {
+                parse_idb_data(&id0_32, &id1, til.as_ref())
+            }
+            IDAVariants::IDA64(id0_64) => {
+                parse_idb_data(&id0_64, &id1, til.as_ref())
+            }
         }
-        let _ = sections
-            .id1_location()
-            .map(|idx| sections.read_id1(&mut *input, idx));
         let _ = sections
             .nam_location()
             .map(|idx| sections.read_nam(&mut *input, idx));
     }
 
-    fn parse_idb_data<K>(id0: &ID0Section<K>, til: Option<&TILSection>)
-    where
+    fn parse_idb_data<K>(
+        id0: &ID0Section<K>,
+        _id1: &ID1Section,
+        til: Option<&TILSection>,
+    ) where
         K: IDAKind,
     {
         // parse all id0 information
-        let _ida_info = id0.ida_info().unwrap();
+        let root_netnode = id0.root_node().unwrap();
+        let _ida_info = id0.ida_info(root_netnode.into()).unwrap();
         let version = match _ida_info {
             id0::IDBParam::V1(x) => x.version,
             id0::IDBParam::V2(x) => x.version,
@@ -1609,11 +1617,45 @@ mod test {
             .unwrap()
             .map(|iter| iter.map(Result::unwrap).collect());
         let root_info_idx = id0.root_node().unwrap();
-        let _: Vec<_> = id0
-            .root_info(root_info_idx)
+        // I belive the input file should always be present, but maybe I'm wrong,
+        // I need know if this unwrap panics
+        id0.input_file(root_info_idx).unwrap();
+        id0.input_file_size(root_info_idx).unwrap();
+        id0.input_file_crc32(root_info_idx).unwrap().unwrap();
+        id0.input_file_sha256(root_info_idx).unwrap();
+        id0.input_file_md5(root_info_idx).unwrap();
+        // TODO test image base translate an addr to netnode and vise-versa
+        let _image_base = id0.image_base(root_info_idx).unwrap();
+        // TODO I think database information is always available, check that...
+        id0.database_num_opens(root_info_idx).unwrap().unwrap();
+        id0.database_secs_opens(root_info_idx).unwrap().unwrap();
+        id0.database_creation_time(root_info_idx).unwrap().unwrap();
+        id0.database_initial_version(root_info_idx)
             .unwrap()
-            .map(Result::unwrap)
-            .collect();
+            .unwrap();
+        id0.database_creation_version(root_info_idx).unwrap();
+        id0.c_predefined_macros(root_info_idx);
+        id0.c_header_path(root_info_idx);
+        id0.ida_info(root_info_idx).unwrap();
+        // TODO identify the data
+        //let Some(_) = id0.output_file_encoding_idx(root_info_idx) else {todo!()};
+        //let Some(_) = id0.ids_modenode_id(root_info_idx) else {todo!()};
+        //id0.user_closed_source_files(root_info_idx).unwrap().collect();
+        //let Some(_) = id0.problem_lists(root_info_idx) else {todo!()};
+        //let Some(_) = id0.archive_file_path(root_info_idx) else {todo!()};
+        //let Some(_) = id0.abi_name(root_info_idx) else {todo!()};
+        //id0.debug_binary_paths(root_info_idx).unwrap().collect();
+        //let Some(_) = id0.strings_encodings(root_info_idx) else {todo!()};
+        //let Some(_) = id0.text_representation_options(root_info_idx) else {todo!()};
+        //let Some(_) = id0.graph_representation_options(root_info_idx) else {todo!()};
+        //let Some(_) = id0.instant_idc_statements(root_info_idx) else {todo!()};
+        //let Some(_) = id0.assembler_include_filename(root_info_idx) else {todo!()};
+        //id0.notepad_data(root_info_idx).unwrap().collect();
+        //let Some(_) = id0.instant_idc_statements_old(root_info_idx) else {todo!()};
+        //let Some(_) = id0.segment_group_info(root_info_idx) else {todo!()};
+        //id0.selectors(root_info_idx).unwrap().collect();
+        //let Some(_) = id0.file_format_name_loader(root_info_idx) else {todo!()};
+
         let file_regions_idx = id0.file_regions_idx().unwrap();
         let _: Vec<_> = id0
             .file_regions(file_regions_idx, version)

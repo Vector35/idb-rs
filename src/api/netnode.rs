@@ -30,7 +30,7 @@ pub fn netnode_check<K: IDAKind>(
 pub fn netnode_start<K: IDAKind>(id0: &ID0Section<K>) -> Option<netnode<K>> {
     id0.entries
         .iter()
-        .find(|entry| is_key_netnode::<K>(&entry.key))
+        .find(|entry| is_key_netnode(&entry.key))
         .and_then(|entry| {
             get_netnode_from_key::<K>(&entry.key)
                 .map(nodeidx_t::from_raw)
@@ -42,7 +42,7 @@ pub fn netnode_end<K: IDAKind>(id0: &ID0Section<K>) -> Option<netnode<K>> {
     id0.entries
         .iter()
         .rev()
-        .find(|entry| is_key_netnode::<K>(&entry.key))
+        .find(|entry| is_key_netnode(&entry.key))
         .and_then(|entry| {
             get_netnode_from_key::<K>(&entry.key)
                 .map(nodeidx_t::from_raw)
@@ -56,7 +56,7 @@ pub fn netnode_next<K: IDAKind>(
 ) -> Option<netnode<K>> {
     let node_idx = id0.netnode_next_idx(NetnodeIdx(node.0 .0))?;
     let key = &id0.entries[node_idx].key;
-    if !is_key_netnode::<K>(key) {
+    if !is_key_netnode(key) {
         return None;
     }
 
@@ -73,7 +73,7 @@ pub fn netnode_prev<K: IDAKind>(
     id0.entries
         .get(node_idx)
         .map(|entry| &entry.key[..])
-        .filter(|key| is_key_netnode::<K>(key))
+        .filter(|key| is_key_netnode(key))
         .and_then(|key| {
             get_netnode_from_key::<K>(key)
                 .map(nodeidx_t::from_raw)
@@ -152,8 +152,7 @@ pub fn netnode_lower_bound<K: IDAKind>(
     tag: u32,
 ) -> Option<nodeidx_t<K>> {
     let tag = check_tag(tag);
-    let start_idx = id0.netnode_tag_alt_idx(NetnodeIdx(num.0), cur.0, tag)?;
-    iter_continous_subkeys(id0, start_idx, NetnodeIdx(num.0), tag, cur.0)
+    EntryTagContinuousSubkeys::<'_, K>::new(id0, NetnodeIdx(num.0), tag, cur.0)
         .last()
         .and_then(move |entry| {
             get_sup_from_key::<K>(&entry.key).map(nodeidx_t::from_raw)
@@ -413,9 +412,8 @@ pub fn netnode_blobsize<K: IDAKind>(
     num: nodeidx_t<K>,
     start: nodeidx_t<K>,
     tag: u32,
-) -> Option<usize> {
-    id0.blob(NetnodeIdx(num.0), start.0, check_tag(tag))
-        .map(|iter| iter.count())
+) -> usize {
+    id0.blob(NetnodeIdx(num.0), start.0, check_tag(tag)).count()
 }
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x800240
 pub fn netnode_getblob<'a, K: IDAKind>(
@@ -423,9 +421,9 @@ pub fn netnode_getblob<'a, K: IDAKind>(
     num: nodeidx_t<K>,
     start: nodeidx_t<K>,
     tag: u32,
-) -> Option<Vec<u8>> {
+) -> Vec<u8> {
     id0.blob(NetnodeIdx(num.0), start.0, check_tag(tag))
-        .map(|iter| iter.collect())
+        .collect()
 }
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x8002a0
 pub fn netnode_qgetblob<K: IDAKind>(
@@ -433,7 +431,7 @@ pub fn netnode_qgetblob<K: IDAKind>(
     num: nodeidx_t<K>,
     start: nodeidx_t<K>,
     tag: u32,
-) -> Option<Vec<u8>> {
+) -> Vec<u8> {
     netnode_getblob(id0, num, start, tag)
 }
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x7ffaa0

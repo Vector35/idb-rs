@@ -5,16 +5,15 @@ use std::ops::Range;
 use anyhow::Result;
 use num_traits::{AsPrimitive, PrimInt, ToBytes};
 
-use flag::netnode::nn_res::ARRAY_SUP_TAG;
-
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
 use crate::til;
 use crate::{IDAVariants, SectionReader, IDA32, IDA64};
 
 use super::entry_iter::{
-    iter_continous_subkeys, NetnodeRangeIter, NetnodeSupRangeIter,
+    EntryTagContinuousSubkeys, NetnodeRangeIter, NetnodeSupRangeIter,
 };
 use super::flag::netnode::nn_res::*;
+use super::flag::ridx::*;
 use super::function::*;
 use super::*;
 
@@ -204,7 +203,7 @@ impl<K: IDAKind> ID0Section<K> {
     pub(crate) fn netnode_next_idx(&self, idx: NetnodeIdx<K>) -> Option<usize> {
         let key: Vec<u8> = key_from_netnode::<K>(idx.0).collect();
         self.next_idx(&key).and_then(|idx| {
-            is_key_netnode::<K>(&self.entries[idx].key).then_some(idx)
+            is_key_netnode(&self.entries[idx].key).then_some(idx)
         })
     }
 
@@ -252,7 +251,7 @@ impl<K: IDAKind> ID0Section<K> {
     pub(crate) fn netnode_prev_idx(&self, idx: NetnodeIdx<K>) -> Option<usize> {
         let key: Vec<u8> = key_from_netnode::<K>(idx.0).collect();
         let prev_idx = self.prev_idx(&key)?;
-        is_key_netnode::<K>(&self.entries[prev_idx].key).then_some(prev_idx)
+        is_key_netnode(&self.entries[prev_idx].key).then_some(prev_idx)
     }
 
     /// Get the previous entry index for the provided netnode index and tag and
@@ -410,12 +409,10 @@ impl<K: IDAKind> ID0Section<K> {
         idx: NetnodeIdx<K>,
         start: K::Usize,
         tag: u8,
-    ) -> Option<impl Iterator<Item = u8> + use<'a, K>> {
-        let start_idx = self.netnode_tag_alt_idx(idx, start, tag)?;
-        let values = iter_continous_subkeys(self, start_idx, idx, tag, start)
+    ) -> impl Iterator<Item = u8> + use<'a, K> {
+        EntryTagContinuousSubkeys::<'_, K>::new(self, idx, tag, start)
             .flat_map(|entry| &entry.value[..])
-            .copied();
-        Some(values)
+            .copied()
     }
 
     pub(crate) fn address_info_value(
@@ -533,117 +530,388 @@ impl<K: IDAKind> ID0Section<K> {
         })))
     }
 
-    pub fn root_node(&self) -> Result<NetnodeIdx<K>> {
+    pub fn root_node(&self) -> Result<RootNodeIdx<K>> {
         let node_idx = self
             .netnode_idx_by_name("Root Node")?
             .ok_or_else(|| anyhow!("Unable to find entry Root Node"))?;
-        Ok(NetnodeIdx(node_idx.0))
+        Ok(RootNodeIdx(node_idx.0))
     }
 
-    pub fn image_base(&self, idx: NetnodeIdx<K>) -> Result<ImageBase<K>> {
-        let key: Vec<u8> = key_from_netnode_tag_alt::<K>(
-            idx.0,
-            flag::netnode::nn_res::ARRAY_ALT_TAG,
-            <K::Isize as From<i32>>::from(flag::ridx::RIDX_ALT_IMAGEBASE).as_(),
-        )
-        .collect();
-        self.binary_search(&key)
-            .ok()
-            .and_then(|idx| {
-                K::usize_try_from_le_bytes(&self.entries[idx].value[..])
-            })
-            .map(ImageBase)
-            .ok_or_else(|| anyhow!("Unable to parse imagebase value"))
-    }
-
-    /// read the `Root Node` entries of the database
-    pub fn root_info(
+    fn root_node_value(
         &self,
-        idx: NetnodeIdx<K>,
-    ) -> Result<impl Iterator<Item = Result<IDBRootInfo<K>>>> {
-        let key_len = key_len_netnode::<K>();
-        let range = self.netnode_range_idx(idx);
-        Ok(self.entries[range].iter().map(move |entry| {
-            let sub_key = &entry.key[key_len..];
-            let Some(sub_type) = sub_key.first().copied() else {
-                return Ok(IDBRootInfo::Unknown(entry));
-            };
-            match (sub_type, sub_key.len()) {
-                (b'N', 1) => {
-                    ensure!(
-                        parse_maybe_cstr(&entry.value)
-                            == Some(&b"Root Node"[..]),
-                        "Invalid Root Node Name"
-                    );
-                    return Ok(IDBRootInfo::RootNodeName);
-                }
-                // TODO filenames can be non-utf-8, but are they always CStr?
-                (b'V', 1) => return Ok(IDBRootInfo::InputFile(&entry.value)),
-                _ => {}
-            }
-            let Ok(bytes) =
-                <K::AddrBytes as TryFrom<&[u8]>>::try_from(&sub_key[1..])
-            else {
-                return Ok(IDBRootInfo::Unknown(entry));
-            };
-            let value =
-                <K::Isize as num_traits::FromBytes>::from_be_bytes(&bytes);
-            let value: i64 = value.into();
-            match (sub_type, value) {
-                (b'A', -6) => K::usize_try_from_le_bytes(&entry.value[..])
-                    .ok_or_else(|| anyhow!("Unable to parse imagebase value"))
-                    .map(ImageBase)
-                    .map(IDBRootInfo::ImageBase),
-                (b'A', -5) => K::usize_try_from_le_bytes(&entry.value[..])
-                    .ok_or_else(|| anyhow!("Unable to parse crc value"))
-                    .map(IDBRootInfo::Crc),
-                (b'A', -4) => K::usize_try_from_le_bytes(&entry.value[..])
-                    .ok_or_else(|| anyhow!("Unable to parse open_count value"))
-                    .map(IDBRootInfo::OpenCount),
-                (b'A', -2) => K::usize_try_from_le_bytes(&entry.value[..])
-                    .ok_or_else(|| anyhow!("Unable to parse CreatedDate value"))
-                    .map(IDBRootInfo::CreatedDate),
-                (b'A', -1) => K::usize_try_from_le_bytes(&entry.value[..])
-                    .ok_or_else(|| anyhow!("Unable to parse Version value"))
-                    .map(IDBRootInfo::Version),
-                (b'S', 1302) => entry
-                    .value
-                    .as_slice()
+        idx: RootNodeIdx<K>,
+        value: i32,
+        tag: u8,
+    ) -> Option<&[u8]> {
+        let alt: K::Usize = <K::Isize as From<i32>>::from(value).as_();
+        self.sup_value(idx.into(), alt, tag)
+    }
+
+    fn root_info_range(
+        &self,
+        idx: RootNodeIdx<K>,
+        tag: u8,
+        alt: u32,
+        max_len: usize,
+    ) -> Result<impl Iterator<Item = (u8, &[u8])>> {
+        let alt = <K::Usize as From<u32>>::from(alt);
+        Ok(
+            EntryTagContinuousSubkeys::<'_, K>::new(self, idx.into(), tag, alt)
+                .take(max_len)
+                .map(move |entry| {
+                    let key =
+                        K::usize_try_from_be_bytes(&entry.key).unwrap() - alt;
+                    (key.try_into().unwrap(), &entry.value[..])
+                }),
+        )
+    }
+
+    pub fn input_file(&self, idx: RootNodeIdx<K>) -> Option<&[u8]> {
+        self.netnode_value(idx.into())
+    }
+
+    // TODO identify the data
+    /// output file encoding index
+    #[allow(dead_code)]
+    pub(crate) fn output_file_encoding_idx(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_ALT_OUTFILEENC, ARRAY_ALT_TAG)
+    }
+
+    /// input file size
+    pub fn input_file_size(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<Option<K::Usize>> {
+        let Some(value_raw) =
+            self.root_node_value(idx, RIDX_ALT_FSIZE, ARRAY_ALT_TAG)
+        else {
+            return Ok(None);
+        };
+        let value = K::usize_try_from_le_bytes(value_raw)
+            .ok_or_else(|| anyhow!("Unable to parse imagebase value"))?;
+        Ok(Some(value))
+    }
+
+    // TODO identify the data
+    /// ids modnode id (for import_module)
+    #[allow(dead_code)]
+    pub(crate) fn ids_modenode_id(&self, idx: RootNodeIdx<K>) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_ALT_IDSNODE, ARRAY_ALT_TAG)
+    }
+
+    /// image base, AKA the offset between address and netnode value
+    pub fn image_base(&self, idx: RootNodeIdx<K>) -> Result<ImageBase<K>> {
+        let Some(value_raw) =
+            self.root_node_value(idx, RIDX_ALT_IMAGEBASE, ARRAY_ALT_TAG)
+        else {
+            // No Image base, so id0 netnodes and addrs are the same
+            return Ok(ImageBase(0u8.into()));
+        };
+        let value = K::usize_try_from_le_bytes(value_raw)
+            .ok_or_else(|| anyhow!("Unable to parse imagebase value"))?;
+        Ok(ImageBase(value))
+    }
+
+    /// input file crc32
+    pub fn input_file_crc32(&self, idx: RootNodeIdx<K>) -> Result<Option<u32>> {
+        let Some(value_raw) =
+            self.root_node_value(idx, RIDX_ALT_CRC32, ARRAY_ALT_TAG)
+        else {
+            return Ok(None);
+        };
+        let value = K::usize_try_from_le_bytes(value_raw)
+            .and_then(|value| <K::Usize as TryInto<u32>>::try_into(value).ok())
+            .ok_or_else(|| anyhow!("Unable to parse file_input crc32 value"))?;
+        Ok(Some(value))
+    }
+
+    /// how many times the database is opened
+    pub fn database_num_opens(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<Option<K::Usize>> {
+        let Some(value_raw) =
+            self.root_node_value(idx, RIDX_ALT_NOPENS, ARRAY_ALT_TAG)
+        else {
+            return Ok(None);
+        };
+        let value = K::usize_try_from_le_bytes(value_raw)
+            .and_then(|value| value.try_into().ok())
+            .ok_or_else(|| anyhow!("Unable to parse number of id0 opens"))?;
+        Ok(value)
+    }
+
+    /// seconds database stayed open
+    pub fn database_secs_opens(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<Option<K::Usize>> {
+        let Some(value_raw) =
+            self.root_node_value(idx, RIDX_ALT_ELAPSED, ARRAY_ALT_TAG)
+        else {
+            return Ok(None);
+        };
+        let value = K::usize_try_from_le_bytes(value_raw)
+            .and_then(|value| value.try_into().ok())
+            .ok_or_else(|| {
+                anyhow!("Unable to parse number of id0 seconds opens")
+            })?;
+        Ok(value)
+    }
+
+    /// database creation timestamp
+    pub fn database_creation_time(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<Option<K::Usize>> {
+        let Some(value_raw) =
+            self.root_node_value(idx, RIDX_ALT_CTIME, ARRAY_ALT_TAG)
+        else {
+            return Ok(None);
+        };
+        let value = K::usize_try_from_le_bytes(value_raw)
+            .and_then(|value| value.try_into().ok())
+            .ok_or_else(|| {
+                anyhow!("Unable to parse the database creation time")
+            })?;
+        Ok(value)
+    }
+
+    /// initial version of database
+    pub fn database_initial_version(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<Option<K::Usize>> {
+        let Some(value_raw) =
+            self.root_node_value(idx, RIDX_ALT_VERSION, ARRAY_ALT_TAG)
+        else {
+            return Ok(None);
+        };
+        let value = K::usize_try_from_le_bytes(value_raw)
+            .and_then(|value| value.try_into().ok())
+            .ok_or_else(|| {
+                anyhow!(
+                    "Unable to parse number of the database initial version"
+                )
+            })?;
+        Ok(value)
+    }
+
+    // TODO identify the data
+    /// user-closed source files
+    #[allow(dead_code)]
+    pub(crate) fn user_closed_source_files(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<impl Iterator<Item = (u8, &[u8])>> {
+        // TODO check the TAG
+        self.root_info_range(idx, ARRAY_SUP_TAG, RIDX_SRCDBG_UNDESIRED, 20)
+    }
+
+    // TODO identify the data
+    /// problem lists
+    #[allow(dead_code)]
+    pub(crate) fn problem_lists(&self, idx: RootNodeIdx<K>) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_PROBLEMS as i32, ARRAY_SUP_TAG)
+    }
+
+    // TODO identify the data
+    /// Archive file path
+    #[allow(dead_code)]
+    pub(crate) fn archive_file_path(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_ARCHIVE_PATH as i32, ARRAY_SUP_TAG)
+    }
+
+    // TODO identify the data
+    /// ABI name (processor specific)
+    #[allow(dead_code)]
+    pub(crate) fn abi_name(&self, idx: RootNodeIdx<K>) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_ABINAME as i32, ARRAY_SUP_TAG)
+    }
+
+    // TODO identify the data
+    /// SHA256 of the input file
+    pub fn input_file_sha256(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<Option<&[u8; 32]>> {
+        self.root_node_value(idx, RIDX_SHA256 as i32, ARRAY_SUP_TAG)
+            .map(|value| {
+                value
                     .try_into()
-                    .map(IDBRootInfo::Md5)
-                    .map_err(|_| anyhow!("Value Md5 with invalid len")),
-                (b'S', 1303) => parse_maybe_cstr(&entry.value)
-                    .and_then(|version| core::str::from_utf8(version).ok())
-                    .ok_or_else(|| {
-                        anyhow!("Unable to parse VersionString string")
-                    })
-                    .map(IDBRootInfo::VersionString),
-                (b'S', 1349) => entry
-                    .value
-                    .as_slice()
+                    .map_err(|_| anyhow!("Invalid SHA256 value len"))
+            })
+            .transpose()
+    }
+
+    /// unused, is menationed on the SDK v9.1
+    #[allow(dead_code)]
+    pub(crate) fn debug_binary_paths(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<impl Iterator<Item = (u8, &[u8])>> {
+        self.root_info_range(idx, ARRAY_SUP_TAG, RIDX_DBG_BINPATHS, 20)
+    }
+
+    // TODO identify the data
+    /// source debug paths
+    #[allow(dead_code)]
+    pub(crate) fn source_debug_paths(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<impl Iterator<Item = (u8, &[u8])>> {
+        self.root_info_range(idx, ARRAY_SUP_TAG, RIDX_SRCDBG_PATHS, 20)
+    }
+
+    // TODO identify the data
+    /// A list of encodings for the program strings
+    #[allow(dead_code)]
+    pub(crate) fn strings_encodings(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_STR_ENCODINGS as i32, ARRAY_SUP_TAG)
+    }
+
+    /// version of ida which created the database
+    pub fn database_creation_version(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<Cow<str>> {
+        self.root_node_value(idx, RIDX_IDA_VERSION as i32, ARRAY_SUP_TAG)
+            .map(|value| String::from_utf8_lossy(value))
+    }
+
+    /// MD5 of the input file
+    pub fn input_file_md5(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<Option<&[u8; 16]>> {
+        self.root_node_value(idx, RIDX_MD5 as i32, ARRAY_SUP_TAG)
+            .map(|value| {
+                value
                     .try_into()
-                    .map(IDBRootInfo::Sha256)
-                    .map_err(|_| anyhow!("Value Sha256 with invalid len")),
-                (b'S', 0x41b994) => IDBParam::<K>::read(&entry.value)
-                    .map(Box::new)
-                    .map(IDBRootInfo::IDAInfo),
-                _ => Ok(IDBRootInfo::Unknown(entry)),
-            }
-        }))
+                    .map_err(|_| anyhow!("Invalid MD5 value len"))
+            })
+            .transpose()
+    }
+
+    // TODO identify the data
+    /// Text representation options
+    #[allow(dead_code)]
+    pub(crate) fn text_representation_options(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_DUALOP_TEXT as i32, ARRAY_SUP_TAG)
+    }
+
+    // TODO identify the data
+    /// Graph text representation options
+    #[allow(dead_code)]
+    pub(crate) fn graph_representation_options(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_DUALOP_GRAPH as i32, ARRAY_SUP_TAG)
+    }
+
+    // TODO identify the data
+    /// Instant IDC statements, blob
+    #[allow(dead_code)]
+    pub(crate) fn instant_idc_statements(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_SMALL_IDC as i32, ARRAY_SUP_TAG)
+    }
+
+    // TODO identify the data
+    /// assembler include file name
+    #[allow(dead_code)]
+    pub(crate) fn assembler_include_filename(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_INCLUDE as i32, ARRAY_SUP_TAG)
+    }
+
+    // TODO identify the data
+    /// notepad
+    #[allow(dead_code)]
+    pub(crate) fn notepad_data(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<impl Iterator<Item = (u8, &[u8])>> {
+        self.root_info_range(idx, ARRAY_SUP_TAG, RIDX_NOTEPAD, 1000)
+    }
+
+    // TODO identify the data
+    /// Instant IDC statements (obsolete)
+    #[allow(dead_code)]
+    pub(crate) fn instant_idc_statements_old(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_SMALL_IDC_OLD as i32, ARRAY_SUP_TAG)
+    }
+
+    /// C predefined macros
+    pub fn c_predefined_macros(&self, idx: RootNodeIdx<K>) -> Option<Cow<str>> {
+        self.root_node_value(idx, RIDX_C_MACROS as i32, ARRAY_SUP_TAG)
+            .map(String::from_utf8_lossy)
+    }
+
+    /// C header path
+    pub fn c_header_path(&self, idx: RootNodeIdx<K>) -> Option<Cow<str>> {
+        self.root_node_value(idx, RIDX_H_PATH as i32, ARRAY_SUP_TAG)
+            .map(String::from_utf8_lossy)
+    }
+
+    // TODO identify the data
+    /// segment group information (see the SDK init_groups())
+    #[allow(dead_code)]
+    pub(crate) fn segment_group_info(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_GROUPS as i32, ARRAY_SUP_TAG)
+    }
+
+    // TODO identify the data
+    /// 2..63 are for selector_t blob (see the SDK init_selectors())
+    #[allow(dead_code)]
+    pub(crate) fn selectors(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<impl Iterator<Item = (u8, &[u8])>> {
+        self.root_info_range(idx, ARRAY_SUP_TAG, RIDX_SELECTORS, 61)
+    }
+
+    // TODO identify the data
+    /// file format name for loader modules
+    #[allow(dead_code)]
+    pub(crate) fn file_format_name_loader(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<&[u8]> {
+        self.root_node_value(idx, RIDX_FILE_FORMAT_NAME as i32, ARRAY_SUP_TAG)
     }
 
     /// read the `Root Node` ida_info entry of the database
-    pub fn ida_info(&self) -> Result<IDBParam<K>> {
+    pub fn ida_info(&self, idx: RootNodeIdx<K>) -> Result<IDBParam<K>> {
         // TODO Root Node is always the last one?
-        let entry = self.root_node()?;
-        let description_idx = self
-            .netnode_tag_alt_idx(
-                entry,
-                K::Usize::from(0x41_B994_u32),
-                ARRAY_SUP_TAG,
-            )
+        // TODO Only one or range?
+        let value = self
+            .root_node_value(idx, 0x0041_B994, ARRAY_SUP_TAG)
             .ok_or_else(|| anyhow!("Unable to find Root Node entry"))?;
-        IDBParam::<K>::read(&self.entries[description_idx].value)
+        IDBParam::<K>::read(value)
     }
 
     /// read the `$ fileregions` entries of the database
