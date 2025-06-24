@@ -12,14 +12,12 @@ impl<K: IDAKind> SectionReader<K> for NamSection {
     type Result = Self;
 
     fn read_section<I: IdbReadKind<K>>(input: &mut I) -> Result<Self> {
-        Self::read_inner::<K>(input)
+        Self::read::<K>(input)
     }
 }
 
 impl NamSection {
-    pub(crate) fn read_inner<K: IDAKind>(
-        input: &mut impl IdbRead,
-    ) -> Result<Self> {
+    pub fn read<K: IDAKind>(input: &mut impl IdbRead) -> Result<Self> {
         // NOTE 64 should be enougth for all version, if a new version is implemented
         // review this value
         const MAX_HEADER_LEN: usize = 64;

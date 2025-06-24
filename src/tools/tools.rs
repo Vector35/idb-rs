@@ -5,6 +5,10 @@ mod dump_id0;
 use dump_id0::dump_id0;
 mod dump_id1;
 use dump_id1::dump_id1;
+mod dump_id2;
+use dump_id2::dump_id2;
+mod dump_nam;
+use dump_nam::dump_nam;
 //mod split_idb;
 //use split_idb::split_idb;
 mod decompress_til;
@@ -43,6 +47,8 @@ mod dump_dirtree_bookmarks_tiplace;
 use dump_dirtree_bookmarks_tiplace::dump_dirtree_bookmarks_tiplace;
 mod tilib;
 use idb_rs::id0::ID0SectionVariants;
+use idb_rs::id2::ID2SectionVariants;
+use idb_rs::nam::NamSection;
 use idb_rs::til::section::TILSection;
 use idb_rs::IDBFormat;
 use tilib::tilib_print;
@@ -93,6 +99,10 @@ enum Operation {
     DumpID0,
     /// Dump all entries of the ID1 database
     DumpID1,
+    /// Dump all entries of the ID2 database
+    DumpID2,
+    /// Dump all entries of the Nam database
+    DumpNam,
     //SplitIDB(SplitIDBArgs),
     /// Decompress the TIL Section and buckets
     DecompressTil(DecompressTilArgs),
@@ -193,6 +203,53 @@ fn get_id0_section(args: &Args) -> Result<ID0SectionVariants> {
     }
 }
 
+fn get_id0_id1_id2_sections(
+    args: &Args,
+) -> Result<(ID0SectionVariants, ID1Section, Option<ID2SectionVariants>)> {
+    match args.input_type() {
+        FileType::Til => Err(anyhow!("TIL don't contains any ID0 data")),
+        FileType::Idb => {
+            let mut input = BufReader::new(File::open(&args.input)?);
+            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
+            match format {
+                idb_rs::IDBFormats::Separated(sections) => {
+                    get_id0_id1_id2_sections_inner(sections, input)
+                }
+                idb_rs::IDBFormats::InlineUncompressed(sections) => {
+                    get_id0_id1_id2_sections_inner(sections, input)
+                }
+                idb_rs::IDBFormats::InlineCompressed(compressed) => {
+                    let mut decompressed = Vec::new();
+                    let sections = compressed.decompress_into_memory(
+                        &mut input,
+                        &mut decompressed,
+                    )?;
+                    get_id0_id1_id2_sections_inner(sections, input)
+                }
+            }
+        }
+    }
+}
+
+fn get_id0_id1_id2_sections_inner<R: IDBFormat, I: BufRead + Seek>(
+    sections: R,
+    mut input: I,
+) -> Result<(ID0SectionVariants, ID1Section, Option<ID2SectionVariants>)> {
+    let id0_location = sections
+        .id0_location()
+        .ok_or_else(|| anyhow!("IDB file don't contains a ID0 sector"))?;
+    let id1_location = sections
+        .id1_location()
+        .ok_or_else(|| anyhow!("IDB file don't contains a ID1 sector"))?;
+    let id2_location = sections.id2_location();
+    let id0 = sections.read_id0(&mut input, id0_location)?;
+    let id1 = sections.read_id1(&mut input, id1_location)?;
+    let id2 = id2_location
+        .map(|id2| sections.read_id2(&mut input, id2))
+        .transpose()?;
+    Ok((id0, id1, id2))
+}
+
 fn get_id0_section_fmt<F: IDBFormat, I: BufRead + Seek>(
     idb: F,
     input: I,
@@ -237,6 +294,40 @@ fn get_id1_section_fmt<F: IDBFormat, I: BufRead + Seek>(
     idb.read_id1(input, id1)
 }
 
+fn get_id2_section(args: &Args) -> Result<ID2SectionVariants> {
+    match args.input_type() {
+        FileType::Til => Err(anyhow!("TIL don't contains any ID2 data")),
+        FileType::Idb => {
+            let mut input = BufReader::new(File::open(&args.input)?);
+            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
+            match format {
+                idb_rs::IDBFormats::Separated(sections) => {
+                    get_id2_section_fmt(sections, input)
+                }
+                idb_rs::IDBFormats::InlineUncompressed(sections) => {
+                    get_id2_section_fmt(sections, input)
+                }
+                idb_rs::IDBFormats::InlineCompressed(compressed) => {
+                    let mut decompressed = Vec::new();
+                    let sections = compressed
+                        .decompress_into_memory(input, &mut decompressed)?;
+                    get_id2_section_fmt(sections, Cursor::new(decompressed))
+                }
+            }
+        }
+    }
+}
+
+fn get_id2_section_fmt<F: IDBFormat, I: BufRead + Seek>(
+    idb: F,
+    input: I,
+) -> Result<ID2SectionVariants> {
+    let id2 = idb
+        .id2_location()
+        .ok_or_else(|| anyhow!("IDB file don't contains a ID2 sector"))?;
+    idb.read_id2(input, id2)
+}
+
 fn get_til_section(args: &Args) -> Result<TILSection> {
     match args.input_type() {
         FileType::Til => {
@@ -274,6 +365,40 @@ fn get_til_section_fmt<F: IDBFormat, I: BufRead + Seek>(
     idb.read_til(input, location)
 }
 
+fn get_nam_section(args: &Args) -> Result<NamSection> {
+    match args.input_type() {
+        FileType::Til => Err(anyhow!("TIL don't contains any Nam data")),
+        FileType::Idb => {
+            let mut input = BufReader::new(File::open(&args.input)?);
+            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
+            match format {
+                idb_rs::IDBFormats::Separated(sections) => {
+                    get_nam_section_fmt(sections, input)
+                }
+                idb_rs::IDBFormats::InlineUncompressed(sections) => {
+                    get_nam_section_fmt(sections, input)
+                }
+                idb_rs::IDBFormats::InlineCompressed(compressed) => {
+                    let mut decompressed = Vec::new();
+                    let sections = compressed
+                        .decompress_into_memory(input, &mut decompressed)?;
+                    get_nam_section_fmt(sections, Cursor::new(decompressed))
+                }
+            }
+        }
+    }
+}
+
+fn get_nam_section_fmt<F: IDBFormat, I: BufRead + Seek>(
+    idb: F,
+    input: I,
+) -> Result<NamSection> {
+    let location = idb
+        .nam_location()
+        .ok_or_else(|| anyhow!("IDB file don't contains a Nam sector"))?;
+    idb.read_nam(input, location)
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
 
@@ -281,6 +406,8 @@ fn main() -> Result<()> {
         Operation::DumpTil => dump_til(&args),
         Operation::DumpID0 => dump_id0(&args),
         Operation::DumpID1 => dump_id1(&args),
+        Operation::DumpID2 => dump_id2(&args),
+        Operation::DumpNam => dump_nam(&args),
         //Operation::SplitIDB(split_idbargs) => split_idb(&args, split_idbargs),
         Operation::DecompressTil(decompress_til_args) => {
             decompress_til(&args, decompress_til_args)

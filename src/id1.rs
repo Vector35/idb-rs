@@ -8,7 +8,7 @@ use std::ops::{Div, Range, Rem};
 use crate::id0::flag::netnode::nn_res::*;
 use crate::id0::ID0Section;
 use crate::ida_reader::{IdbRead, IdbReadKind};
-use crate::{IDAKind, SectionReader, VaVersion};
+use crate::{Address, IDAKind, SectionReader, VaVersion};
 
 #[derive(Clone, Debug)]
 pub struct ID1Section {
@@ -227,6 +227,63 @@ impl ID1Section {
             })
         })
     }
+
+    pub fn all_bytes_no_tails(
+        &self,
+    ) -> impl Iterator<Item = (u64, ByteInfo, usize)> + use<'_> {
+        self.seglist.iter().flat_map(|seg| {
+            seg.data
+                .iter()
+                .enumerate()
+                .filter(|(_i, b)| !ByteInfo(**b).byte_type().is_tail())
+                .map(|(i, b)| {
+                    let size = 1 + seg.data[i + 1..]
+                        .iter()
+                        .take_while(|x| ByteInfo(**x).byte_type().is_tail())
+                        .count();
+                    (seg.offset + u64::try_from(i).unwrap(), ByteInfo(*b), size)
+                })
+        })
+    }
+
+    // if the address is inside some multi-byte thing, type like a struct or
+    // instruction, get the address where it starts
+    pub fn prev_not_tail(&self, ea: u64) -> Option<(u64, ByteInfo)> {
+        // TODO can data span multiple segments? If so this is incorrect
+        let (seg, seg_offset_max) = match self.segment_idx_by_address(ea) {
+            // if the segment that contains the offset, check bytes from
+            // the current address to the start of the segment
+            Ok(idx) => {
+                let seg = &self.seglist[idx];
+                (seg, usize::try_from((ea - seg.offset) + 1).unwrap())
+            }
+            // Not part not part of any segment, use the previous segment,
+            // check all bytes in the segment
+            Err(idx) => {
+                let seg = self.seglist.get(idx.checked_sub(1)?).unwrap();
+                (seg, seg.len())
+            }
+        };
+        seg.all_bytes()
+            .take(seg_offset_max)
+            .rev()
+            .find(|(_addr, byte)| !byte.byte_type().is_tail())
+    }
+
+    // get the address of the next non tail thing
+    pub fn next_not_tail(&self, ea: u64) -> Option<(u64, ByteInfo)> {
+        // TODO can data span multiple segments? If so this is incorrect
+        let segs = match self.segment_idx_by_address(ea) {
+            // if the segment that contains the offset
+            Ok(idx) => &self.seglist[idx..],
+            // Not part not part of any segment use the previous
+            Err(idx) => &self.seglist[idx.checked_sub(1)?..],
+        };
+        segs.iter().find_map(|seg| {
+            seg.all_bytes()
+                .find(|(_addr, byte_info)| !byte_info.byte_type().is_tail())
+        })
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -246,8 +303,21 @@ impl SegInfo {
         self.data.is_empty()
     }
 
-    pub(crate) fn get(&self, idx: usize) -> Option<ByteInfo> {
+    pub fn get(&self, idx: usize) -> Option<ByteInfo> {
         self.data.get(idx).copied().map(ByteInfo)
+    }
+
+    pub fn all_bytes(
+        &self,
+    ) -> impl Iterator<Item = (u64, ByteInfo)>
+           + DoubleEndedIterator
+           + ExactSizeIterator
+           + use<'_> {
+        self.data.iter().enumerate().map(|(current_offset, byte)| {
+            let addr = self.offset + u64::try_from(current_offset).unwrap();
+            let byte_info = ByteInfo(*byte);
+            (addr, byte_info)
+        })
     }
 }
 
@@ -281,6 +351,10 @@ impl SegInfo {
 pub struct ByteInfo(u32);
 
 impl ByteInfo {
+    pub(crate) fn from_raw(value: u32) -> Self {
+        Self(value)
+    }
+
     pub fn as_raw(&self) -> u32 {
         self.0
     }
@@ -364,7 +438,7 @@ impl ByteCode {
     ) -> Result<ByteExtended<Self>> {
         let root_info = id0.root_node()?;
         let node_idx = id0.image_base(root_info)?;
-        let node = node_idx.ea2node(ea)?;
+        let node = node_idx.ea2node(Address::from_raw(ea));
         let value = id0
             .sup_value(node, K::Usize::from(0x25u8), ARRAY_ALT_TAG)
             .map(|entry| {
@@ -699,7 +773,7 @@ fn get_forced_operand<K: IDAKind>(
     });
     let root_info = id0.root_node()?;
     let base = id0.image_base(root_info)?;
-    let node = base.ea2node(ea)?;
+    let node = base.ea2node(Address::from_raw(ea));
 
     let entries = id0.sup_value(node, alt_value, ARRAY_SUP_TAG);
     Ok(entries)

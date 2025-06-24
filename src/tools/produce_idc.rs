@@ -1,19 +1,20 @@
 use std::borrow::Cow;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Cursor, Seek, Write};
-use std::iter::Peekable;
 
 use anyhow::{anyhow, ensure, Context, Result};
 
+use idb_rs::addr_info::{all_address_info, AddressInfo};
 use idb_rs::id0::function::{IDBFunctionNonTail, IDBFunctionTail};
-use idb_rs::id0::{AddressInfo, Comments, ID0Section};
+use idb_rs::id0::ID0Section;
 use idb_rs::id1::{
-    ByteCode, ByteData, ByteDataType, ByteExtended, ByteInfo, ByteOp, ByteType,
+    ByteCode, ByteData, ByteDataType, ByteExtended, ByteOp, ByteType,
     ID1Section,
 };
+use idb_rs::id2::ID2Section;
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
-use idb_rs::{IDAKind, IDAUsize, IDAVariants, IDBFormat};
+use idb_rs::{Address, IDAKind, IDAUsize, IDAVariants, IDBFormat};
 
 use crate::{Args, FileType, ProduceIdcArgs};
 
@@ -60,27 +61,54 @@ fn produce_idc_section<R: IDBFormat, I: BufRead + Seek>(
     let id1_location = sections
         .id1_location()
         .ok_or_else(|| anyhow!("IDB file don't contains a ID1 sector"))?;
+    let id2_location = sections.id2_location();
     let til_location = sections
         .til_location()
         .ok_or_else(|| anyhow!("IDB file don't contains a TIL sector"))?;
     let id0 = sections.read_id0(&mut input, id0_location)?;
     let id1 = sections.read_id1(&mut input, id1_location)?;
+    let id2 = id2_location
+        .map(|id2| sections.read_id2(&mut input, id2))
+        .transpose()?;
     let til = sections.read_til(&mut input, til_location)?;
-    match id0 {
-        IDAVariants::IDA32(id0) => produce_idc_inner(
+    match (id0, id2) {
+        (IDAVariants::IDA32(id0), Some(IDAVariants::IDA32(id2))) => {
+            produce_idc_inner(
+                &mut std::io::stdout(),
+                idc_args,
+                &id0,
+                &id1,
+                Some(&id2),
+                &til,
+            )
+        }
+        (IDAVariants::IDA32(id0), None) => produce_idc_inner(
             &mut std::io::stdout(),
             idc_args,
             &id0,
             &id1,
+            None,
             &til,
         ),
-        IDAVariants::IDA64(id0) => produce_idc_inner(
+        (IDAVariants::IDA64(id0), Some(IDAVariants::IDA64(id2))) => {
+            produce_idc_inner(
+                &mut std::io::stdout(),
+                idc_args,
+                &id0,
+                &id1,
+                Some(&id2),
+                &til,
+            )
+        }
+        (IDAVariants::IDA64(id0), None) => produce_idc_inner(
             &mut std::io::stdout(),
             idc_args,
             &id0,
             &id1,
+            None,
             &til,
         ),
+        (_, _) => unreachable!(),
     }
 }
 
@@ -89,6 +117,7 @@ fn produce_idc_inner<K: IDAKind>(
     args: &ProduceIdcArgs,
     id0: &ID0Section<K>,
     id1: &ID1Section,
+    id2: Option<&ID2Section<K>>,
     til: &TILSection,
 ) -> Result<()> {
     if !args.banner.is_empty() {
@@ -165,7 +194,7 @@ fn produce_idc_inner<K: IDAKind>(
     produce_patches(fmt, id0, id1)?;
 
     writeln!(fmt)?;
-    produce_bytes_info(fmt, id0, id1, til)?;
+    produce_bytes_info(fmt, id0, id1, id2, til)?;
 
     produce_functions(fmt, id0, til)?;
 
@@ -543,6 +572,7 @@ fn produce_bytes_info<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
     id1: &ID1Section,
+    id2: Option<&ID2Section<K>>,
     _til: &TILSection,
 ) -> Result<()> {
     // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb70ce
@@ -555,57 +585,40 @@ fn produce_bytes_info<K: IDAKind>(
     writeln!(fmt, "#define id x")?;
     writeln!(fmt)?;
 
-    let mut all_bytes = id1.all_bytes().peekable();
-    loop {
-        let Some((address, byte_info)) = all_bytes.next() else {
-            break;
-        };
-        let byte_info_type = byte_info.byte_type();
-
-        let addr_info =
-            id0.address_info_at(K::Usize::try_from(address).unwrap())?;
-        // print comments
-        // TODO byte_info.has_comment() ignored?
-        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1822
-        for addr_info in addr_info {
-            if let AddressInfo::Comment(Comments::Comment(cmt)) = addr_info? {
+    let root_idx = id0.root_node()?;
+    let image_base = id0.image_base(root_idx)?;
+    for (address, address_info, len_bytes) in
+        all_address_info(id0, id1, id2, image_base)
+    {
+        let byte_info = address_info.byte_info();
+        if let Some(addr_info) =
+            AddressInfo::new(id0, id1, id2, image_base, address)
+        {
+            // print comments
+            // TODO byte_info.has_comment() ignored?
+            // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1822
+            if let Some(cmt) = addr_info.comment() {
                 writeln!(
                     fmt,
                     "  set_cmt({address:#X}, {:?}, 0);",
                     String::from_utf8_lossy(cmt)
                 )?;
             }
-        }
 
-        // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1ddd
-        if byte_info.has_comment_ext() {
-            let pre_cmts = addr_info.filter_map(|x| match x {
-                Ok(AddressInfo::Comment(Comments::PreComment(cmt))) => {
-                    Some(Ok(cmt))
-                }
-                Ok(_x) => None,
-                Err(e) => Some(Err(e)),
-            });
-            for (i, cmt) in pre_cmts.enumerate() {
+            // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1ddd
+            for (i, cmt) in addr_info.comment_pre().unwrap().enumerate() {
                 writeln!(
                     fmt,
                     "  update_extra_cmt({address:#X}, E_PREV + {i:>3}, {:?});",
-                    String::from_utf8_lossy(cmt?)
+                    String::from_utf8_lossy(cmt)
                 )?;
             }
 
-            let post_cmts = addr_info.filter_map(|x| match x {
-                Ok(AddressInfo::Comment(Comments::PostComment(cmt))) => {
-                    Some(Ok(cmt))
-                }
-                Ok(_x) => None,
-                Err(e) => Some(Err(e)),
-            });
-            for (i, cmt) in post_cmts.enumerate() {
+            for (i, cmt) in addr_info.comment_post().unwrap().enumerate() {
                 writeln!(
                     fmt,
                     "  update_extra_cmt({address:#X}, E_NEXT + {i:>3}, {:?});",
-                    String::from_utf8_lossy(cmt?)
+                    String::from_utf8_lossy(cmt)
                 )?;
             }
         }
@@ -642,11 +655,10 @@ fn produce_bytes_info<K: IDAKind>(
                     )
                 )
             }
-            match byte_info_type {
+            match byte_info.byte_type() {
                 ByteType::Data(byte_data) => is_set_x(byte_data.operand0()?),
                 ByteType::Code(byte_code) => {
-                    let byte_code =
-                        byte_code.extend(id0, address.try_into().unwrap())?;
+                    let byte_code = byte_code.extend(id0, address.as_raw())?;
                     (0..8)
                         .map(|i| byte_code.operand_n(i).map(is_set_x))
                         .find_map(|x| match x {
@@ -662,12 +674,10 @@ fn produce_bytes_info<K: IDAKind>(
         };
         let set_x_value = (set_x).then_some("x=").unwrap_or("");
 
-        match byte_info_type {
+        match byte_info.byte_type() {
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1dee
             ByteType::Code(byte_code) => {
-                let byte_code =
-                    byte_code.extend(id0, address.try_into().unwrap())?;
-                let _len = count_element(&mut all_bytes, 1);
+                let byte_code = byte_code.extend(id0, address.as_raw())?;
                 if !byte_code.exec_flow_from_prev_inst()
                     || byte_code.is_func_start()
                     || set_x
@@ -679,13 +689,10 @@ fn produce_bytes_info<K: IDAKind>(
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1e37
             ByteType::Data(byte_data) => {
                 match byte_data.data_type() {
-                    ByteDataType::Strlit => {
-                        let len = count_element(&mut all_bytes, 1)?;
-                        writeln!(
-                            fmt,
-                            "  create_strlit({set_x_value}{address:#X}, {len:#X});"
-                        )?
-                    }
+                    ByteDataType::Strlit => writeln!(
+                        fmt,
+                        "  create_strlit({set_x_value}{address:#X}, {len_bytes:#X});",
+                    )?,
                     ByteDataType::Dword => {
                         writeln!(
                             fmt,
@@ -693,9 +700,9 @@ fn produce_bytes_info<K: IDAKind>(
                         )?;
                         produce_bytes_info_array(
                             fmt,
-                            &mut all_bytes,
                             address,
                             set_x,
+                            len_bytes,
                             4,
                         )?;
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
@@ -707,9 +714,9 @@ fn produce_bytes_info<K: IDAKind>(
                         )?;
                         produce_bytes_info_array(
                             fmt,
-                            &mut all_bytes,
                             address,
                             set_x,
+                            len_bytes,
                             1,
                         )?;
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
@@ -721,9 +728,9 @@ fn produce_bytes_info<K: IDAKind>(
                         )?;
                         produce_bytes_info_array(
                             fmt,
-                            &mut all_bytes,
                             address,
                             set_x,
+                            len_bytes,
                             2,
                         )?;
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
@@ -735,15 +742,15 @@ fn produce_bytes_info<K: IDAKind>(
                         )?;
                         produce_bytes_info_array(
                             fmt,
-                            &mut all_bytes,
                             address,
                             set_x,
+                            len_bytes,
                             8,
                         )?;
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Tbyte => {
-                        let _len = count_element(&mut all_bytes, 1)?;
+                        let _len = count_element(len_bytes, 1)?;
                         // TODO make array?
                         writeln!(
                             fmt,
@@ -752,7 +759,7 @@ fn produce_bytes_info<K: IDAKind>(
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Float => {
-                        let _len = count_element(&mut all_bytes, 1)?;
+                        let _len = count_element(len_bytes, 1)?;
                         // TODO make array?
                         writeln!(
                             fmt,
@@ -768,7 +775,7 @@ fn produce_bytes_info<K: IDAKind>(
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Yword => {
-                        let _len = count_element(&mut all_bytes, 1)?;
+                        let _len = count_element(len_bytes, 1)?;
                         // TODO make array?
                         writeln!(
                             fmt,
@@ -777,7 +784,7 @@ fn produce_bytes_info<K: IDAKind>(
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Double => {
-                        let _len = count_element(&mut all_bytes, 1)?;
+                        let _len = count_element(len_bytes, 1)?;
                         // TODO make array?
                         writeln!(
                             fmt,
@@ -786,7 +793,7 @@ fn produce_bytes_info<K: IDAKind>(
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Oword => {
-                        let _len = count_element(&mut all_bytes, 1)?;
+                        let _len = count_element(len_bytes, 1)?;
                         // TODO make array?
                         writeln!(
                             fmt,
@@ -796,25 +803,18 @@ fn produce_bytes_info<K: IDAKind>(
                     }
                     // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2690
                     ByteDataType::Struct => {
-                        let _len = count_element(&mut all_bytes, 1)?;
+                        let _len = count_element(len_bytes, 1)?;
                         // TODO ensure struct have the same len that _len
                         // TODO make a struct_def_at
                         // TODO make array?
-                        let struct_id = id0
-                            .address_info_at(
-                                K::Usize::try_from(address).unwrap(),
-                            )
-                            .unwrap()
-                            .find_map(|e| match e {
-                                Ok(AddressInfo::DefinedStruct(s)) => {
-                                    Some(Ok(s))
-                                }
-                                Err(e) => Some(Err(e)),
-                                Ok(_) => None,
-                            });
+                        // TODO DB allow multiple refs into the same addr
+                        // how to handle that?
+                        let mut struct_ids = address_info.tinfo_ref();
+                        let struct_id = struct_ids.next().transpose()?;
+                        ensure!(struct_ids.next().is_none());
                         let struct_name = struct_id
                             .map(|idx| {
-                                id0.struct_at(idx.unwrap())
+                                id0.struct_at(idx)
                                     .with_context(|| {
                                         format!("ID1 addr {address:#X}")
                                     })
@@ -831,14 +831,14 @@ fn produce_bytes_info<K: IDAKind>(
                     ByteDataType::Align => {
                         produce_bytes_info_array(
                             fmt,
-                            &mut all_bytes,
                             address,
                             set_x,
+                            len_bytes,
                             1,
                         )?;
                     }
                     ByteDataType::Zword | ByteDataType::Custom => {
-                        let _len = count_element(&mut all_bytes, 1)?;
+                        let _len = count_element(len_bytes, 1)?;
                         //TODO
                     }
                     ByteDataType::Reserved => {
@@ -869,16 +869,12 @@ fn produce_bytes_info<K: IDAKind>(
         //}
 
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2160
-        if byte_info.has_name() {
-            for addr_info in addr_info {
-                if let AddressInfo::Label(name) = addr_info? {
-                    writeln!(
-                        fmt,
-                        "  set_name({address:#X}, {:?});",
-                        String::from_utf8_lossy(name.as_bytes())
-                    )?;
-                }
-            }
+        if let Some(name) = address_info.label()? {
+            writeln!(
+                fmt,
+                "  set_name({address:#X}, {:?});",
+                String::from_utf8_lossy(&name)
+            )?;
         }
     }
 
@@ -892,17 +888,14 @@ fn produce_bytes_info<K: IDAKind>(
     Ok(())
 }
 
-fn produce_bytes_info_array<I>(
+fn produce_bytes_info_array<K: IDAKind>(
     fmt: &mut impl Write,
-    all_bytes: &mut Peekable<I>,
-    address: u64,
+    address: Address<K>,
     set_x: bool,
+    len_bytes: usize,
     data_len: usize,
-) -> Result<()>
-where
-    I: Iterator<Item = (u64, ByteInfo)>,
-{
-    let len = count_element(all_bytes, data_len)?;
+) -> Result<()> {
+    let len = count_element(len_bytes, data_len)?;
     if len > 1 {
         if set_x {
             writeln!(fmt, "  make_array(x, {len:#X});")?
@@ -1107,29 +1100,11 @@ fn produce_bytes<K: IDAKind>(
     Ok(())
 }
 
-fn count_tails<I>(bytes: &mut Peekable<I>) -> usize
-where
-    I: Iterator<Item = (u64, ByteInfo)>,
-{
-    let mut acc = 0;
-    while bytes
-        .next_if(|(_a, b)| matches!(b.byte_type(), ByteType::Tail(_)))
-        .is_some()
-    {
-        acc += 1
-    }
-    acc
-}
-
-fn count_element<I>(bytes: &mut Peekable<I>, ele_len: usize) -> Result<usize>
-where
-    I: Iterator<Item = (u64, ByteInfo)>,
-{
-    let len = count_tails(bytes) + 1;
-    ensure!(len >= ele_len, "Expected more ID1 Tail entries");
+fn count_element(len_bytes: usize, len_elements: usize) -> Result<usize> {
+    ensure!(len_bytes >= len_elements, "Expected more ID1 Tail entries");
     ensure!(
-        len % ele_len == 0,
+        len_bytes % len_elements == 0,
         "More ID1 Tails that expects or invalid array len"
     );
-    Ok(len / ele_len)
+    Ok(len_bytes / len_elements)
 }

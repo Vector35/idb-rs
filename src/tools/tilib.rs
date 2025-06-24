@@ -1,4 +1,4 @@
-use idb_rs::id0::{Compiler, Id0TilOrd};
+use idb_rs::id0::Compiler;
 use idb_rs::til::array::Array;
 use idb_rs::til::bitfield::Bitfield;
 use idb_rs::til::function::{CallingConvention, Function};
@@ -324,11 +324,7 @@ fn print_types_by_ordinals(
         };
         let (idx, final_type) = match ord_type {
             OrdType::Alias((_alias_ord, type_ord)) => {
-                let idx = section
-                    .get_ord_idx(Id0TilOrd {
-                        ord: (*type_ord).into(),
-                    })
-                    .unwrap();
+                let idx = section.get_ord_idx((*type_ord).into()).unwrap();
                 let ty = section.get_type_by_idx(idx);
                 (idx, ty)
             }

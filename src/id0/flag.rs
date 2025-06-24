@@ -199,6 +199,10 @@ pub mod nsup {
     pub const NSUP_EX_FLAGS: u8 = 37;
 
     // values E_PREV..E_NEXT+1000 are reserved (1000..2000..3000 decimal)
+    /// Anterior line starting number
+    pub const E_PREV: u32 = 1000;
+    /// Posterior line starting number
+    pub const E_NEXT: u32 = 2000;
 
     /// SP change points blob (see funcs.cpp).
     /// values NSUP_POINTS..NSUP_POINTS+0x1000 are reserved
