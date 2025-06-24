@@ -6,10 +6,30 @@ use crate::{flags_to_struct, til, IDAKind};
 
 use super::flag::func::*;
 use super::flag::netnode::nn_res::ARRAY_SUP_TAG;
-use super::{flag, Comments, ID0Section, NetnodeIdx};
+use super::{flag, ID0Section, NetnodeIdx};
 
 use anyhow::{anyhow, ensure, Result};
 use num_traits::WrappingSub;
+
+#[derive(Clone, Debug)]
+pub enum Comments<'a> {
+    Comment(&'a [u8]),
+    RepeatableComment(&'a [u8]),
+    PreComment(&'a [u8]),
+    PostComment(&'a [u8]),
+}
+
+impl<'a> Comments<'a> {
+    /// The message on the comment, NOTE that IDA don't have a default character encoding
+    pub fn message(&self) -> &'a [u8] {
+        match self {
+            Comments::Comment(x)
+            | Comments::RepeatableComment(x)
+            | Comments::PreComment(x)
+            | Comments::PostComment(x) => x,
+        }
+    }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub struct FuncIdx<K: IDAKind>(pub(crate) K::Usize);

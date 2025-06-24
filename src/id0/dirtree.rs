@@ -6,8 +6,6 @@ use num_traits::WrappingAdd;
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
 use crate::{IDAKind, IDAUsize};
 
-use super::Id0AddressKey;
-
 #[derive(Clone, Debug)]
 pub struct DirTreeRoot<T> {
     pub entries: Vec<DirTreeEntry<T>>,
@@ -49,33 +47,6 @@ pub(crate) trait FromDirTreeNumber<K: IDAUsize> {
 impl<K: IDAUsize> FromDirTreeNumber<K> for K {
     fn new(value: K) -> K {
         value
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Id0Address<K: IDAKind> {
-    address: K::Usize,
-}
-impl<K: IDAKind> FromDirTreeNumber<K::Usize> for Id0Address<K> {
-    fn new(address: K::Usize) -> Self {
-        Self { address }
-    }
-}
-impl<K: IDAKind> Id0AddressKey<K::Usize> for Id0Address<K> {
-    fn as_u64(&self) -> K::Usize {
-        self.address
-    }
-}
-
-// TODO this can't be right
-#[derive(Clone, Copy, Debug)]
-pub struct Id0TilOrd {
-    // TODO remove this pub
-    pub ord: u64,
-}
-impl<K: IDAUsize> FromDirTreeNumber<K> for Id0TilOrd {
-    fn new(ord: K) -> Self {
-        Self { ord: ord.into() }
     }
 }
 

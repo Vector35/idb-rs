@@ -2,9 +2,9 @@ use std::io::Read;
 
 use anyhow::Result;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use num_traits::{CheckedAdd, CheckedSub, WrappingAdd, WrappingSub};
+use num_traits::{WrappingAdd, WrappingSub};
 
-use crate::{ida_reader::IdbReadKind, IDAKind, IDAUsize};
+use crate::{ida_reader::IdbReadKind, Address, IDAKind, IDAUsize};
 
 use super::*;
 
@@ -20,28 +20,17 @@ impl<K: IDAKind> From<RootNodeIdx<K>> for NetnodeIdx<K> {
 pub struct ImageBase<K: IDAKind>(pub(crate) K::Usize);
 impl<K: IDAKind> ImageBase<K> {
     // TODO create a nodeidx_t type
-    pub fn ea2node(&self, ea: K::Usize) -> Result<NetnodeIdx<K>> {
+    pub fn ea2node(&self, ea: Address<K>) -> NetnodeIdx<K> {
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1db9c0
-        if ea.is_max() {
-            return Ok(NetnodeIdx(ea));
-        }
-        if cfg!(feature = "restrictive") {
-            ea.checked_add(&self.0)
-                .map(NetnodeIdx)
-                .ok_or_else(|| anyhow!("Invalid address on ea2node"))
+        if ea.as_raw().is_max() {
+            return NetnodeIdx(ea.as_raw());
         } else {
-            Ok(NetnodeIdx(ea.wrapping_add(&self.0)))
+            NetnodeIdx(ea.as_raw().wrapping_add(&self.0))
         }
     }
-    pub fn node2ea(&self, node: NetnodeIdx<K>) -> Result<K::Usize> {
+    pub fn node2ea(&self, node: NetnodeIdx<K>) -> Address<K> {
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1dba10
-        if cfg!(feature = "restrictive") {
-            node.0
-                .checked_sub(&self.0)
-                .ok_or_else(|| anyhow!("Invalid address on node2ea"))
-        } else {
-            Ok(node.0.wrapping_sub(&self.0))
-        }
+        Address::from_raw(node.0.wrapping_sub(&self.0))
     }
 }
 

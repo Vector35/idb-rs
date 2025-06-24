@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 
-use crate::ida_reader::{IdbRead, IdbReadKind};
-use crate::{IDAKind, IDAUsize};
+use crate::ida_reader::IdbRead;
+use crate::IDAKind;
 
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{anyhow, ensure};
 
-mod address_info;
 mod btree;
 mod db;
 mod dirtree;
@@ -17,8 +16,7 @@ mod patch;
 mod root_info;
 mod segment;
 
-pub use address_info::*;
-pub use btree::*;
+use btree::*;
 pub use db::*;
 pub use dirtree::*;
 pub use file_region::*;
@@ -102,14 +100,14 @@ pub(crate) fn key_from_netnode_tag_hash<K: IDAKind>(
 }
 
 // parse a string that maybe is finalized with \x00
-fn parse_maybe_cstr(data: &[u8]) -> Option<&[u8]> {
+pub(crate) fn parse_maybe_cstr(data: &[u8]) -> Option<&[u8]> {
     // find the end of the string
     let end_pos = data.iter().position(|b| *b == 0).unwrap_or(data.len());
     // Return the slice up to the first null byte
     Some(&data[..end_pos])
 }
 
-enum ID0CStr<'a, K: IDAKind> {
+pub(crate) enum ID0CStr<'a, K: IDAKind> {
     CStr(&'a [u8]),
     Ref(K::Usize),
 }
@@ -126,21 +124,4 @@ impl<'a, K: IDAKind> ID0CStr<'a, K> {
             _ => parse_maybe_cstr(data).map(ID0CStr::CStr),
         }
     }
-}
-
-fn read_addr_from_key<K: IDAKind>(
-    input: &mut impl IdbReadKind<K>,
-) -> Result<K::Usize> {
-    // skip the '.'
-    ensure!(input.read_u8()? == NETNODE_PREFIX);
-    // read the key
-    input.read_usize_be()
-}
-
-fn read_addr_and_tag_from_key<K: IDAKind>(
-    input: &mut impl IdbReadKind<K>,
-) -> Result<(K::Usize, u8)> {
-    let addr = read_addr_from_key::<K>(&mut *input)?;
-    let tag = input.read_u8()?;
-    Ok((addr, tag))
 }

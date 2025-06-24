@@ -5,7 +5,7 @@ use crate::{dump_dirtree::print_dirtree, Args, FileType};
 
 use anyhow::{anyhow, Result};
 
-use idb_rs::id0::{ID0Section, Id0TilOrd};
+use idb_rs::id0::ID0Section;
 use idb_rs::til::section::TILSection;
 use idb_rs::{IDAKind, IDAVariants, IDBFormat};
 
@@ -55,8 +55,8 @@ fn dump_sections<R: IDBFormat, I: BufRead + Seek>(
 
 fn dump<K: IDAKind>(id0: &ID0Section<K>, til: &TILSection) -> Result<()> {
     let dirtree = id0.dirtree_tinfos()?;
-    let print_til = |id0ord: &Id0TilOrd| {
-        if let Some(til) = til.get_ord(*id0ord) {
+    let print_til = |id0ord: &K::Usize| {
+        if let Some(til) = til.get_ord((*id0ord).into()) {
             print!("{til:?}");
         } else {
             print!("NonExisting til");

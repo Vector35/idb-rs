@@ -1,12 +1,11 @@
-use crate::api::netnode::netnode_supstr;
-use crate::api::pro::nodeidx_t;
-use crate::id0::{self, ID0Section};
-use crate::id1::{ByteInfo, ByteType, ID1Section};
-use crate::IDAKind;
+use crate::addr_info::AddressInfo;
+use crate::id0::ID0Section;
+use crate::id1::{ByteInfo, ID1Section};
+use crate::id2::ID2Section;
+use crate::{Address, IDAKind};
 
 use std::ops::Range;
 
-use super::nalt::ea2node;
 use super::pro::{asize_t, bgcolor_t, ea_t};
 
 #[derive(Clone, Debug)]
@@ -24,7 +23,7 @@ pub fn next_addr<K: IDAKind>(
     id1: &ID1Section,
     address: ea_t<K>,
 ) -> Option<ea_t<K>> {
-    crate::api::range::rangeset_t_next_addr(id1, address)
+    crate::sdk_comp::range::rangeset_t_next_addr(id1, address)
 }
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4dea10
@@ -32,7 +31,7 @@ pub fn prev_addr<K: IDAKind>(
     id1: &ID1Section,
     address: ea_t<K>,
 ) -> Option<ea_t<K>> {
-    crate::api::range::rangeset_t_prev_addr(id1, address)
+    crate::sdk_comp::range::rangeset_t_prev_addr(id1, address)
 }
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4deb80
@@ -40,7 +39,7 @@ pub fn next_chunk<K: IDAKind>(
     id1: &ID1Section,
     address: ea_t<K>,
 ) -> Option<ea_t<K>> {
-    crate::api::range::rangeset_t_next_range(id1, address)
+    crate::sdk_comp::range::rangeset_t_next_range(id1, address)
 }
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4dec10
@@ -48,7 +47,7 @@ pub fn prev_chunk<K: IDAKind>(
     id1: &ID1Section,
     address: ea_t<K>,
 ) -> Option<ea_t<K>> {
-    crate::api::range::rangeset_t_prev_range(id1, address)
+    crate::sdk_comp::range::rangeset_t_prev_range(id1, address)
 }
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4decf0
@@ -56,7 +55,7 @@ pub fn chunk_start<K: IDAKind>(
     id1: &ID1Section,
     address: ea_t<K>,
 ) -> Option<ea_t<K>> {
-    crate::api::range::rangeset_t_find_range(id1, address)
+    crate::sdk_comp::range::rangeset_t_find_range(id1, address)
         .map(|seg| ea_t::try_from_u64(seg.offset).unwrap())
 }
 
@@ -65,7 +64,7 @@ pub fn chunk_size<K: IDAKind>(
     id1: &ID1Section,
     address: ea_t<K>,
 ) -> Option<ea_t<K>> {
-    crate::api::range::rangeset_t_find_range(id1, address)
+    crate::sdk_comp::range::rangeset_t_find_range(id1, address)
         .map(|seg| ea_t::try_from_u64(seg.len().try_into().unwrap()).unwrap())
 }
 
@@ -74,31 +73,9 @@ pub fn prev_not_tail<K: IDAKind>(
     id1: &ID1Section,
     ea: ea_t<K>,
 ) -> Option<ea_t<K>> {
-    let ea = ea.as_u64();
-    let (seg, seg_idx) = match id1.segment_idx_by_address(ea) {
-        // if the segment that contains the offset,
-        Ok(idx) if id1.seglist[idx].offset == ea => {
-            let seg = &id1.seglist[idx];
-            (seg, ea - seg.offset)
-        }
-        // if first address of the segment, or part of any segment,
-        // use the previous segment
-        Ok(idx) | Err(idx) => {
-            let seg = id1.seglist.get(idx.checked_sub(1)?)?;
-            (seg, seg.offset + seg.len() as u64)
-        }
-    };
-    (0..seg_idx)
-        .rev()
-        .find(|idx| {
-            !matches!(
-                seg.get(usize::try_from(*idx).unwrap()).unwrap().byte_type(),
-                ByteType::Tail(_)
-            )
-        })
-        .map(|idx| {
-            ea_t::from_raw(K::Usize::try_from(seg.offset + idx).unwrap())
-        })
+    id1.prev_not_tail(ea.as_u64()).map(|(addr, _byte_info)| {
+        ea_t::from_raw(K::Usize::try_from(addr).unwrap())
+    })
 }
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x665b50
@@ -174,19 +151,17 @@ pub fn get_flags<K: IDAKind>(
 pub fn get_cmt<'a, K: IDAKind>(
     id0: &'a ID0Section<K>,
     id1: &ID1Section,
+    id2: Option<&ID2Section<K>>,
     ea: ea_t<K>,
-    rptble: bool,
+    repeatable: bool,
 ) -> Option<&'a [u8]> {
-    let byte = get_flags_ex(id1, ea, 0)?;
-    let ea = match byte.byte_type() {
-        ByteType::Tail(_) => prev_not_tail(id1, ea)?,
-        _ => ea,
-    };
-    let node = ea2node(id0, ea)?;
-    netnode_supstr(
-        id0,
-        node,
-        nodeidx_t::from_u32(rptble.into()),
-        id0::flag::netnode::nn_res::ARRAY_SUP_TAG.into(),
-    )
+    let root_info = id0.root_node().ok()?;
+    let image_base = id0.image_base(root_info).ok()?;
+    let addresss = Address::from_raw(ea.0);
+    let addr_info = AddressInfo::new(id0, id1, id2, image_base, addresss)?;
+    if repeatable {
+        addr_info.comment_repeatable()
+    } else {
+        addr_info.comment()
+    }
 }

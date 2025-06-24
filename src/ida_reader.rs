@@ -568,14 +568,6 @@ pub trait IdbReadKind<K: IDAKind>: IdbRead {
         Ok(<K::Usize as num_traits::FromBytes>::from_le_bytes(&bytes))
     }
 
-    fn read_usize_be(&mut self) -> Result<K::Usize>
-    where
-        Self: Sized,
-    {
-        let bytes = <K::AddrBytes as crate::IDAUsizeBytes>::from_reader(self)?;
-        Ok(<K::Usize as num_traits::FromBytes>::from_be_bytes(&bytes))
-    }
-
     fn unpack_usize(&mut self) -> Result<K::Usize>
     where
         Self: Sized,

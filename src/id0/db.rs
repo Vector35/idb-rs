@@ -5,6 +5,7 @@ use std::ops::Range;
 use anyhow::Result;
 use num_traits::{AsPrimitive, PrimInt, ToBytes};
 
+use crate::addr_info::SubtypeId;
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
 use crate::til;
 use crate::{IDAVariants, SectionReader, IDA32, IDA64};
@@ -13,6 +14,7 @@ use super::entry_iter::{
     EntryTagContinuousSubkeys, NetnodeRangeIter, NetnodeSupRangeIter,
 };
 use super::flag::netnode::nn_res::*;
+use super::flag::nsup::{E_NEXT, E_PREV};
 use super::flag::ridx::*;
 use super::function::*;
 use super::*;
@@ -1078,67 +1080,56 @@ impl<K: IDAKind> ID0Section<K> {
         Ok(None)
     }
 
-    /// read the address information for all addresses from `$ fileregions`
-    pub fn address_info(
-        &self,
-        version: u16,
-    ) -> Result<SectionAddressInfoIter<K>> {
-        SectionAddressInfoIter::new(self, version)
+    pub(crate) fn comment_at(&self, netnode: NetnodeIdx<K>) -> Option<&[u8]> {
+        let comment = self.sup_value(netnode, 0u8.into(), ARRAY_SUP_TAG)?;
+        Some(parse_maybe_cstr(comment).unwrap_or(comment))
     }
 
-    /// read the address information for all addresses from `$ fileregions`
-    pub fn address_info_by_address(
+    pub(crate) fn comment_repeatable_at(
         &self,
-        version: u16,
-    ) -> Result<SectionAddressInfoByAddressIter<K>> {
-        SectionAddressInfoByAddressIter::new(self, version)
+        netnode: NetnodeIdx<K>,
+    ) -> Option<&[u8]> {
+        let comment = self.sup_value(netnode, 1u8.into(), ARRAY_SUP_TAG)?;
+        Some(parse_maybe_cstr(comment).unwrap_or(comment))
     }
 
-    /// read the address information for the address
-    pub fn address_info_at(
-        &self,
-        address: impl Id0AddressKey<K::Usize>,
-    ) -> Result<AddressInfoIterAt<K>> {
-        let address = address.as_u64();
-        let key: Vec<u8> = key_from_netnode::<K>(address).collect();
-        let start = self.binary_search(&key).unwrap_or_else(|start| start);
-        let end = self.binary_search_end(&key);
+    // TODO: comments have a strange hole in id0
+    // regular comments are     'S' -> 0
+    // repeatable  comments are 'S' -> 1
+    // pre comments are         'S' -> 1000..2000
+    // post comments are        'S' -> 2000..3000
+    // What about 2..1000? Maybe is used by older version?
 
-        let entries = &self.entries[start..end];
-        Ok(AddressInfoIterAt::new(AddressInfoIter::new(entries, self)))
+    pub(crate) fn comment_pre_at(
+        &self,
+        netnode: NetnodeIdx<K>,
+    ) -> impl Iterator<Item = &[u8]> {
+        crate::id0::entry_iter::EntryTagContinuousSubkeys::new(
+            self,
+            netnode,
+            ARRAY_SUP_TAG,
+            E_PREV.into(),
+        )
+        // 1000..2000
+        // max number of lines, NOTE this check is not done by IDA
+        .take(1000)
+        .map(|entry| parse_maybe_cstr(&entry.value).unwrap_or(&entry.value[..]))
     }
 
-    /// read the label set at address, if any
-    pub fn label_at(
+    pub(crate) fn comment_post_at(
         &self,
-        id0_addr: impl Id0AddressKey<K::Usize>,
-    ) -> Result<Option<Cow<[u8]>>> {
-        let key: Vec<u8> = key_from_netnode::<K>(id0_addr.as_u64())
-            .chain(Some(b'N'))
-            .collect();
-        let Ok(start) = self.binary_search(&key) else {
-            return Ok(None);
-        };
-
-        let entry = &self.entries[start];
-        let key_len = key.len();
-        let key = &entry.key[key_len..];
-        ensure!(key.is_empty(), "Label ID0 entry with key");
-        let label = ID0CStr::<'_, K>::parse_cstr_or_subkey(&entry.value)
-            .ok_or_else(|| anyhow!("Label is not valid CStr"))?;
-        match label {
-            ID0CStr::CStr(label) => Ok(Some(Cow::Borrowed(label))),
-            ID0CStr::Ref(label_ref) => {
-                let entries = self.address_info_value(label_ref)?;
-                Ok(Some(Cow::Owned(
-                    entries
-                        .iter()
-                        .flat_map(|x| &x.value[..])
-                        .copied()
-                        .collect(),
-                )))
-            }
-        }
+        netnode: NetnodeIdx<K>,
+    ) -> impl Iterator<Item = &[u8]> {
+        crate::id0::entry_iter::EntryTagContinuousSubkeys::new(
+            self,
+            netnode,
+            ARRAY_SUP_TAG,
+            E_NEXT.into(),
+        )
+        // 2000..3000
+        // max number of lines, NOTE this check is not done by IDA
+        .take(1000)
+        .map(|entry| parse_maybe_cstr(&entry.value).unwrap_or(&entry.value[..]))
     }
 
     pub fn struct_at(&self, idx: SubtypeId<K>) -> Result<&[u8]> {
@@ -1154,10 +1145,11 @@ impl<K: IDAKind> ID0Section<K> {
         Ok(value)
     }
 
-    fn dirtree_from_name<T: FromDirTreeNumber<K::Usize>>(
+    // TODO are those K::Usize Address or Netnodes?
+    fn dirtree_from_name(
         &self,
         name: &str,
-    ) -> Result<Option<DirTreeRoot<T>>> {
+    ) -> Result<Option<DirTreeRoot<K::Usize>>> {
         let Some(netnode) = self.netnode_idx_by_name(name)? else {
             // if the entry is missing, it's probably just don't have entries
             return Ok(None);
@@ -1166,7 +1158,8 @@ impl<K: IDAKind> ID0Section<K> {
         let mut sub_values = entries.map(|entry| {
             let (raw_idx, value) = entry?;
             let idx = raw_idx >> 16;
-            let sub_idx: u16 = (raw_idx & K::Usize::from(0xFFFFu16)).as_();
+            let sub_idx: u16 =
+                (raw_idx & K::Usize::from(0xFFFFu16)).try_into().unwrap();
             Ok((idx, sub_idx, value))
         });
         let dirs = dirtree::parse_dirtree::<'_, _, _, K>(&mut sub_values)?;
@@ -1177,7 +1170,7 @@ impl<K: IDAKind> ID0Section<K> {
     // https://hex-rays.com/products/ida/support/idapython_docs/ida_dirtree.html
 
     /// read the `$ dirtree/tinfos` entries of the database
-    pub fn dirtree_tinfos(&self) -> Result<Option<DirTreeRoot<Id0TilOrd>>> {
+    pub fn dirtree_tinfos(&self) -> Result<Option<DirTreeRoot<K::Usize>>> {
         self.dirtree_from_name("$ dirtree/tinfos")
     }
 
@@ -1197,12 +1190,12 @@ impl<K: IDAKind> ID0Section<K> {
     /// read the `$ dirtree/funcs` entries of the database
     pub fn dirtree_function_address(
         &self,
-    ) -> Result<Option<DirTreeRoot<Id0Address<K>>>> {
+    ) -> Result<Option<DirTreeRoot<K::Usize>>> {
         self.dirtree_from_name("$ dirtree/funcs")
     }
 
     /// read the `$ dirtree/names` entries of the database
-    pub fn dirtree_names(&self) -> Result<Option<DirTreeRoot<Id0Address<K>>>> {
+    pub fn dirtree_names(&self) -> Result<Option<DirTreeRoot<K::Usize>>> {
         self.dirtree_from_name("$ dirtree/names")
     }
 

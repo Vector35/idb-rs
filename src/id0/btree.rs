@@ -324,17 +324,6 @@ impl ID0Page {
     }
 }
 
-pub trait Id0AddressKey<K: IDAUsize> {
-    // TODO fix this name
-    fn as_u64(&self) -> K;
-}
-
-impl<K: IDAUsize> Id0AddressKey<K> for K {
-    fn as_u64(&self) -> K {
-        *self
-    }
-}
-
 pub(crate) struct ID0BTree {
     pub header: ID0Header,
     pub pages: Option<ID0BTreePages>,

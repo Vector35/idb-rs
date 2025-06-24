@@ -1,20 +1,42 @@
-use crate::{dump_dirtree::print_dirtree, get_id0_section, Args};
+use crate::dump_dirtree::print_dirtree;
+use crate::{get_id0_id1_id2_sections, Args};
 
-use anyhow::{ensure, Result};
-use idb_rs::id0::{ID0Section, Id0Address, Id0AddressKey};
-use idb_rs::{IDAKind, IDAVariants};
+use anyhow::Result;
+use idb_rs::addr_info::AddressInfo;
+use idb_rs::id0::ID0Section;
+use idb_rs::id1::ID1Section;
+use idb_rs::id2::ID2Section;
+use idb_rs::{Address, IDAKind, IDAVariants};
 
 pub fn dump_dirtree_funcs(args: &Args) -> Result<()> {
-    // parse the id0 sector/file    match get_id0_section(args)? {
-    match get_id0_section(args)? {
-        IDAVariants::IDA32(id0) => dump(id0),
-        IDAVariants::IDA64(id0) => dump(id0),
+    // parse the id0 sector/file
+    let (id0, id1, id2) = get_id0_id1_id2_sections(args)?;
+    match (id0, id2) {
+        (IDAVariants::IDA32(id0), Some(IDAVariants::IDA32(id2))) => {
+            dump_inner(&id0, &id1, Some(&id2))
+        }
+        (IDAVariants::IDA32(id0), None) => dump_inner(&id0, &id1, None),
+        (IDAVariants::IDA64(id0), Some(IDAVariants::IDA64(id2))) => {
+            dump_inner(&id0, &id1, Some(&id2))
+        }
+        (IDAVariants::IDA64(id0), None) => dump_inner(&id0, &id1, None),
+        (_, _) => unreachable!(),
     }
 }
 
-fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
+fn dump_inner<K: IDAKind>(
+    id0: &ID0Section<K>,
+    id1: &ID1Section,
+    id2: Option<&ID2Section<K>>,
+) -> Result<()> {
     if let Some(dirtree) = id0.dirtree_function_address()? {
-        print_dirtree(|entry| print_function(&id0, *entry).unwrap(), &dirtree);
+        print_dirtree(
+            |entry| {
+                print_function(id0, id1, id2, Address::from_raw(*entry))
+                    .unwrap()
+            },
+            &dirtree,
+        );
     }
 
     Ok(())
@@ -22,36 +44,18 @@ fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
 
 pub fn print_function<K: IDAKind>(
     id0: &ID0Section<K>,
-    address: Id0Address<K>,
+    id1: &ID1Section,
+    id2: Option<&ID2Section<K>>,
+    address: Address<K>,
 ) -> Result<()> {
-    let infos = id0.address_info_at(address)?;
-    let mut name = None;
-    let mut ty = None;
-    for info in infos {
-        match info? {
-            idb_rs::id0::AddressInfo::Comment(_)
-            | idb_rs::id0::AddressInfo::DefinedStruct(_)
-            | idb_rs::id0::AddressInfo::Other { .. } => {}
-            idb_rs::id0::AddressInfo::Label(label) => {
-                if let Some(_old) = name.replace(label) {
-                    panic!("Multiple labels can't be return for address")
-                }
-            }
-            idb_rs::id0::AddressInfo::TilType(addr_ty) => {
-                ensure!(
-                    matches!(
-                        &addr_ty.type_variant,
-                        idb_rs::til::TypeVariant::Function(_)
-                    ),
-                    "Type for function at {address:#?} is invalid"
-                );
-                if let Some(_old) = ty.replace(addr_ty) {
-                    panic!("Multiple types can't be return for address")
-                }
-            }
-        }
-    }
-    print!("{:#x}:", address.as_u64());
+    let root_netnode = id0.root_node()?;
+    let image_base = id0.image_base(root_netnode)?;
+    let info = AddressInfo::new(id0, id1, id2, image_base, address).unwrap();
+    let name_raw = info.label()?;
+    let ty = info.tinfo()?;
+    let name = name_raw.as_ref().map(|name| String::from_utf8_lossy(&name));
+
+    print!("{:#x}:", address.as_raw());
     match (name, ty) {
         (Some(name), Some(ty)) => print!("\"{name}\":{ty:?}"),
         (None, None) => print!("NO_INFO"),

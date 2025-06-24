@@ -1,25 +1,29 @@
 #![forbid(unsafe_code)]
+pub mod addr_info;
+pub mod bytes_info;
 pub mod id0;
 pub mod id1;
+pub mod id2;
 pub(crate) mod ida_reader;
 pub mod nam;
+#[allow(non_camel_case_types)]
+pub mod sdk_comp;
 pub mod til;
 
-#[allow(non_camel_case_types)]
-pub mod api;
+use id0::{ID0Section, ID0SectionVariants};
+use id1::ID1Section;
+use ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
+use nam::NamSection;
+use til::section::TILSection;
 
 use std::borrow::Cow;
 use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
 use std::num::NonZeroU64;
 
-use id0::{ID0Section, ID0SectionVariants};
-use ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
+use anyhow::{anyhow, ensure, Result};
 use serde::Deserialize;
 
-use crate::id1::ID1Section;
-use crate::nam::NamSection;
-use crate::til::section::TILSection;
-use anyhow::{anyhow, ensure, Result};
+use crate::id2::{ID2Section, ID2SectionVariants};
 
 #[macro_export]
 macro_rules! flag_to_function {
@@ -87,6 +91,7 @@ pub enum IDBFormats {
 pub trait IDBFormat: Sealed {
     type ID0Location;
     type ID1Location;
+    type ID2Location;
     type NamLocation;
     type TilLocation;
     fn id0_location(&self) -> Option<Self::ID0Location>;
@@ -96,11 +101,17 @@ pub trait IDBFormat: Sealed {
         id0: Self::ID0Location,
     ) -> Result<ID0SectionVariants>;
     fn id1_location(&self) -> Option<Self::ID1Location>;
+    fn id2_location(&self) -> Option<Self::ID2Location>;
     fn read_id1<I: BufRead + Seek>(
         &self,
         input: I,
         id1: Self::ID1Location,
     ) -> Result<ID1Section>;
+    fn read_id2<I: BufRead + Seek>(
+        &self,
+        input: I,
+        id2: Self::ID2Location,
+    ) -> Result<ID2SectionVariants>;
     fn nam_location(&self) -> Option<Self::NamLocation>;
     fn read_nam<I: BufRead + Seek>(
         &self,
@@ -243,6 +254,10 @@ impl SeparatedSections {
         self.id1.map(|x| x.offset.get()).map(ID1Offset)
     }
 
+    pub fn id2_location(&self) -> Option<ID2Offset> {
+        self.id2.map(|x| x.offset.get()).map(ID2Offset)
+    }
+
     pub fn nam_location(&self) -> Option<NamOffset> {
         self.nam.map(|x| x.offset.get()).map(NamOffset)
     }
@@ -290,6 +305,28 @@ impl SeparatedSections {
                 input,
                 self.version,
             )
+        }
+    }
+
+    pub fn read_id2<I: IdbBufRead + Seek>(
+        &self,
+        mut input: I,
+        id1: ID2Offset,
+    ) -> Result<ID2SectionVariants> {
+        input.seek(SeekFrom::Start(id1.0))?;
+        // TODO find the InnerRef and check the magic/version relation here
+        if self.magic.is_64() {
+            read_section_from_header::<ID2Section<IDA64>, _, IDA64>(
+                input,
+                self.version,
+            )
+            .map(IDAVariants::IDA64)
+        } else {
+            read_section_from_header::<ID2Section<IDA32>, _, IDA32>(
+                input,
+                self.version,
+            )
+            .map(IDAVariants::IDA32)
         }
     }
 
@@ -360,6 +397,7 @@ impl SeparatedSections {
 impl IDBFormat for SeparatedSections {
     type ID0Location = ID0Offset;
     type ID1Location = ID1Offset;
+    type ID2Location = ID2Offset;
     type NamLocation = NamOffset;
     type TilLocation = TILOffset;
 
@@ -379,12 +417,24 @@ impl IDBFormat for SeparatedSections {
         self.id1_location()
     }
 
+    fn id2_location(&self) -> Option<Self::ID2Location> {
+        self.id2_location()
+    }
+
     fn read_id1<I: IdbBufRead + Seek>(
         &self,
         input: I,
         id1: Self::ID1Location,
     ) -> Result<ID1Section> {
         self.read_id1(input, id1)
+    }
+
+    fn read_id2<I: IdbBufRead + Seek>(
+        &self,
+        input: I,
+        id2: Self::ID2Location,
+    ) -> Result<ID2SectionVariants> {
+        self.read_id2(input, id2)
     }
 
     fn nam_location(&self) -> Option<Self::NamLocation> {
@@ -670,6 +720,10 @@ pub struct ID1Location(u64, u64);
 impl_idb_location!(ID1Location);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ID2Location(u64, u64);
+impl_idb_location!(ID2Location);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NamLocation(u64, u64);
 impl_idb_location!(NamLocation);
 
@@ -748,6 +802,15 @@ impl InlineUnCompressedSections {
         })
     }
 
+    pub fn id2_location(&self) -> Option<ID2Location> {
+        self.sections.id2_size.map(|size| {
+            ID2Location(
+                self.sections.id2_offset_raw(self.data_start),
+                size.get(),
+            )
+        })
+    }
+
     pub fn nam_location(&self) -> Option<NamLocation> {
         self.sections.nam_size.map(|size| {
             NamLocation(
@@ -796,6 +859,22 @@ impl InlineUnCompressedSections {
         }
     }
 
+    pub fn read_id2<I: IdbBufRead + Seek>(
+        &self,
+        mut input: I,
+        ID2Location(offset, len): ID2Location,
+    ) -> Result<ID2SectionVariants> {
+        input.seek(SeekFrom::Start(offset))?;
+        // TODO find the InnerRef and check the magic/version relation here
+        if self.sections.magic.is_64() {
+            read_section_uncompressed::<ID2Section<IDA64>, _, IDA64>(input, len)
+                .map(IDAVariants::IDA64)
+        } else {
+            read_section_uncompressed::<ID2Section<IDA32>, _, IDA32>(input, len)
+                .map(IDAVariants::IDA32)
+        }
+    }
+
     pub fn read_nam<I: IdbBufRead + Seek>(
         &self,
         mut input: I,
@@ -841,6 +920,7 @@ impl InlineUnCompressedSections {
 impl IDBFormat for InlineUnCompressedSections {
     type ID0Location = ID0Location;
     type ID1Location = ID1Location;
+    type ID2Location = ID2Location;
     type NamLocation = NamLocation;
     type TilLocation = TILLocation;
 
@@ -860,12 +940,24 @@ impl IDBFormat for InlineUnCompressedSections {
         self.id1_location()
     }
 
+    fn id2_location(&self) -> Option<Self::ID2Location> {
+        self.id2_location()
+    }
+
     fn read_id1<I: BufRead + Seek>(
         &self,
         input: I,
         id1: Self::ID1Location,
     ) -> Result<ID1Section> {
         self.read_id1(input, id1)
+    }
+
+    fn read_id2<I: BufRead + Seek>(
+        &self,
+        input: I,
+        id1: Self::ID2Location,
+    ) -> Result<ID2SectionVariants> {
+        self.read_id2(input, id1)
     }
 
     fn nam_location(&self) -> Option<Self::NamLocation> {
@@ -979,6 +1071,10 @@ impl_idb_offset!(ID0Offset);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ID1Offset(u64);
 impl_idb_offset!(ID1Offset);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ID2Offset(u64);
+impl_idb_offset!(ID2Offset);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NamOffset(u64);
@@ -1554,12 +1650,28 @@ mod test {
         let id1 = sections
             .read_id1(&mut *input, sections.id1_location().unwrap())
             .unwrap();
+        let id2 = sections
+            .id2_location()
+            .map(|id2| sections.read_id2(&mut *input, id2))
+            .transpose()
+            .unwrap();
         let til = sections
             .til_location()
             .map(|til| sections.read_til(&mut *input, til).unwrap());
-        match id0 {
-            IDAVariants::IDA32(id0) => parse_idb_data(&id0, &id1, til.as_ref()),
-            IDAVariants::IDA64(id0) => parse_idb_data(&id0, &id1, til.as_ref()),
+        match (id0, id2) {
+            (IDAVariants::IDA32(id0), Some(IDAVariants::IDA32(id2))) => {
+                parse_idb_data(&id0, &id1, Some(&id2), til.as_ref())
+            }
+            (IDAVariants::IDA32(id0), None) => {
+                parse_idb_data(&id0, &id1, None, til.as_ref())
+            }
+            (IDAVariants::IDA64(id0), Some(IDAVariants::IDA64(id2))) => {
+                parse_idb_data(&id0, &id1, Some(&id2), til.as_ref())
+            }
+            (IDAVariants::IDA64(id0), None) => {
+                parse_idb_data(&id0, &id1, None, til.as_ref())
+            }
+            (_, _) => unreachable!(),
         }
         let _ = sections
             .nam_location()
@@ -1579,16 +1691,28 @@ mod test {
         let id1 = sections
             .read_id1(&mut *input, sections.id1_location().unwrap())
             .unwrap();
+        let id2 = sections
+            .id2_location()
+            .map(|id2| sections.read_id2(&mut *input, id2))
+            .transpose()
+            .unwrap();
         let til = sections
             .til_location()
             .map(|til| sections.read_til(&mut *input, til).unwrap());
-        match id0 {
-            IDAVariants::IDA32(id0_32) => {
-                parse_idb_data(&id0_32, &id1, til.as_ref())
+        match (id0, id2) {
+            (IDAVariants::IDA32(id0), Some(IDAVariants::IDA32(id2))) => {
+                parse_idb_data(&id0, &id1, Some(&id2), til.as_ref())
             }
-            IDAVariants::IDA64(id0_64) => {
-                parse_idb_data(&id0_64, &id1, til.as_ref())
+            (IDAVariants::IDA32(id0), None) => {
+                parse_idb_data(&id0, &id1, None, til.as_ref())
             }
+            (IDAVariants::IDA64(id0), Some(IDAVariants::IDA64(id2))) => {
+                parse_idb_data(&id0, &id1, Some(&id2), til.as_ref())
+            }
+            (IDAVariants::IDA64(id0), None) => {
+                parse_idb_data(&id0, &id1, None, til.as_ref())
+            }
+            (_, _) => unreachable!(),
         }
         let _ = sections
             .nam_location()
@@ -1597,7 +1721,8 @@ mod test {
 
     fn parse_idb_data<K>(
         id0: &ID0Section<K>,
-        _id1: &ID1Section,
+        id1: &ID1Section,
+        id2: Option<&ID2Section<K>>,
         til: Option<&TILSection>,
     ) where
         K: IDAKind,
@@ -1625,7 +1750,7 @@ mod test {
         id0.input_file_sha256(root_info_idx).unwrap();
         id0.input_file_md5(root_info_idx).unwrap();
         // TODO test image base translate an addr to netnode and vise-versa
-        let _image_base = id0.image_base(root_info_idx).unwrap();
+        let image_base = id0.image_base(root_info_idx).unwrap();
         // TODO I think database information is always available, check that...
         id0.database_num_opens(root_info_idx).unwrap().unwrap();
         id0.database_secs_opens(root_info_idx).unwrap().unwrap();
@@ -1670,17 +1795,35 @@ mod test {
         let _ = id0.entry_points().unwrap();
         let _ = id0.dirtree_bpts().unwrap();
         let _ = id0.dirtree_enums().unwrap();
+
         if let Some(_dirtree_names) = id0.dirtree_names().unwrap() {
             _dirtree_names.visit_leafs(|addr| {
-                // NOTE it's know that some label are missing in some databases
-                let _name = id0.label_at(*addr).unwrap();
+                // NOTE it's know that some labels are missing from the byte
+                // info but not from the databases, maybe in cases they are
+                // created in debug-memory-pages or similar...
+                let addr_info = crate::addr_info::AddressInfo::new(
+                    id0,
+                    id1,
+                    id2,
+                    image_base,
+                    Address::from_raw(*addr),
+                )
+                .or_else(|| {
+                    crate::addr_info::AddressInfo::new_forced(
+                        id0,
+                        image_base,
+                        Address::from_raw(*addr),
+                    )
+                })
+                .unwrap();
+                let _name = addr_info.label().unwrap();
             });
         }
         if let Some((_dirtree_tinfos, til)) =
             id0.dirtree_tinfos().unwrap().zip(til)
         {
             _dirtree_tinfos.visit_leafs(|ord| {
-                let _til = til.get_ord(*ord).unwrap();
+                let _til = til.get_ord((*ord).into()).unwrap();
             });
         }
         let _ = id0.dirtree_imports().unwrap();
@@ -1689,11 +1832,6 @@ mod test {
         let _ = id0.dirtree_bookmarks_tiplace().unwrap();
         let _ = id0.dirtree_bookmarks_idaplace().unwrap();
         let _ = id0.dirtree_bookmarks_structplace().unwrap();
-        let _: Vec<_> = id0
-            .address_info(version)
-            .unwrap()
-            .collect::<Result<_>>()
-            .unwrap();
     }
 
     #[test]
@@ -1760,7 +1898,30 @@ pub enum IDAVariants<I32, I64> {
     IDA64(I64),
 }
 
-pub trait IDAKind: std::fmt::Debug + Clone + Copy + 'static {
+impl<I32, I64> core::fmt::Debug for IDAVariants<I32, I64>
+where
+    I32: core::fmt::Debug,
+    I64: core::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IDAVariants::IDA32(x) => {
+                write!(f, "IDA32(")?;
+                x.fmt(f)?;
+                write!(f, ")")?;
+                Ok(())
+            }
+            IDAVariants::IDA64(x) => {
+                write!(f, "IDA64(")?;
+                x.fmt(f)?;
+                write!(f, ")")?;
+                Ok(())
+            }
+        }
+    }
+}
+
+pub trait IDAKind: core::fmt::Debug + Clone + Copy + 'static {
     const BYTES: u8;
     type Usize: IDAUsize
         + num_traits::AsPrimitive<Self::Isize>
@@ -1834,6 +1995,7 @@ pub trait IDAUsize:
     + TryInto<u32, Error: std::fmt::Debug>
     + TryInto<u16, Error: std::fmt::Debug>
     + TryInto<u8, Error: std::fmt::Debug>
+    + From<bool>
     + From<u8>
     + From<u16>
     + From<u32>
@@ -1885,6 +2047,7 @@ pub trait IDAIsize:
     + TryInto<u32, Error: std::fmt::Debug>
     + TryInto<u16, Error: std::fmt::Debug>
     + TryInto<u8, Error: std::fmt::Debug>
+    + From<bool>
     + From<i8>
     + From<i16>
     + From<i32>
@@ -1935,3 +2098,55 @@ macro_rules! declare_idb_kind {
 
 declare_idb_kind!(4, u32, i32, IDA32, unpack_dd);
 declare_idb_kind!(8, u64, i64, IDA64, unpack_dq);
+
+/// representation of arbitrary memory Address
+#[derive(Clone, Copy, Hash, Debug)]
+pub struct Address<K: IDAKind>(K::Usize);
+
+impl<K: IDAKind> PartialOrd for Address<K> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.as_raw().partial_cmp(&other.as_raw())
+    }
+}
+
+impl<K: IDAKind> Ord for Address<K> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.as_raw().cmp(&other.as_raw())
+    }
+}
+
+impl<K: IDAKind> PartialEq for Address<K> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_raw().eq(&other.as_raw())
+    }
+}
+
+impl<K: IDAKind> Eq for Address<K> {}
+
+impl<K: IDAKind> Address<K> {
+    pub fn from_raw(value: K::Usize) -> Self {
+        Self(value)
+    }
+
+    pub fn as_raw(&self) -> K::Usize {
+        self.0
+    }
+}
+
+impl<K: IDAKind> std::fmt::Display for Address<K> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl<K: IDAKind> std::fmt::UpperHex for Address<K> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:X}", self.0)
+    }
+}
+
+impl<K: IDAKind> std::fmt::LowerHex for Address<K> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:x}", self.0)
+    }
+}

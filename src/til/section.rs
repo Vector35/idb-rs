@@ -1,4 +1,4 @@
-use crate::id0::{Compiler, Id0TilOrd};
+use crate::id0::Compiler;
 use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
 use crate::til::{flag, TILMacro, TILTypeInfo, TILTypeInfoRaw};
 use crate::{IDAKind, IDBString, SectionReader};
@@ -634,22 +634,22 @@ impl TILSection {
         self.get_name_idx(name).map(|idx| &self.types[idx])
     }
 
-    pub fn get_ord_idx(&self, id0_ord: Id0TilOrd) -> Option<usize> {
+    pub fn get_ord_idx(&self, id0_ord: u64) -> Option<usize> {
         // first search the ordinal alias
         if let Some(ordinals) = &self.header.type_ordinal_alias {
             // it's unclear what is the first value
             if let Some((_src, dst)) = ordinals
                 .iter()
-                .find(|(src, _dst)| u64::from(*src) == id0_ord.ord)
+                .find(|(src, _dst)| u64::from(*src) == id0_ord)
             {
-                return self.get_ord_idx(Id0TilOrd { ord: (*dst).into() });
+                return self.get_ord_idx((*dst).into());
             }
         }
         // if not and alias, search for the type directly
-        self.types.iter().position(|ty| ty.ordinal == id0_ord.ord)
+        self.types.iter().position(|ty| ty.ordinal == id0_ord)
     }
 
-    pub fn get_ord(&self, id0_ord: Id0TilOrd) -> Option<&TILTypeInfo> {
+    pub fn get_ord(&self, id0_ord: u64) -> Option<&TILTypeInfo> {
         self.get_ord_idx(id0_ord).map(|idx| &self.types[idx])
     }
 
