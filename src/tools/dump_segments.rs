@@ -22,15 +22,7 @@ fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
     }
 
     // TODO create a function for that in ida_info
-    let root_netnode = id0.root_node()?;
-    let version = match id0.ida_info(root_netnode.into())? {
-        idb_rs::id0::IDBParam::V1(idb_rs::id0::IDBParam1 {
-            version, ..
-        }) => version,
-        idb_rs::id0::IDBParam::V2(idb_rs::id0::IDBParam2 {
-            version, ..
-        }) => version,
-    };
+    let version = id0.ida_info(id0.root_node()?)?.version;
     if let Ok(idx) = id0.file_regions_idx() {
         println!();
         println!("Segments AKA `$ fileregions`: ");

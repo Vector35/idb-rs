@@ -15,7 +15,7 @@ pub fn dump_dirtree_bookmarks_idaplace(args: &Args) -> Result<()> {
 
 fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
     let dirtree = id0.dirtree_bookmarks_idaplace()?;
-    println!("{:?}", dirtree);
+    println!("{dirtree:?}");
 
     Ok(())
 }

@@ -18,16 +18,11 @@ impl<'a, 'b, K: IDAKind> BytesInfo<'a, 'b, K> {
 
     pub fn byte_by_address(&self, address: Address<K>) -> Option<ByteInfo> {
         self.id1
-            .map(|id1| {
-                id1.byte_by_address(address.as_raw().try_into().unwrap())
-            })
-            .flatten()
+            .and_then(|id1| id1.byte_by_address(address.as_raw().into()))
             .or_else(|| {
-                self.id2
-                    .map(|id2| {
-                        id2.byte_by_address(address).map(|x| x.byte_info)
-                    })
-                    .flatten()
+                self.id2.and_then(|id2| {
+                    id2.byte_by_address(address).map(|x| x.byte_info)
+                })
             })
     }
 

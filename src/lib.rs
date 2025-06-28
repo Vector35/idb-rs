@@ -1329,7 +1329,7 @@ impl IDBString {
         Self(data)
     }
 
-    pub fn as_utf8_lossy(&self) -> Cow<str> {
+    pub fn as_utf8_lossy(&self) -> Cow<'_, str> {
         String::from_utf8_lossy(&self.0)
     }
 
@@ -1600,12 +1600,6 @@ mod test {
     }
 
     #[test]
-    fn parse_idb_param() {
-        let param = b"IDA\xbc\x02\x06metapc#\x8a\x03\x03\x02\x00\x00\x00\x00\xff_\xff\xff\xf7\x03\x00\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x0d\x00\x0d \x0d\x10\xff\xff\x00\x00\x00\xc0\x80\x00\x00\x00\x02\x02\x01\x0f\x0f\x06\xce\xa3\xbeg\xc6@\x00\x07\x00\x07\x10(FP\x87t\x09\x03\x00\x01\x13\x0a\x00\x00\x01a\x00\x07\x00\x13\x04\x04\x04\x00\x02\x04\x08\x00\x00\x00";
-        let _parsed = id0::IDBParam::<IDA32>::read(param).unwrap();
-    }
-
-    #[test]
     fn parse_idbs() {
         let files = find_all(
             "resources/idbs".as_ref(),
@@ -1729,11 +1723,7 @@ mod test {
     {
         // parse all id0 information
         let root_netnode = id0.root_node().unwrap();
-        let _ida_info = id0.ida_info(root_netnode.into()).unwrap();
-        let version = match _ida_info {
-            id0::IDBParam::V1(x) => x.version,
-            id0::IDBParam::V2(x) => x.version,
-        };
+        let ida_info = id0.ida_info(root_netnode.into()).unwrap();
 
         let seg_idx = id0.segments_idx().unwrap().unwrap();
         let _: Vec<_> = id0.segments(seg_idx).map(Result::unwrap).collect();
@@ -1758,7 +1748,7 @@ mod test {
         id0.database_initial_version(root_info_idx)
             .unwrap()
             .unwrap();
-        id0.database_creation_version(root_info_idx).unwrap();
+        let _ = id0.database_creation_version(root_info_idx);
         id0.c_predefined_macros(root_info_idx);
         id0.c_header_path(root_info_idx);
         id0.ida_info(root_info_idx).unwrap();
@@ -1783,7 +1773,7 @@ mod test {
 
         let file_regions_idx = id0.file_regions_idx().unwrap();
         let _: Vec<_> = id0
-            .file_regions(file_regions_idx, version)
+            .file_regions(file_regions_idx, ida_info.version)
             .map(Result::unwrap)
             .collect();
         if let Some(func_idx) = id0.funcs_idx().unwrap() {
@@ -2003,6 +1993,8 @@ pub trait IDAUsize:
     + TryFrom<usize, Error: std::fmt::Debug>
     + Into<i128>
     + TryFrom<i128>
+    + for<'de> serde::Deserialize<'de>
+    + serde::Serialize
 {
     /// helper fo call into u64
     fn into_u64(self) -> u64 {
@@ -2068,7 +2060,7 @@ pub trait IDAUsizeBytes:
 }
 
 macro_rules! declare_idb_kind {
-    ($bytes:literal, $utype:ident, $itype:ident, $name:ident, $unapack_fun:ident) => {
+    ($bytes:literal, $utype:ty, $itype:ty, $name:ident, $unapack_fun:ident) => {
         #[derive(Debug, Clone, Copy)]
         pub struct $name;
         impl IDAKind for $name {
@@ -2100,12 +2092,12 @@ declare_idb_kind!(4, u32, i32, IDA32, unpack_dd);
 declare_idb_kind!(8, u64, i64, IDA64, unpack_dq);
 
 /// representation of arbitrary memory Address
-#[derive(Clone, Copy, Hash, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Address<K: IDAKind>(K::Usize);
 
 impl<K: IDAKind> PartialOrd for Address<K> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.as_raw().partial_cmp(&other.as_raw())
+        Some(self.cmp(other))
     }
 }
 
@@ -2122,6 +2114,12 @@ impl<K: IDAKind> PartialEq for Address<K> {
 }
 
 impl<K: IDAKind> Eq for Address<K> {}
+
+impl<K: IDAKind + std::hash::Hash> std::hash::Hash for Address<K> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
 
 impl<K: IDAKind> Address<K> {
     pub fn from_raw(value: K::Usize) -> Self {

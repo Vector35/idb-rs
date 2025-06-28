@@ -245,7 +245,7 @@ fn print_symbols(
             Some(SClass::Virtual)  => "virtual ",
             Some(SClass::Other(_)) => "?!",
         };
-        write!(fmt, " {} ", sym_kind)?;
+        write!(fmt, " {sym_kind} ")?;
 
         // TODO investiage this
         let symbol_name = symbol.name.as_bytes();
@@ -331,7 +331,7 @@ fn print_types_by_ordinals(
             OrdType::Type { idx, ty } => (idx, ty),
         };
         print_til_type_len(fmt, Some(idx), &final_type.tinfo, solver).unwrap();
-        write!(fmt, "{:5}. ", ord_num)?;
+        write!(fmt, "{ord_num:5}. ")?;
         if let OrdType::Alias((_alias_ord, type_ord)) = ord_type {
             write!(fmt, "(aliased to {type_ord}) ")?;
         }

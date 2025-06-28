@@ -416,8 +416,8 @@ pub fn netnode_blobsize<K: IDAKind>(
     id0.blob(NetnodeIdx(num.0), start.0, check_tag(tag)).count()
 }
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x800240
-pub fn netnode_getblob<'a, K: IDAKind>(
-    id0: &'a ID0Section<K>,
+pub fn netnode_getblob<K: IDAKind>(
+    id0: &ID0Section<K>,
     num: nodeidx_t<K>,
     start: nodeidx_t<K>,
     tag: u32,

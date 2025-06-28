@@ -309,10 +309,8 @@ impl SegInfo {
 
     pub fn all_bytes(
         &self,
-    ) -> impl Iterator<Item = (u64, ByteInfo)>
-           + DoubleEndedIterator
-           + ExactSizeIterator
-           + use<'_> {
+    ) -> impl DoubleEndedIterator<Item = (u64, ByteInfo)> + ExactSizeIterator + use<'_>
+    {
         self.data.iter().enumerate().map(|(current_offset, byte)| {
             let addr = self.offset + u64::try_from(current_offset).unwrap();
             let byte_info = ByteInfo(*byte);

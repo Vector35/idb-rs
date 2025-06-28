@@ -15,7 +15,7 @@ pub fn dump_dirtree_bpts(args: &Args) -> Result<()> {
 
 fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
     let dirtree = id0.dirtree_imports()?;
-    println!("{:?}", dirtree);
+    println!("{dirtree:?}");
 
     Ok(())
 }

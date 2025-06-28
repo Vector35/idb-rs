@@ -41,7 +41,7 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
     }
 
     /// this ignores the byte mapping from id1/id2, some entries, specialy for
-    /// names need this, because they are outside the mapped address.
+    /// labels, need this because they are outside the mapped address.
     pub fn new_forced(
         id0: &'a ID0Section<K>,
         image_base: ImageBase<K>,
@@ -99,7 +99,7 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
         let Some(name_raw) = self.id0.netnode_name(self.netnode) else {
             return Ok(None);
         };
-        let value = ID0CStr::<'_, K>::parse_cstr_or_subkey(&name_raw)
+        let value = ID0CStr::<'_, K>::parse_cstr_or_subkey(name_raw)
             .ok_or_else(|| anyhow!("Label is not a valid CStr or ID0 Ref"))?;
         match value {
             ID0CStr::CStr(label) => Ok(Some(Cow::Borrowed(label))),

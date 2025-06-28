@@ -99,7 +99,7 @@ fn dump<K: IDAKind>(
             match entry {
                 idb_rs::id0::DirTreeEntry::Leaf(address) => {
                     print!("  {address:#x}:");
-                    print_function(&id0, &id1, id2, Address::from_raw(address))?
+                    print_function(id0, id1, id2, Address::from_raw(address))?
                 }
                 idb_rs::id0::DirTreeEntry::Directory { name: _, entries } => {
                     buffer.extend(entries)

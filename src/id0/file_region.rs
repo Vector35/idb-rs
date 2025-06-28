@@ -73,7 +73,7 @@ impl<K: IDAKind> Iterator for FileRegionIter<'_, K> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.segments.next()? {
             Ok((_addr, current)) => {
-                Some(FileRegions::read(&current, self.version))
+                Some(FileRegions::read(current, self.version))
             }
             Err(e) => Some(Err(e)),
         }
