@@ -59,7 +59,7 @@ impl<'a, K: IDAKind> EntryTagContinuousSubkeys<'a, K> {
             id0.netnode_tag_alt_idx(netnode, start, tag).unwrap_or(0);
         let entries = &id0.entries[start_idx..];
         let expected_alt = entries
-            .get(0)
+            .first()
             .and_then(|entry| get_sup_from_key::<K>(&entry.key))
             .unwrap_or(0u8.into());
         Self {

@@ -53,7 +53,7 @@ pub fn print_function<K: IDAKind>(
     let info = AddressInfo::new(id0, id1, id2, image_base, address).unwrap();
     let name_raw = info.label()?;
     let ty = info.tinfo()?;
-    let name = name_raw.as_ref().map(|name| String::from_utf8_lossy(&name));
+    let name = name_raw.as_ref().map(|name| String::from_utf8_lossy(name));
 
     print!("{:#x}:", address.as_raw());
     match (name, ty) {

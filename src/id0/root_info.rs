@@ -1,4 +1,6 @@
-use std::io::Read;
+mod migration;
+
+use std::ops::Range;
 
 use anyhow::Result;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -23,7 +25,7 @@ impl<K: IDAKind> ImageBase<K> {
     pub fn ea2node(&self, ea: Address<K>) -> NetnodeIdx<K> {
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1db9c0
         if ea.as_raw().is_max() {
-            return NetnodeIdx(ea.as_raw());
+            NetnodeIdx(ea.as_raw())
         } else {
             NetnodeIdx(ea.as_raw().wrapping_add(&self.0))
         }
@@ -35,174 +37,203 @@ impl<K: IDAKind> ImageBase<K> {
 }
 
 #[derive(Clone, Debug)]
-pub enum IDBParam<K: IDAKind> {
-    V1(IDBParam1<K>),
-    V2(IDBParam2<K>),
-}
-
-#[derive(Clone, Debug)]
-pub struct IDBParam1<K: IDAKind> {
+pub struct RootInfo<K: IDAKind> {
+    // offset = 4, tag = 0x0
     pub version: u16,
-    pub cpu: Vec<u8>,
-    pub lflags: u8,
-    pub demnames: u8,
-    pub filetype: u16,
-    pub fcoresize: K::Usize,
-    pub corestart: K::Usize,
-    pub ostype: u16,
-    pub apptype: u16,
-    pub startsp: K::Usize,
-    pub af: u16,
-    pub startip: K::Usize,
-    pub startea: K::Usize,
-    pub minea: K::Usize,
-    pub maxea: K::Usize,
-    pub ominea: K::Usize,
-    pub omaxea: K::Usize,
-    pub lowoff: K::Usize,
-    pub highoff: K::Usize,
-    pub maxref: K::Usize,
-    pub ascii_break: u8,
-    pub wide_high_byte_first: u8,
-    pub indent: u8,
-    pub comment: u8,
-    pub xrefnum: u8,
-    pub entab: u8,
-    pub specsegs: u8,
-    pub voids: u8,
-    pub showauto: u8,
-    pub auto: u8,
-    pub border: u8,
-    pub null: u8,
-    pub genflags: u8,
-    pub showpref: u8,
-    pub prefseg: u8,
-    pub asmtype: u8,
-    pub baseaddr: K::Usize,
-    pub xrefs: u8,
-    pub binpref: u16,
-    pub cmtflag: u8,
-    pub nametype: u8,
-    pub showbads: u8,
-    pub prefflag: u8,
-    pub packbase: u8,
-    pub asciiflags: u8,
-    pub listnames: u8,
-    pub asciiprefs: [u8; 16],
-    pub asciisernum: K::Usize,
-    pub asciizeroes: u8,
-    pub tribyte_order: u8,
-    pub mf: u8,
-    pub org: u8,
-    pub assume: u8,
-    pub checkarg: u8,
-    // offset 131
-    pub start_ss: K::Usize,
-    pub start_cs: K::Usize,
-    pub main: K::Usize,
-    pub short_dn: K::Usize,
-    pub long_dn: K::Usize,
-    pub datatypes: K::Usize,
-    pub strtype: K::Usize,
-    pub af2: u16,
-    pub namelen: u16,
-    pub margin: u16,
-    pub lenxref: u16,
-    pub lprefix: [u8; 16],
-    pub lprefixlen: u8,
-    pub compiler: u8,
-    pub model: u8,
-    pub sizeof_int: u8,
-    pub sizeof_bool: u8,
-    pub sizeof_enum: u8,
-    pub sizeof_algn: u8,
-    pub sizeof_short: u8,
-    pub sizeof_long: u8,
-    pub sizeof_llong: u8,
-    pub change_counter: u32,
-    pub sizeof_ldbl: u8,
-    pub abiname: [u8; 16],
-    pub abibits: u32,
-    pub refcmts: u8,
-}
-
-#[derive(Clone, Debug)]
-pub struct IDBParam2<K: IDAKind> {
-    pub version: u16,
-    pub cpu: Vec<u8>,
+    pub target: RootInfoTarget,
+    // offset = 16, tag = 0x0
     pub genflags: Inffl,
+    // offset = 18, tag = 0x0
     pub lflags: Lflg,
+    // offset = 1c, tag = 0x0
     pub database_change_count: u32,
-    pub filetype: FileType,
-    pub ostype: u16,
-    pub apptype: u16,
-    pub asmtype: u8,
-    pub specsegs: u8,
+    pub input: RootInfoInput,
+    // offset = 27, tag = 0x0, name = "special_segment_entry_size"
+    pub special_segment_entry_size: u8,
+    // offset = 28, tag = 0x0 and offset = 2c, tag = 0x0
     pub af: Af,
-    pub baseaddr: K::Usize,
-    pub start_ss: K::Usize,
-    pub start_cs: K::Usize,
-    pub start_ip: K::Usize,
-    pub start_ea: K::Usize,
-    pub start_sp: K::Usize,
-    pub main: K::Usize,
-    pub min_ea: K::Usize,
-    pub max_ea: K::Usize,
-    pub omin_ea: K::Usize,
-    pub omax_ea: K::Usize,
-    pub lowoff: K::Usize,
-    pub highoff: K::Usize,
-    pub maxref: K::Usize,
-    pub privrange_start_ea: K::Usize,
-    pub privrange_end_ea: K::Usize,
-    pub netdelta: K::Usize,
-    pub xrefnum: u8,
-    pub type_xrefnum: u8,
-    pub refcmtnum: u8,
-    pub xrefflag: XRef,
-    pub max_autoname_len: u16,
-    pub nametype: NameType,
-    pub short_demnames: u32,
-    pub long_demnames: u32,
-    pub demnames: DemName,
-    pub listnames: ListName,
+    pub addresses: RootInfoAddressed<K>,
+    pub suspiciousness_limits: RootInfoSuspiciousnessLimits<K>,
+    pub xrefs: RootInfoXrefs<K>,
+
+    pub names: RootInfoNames,
+    pub demangler: RootInfoDemangler<K>,
+    // offset = c9, tag = 0x0
+    pub listname: ListName,
+    // offset = ca, tag = 0x0
     pub indent: u8,
+    // offset = cb, tag = 0x0
     pub cmt_ident: u8,
+    // offset = cc, tag = 0x0
     pub margin: u16,
-    pub lenxref: u16,
-    pub outflags: OutputFlags,
+    pub listing: RootInfoListing,
+    // offset = d0, tag = 0x0
+    pub outflag: OutputFlags,
+    // offset = d4, tag = 0x0
     pub cmtflg: CommentOptions,
+    // offset = d5, tag = 0x0
     pub limiter: DelimiterOptions,
+    // offset = d6, tag = 0x0
     pub bin_prefix_size: u16,
+    // offset = d8, tag = 0x0
     pub prefflag: LinePrefixOptions,
-    pub strlit_flags: StrLiteralFlags,
-    pub strlit_break: u8,
-    pub strlit_zeroes: u8,
-    pub strtype: u32,
-    pub strlit_pref: String,
-    pub strlit_sernum: K::Usize,
-    pub datatypes: K::Usize,
-    pub cc_id: Compiler,
-    pub cc_guessed: bool,
-    pub cc_cm: u8,
-    pub cc_size_i: u8,
-    pub cc_size_b: u8,
-    pub cc_size_e: u8,
-    pub cc_defalign: u8,
-    pub cc_size_s: u8,
-    pub cc_size_l: u8,
-    pub cc_size_ll: u8,
-    pub cc_size_ldbl: u8,
+    pub strlits: RootInfoStrlits<K>,
+    // offset = dc, tag = 0x0
+    pub strtype: K::Usize,
+    // offset = f8, tag = 0x0, name = "data_carousel"
+    pub data_carousel: K::Usize,
+    pub compiler: RootInfoCompiler,
+    // offset = 10c, tag = 0x0
     pub abibits: AbiOptions,
+    // offset = 110, tag = 0x0
     pub appcall_options: u32,
 }
 
-impl<K: IDAKind> IDBParam<K> {
-    pub(crate) fn read(data: &[u8]) -> Result<Self> {
+#[derive(Clone, Debug)]
+pub struct RootInfoTarget {
+    // offset = 6, tag = 0x0, name = "target.processor"
+    pub processor: Vec<u8>,
+    // offset = 26, tag = 0x0, name = "target.assembler"
+    pub assembler: u8,
+}
+
+#[derive(Clone, Debug)]
+pub struct RootInfoInput {
+    // offset = 20, tag = 0x0, name = "input.file_format"
+    pub file_format: FileType,
+    // offset = 22, tag = 0x0, name = "input.operating_system"
+    pub operating_system: u16,
+    // offset = 24, tag = 0x0, name = "input.application_type"
+    pub application_type: u16,
+}
+
+#[derive(Clone, Debug)]
+pub struct RootInfoAddressed<K: IDAKind> {
+    // offset = 30, tag = 0x0, name = "addresses.loading_base"
+    pub loading_base: K::Usize,
+    // offset = 38, tag = 0x0, name = "addresses.initial_ss"
+    pub initial_ss: K::Usize,
+    // offset = 40, tag = 0x0, name = "addresses.initial_cs"
+    pub initial_cs: K::Usize,
+    // offset = 48, tag = 0x0, name = "addresses.initial_ip"
+    pub initial_ip: K::Usize,
+    // offset = 50, tag = 0x0, name = "addresses.initial_ea"
+    pub initial_ea: Address<K>,
+    // offset = 58, tag = 0x0, name = "addresses.initial_sp"
+    pub initial_sp: K::Usize,
+    // offset = 60, tag = 0x0, name = "addresses.main_ea"
+    pub main_ea: Address<K>,
+    // offset = 68, tag = 0x0, name = "addresses.min_ea"
+    pub min_ea: Address<K>,
+    // offset = 70, tag = 0x0, name = "addresses.max_ea"
+    pub max_ea: Address<K>,
+    // offset = 78, tag = 0x0, name = "addresses.original_min_ea"
+    pub original_min_ea: Address<K>,
+    // offset = 80, tag = 0x0, name = "addresses.original_max_ea"
+    pub original_max_ea: Address<K>,
+    // offset = a0, tag = 0x0, name = "addresses.privrange"
+    pub privrange: Range<Address<K>>,
+    // offset = b0, tag = 0x0, name = "addresses.netdelta"
+    pub netdelta: K::Usize,
+}
+
+#[derive(Clone, Debug)]
+pub struct RootInfoSuspiciousnessLimits<K: IDAKind> {
+    // offset = 88, tag = 0x0, name = "suspiciousness_limits.low"
+    pub low: Option<Address<K>>,
+    // offset = 90, tag = 0x0, name = "suspiciousness_limits.high"
+    pub high: Option<Address<K>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct RootInfoXrefs<K: IDAKind> {
+    // offset = 98, tag = 0x0, name = "xrefs.max_depth"
+    pub max_depth: K::Usize,
+    // offset = b8, tag = 0x0
+    pub max_displayed_xrefs: u8,
+    // offset = b9, tag = 0x0, name = "xrefs.max_displayed_type_xrefs"
+    pub max_displayed_type_xrefs: u8,
+    // offset = ba, tag = 0x0, name = "xrefs.max_displayed_strlit_xrefs"
+    pub max_displayed_strlit_xrefs: u8,
+    // offset = bb, tag = 0x0
+    pub xrefflag: XRef,
+}
+
+#[derive(Clone, Debug)]
+pub struct RootInfoNames {
+    // offset = bc, tag = 0x0, name = "names.max_autogenerated_name_length"
+    pub max_autogenerated_name_length: u16,
+    // offset = be, tag = 0x0, name = "names.dummy_names"
+    pub dummy_names: NameType,
+}
+
+#[derive(Clone, Debug)]
+pub struct RootInfoDemangler<K: IDAKind> {
+    // offset = c0, tag = 0x0, name = "demangler.short_form"
+    pub short_form: K::Usize,
+    // offset = c4, tag = 0x0, name = "demangler.long_form"
+    pub long_form: K::Usize,
+    // offset = c8, tag = 0x0
+    pub name: DemName,
+}
+
+#[derive(Clone, Debug)]
+pub struct RootInfoListing {
+    // offset = ce, tag = 0x0, name = "listing.xref_margin"
+    pub xref_margin: u16,
+}
+
+#[derive(Clone, Debug)]
+pub struct RootInfoStrlits<K: IDAKind> {
+    // offset = d9, tag = 0x0
+    pub flags: StrLiteralFlags,
+    // offset = da, tag = 0x0, name = "strlits.break"
+    pub break_: u8,
+    // offset = db, tag = 0x0, name = "strlits.leading_zeroes"
+    pub leading_zeroes: u8,
+    // offset = e0, tag = 0x0, name = "strlits.name_prefix"
+    pub name_prefix: Vec<u8>,
+    // offset = f0, tag = 0x0, name = "strlits.serial_number"
+    pub serial_number: K::Usize,
+}
+
+#[derive(Clone, Debug)]
+pub struct RootInfoCompiler {
+    // offset = 100, tag = 0x0
+    pub is_guessed: bool,
+    pub compiler: Compiler,
+    pub sizeof: RootInfoCompilerSizeof,
+    // offset = 105, tag = 0x0, name = "compiler.alignment"
+    pub alignment: u8,
+}
+
+#[derive(Clone, Debug)]
+pub struct RootInfoCompilerSizeof {
+    // offset = 101, tag = 0x0
+    pub cm: u8,
+    // offset = 102, tag = 0x0, name = "compiler.sizeof.int"
+    pub int: u8,
+    // offset = 103, tag = 0x0, name = "compiler.sizeof.bool"
+    pub bool: u8,
+    // offset = 104, tag = 0x0, name = "compiler.sizeof.enum"
+    pub enum_: u8,
+    // offset = 106, tag = 0x0, name = "compiler.sizeof.short"
+    pub short: u8,
+    // offset = 107, tag = 0x0, name = "compiler.sizeof.long"
+    pub long: u8,
+    // offset = 108, tag = 0x0, name = "compiler.sizeof.longlong"
+    pub longlong: u8,
+    // offset = 109, tag = 0x0, name = "compiler.sizeof.long_double"
+    pub long_double: u8,
+}
+
+impl<K: IDAKind> RootInfo<K> {
+    pub(crate) fn read(id0: &ID0Section<K>, data: &[u8]) -> Result<Self> {
         let mut input = data;
         let magic: [u8; 3] = bincode::deserialize_from(&mut input)?;
         let magic_old = match &magic[..] {
             b"ida" => {
+                // ida have the \x00, IDA does not
                 let zero: u8 = input.read_u8()?;
                 ensure!(zero == 0);
                 true
@@ -210,27 +241,28 @@ impl<K: IDAKind> IDBParam<K> {
             b"IDA" => false,
             _ => return Err(anyhow!("Invalid IDBParam Magic")),
         };
-        let version: u16 = bincode::deserialize_from(&mut input)?;
-
-        let cpu_len = match (magic_old, version) {
-            (_, ..=699) => 8,
-            (true, 700..) => 16,
-            (false, 700..) => {
-                let cpu_len: u8 = bincode::deserialize_from(&mut input)?;
-                cpu_len.into()
-            }
-        };
-        let mut cpu = vec![0; cpu_len];
-        input.read_exact(&mut cpu)?;
-        // remove any \x00 that marks the end of the str
-        let cpu_str_part = parse_maybe_cstr(&cpu[..])
-            .ok_or_else(|| anyhow!("Invalid RootInfo CStr cpu name"))?;
-        cpu.truncate(cpu_str_part.len());
+        let version = input.read_u16()?;
 
         // TODO tight those ranges up
-        let param = match version {
-            ..=699 => Self::read_v1(&mut input, version, cpu)?,
-            700.. => Self::read_v2(&mut input, magic_old, version, cpu)?,
+        let param = match (magic_old, version) {
+            (true, ..699) => Self::read_v1(&mut input, version)?,
+            (false, ..699) => {
+                Self::read_v2(&mut input, data.len(), 0, version)?
+            }
+            (false, 699..) => {
+                let upgrade_700 = id0
+                    .upgrade_700_idx()?
+                    .map(|netnode| id0.upgrade_700(netnode))
+                    .transpose()?
+                    .map(|x| x.into_u64())
+                    .unwrap_or(0);
+                if upgrade_700 & 0x40 == 0 {
+                    Self::read_v2(&mut input, data.len(), upgrade_700, version)?
+                } else {
+                    Self::read_v3(&mut input, upgrade_700, version)?
+                }
+            }
+            (true, 699..) => panic!("old magic and new version {version}?"),
         };
         match version {
             // TODO old version may contain extra data at the end with unknown purpose
@@ -240,258 +272,292 @@ impl<K: IDAKind> IDBParam<K> {
         Ok(param)
     }
 
-    pub(crate) fn read_v1(
-        mut input: &mut impl IdbReadKind<K>,
+    pub fn read_v1(
+        input: &mut impl IdbReadKind<K>,
         version: u16,
-        cpu: Vec<u8>,
     ) -> Result<Self> {
-        let lflags = input.read_u8()?;
-        let demnames = input.read_u8()?;
-        let filetype = input.read_u16()?;
-        let fcoresize = input.read_usize()?;
-        let corestart = input.read_usize()?;
-        let ostype = input.read_u16()?;
-        let apptype = input.read_u16()?;
-        let startsp = input.read_usize()?;
-        let af = input.read_u16()?;
-        let startip = input.read_usize()?;
-        let startea = input.read_usize()?;
-        let minea = input.read_usize()?;
-        let maxea = input.read_usize()?;
-        let ominea = input.read_usize()?;
-        let omaxea = input.read_usize()?;
+        let mut processor = [0; 8];
+        input.read_exact(&mut processor)?;
+        // remove any \x00 that marks the end of the str
+        let cpu_str_part = parse_maybe_cstr(&processor[..])
+            .ok_or_else(|| anyhow!("Invalid RootInfo CStr cpu name"))?;
+        let processor = processor[0..cpu_str_part.len()].to_vec();
+
+        let genflags = Inffl::new(input.read_u16()?)?;
+        let lflags = Lflg::new(input.read_u32()?)?;
+        let database_change_count = input.read_u32()?;
+        let file_format = FileType::from_value(input.read_u16()?)?;
+        let operating_system = input.read_u16()?;
+        let application_type = input.read_u16()?;
+        let assembler = input.read_u8()?;
+        let special_segment_entry_size = input.read_u8()?;
+        let af1 = input.read_u32()?;
+        let af2 = input.read_u32()?;
+        let af = Af::new(af1, af2)?;
+        let loading_base = input.read_usize()?;
+        let initial_ss = input.read_usize()?;
+        let initial_cs = input.read_usize()?;
+        let initial_ip = input.read_usize()?;
+        let initial_ea = input.read_usize()?;
+        let initial_sp = input.read_usize()?;
+        let main_ea = input.read_usize()?;
+        let min_ea = input.read_usize()?;
+        let max_ea = input.read_usize()?;
+        let original_min_ea = input.read_usize()?;
+        let original_max_ea = input.read_usize()?;
         let lowoff = input.read_usize()?;
         let highoff = input.read_usize()?;
-        let maxref = input.read_usize()?;
-        let ascii_break = input.read_u8()?;
-        let wide_high_byte_first = input.read_u8()?;
+        let max_depth = input.read_usize()?;
+        let privrange_start = input.read_usize()?;
+        let privrange_end = input.read_usize()?;
+        let netdelta = input.read_usize()?;
+        let max_displayed_xrefs = input.read_u8()?;
+        let max_displayed_type_xrefs = input.read_u8()?;
+        let max_displayed_strlit_xrefs = input.read_u8()?;
+        let xrefflag = XRef::new(input.read_u8()?)?;
+        let max_autogenerated_name_length = input.read_u16()?;
+        let dummy_names = NameType::new(input.read_u8()?)
+            .ok_or_else(|| anyhow!("Invalid RootInfo NameType"))?;
+        let demangler_short_form = input.read_u32()?;
+        let demangler_long_form = input.read_u32()?;
+        let demangler_name = DemName::new(input.read_u8()?)?;
+        let listname = ListName::new(input.read_u8()?)?;
         let indent = input.read_u8()?;
-        let comment = input.read_u8()?;
-        let xrefnum = input.read_u8()?;
-        let entab = input.read_u8()?;
-        let specsegs = input.read_u8()?;
-        let voids = input.read_u8()?;
-        let _unkownw = input.read_u8()?;
-        let showauto = input.read_u8()?;
-        let auto = input.read_u8()?;
-        let border = input.read_u8()?;
-        let null = input.read_u8()?;
-        let genflags = input.read_u8()?;
-        let showpref = input.read_u8()?;
-        let prefseg = input.read_u8()?;
-        let asmtype = input.read_u8()?;
-        let baseaddr = input.read_usize()?;
-        let xrefs = input.read_u8()?;
-        let binpref = input.read_u16()?;
-        let cmtflag = input.read_u8()?;
-        let nametype = input.read_u8()?;
-        let showbads = input.read_u8()?;
-        let prefflag = input.read_u8()?;
-        let packbase = input.read_u8()?;
-        let asciiflags = input.read_u8()?;
-        let listnames = input.read_u8()?;
-        let asciiprefs: [u8; 16] = bincode::deserialize_from(&mut input)?;
-        let asciisernum = input.read_usize()?;
-        let asciizeroes = input.read_u8()?;
-        let _unknown2 = input.read_u16()?;
-        let tribyte_order = input.read_u8()?;
-        let mf = input.read_u8()?;
-        let org = input.read_u8()?;
-        let assume = input.read_u8()?;
-        let checkarg = input.read_u8()?;
-        // offset 131
-        let start_ss = input.read_usize()?;
-        let start_cs = input.read_usize()?;
-        let main = input.read_usize()?;
-        let short_dn = input.read_usize()?;
-        let long_dn = input.read_usize()?;
-        let datatypes = input.read_usize()?;
-        let strtype = input.read_usize()?;
-        let af2 = input.read_u16()?;
-        let namelen = input.read_u16()?;
+        let cmt_ident = input.read_u8()?;
         let margin = input.read_u16()?;
-        let lenxref = input.read_u16()?;
-        let lprefix: [u8; 16] = bincode::deserialize_from(&mut input)?;
-        let lprefixlen = input.read_u8()?;
-        let compiler = input.read_u8()?;
-        let model = input.read_u8()?;
-        let sizeof_int = input.read_u8()?;
-        let sizeof_bool = input.read_u8()?;
-        let sizeof_enum = input.read_u8()?;
-        let sizeof_algn = input.read_u8()?;
-        let sizeof_short = input.read_u8()?;
-        let sizeof_long = input.read_u8()?;
-        let sizeof_llong = input.read_u8()?;
-        let change_counter = input.read_u32()?;
-        let sizeof_ldbl = input.read_u8()?;
-        let _unknown_3 = input.read_u32()?;
-        let abiname: [u8; 16] = bincode::deserialize_from(&mut input)?;
-        let abibits = input.read_u32()?;
-        let refcmts = input.read_u8()?;
+        let listing_xref_margin = input.read_u16()?;
+        let outflag = OutputFlags::new(input.read_u32()?)?;
+        let cmtflg = CommentOptions::new(input.read_u8()?);
+        let limiter = DelimiterOptions::new(input.read_u8()?)?;
+        let bin_prefix_size = input.read_u16()?;
+        let prefflag = LinePrefixOptions::new(input.read_u8()?)?;
+        let strlit_flags = StrLiteralFlags::new(input.read_u8()?)?;
+        let strlit_break = input.read_u8()?;
+        let strlit_leading_zeroes = input.read_u8()?;
+        let strtype = input.read_u32()?;
 
-        Ok(IDBParam::V1(IDBParam1 {
+        let mut strlit_name_prefix = [0; 16];
+        input.read_exact(&mut strlit_name_prefix)?;
+        let strlit_name_prefix = strlit_name_prefix.to_vec();
+
+        let strlit_serial_number = input.read_usize()?;
+        let data_carousel = input.read_usize()?;
+
+        let cc_id_raw = input.read_u8()?;
+        let cc_guessed = cc_id_raw & 0x80 != 0;
+        #[cfg(feature = "restrictive")]
+        let cc_id = Compiler::try_from(cc_id_raw & 0x7F)
+            .map_err(|_| anyhow!("Invalid compiler id: {cc_id_raw}"))?;
+        #[cfg(not(feature = "restrictive"))]
+        let cc_id =
+            Compiler::try_from(cc_id_raw & 0x7F).unwrap_or(Compiler::Unknown);
+
+        let cc_cm = input.read_u8()?;
+        let cc_size_i = input.read_u8()?;
+        let cc_size_b = input.read_u8()?;
+        let cc_size_e = input.read_u8()?;
+        let cc_defalign = input.read_u8()?;
+        let cc_size_s = input.read_u8()?;
+        let cc_size_l = input.read_u8()?;
+        let cc_size_ll = input.read_u8()?;
+        let cc_size_ldbl = input.read_u8()?;
+        let abibits = AbiOptions::new(input.read_u32()?)?;
+        let appcall_options = input.read_u32()?;
+
+        Ok(Self {
             version,
-            cpu,
-            lflags,
-            demnames,
-            filetype,
-            fcoresize,
-            corestart,
-            ostype,
-            apptype,
-            startsp,
-            af,
-            startip,
-            startea,
-            minea,
-            maxea,
-            ominea,
-            omaxea,
-            lowoff,
-            highoff,
-            maxref,
-            ascii_break,
-            wide_high_byte_first,
-            indent,
-            comment,
-            xrefnum,
-            entab,
-            specsegs,
-            voids,
-            showauto,
-            auto,
-            border,
-            null,
+            target: RootInfoTarget {
+                processor,
+                assembler,
+            },
             genflags,
-            showpref,
-            prefseg,
-            asmtype,
-            baseaddr,
-            xrefs,
-            binpref,
-            cmtflag,
-            nametype,
-            showbads,
-            prefflag,
-            packbase,
-            asciiflags,
-            listnames,
-            asciiprefs,
-            asciisernum,
-            asciizeroes,
-            tribyte_order,
-            mf,
-            org,
-            assume,
-            checkarg,
-            start_ss,
-            start_cs,
-            main,
-            short_dn,
-            long_dn,
-            datatypes,
-            strtype,
-            af2,
-            namelen,
+            lflags,
+            database_change_count,
+            input: RootInfoInput {
+                file_format,
+                operating_system,
+                application_type,
+            },
+            special_segment_entry_size,
+            af,
+            addresses: RootInfoAddressed {
+                loading_base,
+                initial_ss,
+                initial_cs,
+                initial_ip,
+                initial_ea: Address::from_raw(initial_ea),
+                initial_sp,
+                main_ea: Address::from_raw(main_ea),
+                min_ea: Address::from_raw(min_ea),
+                max_ea: Address::from_raw(max_ea),
+                original_min_ea: Address::from_raw(original_min_ea),
+                original_max_ea: Address::from_raw(original_max_ea),
+                privrange: Address::from_raw(privrange_start)
+                    ..Address::from_raw(privrange_end),
+                netdelta,
+            },
+            suspiciousness_limits: RootInfoSuspiciousnessLimits {
+                low: (!lowoff.is_max()).then_some(Address::from_raw(lowoff)),
+                high: (!highoff.is_max()).then_some(Address::from_raw(highoff)),
+            },
+            xrefs: RootInfoXrefs {
+                max_depth,
+                max_displayed_xrefs,
+                max_displayed_type_xrefs,
+                max_displayed_strlit_xrefs,
+                xrefflag,
+            },
+            names: RootInfoNames {
+                max_autogenerated_name_length,
+                dummy_names,
+            },
+            demangler: RootInfoDemangler {
+                short_form: demangler_short_form.into(),
+                long_form: demangler_long_form.into(),
+                name: demangler_name,
+            },
+            listname,
+            indent,
+            cmt_ident,
             margin,
-            lenxref,
-            lprefix,
-            lprefixlen,
-            compiler,
-            model,
-            sizeof_int,
-            sizeof_bool,
-            sizeof_enum,
-            sizeof_algn,
-            sizeof_short,
-            sizeof_long,
-            sizeof_llong,
-            change_counter,
-            sizeof_ldbl,
-            abiname,
+            listing: RootInfoListing {
+                xref_margin: listing_xref_margin,
+            },
+            outflag,
+            cmtflg,
+            limiter,
+            bin_prefix_size,
+            prefflag,
+            strlits: RootInfoStrlits {
+                flags: strlit_flags,
+                break_: strlit_break,
+                leading_zeroes: strlit_leading_zeroes,
+                name_prefix: strlit_name_prefix,
+                serial_number: strlit_serial_number,
+            },
+            strtype: strtype.into(),
+            data_carousel,
+            compiler: RootInfoCompiler {
+                is_guessed: cc_guessed,
+                compiler: cc_id,
+                sizeof: RootInfoCompilerSizeof {
+                    cm: cc_cm,
+                    int: cc_size_i,
+                    bool: cc_size_b,
+                    enum_: cc_size_e,
+                    short: cc_size_s,
+                    long: cc_size_l,
+                    longlong: cc_size_ll,
+                    long_double: cc_size_ldbl,
+                },
+                alignment: cc_defalign,
+            },
             abibits,
-            refcmts,
-        }))
+            appcall_options,
+        })
     }
 
-    pub(crate) fn read_v2(
-        mut input: &mut impl IdbReadKind<K>,
-        magic_old: bool,
+    pub fn read_v3(
+        input: &mut impl IdbReadKind<K>,
+        upgrade700: u64,
         version: u16,
-        cpu: Vec<u8>,
     ) -> Result<Self> {
+        let cpu_len = input.unpack_dd()?;
+        let cpu_len = if cpu_len <= 16 {
+            usize::try_from(cpu_len).unwrap()
+        } else {
+            #[cfg(feature = "restrictive")]
+            return Err(anyhow!("Invalid CPU len value"));
+            #[cfg(not(feature = "restrictive"))]
+            16
+        };
+        let mut processor = vec![0; cpu_len];
+        input.read_exact(&mut processor)?;
+        // remove any \x00 that marks the end of the str
+        let cpu_str_part = parse_maybe_cstr(&processor[..])
+            .ok_or_else(|| anyhow!("Invalid RootInfo CStr cpu name"))?;
+        processor.truncate(cpu_str_part.len());
+
         // NOTE in this version parse_* functions are used
         let genflags = Inffl::new(input.unpack_dw()?)?;
         let lflags = Lflg::new(input.unpack_dd()?)?;
         let database_change_count = input.unpack_dd()?;
-        let filetype_val = input.unpack_dw()?;
-        let filetype = FileType::from_value(filetype_val).ok_or_else(|| {
-            anyhow!("Invalid FileType value: {}", filetype_val)
-        })?;
-        let ostype = input.unpack_dw()?;
-        let apptype = input.unpack_dw()?;
-        let asmtype = input.read_u8()?;
-        let specsegs = input.read_u8()?;
+        let file_format = FileType::from_value(input.unpack_dw()?)?;
+        let operating_system = input.unpack_dw()?;
+        let application_type = input.unpack_dw()?;
+        let assembler = input.unpack_dw()?;
+        ensure!(assembler <= u8::MAX.into());
+        let assembler = (assembler & 0xFF) as u8;
+        let special_segment_entry_size = input.read_u8()?;
         let af1 = input.unpack_dd()?;
         let af2 = input.unpack_dd()?;
         let af = Af::new(af1, af2)?;
-        let baseaddr = input.unpack_usize()?;
-        let start_ss = input.unpack_usize()?;
-        let start_cs = input.unpack_usize()?;
-        let start_ip = input.unpack_usize()?;
-        let start_ea = input.unpack_usize()?;
-        let start_sp = input.unpack_usize()?;
-        let main = input.unpack_usize()?;
+        let loading_base = input.unpack_usize()?;
+        let initial_ss = input.unpack_usize()?;
+        let initial_cs = input.unpack_usize()?;
+        let initial_ip = input.unpack_usize()?;
+        let initial_ea = input.unpack_usize()?;
+        let initial_sp = input.unpack_usize()?;
+        let main_ea = input.unpack_usize()?;
         let min_ea = input.unpack_usize()?;
         let max_ea = input.unpack_usize()?;
-        let omin_ea = input.unpack_usize()?;
-        let omax_ea = input.unpack_usize()?;
+        let original_min_ea = input.unpack_usize()?;
+        let original_max_ea = input.unpack_usize()?;
         let lowoff = input.unpack_usize()?;
         let highoff = input.unpack_usize()?;
-        let maxref = input.unpack_usize()?;
-        let privrange_start_ea = input.unpack_usize()?;
-        let privrange_end_ea = input.unpack_usize()?;
+        let max_depth = input.unpack_usize()?;
+        let privrange = input.unpack_address_range()?;
         let netdelta = input.unpack_usize()?;
-        let xrefnum = input.read_u8()?;
-        let type_xrefnum = input.read_u8()?;
-        let refcmtnum = input.read_u8()?;
+        let max_displayed_xrefs = input.read_u8()?;
+        let max_displayed_type_xrefs = input.read_u8()?;
+        let max_displayed_strlit_xrefs = input.read_u8()?;
         let xrefflag = XRef::new(input.read_u8()?)?;
-        let max_autoname_len = input.unpack_dw()?;
+        let max_autogenerated_name_length = input.unpack_dw()?;
 
-        if magic_old {
-            let _unknown: [u8; 17] = bincode::deserialize_from(&mut input)?;
+        if upgrade700 & 0x10000 == 0 {
+            let _len = input.unpack_dd()?;
+            let mut _unknown1 = vec![0u8; _len.try_into().unwrap()];
+            input.read_exact(&mut _unknown1)?;
+            let _unknown2 = input.read_u8()?;
         }
 
-        let nametype = input.read_u8()?;
-        let nametype = NameType::new(nametype)
-            .ok_or_else(|| anyhow!("Invalid NameType value"))?;
-        let short_demnames = input.unpack_dd()?;
-        let long_demnames = input.unpack_dd()?;
-        let demnames = DemName::new(input.read_u8()?)?;
-        let listnames = ListName::new(input.read_u8()?)?;
+        let dummy_names = NameType::new(input.read_u8()?).ok_or_else(|| {
+            anyhow!("Invalid RootInfo names.dummy_names value")
+        })?;
+        let demangler_short_form = input.unpack_dd()?;
+        let demangler_long_form = input.unpack_dd()?;
+        let demname = DemName::new(input.read_u8()?)?;
+        let listname = ListName::new(input.read_u8()?)?;
         let indent = input.read_u8()?;
         let cmt_ident = input.read_u8()?;
         let margin = input.unpack_dw()?;
-        let lenxref = input.unpack_dw()?;
-        let outflags = OutputFlags::new(input.unpack_dd()?)?;
+        let listing_xref_margin = input.unpack_dw()?;
+        let outflag = OutputFlags::new(input.unpack_dd()?)?;
         let cmtflg = CommentOptions::new(input.read_u8()?);
         let limiter = DelimiterOptions::new(input.read_u8()?)?;
         let bin_prefix_size = input.unpack_dw()?;
         let prefflag = LinePrefixOptions::new(input.read_u8()?)?;
         let strlit_flags = StrLiteralFlags::new(input.read_u8()?)?;
         let strlit_break = input.read_u8()?;
-        let strlit_zeroes = input.read_u8()?;
+        let strlit_leading_zeroes = input.read_u8()?;
         let strtype = input.unpack_dd()?;
 
-        // TODO read the len and the ignore it?
-        let strlit_pref_len = input.read_u8()?;
-        let strlit_pref_len = if magic_old { 16 } else { strlit_pref_len };
-        let mut strlit_pref = vec![0; strlit_pref_len.into()];
-        input.read_exact(&mut strlit_pref)?;
-        let strlit_pref = String::from_utf8(strlit_pref)?;
+        let strlit_name_prefix_len = input.unpack_dd()?;
+        let strlit_name_prefix_len = if strlit_name_prefix_len <= 16 {
+            strlit_name_prefix_len
+        } else {
+            #[cfg(feature = "restrictive")]
+            return Err(anyhow!("Invalid CPU len value"));
+            #[cfg(not(feature = "restrictive"))]
+            16
+        };
+        let mut strlit_name_prefix =
+            vec![0; strlit_name_prefix_len.try_into().unwrap()];
+        input.read_exact(&mut strlit_name_prefix)?;
+        let strlit_name_prefix = strlit_name_prefix.to_vec();
 
-        let strlit_sernum = input.unpack_usize()?;
-        let datatypes = input.unpack_usize()?;
+        let strlit_serial_number = input.unpack_usize()?;
+        let data_carousel = input.unpack_usize()?;
         let cc_id_raw = input.read_u8()?;
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1a15e8
         let cc_guessed = cc_id_raw & 0x80 != 0;
@@ -513,75 +579,97 @@ impl<K: IDAKind> IDBParam<K> {
         let abibits = AbiOptions::new(input.unpack_dd()?)?;
         let appcall_options = input.unpack_dd()?;
 
-        Ok(IDBParam::V2(IDBParam2 {
+        Ok(Self {
             version,
-            cpu,
+            target: RootInfoTarget {
+                processor,
+                assembler,
+            },
             genflags,
             lflags,
             database_change_count,
-            filetype,
-            ostype,
-            apptype,
-            asmtype,
-            specsegs,
+            input: RootInfoInput {
+                file_format,
+                operating_system,
+                application_type,
+            },
+            special_segment_entry_size,
             af,
-            baseaddr,
-            start_ss,
-            start_cs,
-            start_ip,
-            start_ea,
-            start_sp,
-            main,
-            min_ea,
-            max_ea,
-            omin_ea,
-            omax_ea,
-            lowoff,
-            highoff,
-            maxref,
-            privrange_start_ea,
-            privrange_end_ea,
-            netdelta,
-            xrefnum,
-            type_xrefnum,
-            refcmtnum,
-            xrefflag,
-            max_autoname_len,
-            nametype,
-            short_demnames,
-            long_demnames,
-            demnames,
-            listnames,
+            addresses: RootInfoAddressed {
+                loading_base,
+                initial_ss,
+                initial_cs,
+                initial_ip,
+                initial_ea: Address::from_raw(initial_ea),
+                initial_sp,
+                main_ea: Address::from_raw(main_ea),
+                min_ea: Address::from_raw(min_ea),
+                max_ea: Address::from_raw(max_ea),
+                original_min_ea: Address::from_raw(original_min_ea),
+                original_max_ea: Address::from_raw(original_max_ea),
+                privrange: Address::from_raw(privrange.start)
+                    ..Address::from_raw(privrange.end),
+                netdelta,
+            },
+            suspiciousness_limits: RootInfoSuspiciousnessLimits {
+                low: (!lowoff.is_max()).then_some(Address::from_raw(lowoff)),
+                high: (!highoff.is_max()).then_some(Address::from_raw(highoff)),
+            },
+            xrefs: RootInfoXrefs {
+                max_depth,
+                max_displayed_xrefs,
+                max_displayed_type_xrefs,
+                max_displayed_strlit_xrefs,
+                xrefflag,
+            },
+            names: RootInfoNames {
+                max_autogenerated_name_length,
+                dummy_names,
+            },
+            demangler: RootInfoDemangler {
+                short_form: demangler_short_form.into(),
+                long_form: demangler_long_form.into(),
+                name: demname,
+            },
+            listname,
             indent,
             cmt_ident,
             margin,
-            lenxref,
-            outflags,
+            listing: RootInfoListing {
+                xref_margin: listing_xref_margin,
+            },
+            outflag,
             cmtflg,
             limiter,
             bin_prefix_size,
             prefflag,
-            strlit_flags,
-            strlit_break,
-            strlit_zeroes,
-            strtype,
-            strlit_pref,
-            strlit_sernum,
-            datatypes,
-            cc_id,
-            cc_guessed,
-            cc_cm,
-            cc_size_i,
-            cc_size_b,
-            cc_size_e,
-            cc_defalign,
-            cc_size_s,
-            cc_size_l,
-            cc_size_ll,
-            cc_size_ldbl,
+            strlits: RootInfoStrlits {
+                flags: strlit_flags,
+                break_: strlit_break,
+                leading_zeroes: strlit_leading_zeroes,
+                name_prefix: strlit_name_prefix,
+                serial_number: strlit_serial_number,
+            },
+            strtype: strtype.into(),
+            data_carousel,
+            compiler: RootInfoCompiler {
+                is_guessed: cc_guessed,
+                compiler: cc_id,
+                sizeof: RootInfoCompilerSizeof {
+                    cm: cc_cm,
+                    int: cc_size_i,
+                    bool: cc_size_b,
+                    enum_: cc_size_e,
+                    short: cc_size_s,
+                    long: cc_size_l,
+                    longlong: cc_size_ll,
+                    long_double: cc_size_ldbl,
+                },
+                alignment: cc_defalign,
+            },
             abibits,
             appcall_options,
-        }))
+        })
     }
 }
 
@@ -1227,8 +1315,8 @@ pub enum FileType {
 }
 
 impl FileType {
-    fn from_value(value: u16) -> Option<Self> {
-        Some(match value {
+    fn from_value(value: u16) -> Result<Self> {
+        Ok(match value {
             0x2 => Self::Raw,
             0x3 => Self::MsdosDriver,
             0x4 => Self::Ne,
@@ -1256,7 +1344,9 @@ impl FileType {
             0x18 => Self::Aixar,
             0x19 => Self::Macho,
             0x1A => Self::Psxobj,
-            _ => return None,
+            _ => {
+                return Err(anyhow!("Invalid RootInfo File Format {value:#X}"))
+            }
         })
     }
 }

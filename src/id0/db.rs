@@ -37,6 +37,9 @@ pub struct ID0Entry {
 #[derive(Debug, Clone, Copy)]
 pub struct NetnodeIdx<K: IDAKind>(pub(crate) K::Usize);
 
+#[derive(Debug, Clone, Copy)]
+pub struct Upgrade700Idx<K: IDAKind>(pub(crate) NetnodeIdx<K>);
+
 impl<K: IDAKind> SectionReader<K> for ID0Section<K> {
     type Result = ID0Section<K>;
 
@@ -86,7 +89,7 @@ impl<K: IDAKind> ID0Section<K> {
     /// Get the range for the index of all entries that match (start_with) the
     /// provided key
     fn binary_search_range(&self, key: &[u8]) -> Range<usize> {
-        let start = match self.binary_search(&key) {
+        let start = match self.binary_search(key) {
             Ok(idx) => idx,
             Err(idx) => {
                 let entry_key = &self.entries[idx].key;
@@ -97,7 +100,7 @@ impl<K: IDAKind> ID0Section<K> {
                 idx
             }
         };
-        let end = self.binary_search_end(&key);
+        let end = self.binary_search_end(key);
         start..end
     }
 
@@ -447,7 +450,7 @@ impl<K: IDAKind> ID0Section<K> {
             .map(|x| x.map(|x| SegmentIdx(x.0)))
     }
 
-    pub fn segments(&self, idx: SegmentIdx<K>) -> SegmentIter<K> {
+    pub fn segments(&self, idx: SegmentIdx<K>) -> SegmentIter<'_, K> {
         let segments = self.sup_range(idx.into(), ARRAY_SUP_TAG);
         SegmentIter {
             _kind: std::marker::PhantomData,
@@ -465,7 +468,7 @@ impl<K: IDAKind> ID0Section<K> {
     pub fn segment_strings(
         &self,
         idx: SegmentStringsIdx<K>,
-    ) -> SegmentStringIter {
+    ) -> SegmentStringIter<'_> {
         let range = self.sup_range(idx.into(), ARRAY_SUP_TAG);
         SegmentStringIter::new(range.entries)
     }
@@ -480,7 +483,7 @@ impl<K: IDAKind> ID0Section<K> {
     pub fn segment_patches_original_value(
         &self,
         idx: SegmentPatchIdx<K>,
-    ) -> SegmentPatchOriginalValueIter<K> {
+    ) -> SegmentPatchOriginalValueIter<'_, K> {
         let range =
             self.sup_range(idx.into(), flag::netnode::nn_res::ARRAY_ALT_TAG);
         SegmentPatchOriginalValueIter::new(range.entries)
@@ -526,7 +529,7 @@ impl<K: IDAKind> ID0Section<K> {
             return Ok(None);
         };
         // TODO check that keys are 0 => plugin, or 1 => format
-        let entries = self.sup_range(entry.into(), ARRAY_SUP_TAG).entries;
+        let entries = self.sup_range(entry, ARRAY_SUP_TAG).entries;
         Ok(Some(entries.iter().map(|e| {
             Ok(CStr::from_bytes_with_nul(&e.value)?.to_str()?)
         })))
@@ -641,7 +644,7 @@ impl<K: IDAKind> ID0Section<K> {
             return Ok(None);
         };
         let value = K::usize_try_from_le_bytes(value_raw)
-            .and_then(|value| value.try_into().ok())
+            .map(|value| value.into())
             .ok_or_else(|| anyhow!("Unable to parse number of id0 opens"))?;
         Ok(value)
     }
@@ -657,7 +660,7 @@ impl<K: IDAKind> ID0Section<K> {
             return Ok(None);
         };
         let value = K::usize_try_from_le_bytes(value_raw)
-            .and_then(|value| value.try_into().ok())
+            .map(|value| value.into())
             .ok_or_else(|| {
                 anyhow!("Unable to parse number of id0 seconds opens")
             })?;
@@ -675,7 +678,7 @@ impl<K: IDAKind> ID0Section<K> {
             return Ok(None);
         };
         let value = K::usize_try_from_le_bytes(value_raw)
-            .and_then(|value| value.try_into().ok())
+            .map(|value| value.into())
             .ok_or_else(|| {
                 anyhow!("Unable to parse the database creation time")
             })?;
@@ -693,7 +696,7 @@ impl<K: IDAKind> ID0Section<K> {
             return Ok(None);
         };
         let value = K::usize_try_from_le_bytes(value_raw)
-            .and_then(|value| value.try_into().ok())
+            .map(|value| value.into())
             .ok_or_else(|| {
                 anyhow!(
                     "Unable to parse number of the database initial version"
@@ -782,10 +785,12 @@ impl<K: IDAKind> ID0Section<K> {
     }
 
     /// version of ida which created the database
+    ///
+    /// NOTE version v5.0 is know to not have this field
     pub fn database_creation_version(
         &self,
         idx: RootNodeIdx<K>,
-    ) -> Option<Cow<str>> {
+    ) -> Option<Cow<'_, str>> {
         self.root_node_value(idx, RIDX_IDA_VERSION as i32, ARRAY_SUP_TAG)
             .map(|value| String::from_utf8_lossy(value))
     }
@@ -865,13 +870,16 @@ impl<K: IDAKind> ID0Section<K> {
     }
 
     /// C predefined macros
-    pub fn c_predefined_macros(&self, idx: RootNodeIdx<K>) -> Option<Cow<str>> {
+    pub fn c_predefined_macros(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Option<Cow<'_, str>> {
         self.root_node_value(idx, RIDX_C_MACROS as i32, ARRAY_SUP_TAG)
             .map(String::from_utf8_lossy)
     }
 
     /// C header path
-    pub fn c_header_path(&self, idx: RootNodeIdx<K>) -> Option<Cow<str>> {
+    pub fn c_header_path(&self, idx: RootNodeIdx<K>) -> Option<Cow<'_, str>> {
         self.root_node_value(idx, RIDX_H_PATH as i32, ARRAY_SUP_TAG)
             .map(String::from_utf8_lossy)
     }
@@ -907,13 +915,13 @@ impl<K: IDAKind> ID0Section<K> {
     }
 
     /// read the `Root Node` ida_info entry of the database
-    pub fn ida_info(&self, idx: RootNodeIdx<K>) -> Result<IDBParam<K>> {
+    pub fn ida_info(&self, idx: RootNodeIdx<K>) -> Result<RootInfo<K>> {
         // TODO Root Node is always the last one?
         // TODO Only one or range?
         let value = self
             .root_node_value(idx, 0x0041_B994, ARRAY_SUP_TAG)
             .ok_or_else(|| anyhow!("Unable to find Root Node entry"))?;
-        IDBParam::<K>::read(value)
+        RootInfo::<K>::read(self, value)
     }
 
     /// read the `$ fileregions` entries of the database
@@ -929,13 +937,30 @@ impl<K: IDAKind> ID0Section<K> {
         &self,
         idx: FileRegionIdx<K>,
         version: u16,
-    ) -> FileRegionIter<K> {
+    ) -> FileRegionIter<'_, K> {
         let segments = self.sup_range(idx.into(), ARRAY_SUP_TAG);
         FileRegionIter {
             _kind: std::marker::PhantomData,
             segments,
             version,
         }
+    }
+
+    /// read the `$ fileregions` entries of the database
+    pub fn upgrade_700_idx(&self) -> Result<Option<Upgrade700Idx<K>>> {
+        Ok(self
+            .netnode_idx_by_name("$ upgrade 700")?
+            .map(Upgrade700Idx))
+    }
+
+    // TODO make the u32 a struct that's able to read the flags
+    /// read the `$ fileregions` entries of the database
+    pub fn upgrade_700(&self, idx: Upgrade700Idx<K>) -> Result<K::Usize> {
+        let value = self
+            .sup_value(idx.0, 0u8.into(), flag::netnode::nn_res::ARRAY_ALT_TAG)
+            .ok_or_else(|| anyhow!("Missing entry for Upgrade 700"))?;
+        K::usize_try_from_le_bytes(value)
+            .ok_or_else(|| anyhow!("Invalid Upgrade700 value"))
     }
 
     /// read the `$ funcs` idx entries of the database
@@ -963,6 +988,11 @@ impl<K: IDAKind> ID0Section<K> {
     // TODO implement $ scriptsnippets
     // TODO implement $ enums
     // TODO implement $ structs
+    // NOTE entry "$ \xf1\xe5\xe3\xec\xe5\xed\xf2\xe0\xf6\xe8\xff" was renamed
+    //   into "$ segs". AND "$ \xf1\xe5\xe3\xec\xe5\xed\xf2\xe0\xf6\xe8\xff sarray"
+    //   was renamed into "$ segs sarray" on version ~43.
+    // NOTE "$ regs" are named "$ segregs" on RootInfo version 0..20
+    // TODO implement $ regs
 
     // TODO implement $ hidden_ranges
     // TODO the address_info for 0xff00_00XX (or 0xff00_0000__0000_00XX for 64bits) seesm to be reserved, what happens if there is data at that page?

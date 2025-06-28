@@ -17,7 +17,7 @@ fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
     println!("Loader Name AKA `$ loader name`: ");
 
     let dirtree = id0.dirtree_bpts()?;
-    println!("{:?}", dirtree);
+    println!("{dirtree:?}");
 
     Ok(())
 }

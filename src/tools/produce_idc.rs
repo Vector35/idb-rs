@@ -258,85 +258,55 @@ fn produce_gen_info<K: IDAKind>(
     til: &TILSection,
 ) -> Result<()> {
     let root_netnode = id0.root_node()?;
-    let info = id0.ida_info(root_netnode.into())?;
+    let info = id0.ida_info(root_netnode)?;
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// General information")?;
     writeln!(fmt)?;
     writeln!(fmt, "static GenInfo(void)")?;
     writeln!(fmt, "{{")?;
     writeln!(fmt, "  delete_all_segments();   // purge database")?;
-    let cpu = match &info {
-        idb_rs::id0::IDBParam::V1(x) => &x.cpu,
-        idb_rs::id0::IDBParam::V2(x) => &x.cpu,
-    };
     writeln!(
         fmt,
         "  set_processor_type({:?}, SETPROC_USER);",
-        String::from_utf8_lossy(cpu)
+        String::from_utf8_lossy(&info.target.processor)
     )?;
-    let compiler = match &info {
-        idb_rs::id0::IDBParam::V1(x) => x.compiler,
-        idb_rs::id0::IDBParam::V2(x) => x.cc_id.into(),
-    };
-    writeln!(fmt, "  set_inf_attr(INF_COMPILER, {compiler});")?;
-    let strlit_break = match &info {
-        idb_rs::id0::IDBParam::V1(x) => x.ascii_break,
-        idb_rs::id0::IDBParam::V2(x) => x.strlit_break,
-    };
-    writeln!(fmt, "  set_inf_attr(INF_STRLIT_BREAK, {strlit_break:#X});",)?;
-    let scf_allcmt = match &info {
-        idb_rs::id0::IDBParam::V1(_x) => {
-            // TODO todo!("flag from V1 x.cmtflag.is_allcmt()")
-            false as u8
-        }
-        idb_rs::id0::IDBParam::V2(x) => x.cmtflg.is_allcmt() as u8,
-    };
-    writeln!(fmt, "  set_flag(INF_CMTFLG, SCF_ALLCMT, {scf_allcmt});")?;
-    let oflg_show_void = match &info {
-        idb_rs::id0::IDBParam::V1(_x) => {
-            // TODO todo!("flag from V1 x.outflags.show_void()")
-            false as u8
-        }
-        idb_rs::id0::IDBParam::V2(x) => x.outflags.show_void() as u8,
-    };
     writeln!(
         fmt,
-        "  set_flag(INF_OUTFLAGS, OFLG_SHOW_VOID, {oflg_show_void});"
+        "  set_inf_attr(INF_COMPILER, {});",
+        info.compiler.compiler as u8
     )?;
-    let xrefnum = match &info {
-        idb_rs::id0::IDBParam::V1(x) => x.xrefnum,
-        idb_rs::id0::IDBParam::V2(x) => x.xrefnum,
-    };
-    writeln!(fmt, "  set_inf_attr(INF_XREFNUM, {xrefnum});")?;
-    let oflg_show_auto = match &info {
-        idb_rs::id0::IDBParam::V1(_x) => {
-            // TODO todo!("flag from V1 x.outflags.show_auto()")
-            false as u8
-        }
-        idb_rs::id0::IDBParam::V2(x) => x.outflags.show_auto() as u8,
-    };
     writeln!(
         fmt,
-        "  set_flag(INF_OUTFLAGS, OFLG_SHOW_AUTO, {oflg_show_auto});",
+        "  set_inf_attr(INF_STRLIT_BREAK, {:#X});",
+        info.strlits.break_
     )?;
-    let indent = match &info {
-        idb_rs::id0::IDBParam::V1(x) => x.indent,
-        idb_rs::id0::IDBParam::V2(x) => x.indent,
-    };
-    writeln!(fmt, "  set_inf_attr(INF_INDENT, {indent});")?;
-    let cmd_indent = match &info {
-        idb_rs::id0::IDBParam::V1(_x) => {
-            // TODO todo!("value from V1.cmd_indent")
-            0
-        }
-        idb_rs::id0::IDBParam::V2(x) => x.cmt_ident,
-    };
-    writeln!(fmt, "  set_inf_attr(INF_CMT_INDENT, {cmd_indent});")?;
-    let max_ref = match &info {
-        idb_rs::id0::IDBParam::V1(x) => x.maxref,
-        idb_rs::id0::IDBParam::V2(x) => x.maxref,
-    };
-    writeln!(fmt, "  set_inf_attr(INF_MAXREF, {max_ref:#X});")?;
+    writeln!(
+        fmt,
+        "  set_flag(INF_CMTFLG, SCF_ALLCMT, {});",
+        info.cmtflg.is_allcmt()
+    )?;
+    writeln!(
+        fmt,
+        "  set_flag(INF_OUTFLAGS, OFLG_SHOW_VOID, {});",
+        info.outflag.show_void(),
+    )?;
+    writeln!(
+        fmt,
+        "  set_inf_attr(INF_XREFNUM, {});",
+        info.xrefs.max_displayed_xrefs
+    )?;
+    writeln!(
+        fmt,
+        "  set_flag(INF_OUTFLAGS, OFLG_SHOW_AUTO, {});",
+        info.outflag.show_auto()
+    )?;
+    writeln!(fmt, "  set_inf_attr(INF_INDENT, {});", info.indent)?;
+    writeln!(fmt, "  set_inf_attr(INF_CMT_INDENT, {});", info.cmt_ident)?;
+    writeln!(
+        fmt,
+        "  set_inf_attr(INF_MAXREF, {:#X});",
+        info.xrefs.max_depth
+    )?;
     for dep in &til.header.dependencies {
         writeln!(fmt, "  add_default_til({:?});", dep.as_utf8_lossy())?;
     }
@@ -424,7 +394,7 @@ fn produce_segments<K: IDAKind>(
             .transpose()?
             .flatten()
             .map(|name| String::from_utf8_lossy(name));
-        let seg_class_name = seg_strings.or(name).unwrap_or_else(|| {
+        let seg_class_name = seg_strings.or(name).unwrap_or({
             Cow::Borrowed(match seg.seg_type {
                 idb_rs::id0::SegmentType::Norm => "NORM",
                 idb_rs::id0::SegmentType::Xtrn => "XTRN",
@@ -459,17 +429,25 @@ fn produce_segments<K: IDAKind>(
 
     // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb8c35
     let root_netnode = id0.root_node()?;
-    let ida_info = id0.ida_info(root_netnode.into())?;
-    let low_off = match &ida_info {
-        idb_rs::id0::IDBParam::V1(x) => x.lowoff,
-        idb_rs::id0::IDBParam::V2(x) => x.lowoff,
-    };
-    writeln!(fmt, "  set_inf_attr(INF_LOW_OFF, {low_off:#X});")?;
-    let high_off = match &ida_info {
-        idb_rs::id0::IDBParam::V1(x) => x.highoff,
-        idb_rs::id0::IDBParam::V2(x) => x.highoff,
-    };
-    writeln!(fmt, "  set_inf_attr(INF_HIGH_OFF, {high_off:#X});")?;
+    let ida_info = id0.ida_info(root_netnode)?;
+    writeln!(
+        fmt,
+        "  set_inf_attr(INF_LOW_OFF, {:#X});",
+        ida_info
+            .suspiciousness_limits
+            .low
+            .map(|x| x.as_raw())
+            .unwrap_or(0u8.into())
+    )?;
+    writeln!(
+        fmt,
+        "  set_inf_attr(INF_HIGH_OFF, {:#X});",
+        ida_info
+            .suspiciousness_limits
+            .high
+            .map(|x| x.as_raw())
+            .unwrap_or(0u8.into())
+    )?;
 
     writeln!(fmt, "}}")?;
     Ok(())
@@ -672,7 +650,7 @@ fn produce_bytes_info<K: IDAKind>(
                 ByteType::Tail(_) | ByteType::Unknown => false,
             }
         };
-        let set_x_value = (set_x).then_some("x=").unwrap_or("");
+        let set_x_value = if set_x { "x=" } else { "" };
 
         match byte_info.byte_type() {
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1dee
@@ -1103,7 +1081,7 @@ fn produce_bytes<K: IDAKind>(
 fn count_element(len_bytes: usize, len_elements: usize) -> Result<usize> {
     ensure!(len_bytes >= len_elements, "Expected more ID1 Tail entries");
     ensure!(
-        len_bytes % len_elements == 0,
+        len_bytes.is_multiple_of(len_elements),
         "More ID1 Tails that expects or invalid array len"
     );
     Ok(len_bytes / len_elements)
