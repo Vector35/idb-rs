@@ -49,11 +49,8 @@ pub fn getseg<K: IDAKind>(
     getseg_inner(id0, ea).map(|seg| {
         seg.map(|seg| segment_t {
             range: seg.address,
-            name: seg
-                .name
-                .map(|name| uval_t::from_u32(name.0.get()))
-                .unwrap_or(uval_t::from_raw(0u8.into())),
-            sclass: uval_t::from_raw(seg._class_id),
+            name: uval_t::from_raw(seg.name.0),
+            sclass: uval_t::from_raw(seg.class_id.0),
             orgbase: uval_t::from_raw(seg.orgbase),
             align: seg.align.into(),
             comb: seg.comb.into(),

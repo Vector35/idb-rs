@@ -468,7 +468,7 @@ impl<K: IDAKind> ID0Section<K> {
     pub fn segment_strings(
         &self,
         idx: SegmentStringsIdx<K>,
-    ) -> SegmentStringIter<'_> {
+    ) -> SegmentStringIter<'_, K> {
         let range = self.sup_range(idx.into(), ARRAY_SUP_TAG);
         SegmentStringIter::new(range.entries)
     }
@@ -492,13 +492,13 @@ impl<K: IDAKind> ID0Section<K> {
     // TODO there is also a "P" entry in patches, it seems to only contains
     // the value 0x01 for each equivalent "A" entry
 
-    pub fn segment_name(&self, idx: SegmentNameIdx) -> Result<&[u8]> {
+    pub fn segment_name(&self, idx: SegmentNameIdx<K>) -> Result<&[u8]> {
         let seg_idx = self.segment_strings_idx()?;
         // TODO I think this is dependent on the version, and not on availability
         if let Some(seg_idx) = seg_idx {
             for seg in self.segment_strings(seg_idx) {
                 let (seg_idx, seg_value) = seg?;
-                if seg_idx == idx {
+                if seg_idx.0 == idx.0 {
                     return Ok(seg_value);
                 }
             }
@@ -509,11 +509,14 @@ impl<K: IDAKind> ID0Section<K> {
         }
     }
 
-    pub(crate) fn name_by_index(&self, idx: SegmentNameIdx) -> Result<&[u8]> {
+    pub(crate) fn name_by_index(
+        &self,
+        idx: SegmentNameIdx<K>,
+    ) -> Result<&[u8]> {
         // if there is no names, AKA `$ segstrings`, search for the key directly
         let name_idx = self
             .netnode_tag_idx(
-                NetnodeIdx(K::Usize::from(0xFFu8).swap_bytes()),
+                NetnodeIdx(K::Usize::from(0xFFu8).swap_bytes() | idx.0),
                 NAME_TAG,
             )
             .ok_or_else(|| anyhow!("Not found name for segment {}", idx.0))?;

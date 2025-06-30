@@ -12,10 +12,6 @@ impl<K: IDAKind> ida_usize_t<K> {
         self.0
     }
 
-    pub(crate) fn from_u32(value: u32) -> Self {
-        Self(value.into())
-    }
-
     pub(crate) fn try_from_u64(
         value: u64,
     ) -> Result<Self, <K::Usize as TryFrom<u64>>::Error> {

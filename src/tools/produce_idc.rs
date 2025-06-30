@@ -283,12 +283,12 @@ fn produce_gen_info<K: IDAKind>(
     writeln!(
         fmt,
         "  set_flag(INF_CMTFLG, SCF_ALLCMT, {});",
-        info.cmtflg.is_allcmt()
+        u8::from(info.cmtflg.is_allcmt())
     )?;
     writeln!(
         fmt,
         "  set_flag(INF_OUTFLAGS, OFLG_SHOW_VOID, {});",
-        info.outflag.show_void(),
+        u8::from(info.outflag.show_void()),
     )?;
     writeln!(
         fmt,
@@ -298,7 +298,7 @@ fn produce_gen_info<K: IDAKind>(
     writeln!(
         fmt,
         "  set_flag(INF_OUTFLAGS, OFLG_SHOW_AUTO, {});",
-        info.outflag.show_auto()
+        u8::from(info.outflag.show_auto()),
     )?;
     writeln!(fmt, "  set_inf_attr(INF_INDENT, {});", info.indent)?;
     writeln!(fmt, "  set_inf_attr(INF_CMT_INDENT, {});", info.cmt_ident)?;
@@ -368,33 +368,24 @@ fn produce_segments<K: IDAKind>(
         )?;
 
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7666
-        let name = seg.name.as_ref().map(|x| {
-            id0.segment_name(*x)
-                .map(|x| String::from_utf8_lossy(x))
-                .unwrap_or_else(|e| format!("[NONAME: {e}]").into())
-        });
+        let seg_name = id0
+            .segment_name(seg.name)
+            .map(|x| String::from_utf8_lossy(x))
+            .ok();
         writeln!(
             fmt,
             "  set_segm_name({startea:#X}, {:?});",
-            name.as_ref().unwrap_or(&Cow::Borrowed(""))
+            seg_name
+                .as_ref()
+                .map(std::borrow::Borrow::borrow)
+                .unwrap_or_else(|| "[NONAME]")
         )?;
 
-        let seg_strings = id0
-            .segment_strings_idx()?
-            .map(|idx| id0.segment_strings(idx))
-            .map(|segs| -> Result<Option<_>> {
-                for seg_entry in segs {
-                    let (idx, name) = seg_entry?;
-                    if u64::from(idx.0.get()) == seg._class_id.into_u64() {
-                        return Ok(Some(name));
-                    }
-                }
-                Ok(None)
-            })
-            .transpose()?
-            .flatten()
-            .map(|name| String::from_utf8_lossy(name));
-        let seg_class_name = seg_strings.or(name).unwrap_or({
+        let seg_class_name = id0
+            .segment_name(seg.class_id)
+            .map(|x| String::from_utf8_lossy(x))
+            .ok();
+        let seg_class_name = seg_class_name.or(seg_name).unwrap_or({
             Cow::Borrowed(match seg.seg_type {
                 idb_rs::id0::SegmentType::Norm => "NORM",
                 idb_rs::id0::SegmentType::Xtrn => "XTRN",
