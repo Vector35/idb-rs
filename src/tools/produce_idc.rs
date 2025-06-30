@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Cursor, Seek, Write};
 
-use anyhow::{anyhow, ensure, Context, Result};
+use anyhow::{anyhow, ensure, Result};
 
 use idb_rs::addr_info::{all_address_info, AddressInfo};
 use idb_rs::id0::function::{IDBFunctionNonTail, IDBFunctionTail};
@@ -368,11 +368,11 @@ fn produce_segments<K: IDAKind>(
         )?;
 
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7666
-        let name = seg
-            .name
-            .as_ref()
-            .map(|x| id0.segment_name(*x).map(|x| String::from_utf8_lossy(x)))
-            .transpose()?;
+        let name = seg.name.as_ref().map(|x| {
+            id0.segment_name(*x)
+                .map(|x| String::from_utf8_lossy(x))
+                .unwrap_or_else(|e| format!("[NONAME: {e}]").into())
+        });
         writeln!(
             fmt,
             "  set_segm_name({startea:#X}, {:?});",
@@ -499,13 +499,20 @@ fn produce_patches<K: IDAKind>(
     writeln!(fmt, "#define id x")?;
     writeln!(fmt)?;
     for patch in patches {
-        let patch = patch?;
-        let address = patch.address;
-        let value = id1
-            .byte_by_address(patch.address.into())
-            .map(|x| x.as_raw())
-            .unwrap_or(0);
-        writeln!(fmt, "  patch_byte({address:#X}, {value:#X});")?;
+        match patch {
+            Err(e) => {
+                writeln!(fmt, "  patch_byte(-1, [NOPATCH: {e}]);")?;
+                break;
+            }
+            Ok(patch) => {
+                let address = patch.address;
+                let value = id1
+                    .byte_by_address(patch.address.into())
+                    .map(|x| x.as_raw())
+                    .unwrap_or(0);
+                writeln!(fmt, "  patch_byte({address:#X}, {value:X});")?;
+            }
+        }
     }
     writeln!(fmt, "}}")?;
     Ok(())
@@ -584,7 +591,9 @@ fn produce_bytes_info<K: IDAKind>(
             }
 
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1ddd
-            for (i, cmt) in addr_info.comment_pre().unwrap().enumerate() {
+            for (i, cmt) in
+                addr_info.comment_pre().into_iter().flatten().enumerate()
+            {
                 writeln!(
                     fmt,
                     "  update_extra_cmt({address:#X}, E_PREV + {i:>3}, {:?});",
@@ -592,7 +601,9 @@ fn produce_bytes_info<K: IDAKind>(
                 )?;
             }
 
-            for (i, cmt) in addr_info.comment_post().unwrap().enumerate() {
+            for (i, cmt) in
+                addr_info.comment_post().into_iter().flatten().enumerate()
+            {
                 writeln!(
                     fmt,
                     "  update_extra_cmt({address:#X}, E_NEXT + {i:>3}, {:?});",
@@ -791,13 +802,7 @@ fn produce_bytes_info<K: IDAKind>(
                         let struct_id = struct_ids.next().transpose()?;
                         ensure!(struct_ids.next().is_none());
                         let struct_name = struct_id
-                            .map(|idx| {
-                                id0.struct_at(idx)
-                                    .with_context(|| {
-                                        format!("ID1 addr {address:#X}")
-                                    })
-                                    .unwrap()
-                            })
+                            .and_then(|idx| id0.struct_at(idx).ok())
                             .unwrap_or(b"BAD_STRUCT");
                         writeln!(
                             fmt,
