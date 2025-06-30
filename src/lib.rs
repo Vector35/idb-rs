@@ -2115,7 +2115,7 @@ impl<K: IDAKind> PartialEq for Address<K> {
 
 impl<K: IDAKind> Eq for Address<K> {}
 
-impl<K: IDAKind + std::hash::Hash> std::hash::Hash for Address<K> {
+impl<K: IDAKind> std::hash::Hash for Address<K> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.0.hash(state);
     }

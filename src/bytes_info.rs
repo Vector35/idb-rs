@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::id1::{ByteInfo, ID1Section};
 use crate::id2::ID2Section;
 use crate::{Address, IDAKind};
@@ -26,49 +28,25 @@ impl<'a, 'b, K: IDAKind> BytesInfo<'a, 'b, K> {
             })
     }
 
-    pub fn all_bytes(
-        &self,
-    ) -> Box<dyn Iterator<Item = (Address<K>, ByteInfo)> + '_> {
-        self.id1
-            .map(|id1| -> Box<dyn Iterator<Item = _>> {
-                Box::new(id1.all_bytes().map(|(addr, byte_info)| {
-                    (Address::from_raw(addr.try_into().unwrap()), byte_info)
-                }))
-            })
-            .or_else(|| {
-                self.id2.map(|id2| -> Box<dyn Iterator<Item = _>> {
-                    Box::new(id2.all_bytes().map(|x| (x.address, x.byte_info)))
-                })
-            })
-            .unwrap_or_else(|| -> Box<dyn Iterator<Item = _>> {
-                Box::new([].into_iter())
-            })
-    }
-
-    pub fn all_bytes_no_tails(
-        &self,
-    ) -> Box<dyn Iterator<Item = (Address<K>, ByteInfo, usize)> + '_> {
-        self.id1
-            .map(|id1| -> Box<dyn Iterator<Item = _>> {
-                Box::new(id1.all_bytes_no_tails().map(
-                    |(addr, byte_info, len)| {
-                        (
-                            Address::from_raw(addr.try_into().unwrap()),
-                            byte_info,
-                            len,
-                        )
-                    },
-                ))
-            })
-            .or_else(|| {
-                self.id2.map(|id2| -> Box<dyn Iterator<Item = _>> {
-                    Box::new(id2.all_bytes_no_tails().map(|x| {
-                        (x.address, x.byte_info, x.len.try_into().unwrap())
-                    }))
-                })
-            })
-            .unwrap_or_else(|| -> Box<dyn Iterator<Item = _>> {
-                Box::new([].into_iter())
-            })
+    pub fn all_bytes_no_tails(&self) -> Vec<(Address<K>, ByteInfo, usize)> {
+        let mut bytes = HashMap::new();
+        let id1 = self
+            .id1
+            .iter()
+            .flat_map(|id1| id1.all_bytes_no_tails())
+            .map(|(addr, byte_info, len)| {
+                (Address::from_raw(addr.try_into().unwrap()), byte_info, len)
+            });
+        let id2 = self
+            .id2
+            .iter()
+            .flat_map(|id2| id2.all_bytes_no_tails())
+            .map(|x| (x.address, x.byte_info, x.len.try_into().unwrap()));
+        for (addr, byte_info, len) in id1.chain(id2) {
+            bytes.entry(addr).or_insert((addr, byte_info, len));
+        }
+        let mut bytes: Vec<_> = bytes.into_values().collect();
+        bytes.sort_by_key(|(addr, _, _)| *addr);
+        bytes
     }
 }
