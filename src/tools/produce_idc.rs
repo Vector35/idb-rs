@@ -566,6 +566,7 @@ fn produce_bytes_info<K: IDAKind>(
     for (address, address_info, len_bytes) in
         all_address_info(id0, id1, id2, image_base)
     {
+        let address_raw = address.as_raw();
         let byte_info = address_info.byte_info();
         if let Some(addr_info) =
             AddressInfo::new(id0, id1, id2, image_base, address)
@@ -576,7 +577,7 @@ fn produce_bytes_info<K: IDAKind>(
             if let Some(cmt) = addr_info.comment() {
                 writeln!(
                     fmt,
-                    "  set_cmt({address:#X}, {:?}, 0);",
+                    "  set_cmt({address_raw:#X}, {:?}, 0);",
                     String::from_utf8_lossy(cmt)
                 )?;
             }
@@ -587,7 +588,7 @@ fn produce_bytes_info<K: IDAKind>(
             {
                 writeln!(
                     fmt,
-                    "  update_extra_cmt({address:#X}, E_PREV + {i:>3}, {:?});",
+                    "  update_extra_cmt({address_raw:#X}, E_PREV + {i:>3}, {:?});",
                     String::from_utf8_lossy(cmt)
                 )?;
             }
@@ -597,7 +598,7 @@ fn produce_bytes_info<K: IDAKind>(
             {
                 writeln!(
                     fmt,
-                    "  update_extra_cmt({address:#X}, E_NEXT + {i:>3}, {:?});",
+                    "  update_extra_cmt({address_raw:#X}, E_NEXT + {i:>3}, {:?});",
                     String::from_utf8_lossy(cmt)
                 )?;
             }
@@ -638,7 +639,7 @@ fn produce_bytes_info<K: IDAKind>(
             match byte_info.byte_type() {
                 ByteType::Data(byte_data) => is_set_x(byte_data.operand0()?),
                 ByteType::Code(byte_code) => {
-                    let byte_code = byte_code.extend(id0, address.as_raw())?;
+                    let byte_code = byte_code.extend(id0, address_raw)?;
                     (0..8)
                         .map(|i| byte_code.operand_n(i).map(is_set_x))
                         .find_map(|x| match x {
@@ -657,12 +658,15 @@ fn produce_bytes_info<K: IDAKind>(
         match byte_info.byte_type() {
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1dee
             ByteType::Code(byte_code) => {
-                let byte_code = byte_code.extend(id0, address.as_raw())?;
+                let byte_code = byte_code.extend(id0, address_raw)?;
                 if !byte_code.exec_flow_from_prev_inst()
                     || byte_code.is_func_start()
                     || set_x
                 {
-                    writeln!(fmt, "  create_insn({set_x_value}{address:#X});",)?;
+                    writeln!(
+                        fmt,
+                        "  create_insn({set_x_value}{address_raw:#X});",
+                    )?;
                 }
                 produce_bytes_info_op_code(fmt, id0, id1, byte_code)?;
             }
@@ -671,12 +675,12 @@ fn produce_bytes_info<K: IDAKind>(
                 match byte_data.data_type() {
                     ByteDataType::Strlit => writeln!(
                         fmt,
-                        "  create_strlit({set_x_value}{address:#X}, {len_bytes:#X});",
+                        "  create_strlit({set_x_value}{address_raw:#X}, {len_bytes:#X});",
                     )?,
                     ByteDataType::Dword => {
                         writeln!(
                             fmt,
-                            "  create_dword({set_x_value}{address:#X});"
+                            "  create_dword({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_array(
                             fmt,
@@ -690,7 +694,7 @@ fn produce_bytes_info<K: IDAKind>(
                     ByteDataType::Byte => {
                         writeln!(
                             fmt,
-                            "  create_byte({set_x_value}{address:#X});"
+                            "  create_byte({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_array(
                             fmt,
@@ -704,7 +708,7 @@ fn produce_bytes_info<K: IDAKind>(
                     ByteDataType::Word => {
                         writeln!(
                             fmt,
-                            "  create_word({set_x_value}{address:#X});"
+                            "  create_word({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_array(
                             fmt,
@@ -718,7 +722,7 @@ fn produce_bytes_info<K: IDAKind>(
                     ByteDataType::Qword => {
                         writeln!(
                             fmt,
-                            "  create_qword({set_x_value}{address:#X});"
+                            "  create_qword({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_array(
                             fmt,
@@ -734,7 +738,7 @@ fn produce_bytes_info<K: IDAKind>(
                         // TODO make array?
                         writeln!(
                             fmt,
-                            "  create_tbyte({set_x_value}{address:#X});"
+                            "  create_tbyte({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
@@ -743,14 +747,14 @@ fn produce_bytes_info<K: IDAKind>(
                         // TODO make array?
                         writeln!(
                             fmt,
-                            "  create_float({set_x_value}{address:#X});"
+                            "  create_float({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
                     ByteDataType::Packreal => {
                         writeln!(
                             fmt,
-                            "  create_pack_real({set_x_value}{address:#X});"
+                            "  create_pack_real({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
@@ -759,7 +763,7 @@ fn produce_bytes_info<K: IDAKind>(
                         // TODO make array?
                         writeln!(
                             fmt,
-                            "  create_yword({set_x_value}{address:#X});"
+                            "  create_yword({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
@@ -768,7 +772,7 @@ fn produce_bytes_info<K: IDAKind>(
                         // TODO make array?
                         writeln!(
                             fmt,
-                            "  create_double({set_x_value}{address:#X});"
+                            "  create_double({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
@@ -777,7 +781,7 @@ fn produce_bytes_info<K: IDAKind>(
                         // TODO make array?
                         writeln!(
                             fmt,
-                            "  create_oword({set_x_value}{address:#X});"
+                            "  create_oword({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
                     }
@@ -797,7 +801,7 @@ fn produce_bytes_info<K: IDAKind>(
                             .unwrap_or(b"BAD_STRUCT");
                         writeln!(
                             fmt,
-                            "  create_struct({address:#X}, -1, {:?});",
+                            "  create_struct({address_raw:#X}, -1, {:?});",
                             core::str::from_utf8(struct_name).unwrap()
                         )?;
                         produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
@@ -823,7 +827,9 @@ fn produce_bytes_info<K: IDAKind>(
                 // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2622
             }
             ByteType::Tail(_) => {
-                return Err(anyhow!("Unexpected ID1 Tail entry: {address:#X}"))
+                return Err(anyhow!(
+                    "Unexpected ID1 Tail entry: {address_raw:#X}"
+                ))
             }
             ByteType::Unknown => {}
         }
@@ -846,7 +852,7 @@ fn produce_bytes_info<K: IDAKind>(
         if let Some(name) = address_info.label()? {
             writeln!(
                 fmt,
-                "  set_name({address:#X}, {:?});",
+                "  set_name({address_raw:#X}, {:?});",
                 String::from_utf8_lossy(&name)
             )?;
         }
@@ -874,7 +880,7 @@ fn produce_bytes_info_array<K: IDAKind>(
         if set_x {
             writeln!(fmt, "  make_array(x, {len:#X});")?
         } else {
-            writeln!(fmt, "  make_array({address:#X}, {len:#X});")?
+            writeln!(fmt, "  make_array({:#X}, {len:#X});", address.as_raw())?
         }
     }
     Ok(())
