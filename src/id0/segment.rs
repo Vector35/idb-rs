@@ -1,7 +1,8 @@
 use anyhow::Result;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
-use std::num::{NonZeroU32, NonZeroU8};
+use std::marker::PhantomData;
+use std::num::NonZeroU8;
 use std::ops::Range;
 
 use crate::ida_reader::IdbReadKind;
@@ -27,9 +28,9 @@ impl<K: IDAKind> From<SegmentStringsIdx<K>> for NetnodeIdx<K> {
 #[derive(Clone, Debug)]
 pub struct Segment<K: IDAKind> {
     pub address: Range<K::Usize>,
-    pub name: Option<SegmentNameIdx>,
+    pub name: SegmentNameIdx<K>,
     // TODO class String
-    pub _class_id: K::Usize,
+    pub class_id: SegmentNameIdx<K>,
     /// This field is IDP dependent.
     /// You may keep your information about the segment here
     pub orgbase: K::Usize,
@@ -60,7 +61,7 @@ pub struct Segment<K: IDAKind> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct SegmentNameIdx(pub NonZeroU32);
+pub struct SegmentNameIdx<K: IDAKind>(pub K::Usize);
 
 impl<K: IDAKind> Segment<K> {
     pub(crate) fn read(value: &[u8]) -> Result<Self> {
@@ -74,14 +75,10 @@ impl<K: IDAKind> Segment<K> {
         // InnerRef 5c1b89aa-5277-4c98-98f6-cec08e1946ec 0x330684
         let startea = cursor.unpack_usize()?;
         let size = cursor.unpack_usize()?;
-        let name_id = cursor.unpack_usize()?;
-        let name_id = <K::Usize as TryInto<u32>>::try_into(name_id)
-            .map(NonZeroU32::new)
-            .map_err(|_| anyhow!("Invalid ID0 Segment NameId value"))?;
-        let name = name_id.map(SegmentNameIdx);
+        let name = SegmentNameIdx(cursor.unpack_usize()?);
         // TODO AKA [sclass](https://hex-rays.com//products/ida/support/sdkdoc/classsegment__t.html)
         // I don't know what is this value or what it represents
-        let _class_id = cursor.unpack_usize()?;
+        let class_id = SegmentNameIdx(cursor.unpack_usize()?);
         let orgbase = cursor.unpack_usize()?;
         let flags = SegmentFlag::from_raw(cursor.unpack_dd()?)
             .ok_or_else(|| anyhow!("Invalid Segment Flag value"))?;
@@ -113,7 +110,7 @@ impl<K: IDAKind> Segment<K> {
         Ok(Segment {
             address: startea..startea + size,
             name,
-            _class_id,
+            class_id,
             orgbase,
             flags,
             align,
@@ -363,25 +360,26 @@ impl<'a, K: IDAKind> Iterator for SegmentIter<'a, K> {
 }
 
 #[derive(Clone, Copy)]
-pub struct SegmentStringIter<'a> {
+pub struct SegmentStringIter<'a, K> {
     pub(crate) segments: &'a [ID0Entry],
-    pub(crate) segment_strings: SegmentStringsIter<'a>,
+    pub(crate) segment_strings: SegmentStringsIter<'a, K>,
 }
 
-impl<'a> SegmentStringIter<'a> {
+impl<'a, K: IDAKind> SegmentStringIter<'a, K> {
     pub(crate) fn new(segments: &'a [ID0Entry]) -> Self {
         // dummy value
         let segment_strings = SegmentStringsIter {
             start: 0,
             end: 0,
             value: &[],
+            _kind: PhantomData,
         };
         Self {
             segments,
             segment_strings,
         }
     }
-    fn inner_next(&mut self) -> Result<Option<(SegmentNameIdx, &'a [u8])>> {
+    fn inner_next(&mut self) -> Result<Option<(SegmentNameIdx<K>, &'a [u8])>> {
         // get the next segment string
         if let Some(value) = self.segment_strings.next() {
             return Some(value).transpose();
@@ -401,13 +399,14 @@ impl<'a> SegmentStringIter<'a> {
             start,
             end,
             value: current_value,
+            _kind: PhantomData,
         };
         self.inner_next()
     }
 }
 
-impl<'a> Iterator for SegmentStringIter<'a> {
-    type Item = Result<(SegmentNameIdx, &'a [u8])>;
+impl<'a, K: IDAKind> Iterator for SegmentStringIter<'a, K> {
+    type Item = Result<(SegmentNameIdx<K>, &'a [u8])>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner_next().transpose()
@@ -415,14 +414,15 @@ impl<'a> Iterator for SegmentStringIter<'a> {
 }
 
 #[derive(Clone, Copy)]
-pub(crate) struct SegmentStringsIter<'a> {
+pub(crate) struct SegmentStringsIter<'a, K> {
     pub(crate) start: u32,
     pub(crate) end: u32,
     pub(crate) value: &'a [u8],
+    _kind: PhantomData<K>,
 }
 
-impl<'a> SegmentStringsIter<'a> {
-    fn inner_next(&mut self) -> Result<Option<(SegmentNameIdx, &'a [u8])>> {
+impl<'a, K: IDAKind> SegmentStringsIter<'a, K> {
+    fn inner_next(&mut self) -> Result<Option<(SegmentNameIdx<K>, &'a [u8])>> {
         if self.start == self.end {
             ensure!(
                 self.value.is_empty(),
@@ -439,12 +439,12 @@ impl<'a> SegmentStringsIter<'a> {
         self.value = rest;
         let idx = self.start;
         self.start += 1;
-        Ok(Some((SegmentNameIdx(idx.try_into().unwrap()), value)))
+        Ok(Some((SegmentNameIdx(idx.into()), value)))
     }
 }
 
-impl<'a> Iterator for SegmentStringsIter<'a> {
-    type Item = Result<(SegmentNameIdx, &'a [u8])>;
+impl<'a, K: IDAKind> Iterator for SegmentStringsIter<'a, K> {
+    type Item = Result<(SegmentNameIdx<K>, &'a [u8])>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner_next().transpose()
