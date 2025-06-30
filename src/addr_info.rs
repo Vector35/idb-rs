@@ -185,6 +185,7 @@ pub fn all_address_info<'a, K: IDAKind>(
 ) -> Vec<(Address<K>, AddressInfo<'a, K>, usize)> {
     BytesInfo::new(Some(id1), id2)
         .all_bytes_no_tails()
+        .into_iter()
         .filter(|(_a, b, _len)| {
             // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4b3370
             b.has_name()
