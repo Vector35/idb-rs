@@ -561,8 +561,9 @@ fn produce_bytes_info<K: IDAKind>(
     writeln!(fmt, "#define id x")?;
     writeln!(fmt)?;
 
-    let root_idx = id0.root_node()?;
-    let image_base = id0.image_base(root_idx)?;
+    let root_info_idx = id0.root_node()?;
+    let root_info = id0.ida_info(root_info_idx)?;
+    let image_base = root_info.netdelta();
     for (address, address_info, len_bytes) in
         all_address_info(id0, id1, id2, image_base)
     {
@@ -578,6 +579,14 @@ fn produce_bytes_info<K: IDAKind>(
                 writeln!(
                     fmt,
                     "  set_cmt({address_raw:#X}, {:?}, 0);",
+                    String::from_utf8_lossy(cmt)
+                )?;
+            }
+
+            if let Some(cmt) = addr_info.comment_repeatable() {
+                writeln!(
+                    fmt,
+                    "  set_cmt({address_raw:#X}, {:?}, 1);",
                     String::from_utf8_lossy(cmt)
                 )?;
             }

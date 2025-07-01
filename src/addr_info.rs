@@ -6,7 +6,7 @@ use crate::id0::flag::nalt::x::NALT_DREF_FROM;
 use crate::id0::flag::netnode::nn_res::ARRAY_SUP_TAG;
 use crate::id0::flag::nsup::NSUP_TYPEINFO;
 use crate::id0::{
-    get_sup_from_key, parse_maybe_cstr, ID0CStr, ID0Section, ImageBase,
+    get_sup_from_key, parse_maybe_cstr, ID0CStr, ID0Section, Netdelta,
     NetnodeIdx,
 };
 use crate::id1::{ByteDataType, ByteInfo, ByteType, ID1Section};
@@ -27,7 +27,7 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
         id0: &'a ID0Section<K>,
         id1: &ID1Section,
         id2: Option<&ID2Section<K>>,
-        image_base: ImageBase<K>,
+        image_base: Netdelta<K>,
         address: Address<K>,
     ) -> Option<Self> {
         let byte_info =
@@ -44,7 +44,7 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
     /// labels, need this because they are outside the mapped address.
     pub fn new_forced(
         id0: &'a ID0Section<K>,
-        image_base: ImageBase<K>,
+        image_base: Netdelta<K>,
         address: Address<K>,
     ) -> Option<Self> {
         let netnode = image_base.ea2node(address);
@@ -181,7 +181,7 @@ pub fn all_address_info<'a, K: IDAKind>(
     id0: &'a ID0Section<K>,
     id1: &ID1Section,
     id2: Option<&ID2Section<K>>,
-    image_base: ImageBase<K>,
+    image_base: Netdelta<K>,
 ) -> Vec<(Address<K>, AddressInfo<'a, K>, usize)> {
     BytesInfo::new(Some(id1), id2)
         .all_bytes_no_tails()

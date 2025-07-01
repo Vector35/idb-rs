@@ -10,7 +10,8 @@ pub fn ea2node<K: IDAKind>(
     id0: &ID0Section<K>,
     ea: ea_t<K>,
 ) -> Option<nodeidx_t<K>> {
-    let root_info = id0.root_node().ok()?;
-    let base = id0.image_base(root_info).ok()?;
+    let root_info_idx = id0.root_node().ok()?;
+    let root_info = id0.ida_info(root_info_idx).ok()?;
+    let base = root_info.netdelta();
     Some(nodeidx_t::from_raw(ea.as_raw() + base.0))
 }

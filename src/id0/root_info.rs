@@ -19,11 +19,12 @@ impl<K: IDAKind> From<RootNodeIdx<K>> for NetnodeIdx<K> {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct ImageBase<K: IDAKind>(pub(crate) K::Usize);
-impl<K: IDAKind> ImageBase<K> {
+pub struct Netdelta<K: IDAKind>(pub(crate) K::Usize);
+impl<K: IDAKind> Netdelta<K> {
     // TODO create a nodeidx_t type
     pub fn ea2node(&self, ea: Address<K>) -> NetnodeIdx<K> {
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1db9c0
+        // TODO this don't work with old versions????
         if ea.as_raw().is_max() {
             NetnodeIdx(ea.as_raw())
         } else {
@@ -670,6 +671,10 @@ impl<K: IDAKind> RootInfo<K> {
             abibits,
             appcall_options,
         })
+    }
+
+    pub fn netdelta(&self) -> Netdelta<K> {
+        Netdelta(self.addresses.netdelta)
     }
 }
 
