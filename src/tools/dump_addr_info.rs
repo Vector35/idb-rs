@@ -30,8 +30,9 @@ fn dump_inner<K: IDAKind>(
     id2: Option<&ID2Section<K>>,
 ) -> Result<()> {
     // TODO create a function for that in ida_info
-    let root_netnode = id0.root_node()?;
-    let image_base = id0.image_base(root_netnode)?;
+    let root_info_idx = id0.root_node()?;
+    let root_info = id0.ida_info(root_info_idx)?;
+    let image_base = root_info.netdelta();
     let mut buf = String::new();
     for (addr, addr_info, _len) in all_address_info(id0, id1, id2, image_base) {
         use std::fmt::Write;

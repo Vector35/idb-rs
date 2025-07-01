@@ -611,16 +611,13 @@ impl<K: IDAKind> ID0Section<K> {
     }
 
     /// image base, AKA the offset between address and netnode value
-    pub fn image_base(&self, idx: RootNodeIdx<K>) -> Result<ImageBase<K>> {
-        let Some(value_raw) =
-            self.root_node_value(idx, RIDX_ALT_IMAGEBASE, ARRAY_ALT_TAG)
-        else {
-            // No Image base, so id0 netnodes and addrs are the same
-            return Ok(ImageBase(0u8.into()));
-        };
-        let value = K::usize_try_from_le_bytes(value_raw)
-            .ok_or_else(|| anyhow!("Unable to parse imagebase value"))?;
-        Ok(ImageBase(value))
+    pub fn image_base(&self, idx: RootNodeIdx<K>) -> Result<Option<K::Usize>> {
+        self.root_node_value(idx, RIDX_ALT_IMAGEBASE, ARRAY_ALT_TAG)
+            .map(|value| {
+                K::usize_try_from_le_bytes(value)
+                    .ok_or_else(|| anyhow!("Unable to parse imagebase value"))
+            })
+            .transpose()
     }
 
     /// input file crc32

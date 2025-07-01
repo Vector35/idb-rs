@@ -434,8 +434,9 @@ impl ByteCode {
         id0: &ID0Section<K>,
         ea: K::Usize,
     ) -> Result<ByteExtended<Self>> {
-        let root_info = id0.root_node()?;
-        let node_idx = id0.image_base(root_info)?;
+        let root_info_idx = id0.root_node()?;
+        let root_info = id0.ida_info(root_info_idx)?;
+        let node_idx = root_info.netdelta();
         let node = node_idx.ea2node(Address::from_raw(ea));
         let value = id0
             .sup_value(node, K::Usize::from(0x25u8), ARRAY_ALT_TAG)
@@ -769,8 +770,9 @@ fn get_forced_operand<K: IDAKind>(
         #[cfg(feature = "restrictive")]
         _ => unreachable!(),
     });
-    let root_info = id0.root_node()?;
-    let base = id0.image_base(root_info)?;
+    let root_info_idx = id0.root_node()?;
+    let root_info = id0.ida_info(root_info_idx)?;
+    let base = root_info.netdelta();
     let node = base.ea2node(Address::from_raw(ea));
 
     let entries = id0.sup_value(node, alt_value, ARRAY_SUP_TAG);

@@ -48,8 +48,9 @@ pub fn print_function<K: IDAKind>(
     id2: Option<&ID2Section<K>>,
     address: Address<K>,
 ) -> Result<()> {
-    let root_netnode = id0.root_node()?;
-    let image_base = id0.image_base(root_netnode)?;
+    let root_info_idx = id0.root_node()?;
+    let root_info = id0.ida_info(root_info_idx)?;
+    let image_base = root_info.netdelta();
     let info = AddressInfo::new(id0, id1, id2, image_base, address).unwrap();
     let name_raw = info.label()?;
     let ty = info.tinfo()?;

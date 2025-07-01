@@ -155,8 +155,9 @@ pub fn get_cmt<'a, K: IDAKind>(
     ea: ea_t<K>,
     repeatable: bool,
 ) -> Option<&'a [u8]> {
-    let root_info = id0.root_node().ok()?;
-    let image_base = id0.image_base(root_info).ok()?;
+    let root_info_idx = id0.root_node().ok()?;
+    let root_info = id0.ida_info(root_info_idx).ok()?;
+    let image_base = root_info.netdelta();
     let addresss = Address::from_raw(ea.0);
     let addr_info = AddressInfo::new(id0, id1, id2, image_base, addresss)?;
     if repeatable {

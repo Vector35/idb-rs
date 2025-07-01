@@ -1740,7 +1740,8 @@ mod test {
         id0.input_file_sha256(root_info_idx).unwrap();
         id0.input_file_md5(root_info_idx).unwrap();
         // TODO test image base translate an addr to netnode and vise-versa
-        let image_base = id0.image_base(root_info_idx).unwrap();
+        let root_info = id0.ida_info(root_info_idx).unwrap();
+        let image_base = root_info.netdelta();
         // TODO I think database information is always available, check that...
         id0.database_num_opens(root_info_idx).unwrap().unwrap();
         id0.database_secs_opens(root_info_idx).unwrap().unwrap();
@@ -1751,7 +1752,6 @@ mod test {
         let _ = id0.database_creation_version(root_info_idx);
         id0.c_predefined_macros(root_info_idx);
         id0.c_header_path(root_info_idx);
-        id0.ida_info(root_info_idx).unwrap();
         // TODO identify the data
         //let Some(_) = id0.output_file_encoding_idx(root_info_idx) else {todo!()};
         //let Some(_) = id0.ids_modenode_id(root_info_idx) else {todo!()};
