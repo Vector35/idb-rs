@@ -3,11 +3,12 @@ use std::ffi::CStr;
 use std::ops::Range;
 
 use anyhow::Result;
-use num_traits::{AsPrimitive, PrimInt, ToBytes};
+use num_traits::{AsPrimitive, CheckedAdd, PrimInt, ToBytes};
 
 use crate::addr_info::SubtypeId;
+use crate::id0::flag::nsup::NSUP_LLABEL;
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
-use crate::til;
+use crate::{til, Address};
 use crate::{IDAVariants, SectionReader, IDA32, IDA64};
 
 use super::entry_iter::{
@@ -983,6 +984,20 @@ impl<K: IDAKind> ID0Section<K> {
         fchunks(self, idx)
     }
 
+    pub fn function_containing_address(
+        &self,
+        idx: FuncIdx<K>,
+        ea: Address<K>,
+    ) -> Result<Option<IDBFunction<K>>> {
+        for fun in fchunks(self, idx) {
+            let fun = fun?;
+            if fun.address.contains(&ea) {
+                return Ok(Some(fun));
+            }
+        }
+        Ok(None)
+    }
+
     // TODO implement $ fixups
     // TODO implement $ imports
     // TODO implement $ scriptsnippets
@@ -1263,5 +1278,37 @@ impl<K: IDAKind> ID0Section<K> {
         &self,
     ) -> Result<Option<DirTreeRoot<K::Usize>>> {
         self.dirtree_from_name("$ dirtree/bookmarks_tiplace_t")
+    }
+
+    pub fn local_labels(
+        &self,
+        netdelta: Netdelta<K>,
+        func: Address<K>,
+    ) -> Result<Vec<(Address<K>, Vec<u8>)>> {
+        let netnode = netdelta.ea2node(func);
+        let data: Vec<u8> =
+            crate::id0::entry_iter::EntryTagContinuousSubkeys::new(
+                self,
+                netnode,
+                ARRAY_SUP_TAG,
+                NSUP_LLABEL.into(),
+            )
+            // 0x5000..0x6000
+            .take(0x1000)
+            .flat_map(|entry| &entry.value[..])
+            .copied()
+            .collect();
+        let mut cursor = &data[..];
+        let mut labels = vec![];
+        while !cursor.is_empty() {
+            let offset = IdbReadKind::<K>::unpack_usize(&mut cursor)?;
+            let address = func
+                .as_raw()
+                .checked_add(&offset)
+                .ok_or_else(|| anyhow!("Invalid Offset of local label"))?;
+            let label = cursor.unpack_ds()?;
+            labels.push((Address::from_raw(address), label))
+        }
+        Ok(labels)
     }
 }

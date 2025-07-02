@@ -6,7 +6,7 @@ use anyhow::{anyhow, ensure, Result};
 
 use idb_rs::addr_info::{all_address_info, AddressInfo};
 use idb_rs::id0::function::{IDBFunctionNonTail, IDBFunctionTail};
-use idb_rs::id0::ID0Section;
+use idb_rs::id0::{ID0Section, Netdelta};
 use idb_rs::id1::{
     ByteCode, ByteData, ByteDataType, ByteExtended, ByteOp, ByteType,
     ID1Section,
@@ -120,6 +120,9 @@ fn produce_idc_inner<K: IDAKind>(
     id2: Option<&ID2Section<K>>,
     til: &TILSection,
 ) -> Result<()> {
+    let root_info_idx = id0.root_node()?;
+    let root_info = id0.ida_info(root_info_idx)?;
+    let netdelta = root_info.netdelta();
     if !args.banner.is_empty() {
         writeln!(fmt, "//\n// +-------------------------------------------------------------------------+")?;
         for line in &args.banner {
@@ -194,9 +197,9 @@ fn produce_idc_inner<K: IDAKind>(
     produce_patches(fmt, id0, id1)?;
 
     writeln!(fmt)?;
-    produce_bytes_info(fmt, id0, id1, id2, til)?;
+    produce_bytes_info(fmt, id0, id1, id2, til, netdelta)?;
 
-    produce_functions(fmt, id0, til)?;
+    produce_functions(fmt, id0, til, netdelta)?;
 
     writeln!(fmt)?;
     produce_seg_regs(fmt, id0, til)?;
@@ -550,6 +553,7 @@ fn produce_bytes_info<K: IDAKind>(
     id1: &ID1Section,
     id2: Option<&ID2Section<K>>,
     _til: &TILSection,
+    netdelta: Netdelta<K>,
 ) -> Result<()> {
     // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb70ce
     writeln!(fmt, "//------------------------------------------------------------------------")?;
@@ -561,16 +565,12 @@ fn produce_bytes_info<K: IDAKind>(
     writeln!(fmt, "#define id x")?;
     writeln!(fmt)?;
 
-    let root_info_idx = id0.root_node()?;
-    let root_info = id0.ida_info(root_info_idx)?;
-    let image_base = root_info.netdelta();
-    for (address, address_info, len_bytes) in
-        all_address_info(id0, id1, id2, image_base)
-    {
+    for (address_info, len_bytes) in all_address_info(id0, id1, id2, netdelta) {
+        let address = address_info.address();
         let address_raw = address.as_raw();
         let byte_info = address_info.byte_info();
         if let Some(addr_info) =
-            AddressInfo::new(id0, id1, id2, image_base, address)
+            AddressInfo::new(id0, id1, id2, netdelta, address)
         {
             // print comments
             // TODO byte_info.has_comment() ignored?
@@ -971,6 +971,7 @@ fn produce_functions<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
     _til: &TILSection,
+    netdelta: Netdelta<K>,
 ) -> Result<()> {
     use idb_rs::id0::function::FunctionsAndComments;
     use idb_rs::id0::function::FunctionsAndComments::*;
@@ -1002,8 +1003,9 @@ fn produce_functions<K: IDAKind>(
     writeln!(fmt, "static Functions_0(void)")?;
     writeln!(fmt, "{{")?;
     for fun in funcs {
-        let addr = fun.address.start;
-        writeln!(fmt, "  add_func({addr:#X}, {:#X});", fun.address.end)?;
+        let addr = fun.address.start.as_raw();
+        let addr_end = fun.address.end.as_raw();
+        writeln!(fmt, "  add_func({addr:#X}, {addr_end:#X});")?;
         writeln!(
             fmt,
             "  set_func_flags({addr:#X}, {:#x});",
@@ -1030,6 +1032,14 @@ fn produce_functions<K: IDAKind>(
                 )?;
             }
             NonTail(_) => {}
+        }
+        for (address, label) in id0.local_labels(netdelta, fun.address.start)? {
+            writeln!(
+                fmt,
+                "  set_name({:#X}, {:?}, SN_LOCAL);",
+                address.as_raw(),
+                String::from_utf8_lossy(&label),
+            )?;
         }
     }
     writeln!(fmt, "}}")?;

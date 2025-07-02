@@ -34,9 +34,10 @@ fn dump_inner<K: IDAKind>(
     let root_info = id0.ida_info(root_info_idx)?;
     let image_base = root_info.netdelta();
     let mut buf = String::new();
-    for (addr, addr_info, _len) in all_address_info(id0, id1, id2, image_base) {
+    for (addr_info, _len) in all_address_info(id0, id1, id2, image_base) {
         use std::fmt::Write;
         buf.clear();
+        let addr = addr_info.address();
         if let Some(label) = addr_info.label()? {
             write!(&mut buf, " Label: {:?}", String::from_utf8_lossy(&label))?;
         }

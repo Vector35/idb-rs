@@ -3,6 +3,7 @@ use std::ops::Range;
 use crate::id0::function::{
     IDBFunctionNonTail, IDBFunctionTail, IDBFunctionType,
 };
+use crate::Address;
 use crate::{id0::ID0Section, IDAKind};
 
 use super::frame::{regvar_t, stkpnt_t};
@@ -63,9 +64,9 @@ pub fn get_fchunk<'a, K: IDAKind>(
     };
     for chunk in id0.fchunks(idx) {
         let chunk = chunk?;
-        if chunk.address.contains(&ea.as_raw()) {
+        if chunk.address.contains(&Address::from_raw(ea.0)) {
             return Ok(Some(func_t {
-                range: chunk.address,
+                range: chunk.address.start.as_raw()..chunk.address.end.as_raw(),
                 flags: chunk.flags.into_raw(),
                 func_t_type: match chunk.extra {
                     IDBFunctionType::Tail(IDBFunctionTail {

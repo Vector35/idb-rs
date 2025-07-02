@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use crate::id0::parse_maybe_cstr;
 use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
-use crate::{flags_to_struct, til, IDAKind};
+use crate::{flags_to_struct, til, Address, IDAKind};
 
 use super::flag::func::*;
 use super::flag::netnode::nn_res::ARRAY_SUP_TAG;
@@ -65,7 +65,7 @@ pub(crate) fn fchunks<K: IDAKind>(
 
 #[derive(Clone, Debug)]
 pub struct IDBFunction<K: IDAKind> {
-    pub address: Range<K::Usize>,
+    pub address: Range<Address<K>>,
     pub flags: IDBFunctionFlag,
     pub extra: IDBFunctionType<K>,
 }
@@ -196,7 +196,8 @@ impl<K: IDAKind> IDBFunction<K> {
             input.len()
         );
         Ok(Self {
-            address,
+            address: Address::from_raw(address.start)
+                ..Address::from_raw(address.end),
             flags,
             extra,
         })
