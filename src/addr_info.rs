@@ -18,7 +18,8 @@ use anyhow::{anyhow, Result};
 
 pub struct AddressInfo<'a, K: IDAKind> {
     id0: &'a ID0Section<K>,
-    netnode: NetnodeIdx<K>,
+    address: Address<K>,
+    netdelta: Netdelta<K>,
     byte_info: ByteInfo,
 }
 
@@ -27,15 +28,15 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
         id0: &'a ID0Section<K>,
         id1: &ID1Section,
         id2: Option<&ID2Section<K>>,
-        image_base: Netdelta<K>,
+        netdelta: Netdelta<K>,
         address: Address<K>,
     ) -> Option<Self> {
         let byte_info =
             BytesInfo::new(Some(id1), id2).byte_by_address(address)?;
-        let netnode = image_base.ea2node(address);
         Some(Self {
             id0,
-            netnode,
+            address,
+            netdelta,
             byte_info,
         })
     }
@@ -44,18 +45,26 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
     /// labels, need this because they are outside the mapped address.
     pub fn new_forced(
         id0: &'a ID0Section<K>,
-        image_base: Netdelta<K>,
+        netdelta: Netdelta<K>,
         address: Address<K>,
     ) -> Option<Self> {
-        let netnode = image_base.ea2node(address);
         Some(Self {
             id0,
-            netnode,
+            netdelta,
+            address,
             // TODO how to handle flags?
             byte_info: ByteInfo::from_raw(
                 crate::id1::flag::flags::byte_info::FF_NAME,
             ),
         })
+    }
+
+    pub fn netnode(&self) -> NetnodeIdx<K> {
+        self.netdelta.ea2node(self.address)
+    }
+
+    pub fn address(&self) -> Address<K> {
+        self.address
     }
 
     pub fn byte_info(&self) -> ByteInfo {
@@ -68,49 +77,60 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
     // maybe that's for compatibility reasons, but maybe the `has_comment`
     // flag should be ignored in tail id1 entries
     pub fn comment(&self) -> Option<&'a [u8]> {
-        self.id0.comment_at(self.netnode)
+        self.id0.comment_at(self.netnode())
     }
 
     pub fn comment_repeatable(&self) -> Option<&'a [u8]> {
         if !self.byte_info.has_comment() {
             return None;
         }
-        self.id0.comment_repeatable_at(self.netnode)
+        self.id0.comment_repeatable_at(self.netnode())
     }
 
     pub fn comment_pre(&self) -> Option<impl Iterator<Item = &[u8]>> {
         if !self.byte_info.has_comment_ext() {
             return None;
         }
-        Some(self.id0.comment_pre_at(self.netnode))
+        Some(self.id0.comment_pre_at(self.netnode()))
     }
 
     pub fn comment_post(&self) -> Option<impl Iterator<Item = &[u8]>> {
         if !self.byte_info.has_comment_ext() {
             return None;
         }
-        Some(self.id0.comment_post_at(self.netnode))
+        Some(self.id0.comment_post_at(self.netnode()))
     }
 
     pub fn label(&self) -> Result<Option<Cow<'a, [u8]>>> {
         if !self.byte_info.has_name() {
-            return Ok(None);
-        }
-        let Some(name_raw) = self.id0.netnode_name(self.netnode) else {
-            return Ok(None);
-        };
-        let value = ID0CStr::<'_, K>::parse_cstr_or_subkey(name_raw)
-            .ok_or_else(|| anyhow!("Label is not a valid CStr or ID0 Ref"))?;
-        match value {
-            ID0CStr::CStr(label) => Ok(Some(Cow::Borrowed(label))),
-            ID0CStr::Ref(label_ref) => {
-                let entries = self.id0.address_info_value(label_ref)?;
-                let label = entries
-                    .iter()
-                    .flat_map(|x| &x.value[..])
-                    .copied()
-                    .collect();
-                Ok(Some(Cow::Owned(label)))
+            if !self.byte_info.has_dummy_name() {
+                return Ok(None);
+            }
+            // TODO a dummy name is returned here depending on the context
+            // eg sub_XXXXX
+            // known formats: "sub" "loc" "unk" "off" "seg" "xmmword" "algn"
+            // "ymmword" "zmmword" "custdata" "dbl" "packreal" "flt" "qword"
+            // "asc" "stru" "tbyte" "word" "dword" "byte"
+            Ok(None)
+        } else {
+            let Some(name_raw) = self.id0.netnode_name(self.netnode()) else {
+                return Ok(None);
+            };
+            let value = ID0CStr::<'_, K>::parse_cstr_or_subkey(name_raw)
+                .ok_or_else(|| {
+                    anyhow!("Label is not a valid CStr or ID0 Ref")
+                })?;
+            match value {
+                ID0CStr::CStr(label) => Ok(Some(Cow::Borrowed(label))),
+                ID0CStr::Ref(label_ref) => {
+                    let entries = self.id0.address_info_value(label_ref)?;
+                    let label = entries
+                        .iter()
+                        .flat_map(|x| &x.value[..])
+                        .copied()
+                        .collect();
+                    Ok(Some(Cow::Owned(label)))
+                }
             }
         }
     }
@@ -125,7 +145,7 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
         // take the field names and the continuation (optional!)
         let mut iter = EntryTagContinuousSubkeys::new(
             self.id0,
-            self.netnode,
+            self.netnode(),
             ARRAY_SUP_TAG,
             NSUP_TYPEINFO.into(),
         )
@@ -164,8 +184,9 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
     pub fn tinfo_ref(
         &self,
     ) -> impl Iterator<Item = Result<SubtypeId<K>>> + use<'_, K> {
-        let range =
-            self.id0.netnode_tag_range_idx(self.netnode, NALT_DREF_FROM);
+        let range = self
+            .id0
+            .netnode_tag_range_idx(self.netnode(), NALT_DREF_FROM);
         self.id0.entries[range]
             .iter()
             .filter(|e| e.value[..] == [0x03])
@@ -181,8 +202,8 @@ pub fn all_address_info<'a, K: IDAKind>(
     id0: &'a ID0Section<K>,
     id1: &ID1Section,
     id2: Option<&ID2Section<K>>,
-    image_base: Netdelta<K>,
-) -> Vec<(Address<K>, AddressInfo<'a, K>, usize)> {
+    netdelta: Netdelta<K>,
+) -> Vec<(AddressInfo<'a, K>, usize)> {
     BytesInfo::new(Some(id1), id2)
         .all_bytes_no_tails()
         .into_iter()
@@ -196,14 +217,14 @@ pub fn all_address_info<'a, K: IDAKind>(
                     ByteType::Tail(_) | ByteType::Unknown
                 )
         })
-        .map(move |(addr, byte_info, len)| {
-            let netnode = image_base.ea2node(addr);
+        .map(move |(address, byte_info, len)| {
             let addr_info = AddressInfo {
                 id0,
-                netnode,
+                address,
+                netdelta,
                 byte_info,
             };
-            (addr, addr_info, len)
+            (addr_info, len)
         })
         .collect()
 }
