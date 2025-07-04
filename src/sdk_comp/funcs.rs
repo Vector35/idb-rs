@@ -66,7 +66,7 @@ pub fn get_fchunk<'a, K: IDAKind>(
         let chunk = chunk?;
         if chunk.address.contains(&Address::from_raw(ea.0)) {
             return Ok(Some(func_t {
-                range: chunk.address.start.as_raw()..chunk.address.end.as_raw(),
+                range: chunk.address.start.into_raw()..chunk.address.end.into_raw(),
                 flags: chunk.flags.into_raw(),
                 func_t_type: match chunk.extra {
                     IDBFunctionType::Tail(IDBFunctionTail {

@@ -2110,13 +2110,13 @@ impl<K: IDAKind> PartialOrd for Address<K> {
 
 impl<K: IDAKind> Ord for Address<K> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.as_raw().cmp(&other.as_raw())
+        self.into_raw().cmp(&other.into_raw())
     }
 }
 
 impl<K: IDAKind> PartialEq for Address<K> {
     fn eq(&self, other: &Self) -> bool {
-        self.as_raw().eq(&other.as_raw())
+        self.into_raw().eq(&other.into_raw())
     }
 }
 
@@ -2133,7 +2133,7 @@ impl<K: IDAKind> Address<K> {
         Self(value)
     }
 
-    pub fn as_raw(&self) -> K::Usize {
+    pub fn into_raw(self) -> K::Usize {
         self.0
     }
 }

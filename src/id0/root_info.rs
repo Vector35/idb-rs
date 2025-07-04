@@ -25,10 +25,10 @@ impl<K: IDAKind> Netdelta<K> {
     pub fn ea2node(&self, ea: Address<K>) -> NetnodeIdx<K> {
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1db9c0
         // TODO this don't work with old versions????
-        if ea.as_raw().is_max() {
-            NetnodeIdx(ea.as_raw())
+        if ea.into_raw().is_max() {
+            NetnodeIdx(ea.into_raw())
         } else {
-            NetnodeIdx(ea.as_raw().wrapping_add(&self.0))
+            NetnodeIdx(ea.into_raw().wrapping_add(&self.0))
         }
     }
     pub fn node2ea(&self, node: NetnodeIdx<K>) -> Address<K> {

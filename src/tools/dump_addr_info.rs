@@ -77,7 +77,7 @@ fn dump_inner<K: IDAKind>(
             write!(&mut buf, " Tinfo: {tinfo:?}",)?;
         }
         if !buf.is_empty() {
-            println!("{:#010x?}:{buf}", addr.as_raw());
+            println!("{:#010x?}:{buf}", addr.into_raw());
         }
     }
 
