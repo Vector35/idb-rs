@@ -1,4 +1,4 @@
-use anyhow::{anyhow, ensure, Context, Result};
+use anyhow::{ensure, Context, Result};
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
@@ -63,12 +63,26 @@ impl ReferenceFlags {
     }
 
     pub fn into_primitive(self) -> u32 {
-        self.0 & !(REFINFO_RVAOFF | REFINFO_PASTEND | REFINFO_CUSTOM)
+        self.0
     }
 
     pub fn ref_type(&self) -> ReferenceType {
         ReferenceType::try_from_primitive((self.0 & REFINFO_TYPE) as u8)
             .unwrap()
+    }
+
+    pub fn is_based_reference(&self) -> bool {
+        self.0 & REFINFO_RVAOFF != 0
+    }
+
+    /// reference past an item
+    pub fn is_past_an_item(&self) -> bool {
+        self.0 & REFINFO_PASTEND != 0
+    }
+
+    /// custom reference
+    pub fn is_custom(&self) -> bool {
+        self.0 & REFINFO_CUSTOM != 0
     }
 
     pub fn is_nobase(&self) -> bool {
@@ -98,6 +112,7 @@ impl ReferenceFlags {
 
 const REFINFO_TYPE: u32 = 0x000F;
 const REFINFO_RVAOFF: u32 = 0x0010;
+/// reference past an item
 const REFINFO_PASTEND: u32 = 0x0020;
 const REFINFO_CUSTOM: u32 = 0x0040;
 const REFINFO_NOBASE: u32 = 0x0080;
@@ -153,19 +168,23 @@ impl<K: IDAKind> ReferenceInfo<K> {
     ) -> Result<Self> {
         let Some(mut flags) = data.read_u8_or_nothing()?.map(u32::from) else {
             #[cfg(feature = "restrictive")]
-            return Err(anyhow!("Empty Reference Info"));
+            return Err(anyhow::anyhow!("Empty Reference Info"));
             #[cfg(not(feature = "restrictive"))]
             return Ok(Self::default());
         };
-        let target = (flags & REFINFO_RVAOFF != 0)
+        // NOTE don't confuse it with REFINFO_RVAOFF, REFINFO_PASTEND or
+        // REFINFO_CUSTOM, those only come from flags_ext
+        let target = (flags & 0x10 != 0)
             .then(|| data.unpack_usize().map(NetnodeIdx))
             .transpose()?;
-        let base = (flags & REFINFO_PASTEND != 0)
+        let base = (flags & 0x20 != 0)
             .then(|| data.unpack_usize().map(NetnodeIdx))
             .transpose()?;
-        let tdelta = (flags & REFINFO_CUSTOM != 0)
+        let tdelta = (flags & 0x40 != 0)
             .then(|| data.unpack_usize())
             .transpose()?;
+        // NOTE first byte of flag is fully covered, not need to check rouge bits
+        flags &= REFINFO_NOBASE | REFINFO_TYPE;
 
         if let Some(flags_ext_0) = data.read_u8_or_nothing()?.map(u32::from) {
             let flags_ext_1 =
@@ -179,6 +198,21 @@ impl<K: IDAKind> ReferenceInfo<K> {
             flags |= (flags_ext << 4) & 0x1f70
         }
         let flags = ReferenceFlags::from_raw(flags)?;
+
+        #[cfg(feature = "restrictive")]
+        match (flags.is_based_reference(), flags.is_self_ref(), base) {
+            (true, true, _) => {
+                return Err(anyhow::anyhow!(
+                "Reference Info flags set based and self ref at the same time"
+            ))
+            }
+            (true, _, Some(_)) | (_, true, Some(_)) => {
+                return Err(anyhow::anyhow!(
+                "Reference Info flags set based/self-ref at the same time that it contains a base"
+            ))
+            }
+            _ => {},
+        }
 
         Ok(Self {
             target,

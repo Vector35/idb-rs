@@ -56,7 +56,7 @@ pub fn print_function<K: IDAKind>(
     let ty = info.tinfo()?;
     let name = name_raw.as_ref().map(|name| String::from_utf8_lossy(name));
 
-    print!("{:#x}:", address.as_raw());
+    print!("{:#x}:", address.into_raw());
     match (name, ty) {
         (Some(name), Some(ty)) => print!("\"{name}\":{ty:?}"),
         (None, None) => print!("NO_INFO"),

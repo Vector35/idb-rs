@@ -618,10 +618,14 @@ impl<K: IDAKind> ID0Section<K> {
     }
 
     /// image base, AKA the offset between address and netnode value
-    pub fn image_base(&self, idx: RootNodeIdx<K>) -> Result<Option<K::Usize>> {
+    pub fn image_base(
+        &self,
+        idx: RootNodeIdx<K>,
+    ) -> Result<Option<Address<K>>> {
         self.root_node_value(idx, RIDX_ALT_IMAGEBASE, ARRAY_ALT_TAG)
             .map(|value| {
                 K::usize_try_from_le_bytes(value)
+                    .map(Address::from_raw)
                     .ok_or_else(|| anyhow!("Unable to parse imagebase value"))
             })
             .transpose()
@@ -1309,7 +1313,7 @@ impl<K: IDAKind> ID0Section<K> {
         while !cursor.is_empty() {
             let offset = IdbReadKind::<K>::unpack_usize(&mut cursor)?;
             let address = func
-                .as_raw()
+                .into_raw()
                 .checked_add(&offset)
                 .ok_or_else(|| anyhow!("Invalid Offset of local label"))?;
             let label = cursor.unpack_ds()?;

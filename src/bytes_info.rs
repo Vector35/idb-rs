@@ -20,7 +20,7 @@ impl<'a, 'b, K: IDAKind> BytesInfo<'a, 'b, K> {
 
     pub fn byte_by_address(&self, address: Address<K>) -> Option<ByteInfo> {
         self.id1
-            .and_then(|id1| id1.byte_by_address(address.as_raw().into()))
+            .and_then(|id1| id1.byte_by_address(address.into_raw().into()))
             .or_else(|| {
                 self.id2.and_then(|id2| {
                     id2.byte_by_address(address).map(|x| x.byte_info)
