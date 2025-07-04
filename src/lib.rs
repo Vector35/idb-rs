@@ -1911,7 +1911,7 @@ where
     }
 }
 
-pub trait IDAKind: core::fmt::Debug + Clone + Copy + 'static {
+pub trait IDAKind: core::fmt::Debug + Clone + Copy + Default + 'static {
     const BYTES: u8;
     type Usize: IDAUsize
         + num_traits::AsPrimitive<Self::Isize>
@@ -1959,6 +1959,7 @@ pub trait IDAUsize:
     + 'static
     + Copy
     + Clone
+    + Default
     + std::fmt::Debug
     + std::fmt::Display
     + std::fmt::LowerHex
@@ -2013,6 +2014,7 @@ pub trait IDAIsize:
     + 'static
     + Copy
     + Clone
+    + Default
     + std::fmt::Debug
     + std::fmt::Display
     + std::fmt::LowerHex
@@ -2063,6 +2065,11 @@ macro_rules! declare_idb_kind {
     ($bytes:literal, $utype:ty, $itype:ty, $name:ident, $unapack_fun:ident) => {
         #[derive(Debug, Clone, Copy)]
         pub struct $name;
+        impl Default for $name {
+            fn default() -> Self {
+                Self
+            }
+        }
         impl IDAKind for $name {
             const BYTES: u8 = $bytes;
             type Usize = $utype;

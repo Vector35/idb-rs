@@ -6,7 +6,7 @@ use anyhow::{anyhow, ensure, Result};
 
 use idb_rs::addr_info::{all_address_info, AddressInfo};
 use idb_rs::id0::function::{IDBFunctionNonTail, IDBFunctionTail};
-use idb_rs::id0::{ID0Section, Netdelta};
+use idb_rs::id0::{ID0Section, Netdelta, NetnodeIdx, ReferenceInfo};
 use idb_rs::id1::{
     ByteCode, ByteData, ByteDataType, ByteExtended, ByteOp, ByteType,
     ID1Section,
@@ -677,7 +677,9 @@ fn produce_bytes_info<K: IDAKind>(
                         "  create_insn({set_x_value}{address_raw:#X});",
                     )?;
                 }
-                produce_bytes_info_op_code(fmt, id0, id1, byte_code)?;
+                produce_bytes_info_op_code(
+                    fmt, id0, id1, address, netdelta, byte_code,
+                )?;
             }
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1e37
             ByteType::Data(byte_data) => {
@@ -698,7 +700,7 @@ fn produce_bytes_info<K: IDAKind>(
                             len_bytes,
                             4,
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                        produce_bytes_info_op_data(fmt, id0, id1, address, netdelta, byte_data)?;
                     }
                     ByteDataType::Byte => {
                         writeln!(
@@ -712,7 +714,7 @@ fn produce_bytes_info<K: IDAKind>(
                             len_bytes,
                             1,
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                        produce_bytes_info_op_data(fmt, id0, id1, address, netdelta, byte_data)?;
                     }
                     ByteDataType::Word => {
                         writeln!(
@@ -726,7 +728,7 @@ fn produce_bytes_info<K: IDAKind>(
                             len_bytes,
                             2,
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                        produce_bytes_info_op_data(fmt, id0, id1, address, netdelta, byte_data)?;
                     }
                     ByteDataType::Qword => {
                         writeln!(
@@ -740,7 +742,7 @@ fn produce_bytes_info<K: IDAKind>(
                             len_bytes,
                             8,
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                        produce_bytes_info_op_data(fmt, id0, id1, address, netdelta, byte_data)?;
                     }
                     ByteDataType::Tbyte => {
                         let _len = count_element(len_bytes, 1)?;
@@ -749,7 +751,7 @@ fn produce_bytes_info<K: IDAKind>(
                             fmt,
                             "  create_tbyte({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                        produce_bytes_info_op_data(fmt, id0, id1, address, netdelta, byte_data)?;
                     }
                     ByteDataType::Float => {
                         let _len = count_element(len_bytes, 1)?;
@@ -758,14 +760,14 @@ fn produce_bytes_info<K: IDAKind>(
                             fmt,
                             "  create_float({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                        produce_bytes_info_op_data(fmt, id0, id1, address, netdelta, byte_data)?;
                     }
                     ByteDataType::Packreal => {
                         writeln!(
                             fmt,
                             "  create_pack_real({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                        produce_bytes_info_op_data(fmt, id0, id1, address, netdelta, byte_data)?;
                     }
                     ByteDataType::Yword => {
                         let _len = count_element(len_bytes, 1)?;
@@ -774,7 +776,7 @@ fn produce_bytes_info<K: IDAKind>(
                             fmt,
                             "  create_yword({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                        produce_bytes_info_op_data(fmt, id0, id1, address, netdelta, byte_data)?;
                     }
                     ByteDataType::Double => {
                         let _len = count_element(len_bytes, 1)?;
@@ -783,7 +785,7 @@ fn produce_bytes_info<K: IDAKind>(
                             fmt,
                             "  create_double({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                        produce_bytes_info_op_data(fmt, id0, id1, address, netdelta, byte_data)?;
                     }
                     ByteDataType::Oword => {
                         let _len = count_element(len_bytes, 1)?;
@@ -792,7 +794,7 @@ fn produce_bytes_info<K: IDAKind>(
                             fmt,
                             "  create_oword({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                        produce_bytes_info_op_data(fmt, id0, id1, address, netdelta, byte_data)?;
                     }
                     // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2690
                     ByteDataType::Struct => {
@@ -813,7 +815,7 @@ fn produce_bytes_info<K: IDAKind>(
                             "  create_struct({address_raw:#X}, -1, {:?});",
                             core::str::from_utf8(struct_name).unwrap()
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, byte_data)?;
+                        produce_bytes_info_op_data(fmt, id0, id1, address, netdelta, byte_data)?;
                     }
                     ByteDataType::Align => {
                         produce_bytes_info_array(
@@ -897,8 +899,10 @@ fn produce_bytes_info_array<K: IDAKind>(
 
 fn produce_bytes_info_op_code<K: IDAKind>(
     fmt: &mut impl Write,
-    _id0: &ID0Section<K>,
-    _id1: &ID1Section,
+    id0: &ID0Section<K>,
+    id1: &ID1Section,
+    address: Address<K>,
+    netdelta: Netdelta<K>,
     code: ByteExtended<ByteCode>,
 ) -> Result<()> {
     for n in 0..8 {
@@ -910,7 +914,7 @@ fn produce_bytes_info_op_code<K: IDAKind>(
         }
 
         if let Some(op) = code.operand_n(n)? {
-            produce_bytes_info_op_op(fmt, _id0, _id1, op, n)?;
+            produce_bytes_info_op_op(fmt, id0, id1, address, netdelta, op, n)?;
         }
     }
 
@@ -921,6 +925,8 @@ fn produce_bytes_info_op_data<K: IDAKind>(
     fmt: &mut impl Write,
     _id0: &ID0Section<K>,
     _id1: &ID1Section,
+    address: Address<K>,
+    netdelta: Netdelta<K>,
     data: ByteData,
 ) -> Result<()> {
     if data.op_invert_sig() {
@@ -931,15 +937,17 @@ fn produce_bytes_info_op_data<K: IDAKind>(
     }
 
     if let Some(op) = data.operand0()? {
-        produce_bytes_info_op_op(fmt, _id0, _id1, op, 0)?;
+        produce_bytes_info_op_op(fmt, _id0, _id1, address, netdelta, op, 0)?;
     };
     Ok(())
 }
 
 fn produce_bytes_info_op_op<K: IDAKind>(
     fmt: &mut impl Write,
-    _id0: &ID0Section<K>,
+    id0: &ID0Section<K>,
     _id1: &ID1Section,
+    address: Address<K>,
+    netdelta: Netdelta<K>,
     data: ByteOp,
     n: u8,
 ) -> Result<()> {
@@ -947,8 +955,28 @@ fn produce_bytes_info_op_op<K: IDAKind>(
         ByteOp::Char => writeln!(fmt, "  op_char(x, {n});")?,
         ByteOp::Seg => writeln!(fmt, "  op_seg(x, {n});")?,
         ByteOp::Offset => {
-            writeln!(fmt, "  op_offset(x, {n}, 0xTODO, TODO, TODO, 0xTODO);")?;
-            writeln!(fmt, "  op_offset(x, TODO, 0xTODO, TODO, TODO, 0xTODO);")?;
+            let n_2 = n | 0x80;
+            let ref_info = id0
+                .reference_info(netdelta, address, n)?
+                .unwrap_or(ReferenceInfo::default());
+            let flags = ref_info.flags.into_primitive();
+            let target = ref_info
+                .target
+                .map(|target| format!("{:#X}", target.into_raw()))
+                .unwrap_or("BADADDR".into());
+            let base = ref_info
+                .base
+                .map(NetnodeIdx::into_raw)
+                .unwrap_or(0u8.into());
+            let tdelta = ref_info.tdelta.unwrap_or(0u8.into());
+            writeln!(
+                fmt,
+                "  op_offset(x, {n}, {flags:#X}, {target}, {base:#X}, {tdelta:#X});"
+            )?;
+            writeln!(
+                fmt,
+                "  op_offset(x, {n_2}, {flags:#X}, {target}, {base:#X}, {tdelta:#X});"
+            )?;
         }
         ByteOp::Enum => {
             writeln!(fmt, "  op_enum(x, {n}, get_enum(\"TODO\"), TODO);")?

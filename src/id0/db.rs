@@ -38,6 +38,12 @@ pub struct ID0Entry {
 #[derive(Debug, Clone, Copy)]
 pub struct NetnodeIdx<K: IDAKind>(pub(crate) K::Usize);
 
+impl<K: IDAKind> NetnodeIdx<K> {
+    pub fn into_raw(self) -> K::Usize {
+        self.0
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Upgrade700Idx<K: IDAKind>(pub(crate) NetnodeIdx<K>);
 
@@ -1310,5 +1316,14 @@ impl<K: IDAKind> ID0Section<K> {
             labels.push((Address::from_raw(address), label))
         }
         Ok(labels)
+    }
+
+    pub fn reference_info(
+        &self,
+        netdelta: Netdelta<K>,
+        address: Address<K>,
+        operand: u8,
+    ) -> Result<Option<ReferenceInfo<K>>> {
+        super::reference_info::reference_info(self, netdelta, address, operand)
     }
 }

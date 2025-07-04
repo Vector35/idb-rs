@@ -13,7 +13,6 @@ pub trait IdbRead: Read {
         Ok(data[0])
     }
 
-    #[cfg(not(feature = "restrictive"))]
     fn read_u8_or_nothing(&mut self) -> Result<Option<u8>> {
         let mut data = [0; 1];
         let read = self.read_exact_or_nothing(&mut data)?;

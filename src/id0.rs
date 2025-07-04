@@ -13,6 +13,7 @@ pub(crate) mod entry_iter;
 mod file_region;
 pub mod flag;
 mod patch;
+pub mod reference_info;
 mod root_info;
 mod segment;
 
@@ -22,6 +23,7 @@ pub use dirtree::*;
 pub use file_region::*;
 use num_traits::ToBytes;
 pub use patch::*;
+pub use reference_info::*;
 pub use root_info::*;
 pub use segment::*;
 pub mod function;
