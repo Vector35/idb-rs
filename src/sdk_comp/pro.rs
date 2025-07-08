@@ -44,6 +44,7 @@ pub type sel_t<K> = ida_usize_t<K>;
 pub type adiff_t<K> = ida_isize_t<K>;
 pub type uval_t<K> = asize_t<K>;
 pub type sval_t<K> = adiff_t<K>;
+pub type tid_t<K> = ea_t<K>;
 
 pub type bgcolor_t = u32;
 pub const DEFCOLOR: bgcolor_t = u32::MAX;

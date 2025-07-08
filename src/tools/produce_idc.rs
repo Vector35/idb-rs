@@ -5,6 +5,7 @@ use std::io::{BufRead, BufReader, Cursor, Seek, Write};
 use anyhow::{anyhow, ensure, Result};
 
 use idb_rs::addr_info::{all_address_info, AddressInfo};
+use idb_rs::id0::flag::netnode::nn_res::*;
 use idb_rs::id0::function::{IDBFunctionNonTail, IDBFunctionTail};
 use idb_rs::id0::{ID0Section, Netdelta, NetnodeIdx, ReferenceInfo};
 use idb_rs::id1::{
@@ -688,7 +689,7 @@ fn produce_bytes_info<K: IDAKind>(
                 match byte_data.data_type() {
                     ByteDataType::Strlit => writeln!(
                         fmt,
-                        "  create_strlit({set_x_value}{address_raw:#X}, {len_bytes:#X});",
+                        "  create_strlit({address_raw:#X}, {len_bytes:#X});",
                     )?,
                     ByteDataType::Dword => {
                         writeln!(
@@ -696,13 +697,12 @@ fn produce_bytes_info<K: IDAKind>(
                             "  create_dword({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_array(
-                            fmt,
-                            address,
-                            set_x,
-                            len_bytes,
-                            4,
+                            fmt, address, set_x, len_bytes, 4,
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, address, image_base, netdelta, byte_data)?;
+                        produce_bytes_info_op_data(
+                            fmt, id0, id1, address, image_base, netdelta,
+                            byte_data,
+                        )?;
                     }
                     ByteDataType::Byte => {
                         writeln!(
@@ -710,13 +710,12 @@ fn produce_bytes_info<K: IDAKind>(
                             "  create_byte({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_array(
-                            fmt,
-                            address,
-                            set_x,
-                            len_bytes,
-                            1,
+                            fmt, address, set_x, len_bytes, 1,
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, address, image_base, netdelta, byte_data)?;
+                        produce_bytes_info_op_data(
+                            fmt, id0, id1, address, image_base, netdelta,
+                            byte_data,
+                        )?;
                     }
                     ByteDataType::Word => {
                         writeln!(
@@ -724,13 +723,12 @@ fn produce_bytes_info<K: IDAKind>(
                             "  create_word({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_array(
-                            fmt,
-                            address,
-                            set_x,
-                            len_bytes,
-                            2,
+                            fmt, address, set_x, len_bytes, 2,
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, address, image_base, netdelta, byte_data)?;
+                        produce_bytes_info_op_data(
+                            fmt, id0, id1, address, image_base, netdelta,
+                            byte_data,
+                        )?;
                     }
                     ByteDataType::Qword => {
                         writeln!(
@@ -738,13 +736,12 @@ fn produce_bytes_info<K: IDAKind>(
                             "  create_qword({set_x_value}{address_raw:#X});"
                         )?;
                         produce_bytes_info_array(
-                            fmt,
-                            address,
-                            set_x,
-                            len_bytes,
-                            8,
+                            fmt, address, set_x, len_bytes, 8,
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, address, image_base, netdelta, byte_data)?;
+                        produce_bytes_info_op_data(
+                            fmt, id0, id1, address, image_base, netdelta,
+                            byte_data,
+                        )?;
                     }
                     ByteDataType::Tbyte => {
                         let _len = count_element(len_bytes, 1)?;
@@ -753,7 +750,10 @@ fn produce_bytes_info<K: IDAKind>(
                             fmt,
                             "  create_tbyte({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, address, image_base, netdelta, byte_data)?;
+                        produce_bytes_info_op_data(
+                            fmt, id0, id1, address, image_base, netdelta,
+                            byte_data,
+                        )?;
                     }
                     ByteDataType::Float => {
                         let _len = count_element(len_bytes, 1)?;
@@ -762,14 +762,20 @@ fn produce_bytes_info<K: IDAKind>(
                             fmt,
                             "  create_float({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, address, image_base, netdelta, byte_data)?;
+                        produce_bytes_info_op_data(
+                            fmt, id0, id1, address, image_base, netdelta,
+                            byte_data,
+                        )?;
                     }
                     ByteDataType::Packreal => {
                         writeln!(
                             fmt,
                             "  create_pack_real({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, address, image_base, netdelta, byte_data)?;
+                        produce_bytes_info_op_data(
+                            fmt, id0, id1, address, image_base, netdelta,
+                            byte_data,
+                        )?;
                     }
                     ByteDataType::Yword => {
                         let _len = count_element(len_bytes, 1)?;
@@ -778,7 +784,10 @@ fn produce_bytes_info<K: IDAKind>(
                             fmt,
                             "  create_yword({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, address, image_base, netdelta, byte_data)?;
+                        produce_bytes_info_op_data(
+                            fmt, id0, id1, address, image_base, netdelta,
+                            byte_data,
+                        )?;
                     }
                     ByteDataType::Double => {
                         let _len = count_element(len_bytes, 1)?;
@@ -787,7 +796,10 @@ fn produce_bytes_info<K: IDAKind>(
                             fmt,
                             "  create_double({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, address, image_base, netdelta, byte_data)?;
+                        produce_bytes_info_op_data(
+                            fmt, id0, id1, address, image_base, netdelta,
+                            byte_data,
+                        )?;
                     }
                     ByteDataType::Oword => {
                         let _len = count_element(len_bytes, 1)?;
@@ -796,7 +808,10 @@ fn produce_bytes_info<K: IDAKind>(
                             fmt,
                             "  create_oword({set_x_value}{address_raw:#X});"
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, address, image_base, netdelta, byte_data)?;
+                        produce_bytes_info_op_data(
+                            fmt, id0, id1, address, image_base, netdelta,
+                            byte_data,
+                        )?;
                     }
                     // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2690
                     ByteDataType::Struct => {
@@ -817,15 +832,14 @@ fn produce_bytes_info<K: IDAKind>(
                             "  create_struct({address_raw:#X}, -1, {:?});",
                             core::str::from_utf8(struct_name).unwrap()
                         )?;
-                        produce_bytes_info_op_data(fmt, id0, id1, address, image_base, netdelta, byte_data)?;
+                        produce_bytes_info_op_data(
+                            fmt, id0, id1, address, image_base, netdelta,
+                            byte_data,
+                        )?;
                     }
                     ByteDataType::Align => {
                         produce_bytes_info_array(
-                            fmt,
-                            address,
-                            set_x,
-                            len_bytes,
-                            1,
+                            fmt, address, set_x, len_bytes, 1,
                         )?;
                     }
                     ByteDataType::Zword | ByteDataType::Custom => {
@@ -950,6 +964,7 @@ fn produce_bytes_info_op_data<K: IDAKind>(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn produce_bytes_info_op_op<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
@@ -961,7 +976,7 @@ fn produce_bytes_info_op_op<K: IDAKind>(
     n: u8,
 ) -> Result<()> {
     match data {
-        ByteOp::Char => writeln!(fmt, "  op_char(x, {n});")?,
+        ByteOp::Char => writeln!(fmt, "  op_chr(x, {n});")?,
         ByteOp::Seg => writeln!(fmt, "  op_seg(x, {n});")?,
         ByteOp::Offset => {
             let n_2 = n | 0x80;
@@ -994,7 +1009,28 @@ fn produce_bytes_info_op_op<K: IDAKind>(
             )?;
         }
         ByteOp::Enum => {
-            writeln!(fmt, "  op_enum(x, {n}, get_enum(\"TODO\"), TODO);")?
+            // TODO check if typid & 0x100 != 0 && get_tinfo_pdata(GTP_NAME) != 0
+            if let Some(enum_tid) = id0.sup_value(
+                netdelta.ea2node(address),
+                0xbu8.into(),
+                ARRAY_ALT_TAG,
+            ) {
+                let netnode = NetnodeIdx::from_raw(
+                    K::usize_try_from_le_bytes(enum_tid)
+                        .map(|x| x - 1u8.into())
+                        .ok_or_else(|| anyhow!("Invalid Enum typid value"))?,
+                );
+                let enum_name = id0
+                    .netnode_name(netnode)
+                    .map(String::from_utf8_lossy)
+                    .unwrap_or("".into());
+                // TODO find the serial or implement get_enum_id
+                let serial = 0;
+                writeln!(
+                    fmt,
+                    "  op_enum(x, {n}, get_enum({enum_name:?}), {serial});"
+                )?
+            }
         }
         ByteOp::ForceOp => todo!(),
         ByteOp::StructOffset => {

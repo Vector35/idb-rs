@@ -7,6 +7,7 @@ pub mod netnode;
 pub mod pro;
 pub mod range;
 pub mod segment;
+pub mod typeinf;
 
 // TODO
 //pub mod loader;
