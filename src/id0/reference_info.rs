@@ -224,7 +224,7 @@ impl<K: IDAKind> ReferenceInfo<K> {
 }
 
 const fn operand_to_alt(operand: u8) -> u8 {
-    // I could not find a cituation that `param_1 & 0x80 != 0`, use use sub = 3
+    // I could not find a cituation that `param_1 & 0x80 != 0`, use sub = 3
     // always instead
     //let value = operand & 0xf;
     //let flag = operand & 0x80 != 0;

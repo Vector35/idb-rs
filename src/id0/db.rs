@@ -42,6 +42,10 @@ impl<K: IDAKind> NetnodeIdx<K> {
     pub fn into_raw(self) -> K::Usize {
         self.0
     }
+
+    pub fn from_raw(value: K::Usize) -> Self {
+        Self(value)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
