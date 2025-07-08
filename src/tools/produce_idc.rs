@@ -1181,7 +1181,7 @@ fn produce_bytes<K: IDAKind>(
 fn count_element(len_bytes: usize, len_elements: usize) -> Result<usize> {
     ensure!(len_bytes >= len_elements, "Expected more ID1 Tail entries");
     ensure!(
-        len_bytes.is_multiple_of(len_elements),
+        len_bytes % len_elements == 0,
         "More ID1 Tails that expects or invalid array len"
     );
     Ok(len_bytes / len_elements)
