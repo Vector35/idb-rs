@@ -11603,7 +11603,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: _hread
+- name: _lread
   address: 1754281725
   forwarded: ~
   entry_type:
@@ -11672,7 +11672,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: _lread
+- name: _hread
   address: 1754281725
   forwarded: ~
   entry_type:
@@ -16205,7 +16205,7 @@ expression: entry_points
   address: 1754324629
   forwarded: ~
   entry_type: ~
-- name: GetStringTypeA
+- name: GetStringTypeExA
   address: 1754324646
   forwarded: ~
   entry_type:
@@ -16299,7 +16299,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: GetStringTypeExA
+- name: GetStringTypeA
   address: 1754324646
   forwarded: ~
   entry_type:
@@ -26709,7 +26709,7 @@ expression: entry_points
   address: 1754458219
   forwarded: ~
   entry_type: ~
-- name: RegisterConsoleIME
+- name: SetHandleContext
   address: 1754458219
   forwarded: ~
   entry_type: ~
@@ -26717,7 +26717,7 @@ expression: entry_points
   address: 1754458219
   forwarded: ~
   entry_type: ~
-- name: SetHandleContext
+- name: RegisterConsoleIME
   address: 1754458219
   forwarded: ~
   entry_type: ~
@@ -27483,7 +27483,7 @@ expression: entry_points
   address: 1754460122
   forwarded: ~
   entry_type: ~
-- name: lstrcmp
+- name: lstrcmpA
   address: 1754460139
   forwarded: ~
   entry_type:
@@ -27538,7 +27538,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcmpA
+- name: lstrcmp
   address: 1754460139
   forwarded: ~
   entry_type:
@@ -31371,62 +31371,6 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcat
-  address: 1754473135
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Function:
-        calling_convention: Stdcall
-        ret:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Typeref:
-              ref_type: ~
-              typeref_value:
-                UnsolvedName: LPSTR
-        args:
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Typeref:
-                  ref_type: ~
-                  typeref_value:
-                    UnsolvedName: LPSTR
-            loc: ~
-            flags: ~
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Typeref:
-                  ref_type: ~
-                  typeref_value:
-                    UnsolvedName: LPCSTR
-            loc: ~
-            flags: ~
-        retloc: ~
-        method: ~
-        is_noret: false
-        is_pure: false
-        is_high: false
-        is_static: false
-        is_virtual: false
-        is_const: false
-        is_constructor: false
-        is_destructor: false
 - name: lstrcatA
   address: 1754473135
   forwarded: ~
@@ -31483,8 +31427,8 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcpy
-  address: 1754473249
+- name: lstrcat
+  address: 1754473135
   forwarded: ~
   entry_type:
     comment: ~
@@ -31540,6 +31484,62 @@ expression: entry_points
         is_constructor: false
         is_destructor: false
 - name: lstrcpyA
+  address: 1754473249
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Function:
+        calling_convention: Stdcall
+        ret:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Typeref:
+              ref_type: ~
+              typeref_value:
+                UnsolvedName: LPSTR
+        args:
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Typeref:
+                  ref_type: ~
+                  typeref_value:
+                    UnsolvedName: LPSTR
+            loc: ~
+            flags: ~
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Typeref:
+                  ref_type: ~
+                  typeref_value:
+                    UnsolvedName: LPCSTR
+            loc: ~
+            flags: ~
+        retloc: ~
+        method: ~
+        is_noret: false
+        is_pure: false
+        is_high: false
+        is_static: false
+        is_virtual: false
+        is_const: false
+        is_constructor: false
+        is_destructor: false
+- name: lstrcpy
   address: 1754473249
   forwarded: ~
   entry_type:
@@ -44594,7 +44594,7 @@ expression: entry_points
   address: 1754858860
   forwarded: ~
   entry_type: ~
-- name: _lwrite
+- name: _hwrite
   address: 1754858994
   forwarded: ~
   entry_type:
@@ -44663,7 +44663,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: _hwrite
+- name: _lwrite
   address: 1754858994
   forwarded: ~
   entry_type:
@@ -44898,7 +44898,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: GlobalCompact
+- name: LocalCompact
   address: 1754859220
   forwarded: ~
   entry_type:
@@ -44941,7 +44941,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: LocalCompact
+- name: GlobalCompact
   address: 1754859220
   forwarded: ~
   entry_type:
@@ -47251,6 +47251,49 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
+- name: CancelDeviceWakeupRequest
+  address: 1754865515
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Function:
+        calling_convention: Stdcall
+        ret:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Typeref:
+              ref_type: ~
+              typeref_value:
+                UnsolvedName: BOOL
+        args:
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Typeref:
+                  ref_type: ~
+                  typeref_value:
+                    UnsolvedName: LATENCY_TIME
+            loc: ~
+            flags: ~
+        retloc: ~
+        method: ~
+        is_noret: false
+        is_pure: false
+        is_high: false
+        is_static: false
+        is_virtual: false
+        is_const: false
+        is_constructor: false
+        is_destructor: false
 - name: RequestWakeupLatency
   address: 1754865515
   forwarded: ~
@@ -47295,49 +47338,6 @@ expression: entry_points
         is_constructor: false
         is_destructor: false
 - name: RequestDeviceWakeup
-  address: 1754865515
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Function:
-        calling_convention: Stdcall
-        ret:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Typeref:
-              ref_type: ~
-              typeref_value:
-                UnsolvedName: BOOL
-        args:
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Typeref:
-                  ref_type: ~
-                  typeref_value:
-                    UnsolvedName: LATENCY_TIME
-            loc: ~
-            flags: ~
-        retloc: ~
-        method: ~
-        is_noret: false
-        is_pure: false
-        is_high: false
-        is_static: false
-        is_virtual: false
-        is_const: false
-        is_constructor: false
-        is_destructor: false
-- name: CancelDeviceWakeupRequest
   address: 1754865515
   forwarded: ~
   entry_type:
@@ -52812,15 +52812,15 @@ expression: entry_points
   address: 1754878153
   forwarded: ~
   entry_type: ~
+- name: Wow64SetThreadContext
+  address: 1754878174
+  forwarded: ~
+  entry_type: ~
 - name: Wow64GetThreadContext
   address: 1754878174
   forwarded: ~
   entry_type: ~
 - name: SetMessageWaitingIndicator
-  address: 1754878174
-  forwarded: ~
-  entry_type: ~
-- name: Wow64SetThreadContext
   address: 1754878174
   forwarded: ~
   entry_type: ~
@@ -54555,7 +54555,7 @@ expression: entry_points
   address: 1754887839
   forwarded: ~
   entry_type: ~
-- name: GetBinaryTypeA
+- name: GetBinaryType
   address: 1754887867
   forwarded: ~
   entry_type:
@@ -54611,7 +54611,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: GetBinaryType
+- name: GetBinaryTypeA
   address: 1754887867
   forwarded: ~
   entry_type:
@@ -58557,7 +58557,7 @@ expression: entry_points
   address: 1754974166
   forwarded: ~
   entry_type: ~
-- name: CloseProfileUserMapping
+- name: LZStart
   address: 1754978543
   forwarded: ~
   entry_type: ~
@@ -58565,7 +58565,7 @@ expression: entry_points
   address: 1754978543
   forwarded: ~
   entry_type: ~
-- name: LZStart
+- name: CloseProfileUserMapping
   address: 1754978543
   forwarded: ~
   entry_type: ~
@@ -58600,7 +58600,7 @@ expression: entry_points
   address: 1754982365
   forwarded: ~
   entry_type: ~
-- name: RaiseInvalid16BitExeError
+- name: UTUnRegister
   address: 1754987587
   forwarded: ~
   entry_type:
@@ -58640,7 +58640,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: UTUnRegister
+- name: RaiseInvalid16BitExeError
   address: 1754987587
   forwarded: ~
   entry_type:
