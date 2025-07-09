@@ -1,0 +1,5 @@
+---
+source: src/test.rs
+expression: input_file
+---
+"/mnt/c/Users/eliasb/OneDrive/SAMPLES/madam2_ctf/madame\u0000"

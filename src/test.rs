@@ -2,8 +2,10 @@ use rstest::rstest;
 
 use std::fs::File;
 use std::io::Cursor;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
+use crate::id0::function::FunctionsAndComments;
+use crate::id0::{FileRegions, Segment};
 use crate::*;
 
 #[test]
@@ -238,15 +240,61 @@ fn parse_struct_with_fixed() {
 
 #[rstest]
 fn parse_til(
-    #[files("resources/tils/*.til")]
     #[files("resources/tils/**/*.til")]
+    #[exclude("resources/tils/local/.*")]
     file: PathBuf,
 ) {
-    println!("{}", file.to_str().unwrap());
+    parse_til_inner(file)
+}
+
+#[rstest]
+fn parse_local_til(#[files("resources/tils/local/**/*.til")] file: PathBuf) {
+    parse_til_inner(file)
+}
+
+#[rstest]
+fn parse_idb(
+    #[files("resources/idbs/**/*.i64")]
+    #[files("resources/idbs/**/*.idb")]
+    #[exclude("resources/idbs/local/.*")]
+    filename: PathBuf,
+) {
+    parse_idb_inner(filename)
+}
+
+#[rstest]
+fn parse_local_idb(
+    #[files("resources/idbs/local/**/*.i64")]
+    #[files("resources/idbs/local/**/*.idb")]
+    filename: PathBuf,
+) {
+    parse_idb_inner(filename)
+}
+
+fn remove_base_dir<'a>(
+    file: &'a Path,
+    resource: &'static str,
+) -> impl Iterator<Item = std::path::Component<'a>> {
+    let root_env = env!("CARGO_MANIFEST_DIR");
+    let root = Path::new(root_env).join("resources").join(resource);
+    if !file.starts_with(&root) {
+        panic!("Invalid Path {root_env:?}: {:?}", file.to_str());
+    }
+    let len = root.components().count();
+    file.components().skip(len)
+}
+
+fn parse_til_inner(file: PathBuf) {
+    let file_suffix: PathBuf = remove_base_dir(&file, "tils").collect();
+    let file_suffix_str = file_suffix.to_str().unwrap();
+    println!("{file_suffix_str}");
     // makes sure it don't read out-of-bounds
     let mut input = BufReader::new(File::open(file).unwrap());
     // TODO make a SmartReader
-    let _til = TILSection::read(&mut input).unwrap();
+    let til = TILSection::read(&mut input).unwrap();
+    insta::with_settings!({snapshot_suffix => file_suffix_str}, {
+        insta::assert_yaml_snapshot!(til);
+    });
 
     assert_eq!(
         input.peek_u8().unwrap(),
@@ -255,36 +303,37 @@ fn parse_til(
     );
 }
 
-#[rstest]
-fn parse_idb(
-    #[files("resources/idbs/*.i64")]
-    #[files("resources/idbs/*.idb")]
-    #[files("resources/idbs/**/*.i64")]
-    #[files("resources/idbs/**/*.idb")]
-    filename: PathBuf,
-) {
-    println!("{}", filename.to_str().unwrap());
-    let mut input = BufReader::new(File::open(&filename).unwrap());
+fn parse_idb_inner(file: PathBuf) {
+    let file_suffix: PathBuf = remove_base_dir(&file, "idbs").collect();
+    println!("{}", file_suffix.to_str().unwrap());
+    let mut input = BufReader::new(File::open(&file).unwrap());
     let format = IDBFormats::identify_file(&mut input).unwrap();
     match format {
         IDBFormats::Separated(sections) => {
-            parse_idb_separated(&mut input, &sections)
+            parse_idb_separated(file_suffix, &mut input, &sections)
         }
         IDBFormats::InlineUncompressed(sections) => {
-            parse_idb_inlined(&mut input, &sections)
+            parse_idb_inlined(file_suffix, &mut input, &sections)
         }
         IDBFormats::InlineCompressed(compressed) => {
             let mut decompressed = Vec::new();
             let sections = compressed
                 .decompress_into_memory(input, &mut decompressed)
                 .unwrap();
-            parse_idb_inlined(&mut Cursor::new(decompressed), &sections);
+            parse_idb_inlined(
+                file_suffix,
+                &mut Cursor::new(decompressed),
+                &sections,
+            );
         }
     }
 }
 
-fn parse_idb_separated<I>(input: &mut I, sections: &SeparatedSections)
-where
+fn parse_idb_separated<I>(
+    file_suffix: PathBuf,
+    input: &mut I,
+    sections: &SeparatedSections,
+) where
     I: BufRead + Seek,
 {
     // parse sectors
@@ -302,28 +351,34 @@ where
     let til = sections
         .til_location()
         .map(|til| sections.read_til(&mut *input, til).unwrap());
+    insta::with_settings!({snapshot_suffix => file_suffix.join("til").to_str().unwrap()}, {
+        insta::assert_yaml_snapshot!(til);
+    });
+    let _nam = sections
+        .nam_location()
+        .map(|idx| sections.read_nam(&mut *input, idx));
     match (id0, id2) {
         (IDAVariants::IDA32(id0), Some(IDAVariants::IDA32(id2))) => {
-            parse_idb_data(&id0, &id1, Some(&id2), til.as_ref())
+            parse_idb_data(file_suffix, &id0, &id1, Some(&id2), til.as_ref())
         }
         (IDAVariants::IDA32(id0), None) => {
-            parse_idb_data(&id0, &id1, None, til.as_ref())
+            parse_idb_data(file_suffix, &id0, &id1, None, til.as_ref())
         }
         (IDAVariants::IDA64(id0), Some(IDAVariants::IDA64(id2))) => {
-            parse_idb_data(&id0, &id1, Some(&id2), til.as_ref())
+            parse_idb_data(file_suffix, &id0, &id1, Some(&id2), til.as_ref())
         }
         (IDAVariants::IDA64(id0), None) => {
-            parse_idb_data(&id0, &id1, None, til.as_ref())
+            parse_idb_data(file_suffix, &id0, &id1, None, til.as_ref())
         }
         (_, _) => unreachable!(),
     }
-    let _ = sections
-        .nam_location()
-        .map(|idx| sections.read_nam(&mut *input, idx));
 }
 
-fn parse_idb_inlined<I>(input: &mut I, sections: &InlineUnCompressedSections)
-where
+fn parse_idb_inlined<I>(
+    file_suffix: PathBuf,
+    input: &mut I,
+    sections: &InlineUnCompressedSections,
+) where
     I: BufRead + Seek,
 {
     // parse sectors
@@ -343,16 +398,16 @@ where
         .map(|til| sections.read_til(&mut *input, til).unwrap());
     match (id0, id2) {
         (IDAVariants::IDA32(id0), Some(IDAVariants::IDA32(id2))) => {
-            parse_idb_data(&id0, &id1, Some(&id2), til.as_ref())
+            parse_idb_data(file_suffix, &id0, &id1, Some(&id2), til.as_ref())
         }
         (IDAVariants::IDA32(id0), None) => {
-            parse_idb_data(&id0, &id1, None, til.as_ref())
+            parse_idb_data(file_suffix, &id0, &id1, None, til.as_ref())
         }
         (IDAVariants::IDA64(id0), Some(IDAVariants::IDA64(id2))) => {
-            parse_idb_data(&id0, &id1, Some(&id2), til.as_ref())
+            parse_idb_data(file_suffix, &id0, &id1, Some(&id2), til.as_ref())
         }
         (IDAVariants::IDA64(id0), None) => {
-            parse_idb_data(&id0, &id1, None, til.as_ref())
+            parse_idb_data(file_suffix, &id0, &id1, None, til.as_ref())
         }
         (_, _) => unreachable!(),
     }
@@ -362,6 +417,7 @@ where
 }
 
 fn parse_idb_data<K>(
+    file_suffix: PathBuf,
     id0: &ID0Section<K>,
     id1: &ID1Section,
     id2: Option<&ID2Section<K>>,
@@ -372,34 +428,83 @@ fn parse_idb_data<K>(
     // parse all id0 information
     let root_netnode = id0.root_node().unwrap();
     let ida_info = id0.ida_info(root_netnode.into()).unwrap();
+    insta::with_settings!({snapshot_suffix => file_suffix.join("ida_info").to_str().unwrap()}, {
+        insta::assert_yaml_snapshot!(ida_info);
+    });
 
-    let seg_idx = id0.segments_idx().unwrap().unwrap();
-    let _: Vec<_> = id0.segments(seg_idx).map(Result::unwrap).collect();
-    let _: Option<Vec<_>> = id0
-        .loader_name()
-        .unwrap()
-        .map(|iter| iter.map(Result::unwrap).collect());
+    insta::with_settings!({snapshot_suffix => file_suffix.join("segments").to_str().unwrap()}, {
+        let seg_idx = id0.segments_idx().unwrap().unwrap();
+        let segments: Vec<Segment<K>> =
+            id0.segments(seg_idx).map(Result::unwrap).collect();
+        insta::assert_yaml_snapshot!(segments);
+    });
+    insta::with_settings!({snapshot_suffix => file_suffix.join("loader_name").to_str().unwrap()}, {
+        let loader_name: Option<Vec<&str>> = id0
+            .loader_name()
+            .unwrap()
+            .map(|iter| iter.map(Result::unwrap).collect());
+        insta::assert_yaml_snapshot!(loader_name);
+    });
     let root_info_idx = id0.root_node().unwrap();
     // I belive the input file should always be present, but maybe I'm wrong,
     // I need know if this unwrap panics
-    id0.input_file(root_info_idx).unwrap();
-    id0.input_file_size(root_info_idx).unwrap();
-    id0.input_file_crc32(root_info_idx).unwrap().unwrap();
-    id0.input_file_sha256(root_info_idx).unwrap();
-    id0.input_file_md5(root_info_idx).unwrap();
-    // TODO test image base translate an addr to netnode and vise-versa
-    let root_info = id0.ida_info(root_info_idx).unwrap();
-    let image_base = root_info.netdelta();
+    insta::with_settings!({snapshot_suffix => file_suffix.join("input_file").to_str().unwrap()}, {
+        let input_file = id0.input_file(root_info_idx).unwrap();
+        insta::assert_yaml_snapshot!(input_file);
+    });
+    insta::with_settings!({snapshot_suffix => file_suffix.join("input_file_size").to_str().unwrap()}, {
+        let input_file_size = id0.input_file_size(root_info_idx).unwrap();
+        insta::assert_yaml_snapshot!(input_file_size);
+    });
+    insta::with_settings!({snapshot_suffix => file_suffix.join("input_file_crc32").to_str().unwrap()}, {
+        let input_file_crc32 =
+            id0.input_file_crc32(root_info_idx).unwrap().unwrap();
+        insta::assert_yaml_snapshot!(input_file_crc32);
+    });
+    insta::with_settings!({snapshot_suffix => file_suffix.join("input_file_sha256").to_str().unwrap()}, {
+        let input_file_sha256 = id0.input_file_sha256(root_info_idx).unwrap();
+        insta::assert_yaml_snapshot!(input_file_sha256);
+    });
+    insta::with_settings!({snapshot_suffix => file_suffix.join("input_file_md5").to_str().unwrap()}, {
+        let input_file_md5 = id0.input_file_md5(root_info_idx).unwrap();
+        insta::assert_yaml_snapshot!(input_file_md5);
+    });
     // TODO I think database information is always available, check that...
-    id0.database_num_opens(root_info_idx).unwrap().unwrap();
-    id0.database_secs_opens(root_info_idx).unwrap().unwrap();
-    id0.database_creation_time(root_info_idx).unwrap().unwrap();
-    id0.database_initial_version(root_info_idx)
-        .unwrap()
-        .unwrap();
-    let _ = id0.database_creation_version(root_info_idx);
-    id0.c_predefined_macros(root_info_idx);
-    id0.c_header_path(root_info_idx);
+    insta::with_settings!({snapshot_suffix => file_suffix.join("database_num_opens").to_str().unwrap()}, {
+        let database_num_opens =
+            id0.database_num_opens(root_info_idx).unwrap().unwrap();
+        insta::assert_yaml_snapshot!(database_num_opens);
+    });
+    insta::with_settings!({snapshot_suffix => file_suffix.join("database_secs_opens").to_str().unwrap()}, {
+        let database_secs_opens =
+            id0.database_secs_opens(root_info_idx).unwrap().unwrap();
+        insta::assert_yaml_snapshot!(database_secs_opens);
+    });
+    insta::with_settings!({snapshot_suffix => file_suffix.join("database_creation_time").to_str().unwrap()}, {
+        let database_creation_time =
+            id0.database_creation_time(root_info_idx).unwrap().unwrap();
+        insta::assert_yaml_snapshot!(database_creation_time);
+    });
+    insta::with_settings!({snapshot_suffix => file_suffix.join("database_initial_version").to_str().unwrap()}, {
+        let database_initial_version = id0
+            .database_initial_version(root_info_idx)
+            .unwrap()
+            .unwrap();
+        insta::assert_yaml_snapshot!(database_initial_version);
+    });
+    insta::with_settings!({snapshot_suffix => file_suffix.join("database_creation_version").to_str().unwrap()}, {
+        let database_creation_version =
+            id0.database_creation_version(root_info_idx);
+        insta::assert_yaml_snapshot!(database_creation_version);
+    });
+    insta::with_settings!({snapshot_suffix => file_suffix.join("c_predefined_macros").to_str().unwrap()}, {
+        let c_predefined_macros = id0.c_predefined_macros(root_info_idx);
+        insta::assert_yaml_snapshot!(c_predefined_macros);
+    });
+    insta::with_settings!({snapshot_suffix => file_suffix.join("c_header_path").to_str().unwrap()}, {
+        let c_header_path = id0.c_header_path(root_info_idx);
+        insta::assert_yaml_snapshot!(c_header_path);
+    });
     // TODO identify the data
     //let Some(_) = id0.output_file_encoding_idx(root_info_idx) else {todo!()};
     //let Some(_) = id0.ids_modenode_id(root_info_idx) else {todo!()};
@@ -419,23 +524,30 @@ fn parse_idb_data<K>(
     //id0.selectors(root_info_idx).unwrap().collect();
     //let Some(_) = id0.file_format_name_loader(root_info_idx) else {todo!()};
 
-    let file_regions_idx = id0.file_regions_idx().unwrap();
-    let _: Vec<_> = id0
-        .file_regions(file_regions_idx, ida_info.version)
-        .map(Result::unwrap)
-        .collect();
+    insta::with_settings!({snapshot_suffix => file_suffix.join("file_regions").to_str().unwrap()}, {
+        let file_regions_idx = id0.file_regions_idx().unwrap();
+        let file_regions: Vec<FileRegions<K>> = id0
+            .file_regions(file_regions_idx, ida_info.version)
+            .map(Result::unwrap)
+            .collect();
+        insta::assert_yaml_snapshot!(file_regions);
+    });
     if let Some(func_idx) = id0.funcs_idx().unwrap() {
-        let _: Vec<_> = id0
+        let _functions_and_comments: Vec<FunctionsAndComments<'_, K>> = id0
             .functions_and_comments(func_idx)
             .map(Result::unwrap)
             .collect();
     }
-    let _ = id0.entry_points().unwrap();
+    insta::with_settings!({snapshot_suffix => file_suffix.join("entry_points").to_str().unwrap()}, {
+        let entry_points = id0.entry_points().unwrap();
+        insta::assert_yaml_snapshot!(entry_points);
+    });
     let _ = id0.dirtree_bpts().unwrap();
     let _ = id0.dirtree_enums().unwrap();
 
-    if let Some(_dirtree_names) = id0.dirtree_names().unwrap() {
-        _dirtree_names.visit_leafs(|addr| {
+    if let Some(dirtree_names) = id0.dirtree_names().unwrap() {
+        let image_base = ida_info.netdelta();
+        dirtree_names.visit_leafs(|addr| {
             // NOTE it's know that some labels are missing from the byte
             // info but not from the databases, maybe in cases they are
             // created in debug-memory-pages or similar...
@@ -447,6 +559,7 @@ fn parse_idb_data<K>(
                 Address::from_raw(*addr),
             )
             .or_else(|| {
+                // TODO make sure this new_forced is required
                 crate::addr_info::AddressInfo::new_forced(
                     id0,
                     image_base,

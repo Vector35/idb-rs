@@ -1,0 +1,6 @@
+---
+source: src/test.rs
+expression: loader_name
+---
+- pe64.l64
+- Portable executable for 80386 (PE)

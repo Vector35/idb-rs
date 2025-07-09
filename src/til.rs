@@ -12,6 +12,7 @@ pub mod union;
 mod size_calculator;
 
 use section::TILSectionHeader;
+use serde::Serialize;
 pub use size_calculator::*;
 
 use std::collections::HashMap;
@@ -30,7 +31,7 @@ use crate::til::r#struct::{Struct, StructRaw};
 use crate::til::union::{Union, UnionRaw};
 use crate::IDBString;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TILTypeInfo {
     pub name: IDBString,
     pub ordinal: u64,
@@ -92,7 +93,7 @@ impl TILTypeInfo {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum SClass {
     Typedef,
     Extern,
@@ -195,7 +196,7 @@ impl TILTypeInfoRaw {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Type {
     pub comment: Option<IDBString>,
     pub is_const: bool,
@@ -203,7 +204,7 @@ pub struct Type {
     pub type_variant: TypeVariant,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum TypeVariant {
     Basic(Basic),
     Pointer(Pointer),
@@ -467,7 +468,7 @@ impl TypeRaw {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub enum Basic {
     Void,
     // NOTE Unknown with 0 bytes is NOT the same as Void
@@ -641,20 +642,20 @@ impl TypedefRaw {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Typeref {
     pub ref_type: Option<TyperefType>,
     pub typeref_value: TyperefValue,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum TyperefValue {
     Ref(usize),
     UnsolvedName(Option<IDBString>),
     UnsolvedOrd(u32),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub enum TyperefType {
     Struct,
     Union,
@@ -740,14 +741,14 @@ pub enum TILModifier {
     Volatile,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TILMacro {
-    pub name: Vec<u8>,
+    pub name: IDBString,
     pub param_num: Option<u8>,
     pub value: Vec<TILMacroValue>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum TILMacroValue {
     // 0x01..=0x7F
     Char(u8),
@@ -820,7 +821,7 @@ impl TILMacro {
             (Some(_params), Some(_max)) /* if _max <= _params */ => {}
         }
         Ok(Self {
-            name,
+            name: IDBString::new(name),
             value,
             param_num,
         })
@@ -886,7 +887,7 @@ pub fn ephemeral_til_header() -> TILSectionHeader {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum CommentType {
     Unknown5(u32),
     Comment(IDBString),

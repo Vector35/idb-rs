@@ -47,7 +47,7 @@ fn dump<K: IDAKind>(
                 .unwrap();
                 let label = info.label();
                 if let Some(name) = label.unwrap() {
-                    print!("{}", String::from_utf8_lossy(&name));
+                    print!("{name}");
                 } else {
                     print!("[Label Not Found]");
                 }

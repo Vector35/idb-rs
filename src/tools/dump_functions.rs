@@ -47,19 +47,13 @@ fn dump<K: IDAKind>(
                 address,
                 comment: Comments::Comment(value),
             } => {
-                println!(
-                    "  Comment at {address:#x}: `{}`",
-                    String::from_utf8_lossy(value)
-                );
+                println!("  Comment at {address:#x}: `{value}`",);
             }
             FunctionsAndComments::Comment {
                 address,
                 comment: Comments::RepeatableComment(value),
             } => {
-                println!(
-                    "  RepeatableComment at {address:#x}: `{}`",
-                    String::from_utf8_lossy(value)
-                );
+                println!("  RepeatableComment at {address:#x}: `{value}`",);
             }
             // There is no Pre/Post comments on funcs
             FunctionsAndComments::Comment {

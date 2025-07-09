@@ -1,0 +1,16 @@
+---
+source: src/test.rs
+expression: entry_points
+---
+- name: ".init_proc"
+  address: 4096
+  forwarded: ~
+  entry_type: ~
+- name: start
+  address: 4240
+  forwarded: ~
+  entry_type: ~
+- name: ".term_proc"
+  address: 4516
+  forwarded: ~
+  entry_type: ~

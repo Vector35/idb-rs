@@ -39,38 +39,22 @@ fn dump_inner<K: IDAKind>(
         buf.clear();
         let addr = addr_info.address();
         if let Some(label) = addr_info.label()? {
-            write!(&mut buf, " Label: {:?}", String::from_utf8_lossy(&label))?;
+            write!(&mut buf, " Label: {label:?}")?;
         }
         if let Some(comment) = addr_info.comment() {
-            write!(
-                &mut buf,
-                " Comment: {:?}",
-                String::from_utf8_lossy(comment)
-            )?;
+            write!(&mut buf, " Comment: {comment:?}")?;
         }
         if let Some(comment) = addr_info.comment_repeatable() {
-            write!(
-                &mut buf,
-                " Comment Repeatable: {:?}",
-                String::from_utf8_lossy(comment)
-            )?;
+            write!(&mut buf, " Comment Repeatable: {comment:?}")?;
         }
         if let Some(comments) = addr_info.comment_pre() {
             comments.enumerate().try_for_each(|(i, comment)| {
-                write!(
-                    &mut buf,
-                    " Comment Pre + {i}: {:?}",
-                    String::from_utf8_lossy(comment)
-                )
+                write!(&mut buf, " Comment Pre + {i}: {comment:?}")
             })?;
         }
         if let Some(comments) = addr_info.comment_post() {
             comments.enumerate().try_for_each(|(i, comment)| {
-                write!(
-                    &mut buf,
-                    " Comment Post + {i}: {:?}",
-                    String::from_utf8_lossy(comment)
-                )
+                write!(&mut buf, " Comment Post + {i}: {comment:?}")
             })?;
         }
         if let Some(tinfo) = addr_info.tinfo()? {

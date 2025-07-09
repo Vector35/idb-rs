@@ -1,0 +1,229 @@
+---
+source: src/test.rs
+expression: entry_points
+---
+- name: ".init_proc"
+  address: 4096
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Function:
+        calling_convention: ~
+        ret:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Pointer:
+              closure: Default
+              modifier: ~
+              shifted: ~
+              typ:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Function:
+                          calling_convention: Voidarg
+                          ret:
+                            comment: ~
+                            is_const: false
+                            is_volatile: false
+                            type_variant:
+                              Basic:
+                                IntSized:
+                                  bytes: 8
+                                  is_signed: ~
+                          args: []
+                          retloc: ~
+                          method: ~
+                          is_noret: false
+                          is_pure: false
+                          is_high: false
+                          is_static: false
+                          is_virtual: false
+                          is_const: false
+                          is_constructor: false
+                          is_destructor: false
+        args: []
+        retloc: ~
+        method: ~
+        is_noret: false
+        is_pure: false
+        is_high: false
+        is_static: false
+        is_virtual: false
+        is_const: false
+        is_constructor: false
+        is_destructor: false
+- name: start
+  address: 4912
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Function:
+        calling_convention: Fastcall
+        ret:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Basic: Void
+        args:
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Basic:
+                  IntSized:
+                    bytes: 8
+                    is_signed: ~
+            loc: ~
+            flags: ~
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Basic:
+                  IntSized:
+                    bytes: 8
+                    is_signed: ~
+            loc: ~
+            flags: ~
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Pointer:
+                  closure: Default
+                  modifier: ~
+                  shifted: ~
+                  typ:
+                    comment: ~
+                    is_const: false
+                    is_volatile: false
+                    type_variant:
+                      Function:
+                        calling_convention: Voidarg
+                        ret:
+                          comment: ~
+                          is_const: false
+                          is_volatile: false
+                          type_variant:
+                            Basic: Void
+                        args: []
+                        retloc: ~
+                        method: ~
+                        is_noret: false
+                        is_pure: false
+                        is_high: false
+                        is_static: false
+                        is_virtual: false
+                        is_const: false
+                        is_constructor: false
+                        is_destructor: false
+            loc: ~
+            flags: ~
+        retloc: ~
+        method: ~
+        is_noret: true
+        is_pure: false
+        is_high: false
+        is_static: false
+        is_virtual: false
+        is_const: false
+        is_constructor: false
+        is_destructor: false
+- name: ".term_proc"
+  address: 7204
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Function:
+        calling_convention: ~
+        ret:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Basic: Void
+        args: []
+        retloc: ~
+        method: ~
+        is_noret: false
+        is_pure: false
+        is_high: false
+        is_static: false
+        is_virtual: false
+        is_const: false
+        is_constructor: false
+        is_destructor: false
+- name: stdout
+  address: 20608
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Pointer:
+        closure: Default
+        modifier: ~
+        shifted: ~
+        typ:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Typeref:
+              ref_type: ~
+              typeref_value:
+                UnsolvedName: FILE
+- name: stdin
+  address: 20624
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Pointer:
+        closure: Default
+        modifier: ~
+        shifted: ~
+        typ:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Typeref:
+              ref_type: ~
+              typeref_value:
+                UnsolvedName: FILE

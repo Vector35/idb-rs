@@ -2,11 +2,12 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, ensure, Result};
 use num_traits::WrappingAdd;
+use serde::Serialize;
 
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
 use crate::{IDAKind, IDAUsize};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct DirTreeRoot<T> {
     pub entries: Vec<DirTreeEntry<T>>,
 }
@@ -31,7 +32,7 @@ impl<T> DirTreeRoot<T> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum DirTreeEntry<T> {
     Leaf(T),
     Directory {

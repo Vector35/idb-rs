@@ -1,0 +1,5 @@
+---
+source: src/test.rs
+expression: database_num_opens
+---
+11

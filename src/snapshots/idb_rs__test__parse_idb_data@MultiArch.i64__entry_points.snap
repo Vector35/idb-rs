@@ -1,0 +1,105 @@
+---
+source: src/test.rs
+expression: entry_points
+---
+- name: main
+  address: 4198704
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Function:
+        calling_convention: Cdecl
+        ret:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Basic:
+              Int:
+                is_signed: ~
+        args:
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Basic:
+                  Int:
+                    is_signed: ~
+            loc: ~
+            flags: ~
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Pointer:
+                  closure: Default
+                  modifier: ~
+                  shifted: ~
+                  typ:
+                    comment: ~
+                    is_const: false
+                    is_volatile: false
+                    type_variant:
+                      Pointer:
+                        closure: Default
+                        modifier: ~
+                        shifted: ~
+                        typ:
+                          comment: ~
+                          is_const: true
+                          is_volatile: false
+                          type_variant:
+                            Basic: Char
+            loc: ~
+            flags: ~
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Pointer:
+                  closure: Default
+                  modifier: ~
+                  shifted: ~
+                  typ:
+                    comment: ~
+                    is_const: false
+                    is_volatile: false
+                    type_variant:
+                      Pointer:
+                        closure: Default
+                        modifier: ~
+                        shifted: ~
+                        typ:
+                          comment: ~
+                          is_const: true
+                          is_volatile: false
+                          type_variant:
+                            Basic: Char
+            loc: ~
+            flags: ~
+        retloc: ~
+        method: ~
+        is_noret: false
+        is_pure: false
+        is_high: false
+        is_static: false
+        is_virtual: false
+        is_const: false
+        is_constructor: false
+        is_destructor: false
+- name: start
+  address: 4199463
+  forwarded: ~
+  entry_type: ~

@@ -2,7 +2,7 @@ use crate::addr_info::AddressInfo;
 use crate::id0::ID0Section;
 use crate::id1::{ByteInfo, ID1Section};
 use crate::id2::ID2Section;
-use crate::{Address, IDAKind};
+use crate::{Address, IDAKind, IDBStr};
 
 use std::ops::Range;
 
@@ -154,7 +154,7 @@ pub fn get_cmt<'a, K: IDAKind>(
     id2: Option<&ID2Section<K>>,
     ea: ea_t<K>,
     repeatable: bool,
-) -> Option<&'a [u8]> {
+) -> Option<IDBStr<'a>> {
     let root_info_idx = id0.root_node().ok()?;
     let root_info = id0.ida_info(root_info_idx).ok()?;
     let image_base = root_info.netdelta();
