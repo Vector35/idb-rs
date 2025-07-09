@@ -1101,7 +1101,14 @@ impl<K: IDAKind> ID0Section<K> {
                 }
             })
             .collect::<Result<_, _>>()?;
-        result.sort_by_key(|entry| entry.address);
+        result.sort_unstable_by(|a: &EntryPoint<K>, b: &EntryPoint<K>| {
+            match a.address.cmp(&b.address) {
+                ord @ (std::cmp::Ordering::Less
+                | std::cmp::Ordering::Greater) => return ord,
+                std::cmp::Ordering::Equal => {}
+            }
+            a.name.as_str().cmp(b.name.as_str())
+        });
         Ok(result)
     }
 

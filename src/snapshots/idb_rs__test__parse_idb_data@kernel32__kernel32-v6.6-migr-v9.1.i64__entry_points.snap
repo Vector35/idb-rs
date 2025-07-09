@@ -2693,7 +2693,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrlenA
+- name: lstrlen
   address: 1754274203
   forwarded: ~
   entry_type:
@@ -2735,7 +2735,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrlen
+- name: lstrlenA
   address: 1754274203
   forwarded: ~
   entry_type:
@@ -20015,7 +20015,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: AppXFreeMemory
+- name: AppContainerFreeMemory
   address: 1754353702
   forwarded: ~
   entry_type:
@@ -20057,7 +20057,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: AppContainerFreeMemory
+- name: AppXFreeMemory
   address: 1754353702
   forwarded: ~
   entry_type:
@@ -31264,7 +31264,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcpynA
+- name: lstrcpyn
   address: 1754471754
   forwarded: ~
   entry_type:
@@ -31332,7 +31332,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcpyn
+- name: lstrcpynA
   address: 1754471754
   forwarded: ~
   entry_type:
@@ -31855,7 +31855,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcpyA
+- name: lstrcpy
   address: 1754473249
   forwarded: ~
   entry_type:
@@ -31911,7 +31911,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcpy
+- name: lstrcpyA
   address: 1754473249
   forwarded: ~
   entry_type:
@@ -47624,7 +47624,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: RequestWakeupLatency
+- name: CancelDeviceWakeupRequest
   address: 1754865515
   forwarded: ~
   entry_type:
@@ -47710,7 +47710,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: CancelDeviceWakeupRequest
+- name: RequestWakeupLatency
   address: 1754865515
   forwarded: ~
   entry_type:
@@ -53188,15 +53188,15 @@ expression: entry_points
   address: 1754878153
   forwarded: ~
   entry_type: ~
-- name: Wow64SetThreadContext
-  address: 1754878174
-  forwarded: ~
-  entry_type: ~
 - name: SetMessageWaitingIndicator
   address: 1754878174
   forwarded: ~
   entry_type: ~
 - name: Wow64GetThreadContext
+  address: 1754878174
+  forwarded: ~
+  entry_type: ~
+- name: Wow64SetThreadContext
   address: 1754878174
   forwarded: ~
   entry_type: ~
@@ -54931,7 +54931,7 @@ expression: entry_points
   address: 1754887839
   forwarded: ~
   entry_type: ~
-- name: GetBinaryTypeA
+- name: GetBinaryType
   address: 1754887867
   forwarded: ~
   entry_type:
@@ -54987,7 +54987,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: GetBinaryType
+- name: GetBinaryTypeA
   address: 1754887867
   forwarded: ~
   entry_type:
@@ -58874,11 +58874,11 @@ expression: entry_points
   address: 1754974166
   forwarded: ~
   entry_type: ~
-- name: LZStart
+- name: CloseProfileUserMapping
   address: 1754978543
   forwarded: ~
   entry_type: ~
-- name: CloseProfileUserMapping
+- name: LZStart
   address: 1754978543
   forwarded: ~
   entry_type: ~
@@ -58917,7 +58917,7 @@ expression: entry_points
   address: 1754982365
   forwarded: ~
   entry_type: ~
-- name: UTUnRegister
+- name: RaiseInvalid16BitExeError
   address: 1754987587
   forwarded: ~
   entry_type:
@@ -58957,7 +58957,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: RaiseInvalid16BitExeError
+- name: UTUnRegister
   address: 1754987587
   forwarded: ~
   entry_type:

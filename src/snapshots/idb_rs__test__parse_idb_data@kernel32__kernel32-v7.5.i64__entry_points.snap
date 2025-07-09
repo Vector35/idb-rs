@@ -2820,7 +2820,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrlenA
+- name: lstrlen
   address: 1754274203
   forwarded: ~
   entry_type:
@@ -2862,7 +2862,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrlen
+- name: lstrlenA
   address: 1754274203
   forwarded: ~
   entry_type:
@@ -25301,7 +25301,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: AppXFreeMemory
+- name: AppContainerFreeMemory
   address: 1754353702
   forwarded: ~
   entry_type:
@@ -25341,7 +25341,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: AppContainerFreeMemory
+- name: AppXFreeMemory
   address: 1754353702
   forwarded: ~
   entry_type:
@@ -34118,7 +34118,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: ReplaceFileW
+- name: ReplaceFile
   address: 1754455908
   forwarded: ~
   entry_type:
@@ -34226,7 +34226,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: ReplaceFile
+- name: ReplaceFileW
   address: 1754455908
   forwarded: ~
   entry_type:
@@ -35377,7 +35377,11 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: SetHandleContext
+- name: GetSystemWow64DirectoryA
+  address: 1754458219
+  forwarded: ~
+  entry_type: ~
+- name: GetSystemWow64DirectoryW
   address: 1754458219
   forwarded: ~
   entry_type: ~
@@ -35385,11 +35389,7 @@ expression: entry_points
   address: 1754458219
   forwarded: ~
   entry_type: ~
-- name: GetSystemWow64DirectoryA
-  address: 1754458219
-  forwarded: ~
-  entry_type: ~
-- name: GetSystemWow64DirectoryW
+- name: SetHandleContext
   address: 1754458219
   forwarded: ~
   entry_type: ~
@@ -43183,7 +43183,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcatA
+- name: lstrcat
   address: 1754473135
   forwarded: ~
   entry_type:
@@ -43239,7 +43239,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcat
+- name: lstrcatA
   address: 1754473135
   forwarded: ~
   entry_type:
@@ -62181,7 +62181,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: RequestWakeupLatency
+- name: CancelDeviceWakeupRequest
   address: 1754865515
   forwarded: ~
   entry_type:
@@ -62267,7 +62267,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: CancelDeviceWakeupRequest
+- name: RequestWakeupLatency
   address: 1754865515
   forwarded: ~
   entry_type:
@@ -84053,36 +84053,6 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: OpenProfileUserMapping
-  address: 1754978543
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Function:
-        calling_convention: Stdcall
-        ret:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Typeref:
-              ref_type: ~
-              typeref_value:
-                UnsolvedName: INT
-        args: []
-        retloc: ~
-        method: ~
-        is_noret: false
-        is_pure: false
-        is_high: false
-        is_static: false
-        is_virtual: false
-        is_const: false
-        is_constructor: false
-        is_destructor: false
 - name: CloseProfileUserMapping
   address: 1754978543
   forwarded: ~
@@ -84114,6 +84084,36 @@ expression: entry_points
         is_constructor: false
         is_destructor: false
 - name: LZStart
+  address: 1754978543
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Function:
+        calling_convention: Stdcall
+        ret:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Typeref:
+              ref_type: ~
+              typeref_value:
+                UnsolvedName: INT
+        args: []
+        retloc: ~
+        method: ~
+        is_noret: false
+        is_pure: false
+        is_high: false
+        is_static: false
+        is_virtual: false
+        is_const: false
+        is_constructor: false
+        is_destructor: false
+- name: OpenProfileUserMapping
   address: 1754978543
   forwarded: ~
   entry_type:

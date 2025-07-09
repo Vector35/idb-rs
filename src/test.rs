@@ -292,7 +292,7 @@ fn parse_til_inner(file: PathBuf) {
     let mut input = BufReader::new(File::open(file).unwrap());
     // TODO make a SmartReader
     let til = TILSection::read(&mut input).unwrap();
-    insta::with_settings!({snapshot_suffix => file_suffix_str}, {
+    insta::with_settings!({snapshot_suffix => file_suffix_str, sort_maps => true}, {
         insta::assert_yaml_snapshot!(til);
     });
 
@@ -308,25 +308,27 @@ fn parse_idb_inner(file: PathBuf) {
     println!("{}", file_suffix.to_str().unwrap());
     let mut input = BufReader::new(File::open(&file).unwrap());
     let format = IDBFormats::identify_file(&mut input).unwrap();
-    match format {
-        IDBFormats::Separated(sections) => {
-            parse_idb_separated(file_suffix, &mut input, &sections)
+    insta::with_settings!({sort_maps => true}, {
+        match format {
+            IDBFormats::Separated(sections) => {
+                parse_idb_separated(file_suffix, &mut input, &sections)
+            }
+            IDBFormats::InlineUncompressed(sections) => {
+                parse_idb_inlined(file_suffix, &mut input, &sections)
+            }
+            IDBFormats::InlineCompressed(compressed) => {
+                let mut decompressed = Vec::new();
+                let sections = compressed
+                    .decompress_into_memory(input, &mut decompressed)
+                    .unwrap();
+                parse_idb_inlined(
+                    file_suffix,
+                    &mut Cursor::new(decompressed),
+                    &sections,
+                );
+            }
         }
-        IDBFormats::InlineUncompressed(sections) => {
-            parse_idb_inlined(file_suffix, &mut input, &sections)
-        }
-        IDBFormats::InlineCompressed(compressed) => {
-            let mut decompressed = Vec::new();
-            let sections = compressed
-                .decompress_into_memory(input, &mut decompressed)
-                .unwrap();
-            parse_idb_inlined(
-                file_suffix,
-                &mut Cursor::new(decompressed),
-                &sections,
-            );
-        }
-    }
+    });
 }
 
 fn parse_idb_separated<I>(
