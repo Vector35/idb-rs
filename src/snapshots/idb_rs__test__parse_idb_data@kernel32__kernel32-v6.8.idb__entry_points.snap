@@ -2693,7 +2693,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrlenA
+- name: lstrlen
   address: 1754274203
   forwarded: ~
   entry_type:
@@ -2735,7 +2735,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrlen
+- name: lstrlenA
   address: 1754274203
   forwarded: ~
   entry_type:
@@ -11659,7 +11659,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: _lread
+- name: _hread
   address: 1754281725
   forwarded: ~
   entry_type:
@@ -11728,7 +11728,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: _hread
+- name: _lread
   address: 1754281725
   forwarded: ~
   entry_type:
@@ -16276,7 +16276,7 @@ expression: entry_points
   address: 1754324629
   forwarded: ~
   entry_type: ~
-- name: GetStringTypeExA
+- name: GetStringTypeA
   address: 1754324646
   forwarded: ~
   entry_type:
@@ -16370,7 +16370,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: GetStringTypeA
+- name: GetStringTypeExA
   address: 1754324646
   forwarded: ~
   entry_type:
@@ -20015,7 +20015,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: AppXFreeMemory
+- name: AppContainerFreeMemory
   address: 1754353702
   forwarded: ~
   entry_type:
@@ -20057,7 +20057,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: AppContainerFreeMemory
+- name: AppXFreeMemory
   address: 1754353702
   forwarded: ~
   entry_type:
@@ -26228,11 +26228,11 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: ReplaceFileW
+- name: ReplaceFile
   address: 1754455908
   forwarded: ~
   entry_type: ~
-- name: ReplaceFile
+- name: ReplaceFileW
   address: 1754455908
   forwarded: ~
   entry_type: ~
@@ -27129,6 +27129,10 @@ expression: entry_points
   address: 1754458202
   forwarded: ~
   entry_type: ~
+- name: GetSystemWow64DirectoryA
+  address: 1754458219
+  forwarded: ~
+  entry_type: ~
 - name: GetSystemWow64DirectoryW
   address: 1754458219
   forwarded: ~
@@ -27138,10 +27142,6 @@ expression: entry_points
   forwarded: ~
   entry_type: ~
 - name: SetHandleContext
-  address: 1754458219
-  forwarded: ~
-  entry_type: ~
-- name: GetSystemWow64DirectoryA
   address: 1754458219
   forwarded: ~
   entry_type: ~
@@ -53188,11 +53188,11 @@ expression: entry_points
   address: 1754878153
   forwarded: ~
   entry_type: ~
-- name: Wow64GetThreadContext
+- name: SetMessageWaitingIndicator
   address: 1754878174
   forwarded: ~
   entry_type: ~
-- name: SetMessageWaitingIndicator
+- name: Wow64GetThreadContext
   address: 1754878174
   forwarded: ~
   entry_type: ~
@@ -54931,7 +54931,7 @@ expression: entry_points
   address: 1754887839
   forwarded: ~
   entry_type: ~
-- name: GetBinaryTypeA
+- name: GetBinaryType
   address: 1754887867
   forwarded: ~
   entry_type:
@@ -54987,7 +54987,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: GetBinaryType
+- name: GetBinaryTypeA
   address: 1754887867
   forwarded: ~
   entry_type:
@@ -58874,15 +58874,15 @@ expression: entry_points
   address: 1754974166
   forwarded: ~
   entry_type: ~
+- name: CloseProfileUserMapping
+  address: 1754978543
+  forwarded: ~
+  entry_type: ~
 - name: LZStart
   address: 1754978543
   forwarded: ~
   entry_type: ~
 - name: OpenProfileUserMapping
-  address: 1754978543
-  forwarded: ~
-  entry_type: ~
-- name: CloseProfileUserMapping
   address: 1754978543
   forwarded: ~
   entry_type: ~
@@ -58917,7 +58917,7 @@ expression: entry_points
   address: 1754982365
   forwarded: ~
   entry_type: ~
-- name: UTUnRegister
+- name: RaiseInvalid16BitExeError
   address: 1754987587
   forwarded: ~
   entry_type:
@@ -58957,7 +58957,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: RaiseInvalid16BitExeError
+- name: UTUnRegister
   address: 1754987587
   forwarded: ~
   entry_type:

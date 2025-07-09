@@ -2693,7 +2693,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrlenA
+- name: lstrlen
   address: 1754274203
   forwarded: ~
   entry_type:
@@ -2735,7 +2735,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrlen
+- name: lstrlenA
   address: 1754274203
   forwarded: ~
   entry_type:
@@ -11659,7 +11659,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: _lread
+- name: _hread
   address: 1754281725
   forwarded: ~
   entry_type:
@@ -11728,7 +11728,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: _hread
+- name: _lread
   address: 1754281725
   forwarded: ~
   entry_type:
@@ -26228,11 +26228,11 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: ReplaceFileW
+- name: ReplaceFile
   address: 1754455908
   forwarded: ~
   entry_type: ~
-- name: ReplaceFile
+- name: ReplaceFileW
   address: 1754455908
   forwarded: ~
   entry_type: ~
@@ -27129,7 +27129,7 @@ expression: entry_points
   address: 1754458202
   forwarded: ~
   entry_type: ~
-- name: SetHandleContext
+- name: GetSystemWow64DirectoryA
   address: 1754458219
   forwarded: ~
   entry_type: ~
@@ -27141,7 +27141,7 @@ expression: entry_points
   address: 1754458219
   forwarded: ~
   entry_type: ~
-- name: GetSystemWow64DirectoryA
+- name: SetHandleContext
   address: 1754458219
   forwarded: ~
   entry_type: ~
@@ -31855,7 +31855,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcpyA
+- name: lstrcpy
   address: 1754473249
   forwarded: ~
   entry_type:
@@ -31911,7 +31911,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcpy
+- name: lstrcpyA
   address: 1754473249
   forwarded: ~
   entry_type:
@@ -53188,15 +53188,15 @@ expression: entry_points
   address: 1754878153
   forwarded: ~
   entry_type: ~
+- name: SetMessageWaitingIndicator
+  address: 1754878174
+  forwarded: ~
+  entry_type: ~
 - name: Wow64GetThreadContext
   address: 1754878174
   forwarded: ~
   entry_type: ~
 - name: Wow64SetThreadContext
-  address: 1754878174
-  forwarded: ~
-  entry_type: ~
-- name: SetMessageWaitingIndicator
   address: 1754878174
   forwarded: ~
   entry_type: ~
@@ -56569,11 +56569,11 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: UnregisterConsoleIME
+- name: CreateSocketHandle
   address: 1754901496
   forwarded: ~
   entry_type: ~
-- name: CreateSocketHandle
+- name: UnregisterConsoleIME
   address: 1754901496
   forwarded: ~
   entry_type: ~
@@ -58874,7 +58874,7 @@ expression: entry_points
   address: 1754974166
   forwarded: ~
   entry_type: ~
-- name: OpenProfileUserMapping
+- name: CloseProfileUserMapping
   address: 1754978543
   forwarded: ~
   entry_type: ~
@@ -58882,7 +58882,7 @@ expression: entry_points
   address: 1754978543
   forwarded: ~
   entry_type: ~
-- name: CloseProfileUserMapping
+- name: OpenProfileUserMapping
   address: 1754978543
   forwarded: ~
   entry_type: ~

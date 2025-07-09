@@ -15057,7 +15057,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: _lread
+- name: _hread
   address: 1754281725
   forwarded: ~
   entry_type:
@@ -15126,7 +15126,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: _hread
+- name: _lread
   address: 1754281725
   forwarded: ~
   entry_type:
@@ -25301,7 +25301,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: AppXFreeMemory
+- name: AppContainerFreeMemory
   address: 1754353702
   forwarded: ~
   entry_type:
@@ -25341,7 +25341,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: AppContainerFreeMemory
+- name: AppXFreeMemory
   address: 1754353702
   forwarded: ~
   entry_type:
@@ -34118,7 +34118,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: ReplaceFileW
+- name: ReplaceFile
   address: 1754455908
   forwarded: ~
   entry_type:
@@ -34226,7 +34226,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: ReplaceFile
+- name: ReplaceFileW
   address: 1754455908
   forwarded: ~
   entry_type:
@@ -35377,10 +35377,6 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: SetHandleContext
-  address: 1754458219
-  forwarded: ~
-  entry_type: ~
 - name: GetSystemWow64DirectoryA
   address: 1754458219
   forwarded: ~
@@ -35390,6 +35386,10 @@ expression: entry_points
   forwarded: ~
   entry_type: ~
 - name: RegisterConsoleIME
+  address: 1754458219
+  forwarded: ~
+  entry_type: ~
+- name: SetHandleContext
   address: 1754458219
   forwarded: ~
   entry_type: ~
@@ -37048,7 +37048,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcmpA
+- name: lstrcmp
   address: 1754460139
   forwarded: ~
   entry_type:
@@ -37103,7 +37103,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcmp
+- name: lstrcmpA
   address: 1754460139
   forwarded: ~
   entry_type:
@@ -42164,7 +42164,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcpynA
+- name: lstrcpyn
   address: 1754471754
   forwarded: ~
   entry_type:
@@ -42232,7 +42232,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcpyn
+- name: lstrcpynA
   address: 1754471754
   forwarded: ~
   entry_type:
@@ -58964,7 +58964,7 @@ expression: entry_points
   address: 1754858860
   forwarded: ~
   entry_type: ~
-- name: _lwrite
+- name: _hwrite
   address: 1754858994
   forwarded: ~
   entry_type:
@@ -59033,7 +59033,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: _hwrite
+- name: _lwrite
   address: 1754858994
   forwarded: ~
   entry_type:
@@ -62180,7 +62180,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: RequestDeviceWakeup
+- name: CancelDeviceWakeupRequest
   address: 1754865515
   forwarded: ~
   entry_type:
@@ -62223,7 +62223,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: CancelDeviceWakeupRequest
+- name: RequestDeviceWakeup
   address: 1754865515
   forwarded: ~
   entry_type:
@@ -75440,7 +75440,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: Wow64GetThreadContext
+- name: SetMessageWaitingIndicator
   address: 1754878174
   forwarded: ~
   entry_type:
@@ -75505,7 +75505,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: SetMessageWaitingIndicator
+- name: Wow64GetThreadContext
   address: 1754878174
   forwarded: ~
   entry_type:
@@ -84090,6 +84090,36 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
+- name: CloseProfileUserMapping
+  address: 1754978543
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Function:
+        calling_convention: Stdcall
+        ret:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Typeref:
+              ref_type: ~
+              typeref_value:
+                UnsolvedName: INT
+        args: []
+        retloc: ~
+        method: ~
+        is_noret: false
+        is_pure: false
+        is_high: false
+        is_static: false
+        is_virtual: false
+        is_const: false
+        is_constructor: false
+        is_destructor: false
 - name: LZStart
   address: 1754978543
   forwarded: ~
@@ -84121,36 +84151,6 @@ expression: entry_points
         is_constructor: false
         is_destructor: false
 - name: OpenProfileUserMapping
-  address: 1754978543
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Function:
-        calling_convention: Stdcall
-        ret:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Typeref:
-              ref_type: ~
-              typeref_value:
-                UnsolvedName: INT
-        args: []
-        retloc: ~
-        method: ~
-        is_noret: false
-        is_pure: false
-        is_high: false
-        is_static: false
-        is_virtual: false
-        is_const: false
-        is_constructor: false
-        is_destructor: false
-- name: CloseProfileUserMapping
   address: 1754978543
   forwarded: ~
   entry_type:
