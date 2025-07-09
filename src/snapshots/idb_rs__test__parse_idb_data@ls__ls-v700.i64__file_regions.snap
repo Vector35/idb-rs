@@ -1,0 +1,10 @@
+---
+source: src/test.rs
+expression: file_regions
+---
+- start: 4194304
+  end: 4300100
+  eva: 0
+- start: 6397424
+  end: 6399476
+  eva: 105968

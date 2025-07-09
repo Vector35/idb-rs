@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 
-use crate::ida_reader::IdbRead;
 use crate::IDAKind;
+use crate::{ida_reader::IdbRead, IDBStr};
 
 use anyhow::{anyhow, ensure};
 
@@ -110,7 +110,7 @@ pub(crate) fn parse_maybe_cstr(data: &[u8]) -> Option<&[u8]> {
 }
 
 pub(crate) enum ID0CStr<'a, K: IDAKind> {
-    CStr(&'a [u8]),
+    CStr(IDBStr<'a>),
     Ref(K::Usize),
 }
 
@@ -123,7 +123,7 @@ impl<'a, K: IDAKind> ID0CStr<'a, K> {
             [b'\x00', rest @ ..] => {
                 K::usize_try_from_be_bytes(rest).map(ID0CStr::Ref)
             }
-            _ => parse_maybe_cstr(data).map(ID0CStr::CStr),
+            _ => parse_maybe_cstr(data).map(IDBStr::new).map(ID0CStr::CStr),
         }
     }
 }

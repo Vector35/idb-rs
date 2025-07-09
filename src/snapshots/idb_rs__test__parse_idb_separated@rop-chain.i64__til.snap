@@ -1,0 +1,263 @@
+---
+source: src/test.rs
+expression: til
+---
+header:
+  format: 18
+  description: Local type definitions
+  flags: 18
+  dependencies: []
+  compiler_id: Unknown
+  compiler_guessed: false
+  cc: ~
+  cn: N32F48
+  cm: NN
+  def_align: ~
+  type_ordinal_alias: ~
+  size_int: 4
+  size_bool: 1
+  size_enum: 4
+  extended_sizeof_info: ~
+  size_long_double: ~
+  is_universal: false
+symbols: []
+types:
+  - name: va_list
+    ordinal: 1
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Pointer:
+          closure: Default
+          modifier: ~
+          shifted: ~
+          typ:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Pointer:
+                closure: Default
+                modifier: ~
+                shifted: ~
+                typ:
+                  comment: ~
+                  is_const: false
+                  is_volatile: false
+                  type_variant:
+                    Basic: Void
+    sclass: ~
+  - name: ropwork_t
+    ordinal: 2
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: gap0
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: 32
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic:
+                          Unknown:
+                            bytes: 1
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: decoded_char
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 1
+                      is_signed: false
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: gap4
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: 3
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic: Char
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: index
+              comment:
+                Comment: data index
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    Int:
+                      is_signed: ~
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: gap1
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: 24
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic:
+                          Unknown:
+                            bytes: 1
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: buffer
+              comment:
+                Comment: data to scramble
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic:
+                          Unknown:
+                            bytes: 1
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: gap2
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: 8
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic:
+                          Unknown:
+                            bytes: 1
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: rndbuf
+              comment:
+                Comment: random buffer to consult
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic:
+                          Unknown:
+                            bytes: 1
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: 8
+    sclass: ~
+macros: []

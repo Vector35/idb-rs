@@ -1,0 +1,97 @@
+---
+source: src/test.rs
+expression: segments
+---
+- address:
+    start: 4399680
+    end: 4399732
+  name: 1
+  class_id: 4
+  orgbase: 0
+  flags: 16
+  align: RelPara
+  comb: Pub
+  perm: 7
+  bitness: S64Bits
+  seg_type: Data
+  selector: 1
+  defsr:
+    - 1
+    - 1
+    - 1
+    - 5
+    - 0
+    - 0
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+  color: 0
+- address:
+    start: 4662656
+    end: 4663680
+  name: 5
+  class_id: 4
+  orgbase: 0
+  flags: 16
+  align: RelPara
+  comb: Pub
+  perm: 4
+  bitness: S64Bits
+  seg_type: Data
+  selector: 3
+  defsr:
+    - 1
+    - 1
+    - 1
+    - 5
+    - 0
+    - 0
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+  color: 0
+- address:
+    start: 5150064
+    end: 5150072
+  name: 6
+  class_id: 4
+  orgbase: 0
+  flags: 16
+  align: RelPara
+  comb: Pub
+  perm: 6
+  bitness: S64Bits
+  seg_type: Data
+  selector: 4
+  defsr:
+    - 1
+    - 1
+    - 1
+    - 5
+    - 0
+    - 0
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+    - 1
+  color: 0

@@ -1,0 +1,7 @@
+---
+source: src/test.rs
+expression: file_regions
+---
+- start: 0
+  end: 1510304
+  eva: 0

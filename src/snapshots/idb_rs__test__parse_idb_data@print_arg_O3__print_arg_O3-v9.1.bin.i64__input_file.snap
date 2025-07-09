@@ -1,0 +1,5 @@
+---
+source: src/test.rs
+expression: input_file
+---
+"/home/rbran/src/idb-rs/resources/bins/print_arg_O3.bin\u0000"

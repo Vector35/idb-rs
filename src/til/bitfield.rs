@@ -1,12 +1,13 @@
 use std::num::NonZeroU8;
 
 use anyhow::Result;
+use serde::Serialize;
 
 use crate::ida_reader::IdbBufRead;
 
 use super::TypeAttribute;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct Bitfield {
     pub unsigned: bool,
     // TODO what a 0 width bitfield means? The start of a new byte-field?

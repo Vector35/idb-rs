@@ -1,0 +1,5 @@
+---
+source: src/test.rs
+expression: input_file
+---
+"C:\\allthingsida\\malware-re\\virus_lighty_compressor.pe\u0000"

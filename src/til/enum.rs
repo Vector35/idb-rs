@@ -4,11 +4,12 @@ use crate::ida_reader::IdbBufRead;
 use crate::til::{flag, TypeAttribute, TypeRaw, TypeVariantRaw};
 use crate::IDBString;
 use anyhow::{anyhow, ensure, Result};
+use serde::Serialize;
 
 use super::section::TILSectionHeader;
 use super::CommentType;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Enum {
     pub is_signed: bool,
     pub is_unsigned: bool,
@@ -76,19 +77,19 @@ impl Enum {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum EnumMembers {
     Regular(Vec<EnumMember>),
     Groups(Vec<EnumGroup>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct EnumGroup {
     pub field: EnumMember,
     pub sub_fields: Vec<EnumMember>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct EnumMember {
     pub name: Option<IDBString>,
     pub comment: Option<CommentType>,
@@ -299,7 +300,7 @@ impl EnumRaw {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub enum EnumFormat {
     Char,
     Hex,

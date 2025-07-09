@@ -1,0 +1,5 @@
+---
+source: src/test.rs
+expression: input_file
+---
+"Z:\\home\\user\\Documents\\code\\python-idb\\tests\\data\\small\\small.bin\u0000"

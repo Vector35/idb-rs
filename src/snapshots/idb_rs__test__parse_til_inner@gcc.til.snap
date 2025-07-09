@@ -1,0 +1,2610 @@
+---
+source: src/test.rs
+expression: til
+---
+header:
+  format: 18
+  description: Local type definitions
+  flags: 18
+  dependencies:
+    - macosx64_sdk14
+    - ntddk64_win10
+  compiler_id: Unknown
+  compiler_guessed: false
+  cc: ~
+  cn: N32F48
+  cm: NN
+  def_align: ~
+  type_ordinal_alias: ~
+  size_int: 4
+  size_bool: 1
+  size_enum: 4
+  extended_sizeof_info: ~
+  size_long_double: ~
+  is_universal: false
+symbols: []
+types:
+  - name: uint32_t
+    ordinal: 2
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          Int:
+            is_signed: false
+    sclass: ~
+  - name: integer_t
+    ordinal: 4
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          Int:
+            is_signed: ~
+    sclass: ~
+  - name: cpu_type_t
+    ordinal: 3
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 1
+    sclass: ~
+  - name: cpu_subtype_t
+    ordinal: 5
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 1
+    sclass: ~
+  - name: mach_header_64
+    ordinal: 1
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: magic
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cputype
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 2
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cpusubtype
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: filetype
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ncmds
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: sizeofcmds
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: flags
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: reserved
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: uint64_t
+    ordinal: 7
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          IntSized:
+            bytes: 8
+            is_signed: false
+    sclass: ~
+  - name: vm_prot_t
+    ordinal: 8
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          Int:
+            is_signed: ~
+    sclass: ~
+  - name: segment_command_64
+    ordinal: 6
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: cmd
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cmdsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: segname
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: 16
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic: Char
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: vmaddr
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 5
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: vmsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 5
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: fileoff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 5
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: filesize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 5
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: maxprot
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 6
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: initprot
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 6
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: nsects
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: flags
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: 8
+    sclass: ~
+  - name: section_64
+    ordinal: 9
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: sectname
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: 16
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic: Char
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: segname
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: 16
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic: Char
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: addr
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 5
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: size
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 5
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: offset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: align
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: reloff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: nreloc
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: flags
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: reserved1
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: reserved2
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: reserved3
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: 8
+    sclass: ~
+  - name: dyld_info_command
+    ordinal: 10
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: cmd
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cmdsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: rebase_off
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: rebase_size
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: bind_off
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: bind_size
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: weak_bind_off
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: weak_bind_size
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: lazy_bind_off
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: lazy_bind_size
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: export_off
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: export_size
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: symtab_command
+    ordinal: 11
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: cmd
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cmdsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: symoff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: nsyms
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: stroff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: strsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: dysymtab_command
+    ordinal: 12
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: cmd
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cmdsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ilocalsym
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: nlocalsym
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: iextdefsym
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: nextdefsym
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: iundefsym
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: nundefsym
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: tocoff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ntoc
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: modtaboff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: nmodtab
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: extrefsymoff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: nextrefsyms
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: indirectsymoff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: nindirectsyms
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: extreloff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: nextrel
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: locreloff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: nlocrel
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: lc_str
+    ordinal: 14
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Union:
+          effective_alignment: ~
+          alignment: ~
+          members:
+            - name: offset
+              comment: ~
+              ty:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+          is_unaligned: false
+          is_unknown_8: false
+    sclass: ~
+  - name: dylinker_command
+    ordinal: 13
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: cmd
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cmdsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: name
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 12
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: uint8_t
+    ordinal: 16
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          IntSized:
+            bytes: 1
+            is_signed: false
+    sclass: ~
+  - name: uuid_command
+    ordinal: 15
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: cmd
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cmdsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: uuid
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: 16
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            Ref: 14
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: build_version_command
+    ordinal: 17
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: cmd
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cmdsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: platform
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: minos
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: sdk
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ntools
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: source_version_command
+    ordinal: 18
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: cmd
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cmdsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: version
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 5
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: entry_point_command
+    ordinal: 19
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: cmd
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cmdsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: entryoff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 5
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: stacksize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 5
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: dylib
+    ordinal: 21
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: name
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 12
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: timestamp
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: current_version
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: compatibility_version
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: dylib_command
+    ordinal: 20
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: cmd
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cmdsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: dylib
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 19
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: linkedit_data_command
+    ordinal: 22
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: cmd
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: cmdsize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: dataoff
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: datasize
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: String
+    ordinal: 23
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: content
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic: Char
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: len
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: int32_t
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: Data
+    ordinal: 24
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: strings
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Pointer:
+                          closure: Default
+                          modifier: ~
+                          shifted: ~
+                          typ:
+                            comment: ~
+                            is_const: false
+                            is_volatile: false
+                            type_variant:
+                              Typeref:
+                                ref_type: ~
+                                typeref_value:
+                                  Ref: 22
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: len
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: int32_t
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: Structure
+    ordinal: 25
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: data
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            Ref: 23
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: prev
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            Ref: 24
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: next
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            Ref: 24
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: AUNICODE_STRING
+    ordinal: 27
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: Struct
+          typeref_value:
+            Ref: 27
+    sclass: ~
+  - name: PPUNICODE_STRING
+    ordinal: 28
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Pointer:
+          closure: Default
+          modifier: ~
+          shifted: ~
+          typ:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Typeref:
+                ref_type: Struct
+                typeref_value:
+                  Ref: 27
+    sclass: ~
+  - name: __UNICODE_STRING
+    ordinal: 26
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: Length
+              comment:
+                Unknown5: 3
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: USHORT
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: MaximumLength
+              comment:
+                Unknown5: 4
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: USHORT
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Buffer
+              comment:
+                Unknown5: 5
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: PWSTR
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: X
+    ordinal: 29
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: x
+              comment:
+                Unknown5: 3
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: IUnknown
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: gcc_va_list
+    ordinal: 30
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Array:
+          alignment: ~
+          base: 0
+          nelem: 1
+          elem_type:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Typeref:
+                ref_type: ~
+                typeref_value:
+                  UnsolvedName: __va_list_tag
+    sclass: ~
+macros: []

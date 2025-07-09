@@ -14,7 +14,7 @@ use super::function::{CCModel, CCPtrSize, CallingConvention};
 // TODO migrate this to flags
 pub const TIL_SECTION_MAGIC: &[u8; 6] = b"IDATIL";
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TILSection {
     pub header: TILSectionHeader,
     pub symbols: Vec<TILTypeInfo>,
@@ -40,7 +40,7 @@ pub(crate) struct TILSectionRaw {
     pub macros: Option<Vec<TILMacro>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TILSectionHeader {
     pub format: u32,
     /// short file name (without path and extension)
@@ -72,7 +72,7 @@ pub struct TILSectionHeader {
     pub is_universal: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TILSectionExtendedSizeofInfo {
     pub size_short: NonZeroU8,
     pub size_long: NonZeroU8,

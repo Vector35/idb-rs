@@ -1,13 +1,15 @@
 use std::collections::HashMap;
 use std::num::{NonZeroU16, NonZeroU8};
 
+use serde::Serialize;
+
 use crate::ida_reader::IdbBufRead;
 use crate::til::{Type, TypeAttribute, TypeRaw};
 use crate::IDBString;
 
 use super::section::TILSectionHeader;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Array {
     pub alignment: Option<NonZeroU8>,
     pub base: u8,

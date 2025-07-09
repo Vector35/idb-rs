@@ -1,0 +1,1221 @@
+---
+source: src/test.rs
+expression: til
+---
+header:
+  format: 18
+  description: Local type definitions
+  flags: 18
+  dependencies:
+    - gnulnx_x64
+  compiler_id: Unknown
+  compiler_guessed: false
+  cc: ~
+  cn: N32F48
+  cm: NN
+  def_align: ~
+  type_ordinal_alias: ~
+  size_int: 4
+  size_bool: 1
+  size_enum: 4
+  extended_sizeof_info: ~
+  size_long_double: ~
+  is_universal: false
+symbols:
+  - name: SIGHUP
+    ordinal: 1
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGINT
+    ordinal: 2
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGQUIT
+    ordinal: 3
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGILL
+    ordinal: 4
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGTRAP
+    ordinal: 5
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGABRT
+    ordinal: 6
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGIOT
+    ordinal: 6
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGBUS
+    ordinal: 7
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGFPE
+    ordinal: 8
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGKILL
+    ordinal: 9
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGUSR1
+    ordinal: 10
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGSEGV
+    ordinal: 11
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGUSR2
+    ordinal: 12
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGPIPE
+    ordinal: 13
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGALRM
+    ordinal: 14
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGTERM
+    ordinal: 15
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGSTKFLT
+    ordinal: 16
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGCHLD
+    ordinal: 17
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGCONT
+    ordinal: 18
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGSTOP
+    ordinal: 19
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGTSTP
+    ordinal: 20
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGTTIN
+    ordinal: 21
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGTTOU
+    ordinal: 22
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGURG
+    ordinal: 23
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGXCPU
+    ordinal: 24
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGXFSZ
+    ordinal: 25
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGVTALRM
+    ordinal: 26
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGPROF
+    ordinal: 27
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGWINCH
+    ordinal: 28
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGIO
+    ordinal: 29
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGPWR
+    ordinal: 30
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGSYS
+    ordinal: 31
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGUNUSED
+    ordinal: 31
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: _NSIG
+    ordinal: 65
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGCLD
+    ordinal: 17
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+  - name: SIGPOLL
+    ordinal: 29
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 7
+    sclass: ~
+types:
+  - name: Elf64_Sym
+    ordinal: 1
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: st_name
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 4
+                      is_signed: false
+              att:
+                Var9:
+                  val1: 9
+                  att0: 1496
+                  att1: 0
+                  att2: 18446744073709551615
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: st_info
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 1
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: st_other
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 1
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: st_shndx
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 2
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: st_value
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 8
+                      is_signed: false
+              att:
+                Var9:
+                  val1: 9
+                  att0: 0
+                  att1: 0
+                  att2: 18446744073709551615
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: st_size
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 8
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: true
+          alignment: ~
+    sclass: ~
+  - name: Elf64_Rela
+    ordinal: 2
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: r_offset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 8
+                      is_signed: false
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: r_info
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 8
+                      is_signed: false
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: r_addend
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 8
+                      is_signed: ~
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: Elf64_Dyn
+    ordinal: 3
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: d_tag
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 8
+                      is_signed: false
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: d_un
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 8
+                      is_signed: false
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: Elf64_Verneed
+    ordinal: 4
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: vn_version
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 2
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: vn_cnt
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 2
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: vn_file
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 4
+                      is_signed: false
+              att:
+                Var9:
+                  val1: 9
+                  att0: 1496
+                  att1: 0
+                  att2: 18446744073709551615
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: vn_aux
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 4
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: vn_next
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 4
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: true
+          alignment: ~
+    sclass: ~
+  - name: Elf64_Vernaux
+    ordinal: 5
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: vna_hash
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 4
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: vna_flags
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 2
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: vna_other
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 2
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: vna_name
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 4
+                      is_signed: false
+              att:
+                Var9:
+                  val1: 9
+                  att0: 1496
+                  att1: 0
+                  att2: 18446744073709551615
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: vna_next
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    IntSized:
+                      bytes: 4
+                      is_signed: false
+              att:
+                Var0to7:
+                  Var1: 0
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: true
+          alignment: ~
+    sclass: ~
+  - name: __va_list_tag
+    ordinal: 6
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: gp_offset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    Int:
+                      is_signed: false
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: fp_offset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    Int:
+                      is_signed: false
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: overflow_arg_area
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic: Void
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: reg_save_area
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic: Void
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: gcc_va_list
+    ordinal: 7
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Array:
+          alignment: ~
+          base: 0
+          nelem: 1
+          elem_type:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Typeref:
+                ref_type: ~
+                typeref_value:
+                  Ref: 5
+    sclass: ~
+  - name: MACRO_SIGNAL
+    ordinal: 8
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Enum:
+          is_signed: false
+          is_unsigned: false
+          is_64: false
+          output_format: SignedDecimal
+          members:
+            Regular:
+              - name: SIGHUP
+                comment: ~
+                value: 1
+              - name: SIGINT
+                comment: ~
+                value: 2
+              - name: SIGQUIT
+                comment: ~
+                value: 3
+              - name: SIGILL
+                comment: ~
+                value: 4
+              - name: SIGTRAP
+                comment: ~
+                value: 5
+              - name: SIGABRT
+                comment: ~
+                value: 6
+              - name: SIGIOT
+                comment: ~
+                value: 6
+              - name: SIGBUS
+                comment: ~
+                value: 7
+              - name: SIGFPE
+                comment: ~
+                value: 8
+              - name: SIGKILL
+                comment: ~
+                value: 9
+              - name: SIGUSR1
+                comment: ~
+                value: 10
+              - name: SIGSEGV
+                comment: ~
+                value: 11
+              - name: SIGUSR2
+                comment: ~
+                value: 12
+              - name: SIGPIPE
+                comment: ~
+                value: 13
+              - name: SIGALRM
+                comment: ~
+                value: 14
+              - name: SIGTERM
+                comment: ~
+                value: 15
+              - name: SIGSTKFLT
+                comment: ~
+                value: 16
+              - name: SIGCHLD
+                comment: ~
+                value: 17
+              - name: SIGCONT
+                comment: ~
+                value: 18
+              - name: SIGSTOP
+                comment: ~
+                value: 19
+              - name: SIGTSTP
+                comment: ~
+                value: 20
+              - name: SIGTTIN
+                comment: ~
+                value: 21
+              - name: SIGTTOU
+                comment: ~
+                value: 22
+              - name: SIGURG
+                comment: ~
+                value: 23
+              - name: SIGXCPU
+                comment: ~
+                value: 24
+              - name: SIGXFSZ
+                comment: ~
+                value: 25
+              - name: SIGVTALRM
+                comment: ~
+                value: 26
+              - name: SIGPROF
+                comment: ~
+                value: 27
+              - name: SIGWINCH
+                comment: ~
+                value: 28
+              - name: SIGIO
+                comment: ~
+                value: 29
+              - name: SIGPWR
+                comment: ~
+                value: 30
+              - name: SIGSYS
+                comment: ~
+                value: 31
+              - name: SIGUNUSED
+                comment: ~
+                value: 31
+              - name: _NSIG
+                comment: ~
+                value: 65
+              - name: SIGCLD
+                comment: ~
+                value: 17
+              - name: SIGPOLL
+                comment: ~
+                value: 29
+          storage_size: ~
+    sclass: ~
+macros: []

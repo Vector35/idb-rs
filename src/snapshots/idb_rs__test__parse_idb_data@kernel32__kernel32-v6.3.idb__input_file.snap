@@ -1,0 +1,5 @@
+---
+source: src/test.rs
+expression: input_file
+---
+"/home/xvilka/IDA/kernel32.dll\u0000"

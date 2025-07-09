@@ -6,11 +6,12 @@ use crate::til::{Type, TypeRaw};
 use crate::IDBString;
 use anyhow::{anyhow, ensure, Context, Result};
 use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
+use serde::Serialize;
 
 use super::section::TILSectionHeader;
 use super::{CommentType, TypeAttribute, TypeVariantRaw};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Struct {
     pub effective_alignment: Option<NonZeroU8>,
     pub members: Vec<StructMember>,
@@ -214,7 +215,7 @@ impl StructRaw {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct StructMember {
     pub name: Option<IDBString>,
     pub comment: Option<CommentType>,
@@ -440,7 +441,7 @@ impl StructMemberRaw {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub enum StructMemberAtt {
     Var0to7(StructMemberAttBasic),
     Var9 {
@@ -456,7 +457,7 @@ pub enum StructMemberAtt {
 }
 
 // InnerRef InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x720880
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub enum StructMemberAttBasic {
     Var1(u64),
     Var2 {
