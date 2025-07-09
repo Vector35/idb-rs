@@ -1,0 +1,12 @@
+---
+source: src/test.rs
+expression: entry_points
+---
+- name: start
+  address: 4198402
+  forwarded: ~
+  entry_type: ~
+- name: oep
+  address: 4202624
+  forwarded: ~
+  entry_type: ~

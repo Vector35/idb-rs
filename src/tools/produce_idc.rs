@@ -15,7 +15,7 @@ use idb_rs::id1::{
 use idb_rs::id2::ID2Section;
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
-use idb_rs::{Address, IDAKind, IDAUsize, IDAVariants, IDBFormat};
+use idb_rs::{Address, IDAKind, IDAUsize, IDAVariants, IDBFormat, IDBStr};
 
 use crate::{Args, FileType, ProduceIdcArgs};
 
@@ -373,10 +373,8 @@ fn produce_segments<K: IDAKind>(
         )?;
 
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7666
-        let seg_name = id0
-            .segment_name(seg.name)
-            .map(|x| String::from_utf8_lossy(x))
-            .ok();
+        let seg_name =
+            id0.segment_name(seg.name).map(IDBStr::as_utf8_lossy).ok();
         writeln!(
             fmt,
             "  set_segm_name({startea:#X}, {:?});",
@@ -388,7 +386,7 @@ fn produce_segments<K: IDAKind>(
 
         let seg_class_name = id0
             .segment_name(seg.class_id)
-            .map(|x| String::from_utf8_lossy(x))
+            .map(IDBStr::as_utf8_lossy)
             .ok();
         let seg_class_name = seg_class_name.or(seg_name).unwrap_or({
             Cow::Borrowed(match seg.seg_type {
@@ -579,19 +577,11 @@ fn produce_bytes_info<K: IDAKind>(
             // TODO byte_info.has_comment() ignored?
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1822
             if let Some(cmt) = addr_info.comment() {
-                writeln!(
-                    fmt,
-                    "  set_cmt({address_raw:#X}, {:?}, 0);",
-                    String::from_utf8_lossy(cmt)
-                )?;
+                writeln!(fmt, "  set_cmt({address_raw:#X}, {cmt:?}, 0);")?;
             }
 
             if let Some(cmt) = addr_info.comment_repeatable() {
-                writeln!(
-                    fmt,
-                    "  set_cmt({address_raw:#X}, {:?}, 1);",
-                    String::from_utf8_lossy(cmt)
-                )?;
+                writeln!(fmt, "  set_cmt({address_raw:#X}, {cmt:?}, 1);")?;
             }
 
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1ddd
@@ -600,8 +590,7 @@ fn produce_bytes_info<K: IDAKind>(
             {
                 writeln!(
                     fmt,
-                    "  update_extra_cmt({address_raw:#X}, E_PREV + {i:>3}, {:?});",
-                    String::from_utf8_lossy(cmt)
+                    "  update_extra_cmt({address_raw:#X}, E_PREV + {i:>3}, {cmt:?});"
                 )?;
             }
 
@@ -610,8 +599,7 @@ fn produce_bytes_info<K: IDAKind>(
             {
                 writeln!(
                     fmt,
-                    "  update_extra_cmt({address_raw:#X}, E_NEXT + {i:>3}, {:?});",
-                    String::from_utf8_lossy(cmt)
+                    "  update_extra_cmt({address_raw:#X}, E_NEXT + {i:>3}, {cmt:?});"
                 )?;
             }
         }
@@ -877,11 +865,7 @@ fn produce_bytes_info<K: IDAKind>(
 
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2160
         if let Some(name) = address_info.label()? {
-            writeln!(
-                fmt,
-                "  set_name({address_raw:#X}, {:?});",
-                String::from_utf8_lossy(&name)
-            )?;
+            writeln!(fmt, "  set_name({address_raw:#X}, {name:?});")?;
         }
     }
 

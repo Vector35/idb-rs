@@ -1,0 +1,2103 @@
+---
+source: src/test.rs
+expression: til
+---
+header:
+  format: 18
+  description: Local type definitions
+  flags: 18
+  dependencies:
+    - mssdk_win7
+  compiler_id: Unknown
+  compiler_guessed: false
+  cc: ~
+  cn: N32F48
+  cm: NN
+  def_align: ~
+  type_ordinal_alias: ~
+  size_int: 4
+  size_bool: 1
+  size_enum: 4
+  extended_sizeof_info: ~
+  size_long_double: ~
+  is_universal: false
+symbols:
+  - name: _crt_unknown_app
+    ordinal: 0
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 34
+    sclass: ~
+  - name: _crt_console_app
+    ordinal: 1
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 34
+    sclass: ~
+  - name: _crt_gui_app
+    ordinal: 2
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 34
+    sclass: ~
+  - name: _crt_argv_no_arguments
+    ordinal: 0
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 35
+    sclass: ~
+  - name: _crt_argv_unexpanded_arguments
+    ordinal: 1
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 35
+    sclass: ~
+  - name: _crt_argv_expanded_arguments
+    ordinal: 2
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: ~
+          typeref_value:
+            Ref: 35
+    sclass: ~
+types:
+  - name: PSCOPETABLE_ENTRY
+    ordinal: 1
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Pointer:
+          closure: Default
+          modifier: ~
+          shifted: ~
+          typ:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Typeref:
+                ref_type: Struct
+                typeref_value:
+                  UnsolvedName: _SCOPETABLE_ENTRY
+    sclass: ~
+  - name: _EH3_EXCEPTION_REGISTRATION
+    ordinal: 2
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: Next
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: Struct
+                          typeref_value:
+                            Ref: 1
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ExceptionHandler
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 2
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ScopeTable
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: TryLevel
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: PVOID
+    ordinal: 3
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Pointer:
+          closure: Default
+          modifier: ~
+          shifted: ~
+          typ:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Basic: Void
+    sclass: ~
+  - name: DWORD
+    ordinal: 4
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          Int:
+            is_signed: false
+    sclass: ~
+  - name: EH3_EXCEPTION_REGISTRATION
+    ordinal: 5
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: Struct
+          typeref_value:
+            Ref: 1
+    sclass: ~
+  - name: PEH3_EXCEPTION_REGISTRATION
+    ordinal: 6
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Pointer:
+          closure: Default
+          modifier: ~
+          shifted: ~
+          typ:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Typeref:
+                ref_type: Struct
+                typeref_value:
+                  Ref: 1
+    sclass: ~
+  - name: CPPEH_RECORD
+    ordinal: 7
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: old_esp
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: exc_ptr
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            UnsolvedName: EXCEPTION_POINTERS
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: registration
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: Struct
+                    typeref_value:
+                      Ref: 1
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: _EH4_SCOPETABLE_RECORD
+    ordinal: 8
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: EnclosingLevel
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    Int:
+                      is_signed: ~
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: FilterFunc
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic: Void
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: HandlerFunc
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic: Void
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: _EH4_SCOPETABLE
+    ordinal: 9
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: GSCookieOffset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: GSCookieXOROffset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: EHCookieOffset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: EHCookieXOROffset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ScopeRecord
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: ~
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: Struct
+                          typeref_value:
+                            Ref: 7
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: _PVFV
+    ordinal: 11
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Pointer:
+          closure: Default
+          modifier: ~
+          shifted: ~
+          typ:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Function:
+                calling_convention: Cdecl
+                ret:
+                  comment: ~
+                  is_const: false
+                  is_volatile: false
+                  type_variant:
+                    Basic: Void
+                args: []
+                retloc: ~
+                method: ~
+                is_noret: false
+                is_pure: false
+                is_high: false
+                is_static: false
+                is_virtual: false
+                is_const: false
+                is_constructor: false
+                is_destructor: false
+    sclass: ~
+  - name: _onexit_table_t
+    ordinal: 10
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: 8
+          members:
+            - name: _first
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            Ref: 9
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: _last
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            Ref: 9
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: _end
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            Ref: 9
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: _FILETIME
+    ordinal: 12
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: dwLowDateTime
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: dwHighDateTime
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: _LARGE_INTEGER
+    ordinal: 14
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Union:
+          effective_alignment: ~
+          alignment: ~
+          members:
+            - name: ~
+              comment: ~
+              ty:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: Struct
+                    typeref_value:
+                      Ref: 14
+            - name: u
+              comment: ~
+              ty:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: Struct
+                    typeref_value:
+                      Ref: 14
+            - name: QuadPart
+              comment: ~
+              ty:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 15
+          is_unaligned: false
+          is_unknown_8: false
+    sclass: ~
+  - name: LONG
+    ordinal: 16
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          Int:
+            is_signed: ~
+    sclass: ~
+  - name: "_LARGE_INTEGER::$837407842DC9087486FDFA5FEB63B74E"
+    ordinal: 15
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: LowPart
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: HighPart
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 13
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: LONGLONG
+    ordinal: 17
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          IntSized:
+            bytes: 8
+            is_signed: ~
+    sclass: ~
+  - name: LARGE_INTEGER
+    ordinal: 13
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: Union
+          typeref_value:
+            Ref: 12
+    sclass: ~
+  - name: EXCEPTION_RECORD
+    ordinal: 20
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: Struct
+          typeref_value:
+            Ref: 19
+    sclass: ~
+  - name: ULONG_PTR
+    ordinal: 22
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          Int:
+            is_signed: false
+    sclass: ~
+  - name: _EXCEPTION_RECORD
+    ordinal: 21
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: ExceptionCode
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ExceptionFlags
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ExceptionRecord
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: Struct
+                          typeref_value:
+                            Ref: 19
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ExceptionAddress
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 2
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: NumberParameters
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ExceptionInformation
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: 15
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            Ref: 18
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: PEXCEPTION_RECORD
+    ordinal: 19
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Pointer:
+          closure: Default
+          modifier: ~
+          shifted: ~
+          typ:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Typeref:
+                ref_type: ~
+                typeref_value:
+                  Ref: 17
+    sclass: ~
+  - name: CONTEXT
+    ordinal: 24
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: Struct
+          typeref_value:
+            Ref: 25
+    sclass: ~
+  - name: FLOATING_SAVE_AREA
+    ordinal: 26
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: Struct
+          typeref_value:
+            Ref: 24
+    sclass: ~
+  - name: BYTE
+    ordinal: 28
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          IntSized:
+            bytes: 1
+            is_signed: false
+    sclass: ~
+  - name: _FLOATING_SAVE_AREA
+    ordinal: 27
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: ControlWord
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: StatusWord
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: TagWord
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ErrorOffset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ErrorSelector
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: DataOffset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: DataSelector
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: RegisterArea
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: 80
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            Ref: 23
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Spare0
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: _CONTEXT
+    ordinal: 25
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: 4
+          members:
+            - name: ContextFlags
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Dr0
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Dr1
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Dr2
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Dr3
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Dr6
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Dr7
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: FloatSave
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 22
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: SegGs
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: SegFs
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: SegEs
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: SegDs
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Edi
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Esi
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Ebx
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Edx
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Ecx
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Eax
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Ebp
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Eip
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: SegCs
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: EFlags
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Esp
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: SegSs
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ExtendedRegisters
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: 512
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            Ref: 23
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: PCONTEXT
+    ordinal: 23
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Pointer:
+          closure: Default
+          modifier: ~
+          shifted: ~
+          typ:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Typeref:
+                ref_type: ~
+                typeref_value:
+                  Ref: 21
+    sclass: ~
+  - name: _EXCEPTION_POINTERS
+    ordinal: 18
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: ExceptionRecord
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 20
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ContextRecord
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 26
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: ULONGLONG
+    ordinal: 30
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          IntSized:
+            bytes: 8
+            is_signed: false
+    sclass: ~
+  - name: _SLIST_HEADER
+    ordinal: 29
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Union:
+          effective_alignment: ~
+          alignment: ~
+          members:
+            - name: Alignment
+              comment: ~
+              ty:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 28
+            - name: ~
+              comment: ~
+              ty:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: Struct
+                    typeref_value:
+                      Ref: 33
+          is_unaligned: false
+          is_unknown_8: false
+    sclass: ~
+  - name: _SINGLE_LIST_ENTRY
+    ordinal: 33
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: Next
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: Struct
+                          typeref_value:
+                            Ref: 30
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: SLIST_ENTRY
+    ordinal: 32
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: Struct
+          typeref_value:
+            Ref: 30
+    sclass: ~
+  - name: WORD
+    ordinal: 34
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Basic:
+          IntSized:
+            bytes: 2
+            is_signed: false
+    sclass: ~
+  - name: "_SLIST_HEADER::$04C3B4B3818F1694974352AE64BF5082"
+    ordinal: 31
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: Next
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 31
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: Depth
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 32
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: CpuId
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 32
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: _crt_app_type
+    ordinal: 35
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Enum:
+          is_signed: false
+          is_unsigned: false
+          is_64: false
+          output_format: Hex
+          members:
+            Regular:
+              - name: _crt_unknown_app
+                comment: ~
+                value: 0
+              - name: _crt_console_app
+                comment: ~
+                value: 1
+              - name: _crt_gui_app
+                comment: ~
+                value: 2
+          storage_size: ~
+    sclass: ~
+  - name: _crt_argv_mode
+    ordinal: 36
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Enum:
+          is_signed: false
+          is_unsigned: false
+          is_64: false
+          output_format: Hex
+          members:
+            Regular:
+              - name: _crt_argv_no_arguments
+                comment: ~
+                value: 0
+              - name: _crt_argv_unexpanded_arguments
+                comment: ~
+                value: 1
+              - name: _crt_argv_expanded_arguments
+                comment: ~
+                value: 2
+          storage_size: ~
+    sclass: ~
+macros: []

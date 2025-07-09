@@ -1,0 +1,6 @@
+---
+source: src/test.rs
+expression: loader_name
+---
+- elf.so
+- ELF64 for x86-64 (Shared object)

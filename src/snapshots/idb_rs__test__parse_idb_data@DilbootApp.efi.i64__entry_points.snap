@@ -1,0 +1,69 @@
+---
+source: src/test.rs
+expression: entry_points
+---
+- name: _ModuleEntryPoint
+  address: 1384
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Function:
+        calling_convention: Fastcall
+        ret:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Typeref:
+              ref_type: ~
+              typeref_value:
+                UnsolvedName: EFI_STATUS
+        args:
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Typeref:
+                  ref_type: ~
+                  typeref_value:
+                    UnsolvedName: EFI_HANDLE
+            loc: ~
+            flags: ~
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Pointer:
+                  closure: Default
+                  modifier: ~
+                  shifted: ~
+                  typ:
+                    comment: ~
+                    is_const: false
+                    is_volatile: false
+                    type_variant:
+                      Typeref:
+                        ref_type: ~
+                        typeref_value:
+                          UnsolvedName: EFI_SYSTEM_TABLE
+            loc: ~
+            flags: ~
+        retloc: ~
+        method: ~
+        is_noret: false
+        is_pure: false
+        is_high: false
+        is_static: false
+        is_virtual: false
+        is_const: false
+        is_constructor: false
+        is_destructor: false

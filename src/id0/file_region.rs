@@ -1,12 +1,13 @@
 use anyhow::{anyhow, Result};
 use num_traits::CheckedAdd;
+use serde::Serialize;
 
 use crate::ida_reader::IdbReadKind;
 use crate::IDAKind;
 
 use super::{entry_iter::NetnodeSupRangeIter, NetnodeIdx};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct FileRegions<K: IDAKind> {
     pub start: K::Usize,
     pub end: K::Usize,

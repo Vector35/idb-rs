@@ -18,7 +18,7 @@ fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
     let root_info_idx = id0.root_node()?;
     println!("image_base: {:X?}", id0.image_base(root_info_idx)?);
     if let Some(input_file) = id0.input_file(root_info_idx) {
-        println!("input_file: {}", String::from_utf8_lossy(input_file));
+        println!("input_file: {input_file}");
     };
     if let Some(input_file_size) = id0.input_file_size(root_info_idx)? {
         println!("input_file_size: {input_file_size}");

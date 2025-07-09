@@ -1,0 +1,5 @@
+---
+source: src/test.rs
+expression: input_file
+---
+"C:\\allthingsida\\multiarch\\input_src\\build\\Release\\MultiArch.exe\u0000"

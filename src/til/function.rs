@@ -5,11 +5,12 @@ use crate::ida_reader::{IdbBufRead, IdbRead};
 use crate::til::{Basic, Type, TypeRaw};
 use crate::IDBString;
 use anyhow::{anyhow, ensure, Context, Result};
+use serde::Serialize;
 
 use super::section::TILSectionHeader;
 use super::{CommentType, TypeVariantRaw};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Function {
     pub calling_convention: Option<CallingConvention>,
     pub ret: Box<Type>,
@@ -87,7 +88,7 @@ impl Function {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FunctionArg {
     pub name: Option<IDBString>,
     pub comment: Option<CommentType>,
@@ -96,7 +97,7 @@ pub struct FunctionArg {
     pub flags: Option<FunctionArgFlags>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct FunctionArgFlags {
     pub is_hidden: bool,
     pub is_return_ptr: bool,
@@ -145,7 +146,7 @@ pub(crate) struct FunctionRaw {
     pub is_destructor: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum ArgLoc {
     // TODO add those to flags
     // ::ALOC_STACK
@@ -173,7 +174,7 @@ pub enum ArgLoc {
     // TODO is possible to know the custom impl len?
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ArgLocDist {
     pub info: u16,
     pub off: u16,
@@ -373,7 +374,7 @@ impl ArgLoc {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum CallingConvention {
     /// function without arguments
     Voidarg = 0x2,
@@ -442,7 +443,7 @@ impl CallingConvention {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum CCPtrSize {
     /// near 1 byte, far 2 bytes
     N8F16,
@@ -488,7 +489,7 @@ impl CCPtrSize {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum CCModel {
     /// small:   code=near, data=near
     NN,
@@ -541,7 +542,7 @@ impl CCModel {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum CallMethod {
     Near,
     Far,

@@ -24,7 +24,7 @@ use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
 use std::num::NonZeroU64;
 
 use anyhow::{anyhow, ensure, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::id2::{ID2Section, ID2SectionVariants};
 
@@ -41,7 +41,7 @@ macro_rules! flag_to_function {
 #[macro_export]
 macro_rules! flags_to_struct {
     ($struct_name:ident, $struct_type:ty, $($flag_name:ident $flag_fun_name:ident $flag_doc:literal),* $(,)?) => {
-        #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+        #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize)]
         pub struct $struct_name($struct_type);
         impl $struct_name {
             pub(crate) fn from_raw(value: $struct_type) -> Result<Self> {
@@ -1327,6 +1327,19 @@ impl VaVersion {
 #[derive(Clone)]
 pub struct IDBString(Vec<u8>);
 
+impl Serialize for IDBString {
+    fn serialize<S>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let value = self.as_utf8_lossy();
+        serializer.collect_str(&value)
+    }
+}
+
 impl IDBString {
     pub fn new(data: Vec<u8>) -> Self {
         Self(data)
@@ -1345,7 +1358,63 @@ impl IDBString {
     }
 }
 
+impl std::fmt::Display for IDBString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.as_utf8_lossy().fmt(f)
+    }
+}
+
 impl std::fmt::Debug for IDBString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use std::fmt::Write;
+        f.write_char('"')?;
+        f.write_str(&self.as_utf8_lossy())?;
+        f.write_char('"')?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct IDBStr<'a>(&'a [u8]);
+
+impl Serialize for IDBStr<'_> {
+    fn serialize<S>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let value = self.as_utf8_lossy();
+        serializer.collect_str(&value)
+    }
+}
+
+impl<'a> IDBStr<'a> {
+    pub fn new(data: &'a [u8]) -> Self {
+        Self(data)
+    }
+
+    pub fn as_utf8_lossy(self) -> Cow<'a, str> {
+        String::from_utf8_lossy(self.0)
+    }
+
+    pub fn as_bytes(self) -> &'a [u8] {
+        self.0
+    }
+
+    pub fn to_idb_string(self) -> IDBString {
+        IDBString::new(self.0.to_vec())
+    }
+}
+
+impl std::fmt::Display for IDBStr<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.as_utf8_lossy().fmt(f)
+    }
+}
+
+impl std::fmt::Debug for IDBStr<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use std::fmt::Write;
         f.write_char('"')?;
@@ -1391,7 +1460,9 @@ where
     }
 }
 
-pub trait IDAKind: core::fmt::Debug + Clone + Copy + Default + 'static {
+pub trait IDAKind:
+    core::fmt::Debug + Clone + Copy + Default + Serialize + 'static
+{
     const BYTES: u8;
     type Usize: IDAUsize
         + num_traits::AsPrimitive<Self::Isize>
@@ -1543,7 +1614,7 @@ pub trait IDAUsizeBytes:
 
 macro_rules! declare_idb_kind {
     ($bytes:literal, $utype:ty, $itype:ty, $name:ident, $unapack_fun:ident) => {
-        #[derive(Debug, Clone, Copy)]
+        #[derive(Debug, Clone, Copy, Serialize)]
         pub struct $name;
         impl Default for $name {
             fn default() -> Self {
@@ -1579,7 +1650,7 @@ declare_idb_kind!(4, u32, i32, IDA32, unpack_dd);
 declare_idb_kind!(8, u64, i64, IDA64, unpack_dq);
 
 /// representation of arbitrary memory Address
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub struct Address<K: IDAKind>(K::Usize);
 
 impl<K: IDAKind> PartialOrd for Address<K> {

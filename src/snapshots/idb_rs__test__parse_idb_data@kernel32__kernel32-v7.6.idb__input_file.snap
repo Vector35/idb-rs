@@ -1,0 +1,5 @@
+---
+source: src/test.rs
+expression: input_file
+---
+"Z:\\haru\\analysis\\tools\\python-idb\\tests\\data\\v7.6\\x32\\00bf1bf1b779ce1af41371426821e0c2\u0000"

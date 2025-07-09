@@ -89,7 +89,7 @@ pub fn dump_til(args: &Args) -> Result<()> {
             param_num: _,
         } in macros
         {
-            let name = String::from_utf8_lossy(name);
+            let name = name.as_utf8_lossy();
             let value: String = value
                 .iter()
                 .map(|c| match c {
