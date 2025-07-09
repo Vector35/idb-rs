@@ -19883,7 +19883,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: AppContainerFreeMemory
+- name: AppXFreeMemory
   address: 1754353702
   forwarded: ~
   entry_type:
@@ -19925,7 +19925,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: AppXFreeMemory
+- name: AppContainerFreeMemory
   address: 1754353702
   forwarded: ~
   entry_type:
@@ -26022,11 +26022,11 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: ReplaceFileW
+- name: ReplaceFile
   address: 1754455908
   forwarded: ~
   entry_type: ~
-- name: ReplaceFile
+- name: ReplaceFileW
   address: 1754455908
   forwarded: ~
   entry_type: ~
@@ -26923,7 +26923,7 @@ expression: entry_points
   address: 1754458202
   forwarded: ~
   entry_type: ~
-- name: GetSystemWow64DirectoryW
+- name: RegisterConsoleIME
   address: 1754458219
   forwarded: ~
   entry_type: ~
@@ -26931,11 +26931,11 @@ expression: entry_points
   address: 1754458219
   forwarded: ~
   entry_type: ~
-- name: RegisterConsoleIME
+- name: GetSystemWow64DirectoryA
   address: 1754458219
   forwarded: ~
   entry_type: ~
-- name: GetSystemWow64DirectoryA
+- name: GetSystemWow64DirectoryW
   address: 1754458219
   forwarded: ~
   entry_type: ~
@@ -27701,7 +27701,7 @@ expression: entry_points
   address: 1754460122
   forwarded: ~
   entry_type: ~
-- name: lstrcmpA
+- name: lstrcmp
   address: 1754460139
   forwarded: ~
   entry_type:
@@ -27756,7 +27756,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcmp
+- name: lstrcmpA
   address: 1754460139
   forwarded: ~
   entry_type:
@@ -31711,7 +31711,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcpyA
+- name: lstrcpy
   address: 1754473249
   forwarded: ~
   entry_type:
@@ -31767,7 +31767,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: lstrcpy
+- name: lstrcpyA
   address: 1754473249
   forwarded: ~
   entry_type:
@@ -45126,7 +45126,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: GlobalCompact
+- name: LocalCompact
   address: 1754859220
   forwarded: ~
   entry_type:
@@ -45169,7 +45169,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: LocalCompact
+- name: GlobalCompact
   address: 1754859220
   forwarded: ~
   entry_type:
@@ -47479,7 +47479,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: RequestWakeupLatency
+- name: RequestDeviceWakeup
   address: 1754865515
   forwarded: ~
   entry_type:
@@ -47522,7 +47522,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: RequestDeviceWakeup
+- name: RequestWakeupLatency
   address: 1754865515
   forwarded: ~
   entry_type:
@@ -53043,15 +53043,15 @@ expression: entry_points
   address: 1754878153
   forwarded: ~
   entry_type: ~
-- name: Wow64SetThreadContext
-  address: 1754878174
-  forwarded: ~
-  entry_type: ~
 - name: Wow64GetThreadContext
   address: 1754878174
   forwarded: ~
   entry_type: ~
 - name: SetMessageWaitingIndicator
+  address: 1754878174
+  forwarded: ~
+  entry_type: ~
+- name: Wow64SetThreadContext
   address: 1754878174
   forwarded: ~
   entry_type: ~
@@ -58729,15 +58729,15 @@ expression: entry_points
   address: 1754974166
   forwarded: ~
   entry_type: ~
+- name: LZStart
+  address: 1754978543
+  forwarded: ~
+  entry_type: ~
 - name: CloseProfileUserMapping
   address: 1754978543
   forwarded: ~
   entry_type: ~
 - name: OpenProfileUserMapping
-  address: 1754978543
-  forwarded: ~
-  entry_type: ~
-- name: LZStart
   address: 1754978543
   forwarded: ~
   entry_type: ~
@@ -58772,7 +58772,7 @@ expression: entry_points
   address: 1754982365
   forwarded: ~
   entry_type: ~
-- name: UTUnRegister
+- name: RaiseInvalid16BitExeError
   address: 1754987587
   forwarded: ~
   entry_type:
@@ -58812,7 +58812,7 @@ expression: entry_points
         is_const: false
         is_constructor: false
         is_destructor: false
-- name: RaiseInvalid16BitExeError
+- name: UTUnRegister
   address: 1754987587
   forwarded: ~
   entry_type:
