@@ -311,20 +311,20 @@ fn parse_idb_inner(file: PathBuf) {
     insta::with_settings!({sort_maps => true}, {
         match format {
             IDBFormats::Separated(IDAVariants::IDA32(sections)) => {
-                parse_idb_separated(file_suffix, &mut input, &sections)
+                parse_idb_format(file_suffix, &mut input, &sections)
             }
             IDBFormats::Separated(IDAVariants::IDA64(sections)) => {
-                parse_idb_separated(file_suffix, &mut input, &sections)
+                parse_idb_format(file_suffix, &mut input, &sections)
             }
             IDBFormats::InlineUncompressed(sections) => {
-                parse_idb_inlined(file_suffix, &mut input, &sections)
+                parse_idb_format(file_suffix, &mut input, &sections)
             }
             IDBFormats::InlineCompressed(compressed) => {
                 let mut decompressed = Vec::new();
                 let sections = compressed
                     .decompress_into_memory(input, &mut decompressed)
                     .unwrap();
-                parse_idb_inlined(
+                parse_idb_format(
                     file_suffix,
                     &mut Cursor::new(decompressed),
                     &sections,
@@ -334,10 +334,10 @@ fn parse_idb_inner(file: PathBuf) {
     });
 }
 
-fn parse_idb_separated<K: IDAKind, I: BufRead + Seek>(
+fn parse_idb_format<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
     file_suffix: PathBuf,
     input: &mut I,
-    sections: &SeparatedSections<K>,
+    sections: &F,
 ) {
     // parse sectors
     let id0 = sections
@@ -354,38 +354,19 @@ fn parse_idb_separated<K: IDAKind, I: BufRead + Seek>(
     let til = sections
         .til_location()
         .map(|til| sections.read_til(&mut *input, til).unwrap());
-    insta::with_settings!({snapshot_suffix => file_suffix.join("til").to_str().unwrap()}, {
-        insta::assert_yaml_snapshot!(til);
-    });
-    let _nam = sections
+    if let Some(til) = &til {
+        insta::with_settings!({snapshot_suffix => file_suffix.join("til").to_str().unwrap()}, {
+            insta::assert_yaml_snapshot!(til);
+        });
+    }
+    let nam = sections
         .nam_location()
-        .map(|idx| sections.read_nam(&mut *input, idx));
-    parse_idb_data(file_suffix, &id0, &id1, id2.as_ref(), til.as_ref())
-}
-
-fn parse_idb_inlined<I: BufRead + Seek>(
-    file_suffix: PathBuf,
-    input: &mut I,
-    sections: &InlineUnCompressedSections,
-) {
-    // parse sectors
-    let id0 = sections
-        .read_id0(&mut *input, sections.id0_location().unwrap())
-        .unwrap();
-    let id1 = sections
-        .read_id1(&mut *input, sections.id1_location().unwrap())
-        .unwrap();
-    let id2 = sections
-        .id2_location()
-        .map(|id2| sections.read_id2(&mut *input, id2))
-        .transpose()
-        .unwrap();
-    let til = sections
-        .til_location()
-        .map(|til| sections.read_til(&mut *input, til).unwrap());
-    let _nam = sections
-        .nam_location()
-        .map(|idx| sections.read_nam(&mut *input, idx));
+        .map(|idx| sections.read_nam(&mut *input, idx).unwrap());
+    if let Some(nam) = &nam {
+        insta::with_settings!({snapshot_suffix => file_suffix.join("nam").to_str().unwrap()}, {
+            insta::assert_yaml_snapshot!(nam);
+        });
+    }
     parse_idb_data(file_suffix, &id0, &id1, id2.as_ref(), til.as_ref())
 }
 

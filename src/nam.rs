@@ -1,9 +1,10 @@
 use anyhow::{ensure, Result};
+use serde::Serialize;
 
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
 use crate::{Address, IDAKind, IDAUsize, SectionReader, VaVersion};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct NamSection<K: IDAKind> {
     pub names: Vec<Address<K>>,
 }
