@@ -27,6 +27,7 @@ impl<K: IDAKind> SectionReader<K> for TILSection {
 
     fn read_section<I: IdbReadKind<K> + IdbBufRead>(
         input: &mut I,
+        _magic: crate::IDBMagic,
     ) -> Result<Self> {
         Self::read(input)
     }
@@ -42,6 +43,9 @@ pub(crate) struct TILSectionRaw {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TILSectionHeader {
+    /// 02 versions: 4.1
+    /// 17 versions: 5.2 6.1
+    /// 18 versions: 6.5 6.6 6.8 7.0 7.3 7.6 8.3 9.0 9.1
     pub format: u32,
     /// short file name (without path and extension)
     pub description: IDBString,

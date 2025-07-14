@@ -1,29 +1,31 @@
+use std::ffi::CStr;
 use std::io::BufRead;
 
 use anyhow::Result;
 
 use crate::ida_reader::{IdbBufRead, IdbRead};
+use crate::IDBMagic;
 
 use super::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ID0Version {
+    // Versions: 4.1
     V15,
+    // Versions: 5.2 6.1
     V16,
+    // Versions: 6.5 6.6 6.8 7.0 7.3 7.6 8.3 9.0 9.1
     V20,
 }
 
 impl ID0Version {
-    pub(crate) fn read(input: &mut impl BufRead) -> Result<Self> {
-        let value = input.read_c_string_raw()?;
-        match &value[..] {
-            b"B-tree v 1.5 (C) Pol 1990" => Ok(Self::V15),
-            b"B-tree v 1.6 (C) Pol 1990" => Ok(Self::V16),
-            b"B-tree v2" => Ok(Self::V20),
-            name => Err(anyhow!(
-                "Unknown B-tree version: {}",
-                String::from_utf8_lossy(name)
-            )),
+    pub(crate) fn read(input: &[u8]) -> Option<Self> {
+        let value = CStr::from_bytes_until_nul(input).ok()?;
+        match value.to_bytes() {
+            b"B-tree v 1.5 (C) Pol 1990" => Some(Self::V15),
+            b"B-tree v 1.6 (C) Pol 1990" => Some(Self::V16),
+            b"B-tree v2" => Some(Self::V20),
+            _ => None,
         }
     }
 }
@@ -45,31 +47,62 @@ impl ID0Header {
     pub(crate) fn read(
         input: &mut impl BufRead,
         buf: &mut Vec<u8>,
+        magic: IDBMagic,
     ) -> Result<Self> {
         buf.resize(64, 0);
         input.read_exact(buf)?;
-        // TODO handle the 15 version of the header:
-        // {
-        //    let next_free_offset: u16 = bincode::deserialize_from(&mut *input)?;
-        //    let page_size: u16 = bincode::deserialize_from(&mut *input)?;
-        //    let root_page: u16 = bincode::deserialize_from(&mut *input)?;
-        //    let record_count: u32 = bincode::deserialize_from(&mut *input)?;
-        //    let page_count: u16 = bincode::deserialize_from(&mut *input)?;
-        //    let unk12: u8 = bincode::deserialize_from(&mut *input)?;
-        //    let version = ID0Version::read(input)?;
-        // }
+
+        // NOTE before version V15, the string was at 0xd(13), after that
+        // at 0x13(19). I think this is was a mistake on the developers part,
+        // mixing the offset 13 with 0x13.
+        let version = if magic == IDBMagic::IDA0 {
+            let version = ID0Version::read(&mut &buf[0xd..0x27])
+                .ok_or_else(|| anyhow!("Unknown B-tree version"))?;
+            if version != ID0Version::V15 {
+                return Err(anyhow!(
+                    "Unexpected ID0 B-Tree Version header location"
+                ));
+            }
+            version
+        } else {
+            let version = ID0Version::read(&mut &buf[0x13..0x2d])
+                .ok_or_else(|| anyhow!("Unknown B-tree version"))?;
+            if version == ID0Version::V15 {
+                return Err(anyhow!(
+                    "Unexpected ID0 B-Tree Version header location"
+                ));
+            }
+            version
+        };
 
         let mut buf_current = &buf[..];
-        let next_free_offset: u32 =
-            bincode::deserialize_from(&mut buf_current)?;
-        let page_size: u16 = bincode::deserialize_from(&mut buf_current)?;
-        let root_page: u32 = bincode::deserialize_from(&mut buf_current)?;
-        let record_count: u32 = bincode::deserialize_from(&mut buf_current)?;
-        let page_count: u32 = bincode::deserialize_from(&mut buf_current)?;
-        let _unk12: u8 = bincode::deserialize_from(&mut buf_current)?;
-        let version = ID0Version::read(&mut buf_current)?;
-        // TODO maybe this is a u64/u32/u16
-        let _unk1d = buf_current.read_u8()?;
+        let next_free_offset;
+        let page_size;
+        let root_page;
+        let record_count;
+        let page_count;
+        match version {
+            ID0Version::V15 => {
+                next_free_offset = buf_current.read_u16()?.into();
+                page_size = buf_current.read_u16()?;
+                root_page = buf_current.read_u16()?.into();
+                record_count = buf_current.read_u32()?;
+                page_count = buf_current.read_u16()?.into();
+                let _unk12 = buf_current.read_u8()?;
+                let _version_skip = buf_current.read_c_string_raw()?;
+            }
+            ID0Version::V16 | ID0Version::V20 => {
+                next_free_offset = buf_current.read_u32()?;
+                page_size = buf_current.read_u16()?;
+                root_page = buf_current.read_u32()?;
+                record_count = buf_current.read_u32()?;
+                page_count = buf_current.read_u32()?;
+                let _unk12 = buf_current.read_u8()?;
+                let _version_skip = buf_current.read_c_string_raw()?;
+                // ofset 0x13 19
+                let _unk1d = buf_current.read_u8()?;
+            }
+        }
         let header_len = 64 - buf_current.len();
         // TODO move this code out of here and use seek instead
         // read the rest of the page
@@ -338,12 +371,12 @@ impl ID0BTree {
     // NOTE this was written this way to validate the data in each file, so it's clear that no
     // data is being parsed incorrectly or is left unparsed. There way too many validations
     // and non-necessary parsing is done on delete data.
-    pub(crate) fn read_inner(input: &[u8]) -> Result<Self> {
+    pub(crate) fn read_inner(input: &[u8], magic: IDBMagic) -> Result<Self> {
         let mut reader = input;
 
         // pages size are usually around that size
         let mut buf = Vec::with_capacity(0x2000);
-        let header = ID0Header::read(&mut reader, &mut buf)?;
+        let header = ID0Header::read(&mut reader, &mut buf, magic)?;
 
         let page_count: usize = header.page_count.try_into().unwrap();
         let page_size: usize = header.page_size.into();

@@ -13,5 +13,5 @@ pub fn ea2node<K: IDAKind>(
     let root_info_idx = id0.root_node().ok()?;
     let root_info = id0.ida_info(root_info_idx).ok()?;
     let base = root_info.netdelta();
-    Some(nodeidx_t::from_raw(ea.as_raw() + base.0))
+    Some(base.ea2node(ea))
 }

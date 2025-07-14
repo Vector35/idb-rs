@@ -5,11 +5,7 @@ use num_traits::CheckedAdd;
 
 use crate::id1::ByteInfo;
 use crate::ida_reader::IdbReadKind;
-use crate::{
-    Address, IDAKind, IDAUsize, IDAVariants, SectionReader, IDA32, IDA64,
-};
-
-pub type ID2SectionVariants = IDAVariants<ID2Section<IDA32>, ID2Section<IDA64>>;
+use crate::{Address, IDAKind, IDAUsize, SectionReader};
 
 #[derive(Debug, Clone)]
 pub struct ID2Section<K: IDAKind> {
@@ -28,7 +24,10 @@ pub struct ID2Entry<K: IDAKind> {
 impl<K: IDAKind> SectionReader<K> for ID2Section<K> {
     type Result = Self;
 
-    fn read_section<R: IdbReadKind<K>>(input: &mut R) -> Result<Self> {
+    fn read_section<R: IdbReadKind<K>>(
+        input: &mut R,
+        _magic: crate::IDBMagic,
+    ) -> Result<Self> {
         Self::read(input)
     }
 }

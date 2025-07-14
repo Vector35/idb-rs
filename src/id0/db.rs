@@ -8,8 +8,8 @@ use num_traits::{AsPrimitive, CheckedAdd, PrimInt, ToBytes};
 use crate::addr_info::SubtypeId;
 use crate::id0::flag::nsup::NSUP_LLABEL;
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
+use crate::SectionReader;
 use crate::{til, Address, IDBStr};
-use crate::{IDAVariants, SectionReader, IDA32, IDA64};
 
 use super::entry_iter::{
     EntryTagContinuousSubkeys, NetnodeRangeIter, NetnodeSupRangeIter,
@@ -19,8 +19,6 @@ use super::flag::nsup::{E_NEXT, E_PREV};
 use super::flag::ridx::*;
 use super::function::*;
 use super::*;
-
-pub type ID0SectionVariants = IDAVariants<ID0Section<IDA32>, ID0Section<IDA64>>;
 
 #[derive(Debug, Clone)]
 pub struct ID0Section<K: IDAKind> {
@@ -56,10 +54,11 @@ impl<K: IDAKind> SectionReader<K> for ID0Section<K> {
 
     fn read_section<I: IdbReadKind<K> + IdbBufRead>(
         input: &mut I,
+        magic: crate::IDBMagic,
     ) -> Result<Self::Result> {
         let mut output = vec![];
         input.read_to_end(&mut output)?;
-        ID0BTree::read_inner(&output[..])
+        ID0BTree::read_inner(&output[..], magic)
             .map(ID0BTree::into_vec)
             .map(|entries| Self {
                 _kind: std::marker::PhantomData,

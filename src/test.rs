@@ -307,10 +307,13 @@ fn parse_idb_inner(file: PathBuf) {
     let file_suffix: PathBuf = remove_base_dir(&file, "idbs").collect();
     println!("{}", file_suffix.to_str().unwrap());
     let mut input = BufReader::new(File::open(&file).unwrap());
-    let format = IDBFormats::identify_file(&mut input).unwrap();
+    let format = identify_idb_file(&mut input).unwrap();
     insta::with_settings!({sort_maps => true}, {
         match format {
-            IDBFormats::Separated(sections) => {
+            IDBFormats::Separated(IDAVariants::IDA32(sections)) => {
+                parse_idb_separated(file_suffix, &mut input, &sections)
+            }
+            IDBFormats::Separated(IDAVariants::IDA64(sections)) => {
                 parse_idb_separated(file_suffix, &mut input, &sections)
             }
             IDBFormats::InlineUncompressed(sections) => {
@@ -331,13 +334,11 @@ fn parse_idb_inner(file: PathBuf) {
     });
 }
 
-fn parse_idb_separated<I>(
+fn parse_idb_separated<K: IDAKind, I: BufRead + Seek>(
     file_suffix: PathBuf,
     input: &mut I,
-    sections: &SeparatedSections,
-) where
-    I: BufRead + Seek,
-{
+    sections: &SeparatedSections<K>,
+) {
     // parse sectors
     let id0 = sections
         .read_id0(&mut *input, sections.id0_location().unwrap())
@@ -359,30 +360,14 @@ fn parse_idb_separated<I>(
     let _nam = sections
         .nam_location()
         .map(|idx| sections.read_nam(&mut *input, idx));
-    match (id0, id2) {
-        (IDAVariants::IDA32(id0), Some(IDAVariants::IDA32(id2))) => {
-            parse_idb_data(file_suffix, &id0, &id1, Some(&id2), til.as_ref())
-        }
-        (IDAVariants::IDA32(id0), None) => {
-            parse_idb_data(file_suffix, &id0, &id1, None, til.as_ref())
-        }
-        (IDAVariants::IDA64(id0), Some(IDAVariants::IDA64(id2))) => {
-            parse_idb_data(file_suffix, &id0, &id1, Some(&id2), til.as_ref())
-        }
-        (IDAVariants::IDA64(id0), None) => {
-            parse_idb_data(file_suffix, &id0, &id1, None, til.as_ref())
-        }
-        (_, _) => unreachable!(),
-    }
+    parse_idb_data(file_suffix, &id0, &id1, id2.as_ref(), til.as_ref())
 }
 
-fn parse_idb_inlined<I>(
+fn parse_idb_inlined<I: BufRead + Seek>(
     file_suffix: PathBuf,
     input: &mut I,
     sections: &InlineUnCompressedSections,
-) where
-    I: BufRead + Seek,
-{
+) {
     // parse sectors
     let id0 = sections
         .read_id0(&mut *input, sections.id0_location().unwrap())
@@ -398,30 +383,16 @@ fn parse_idb_inlined<I>(
     let til = sections
         .til_location()
         .map(|til| sections.read_til(&mut *input, til).unwrap());
-    match (id0, id2) {
-        (IDAVariants::IDA32(id0), Some(IDAVariants::IDA32(id2))) => {
-            parse_idb_data(file_suffix, &id0, &id1, Some(&id2), til.as_ref())
-        }
-        (IDAVariants::IDA32(id0), None) => {
-            parse_idb_data(file_suffix, &id0, &id1, None, til.as_ref())
-        }
-        (IDAVariants::IDA64(id0), Some(IDAVariants::IDA64(id2))) => {
-            parse_idb_data(file_suffix, &id0, &id1, Some(&id2), til.as_ref())
-        }
-        (IDAVariants::IDA64(id0), None) => {
-            parse_idb_data(file_suffix, &id0, &id1, None, til.as_ref())
-        }
-        (_, _) => unreachable!(),
-    }
-    let _ = sections
+    let _nam = sections
         .nam_location()
         .map(|idx| sections.read_nam(&mut *input, idx));
+    parse_idb_data(file_suffix, &id0, &id1, id2.as_ref(), til.as_ref())
 }
 
 fn parse_idb_data<K>(
     file_suffix: PathBuf,
     id0: &ID0Section<K>,
-    id1: &ID1Section,
+    id1: &ID1Section<K>,
     id2: Option<&ID2Section<K>>,
     til: Option<&TILSection>,
 ) where
@@ -436,8 +407,9 @@ fn parse_idb_data<K>(
 
     insta::with_settings!({snapshot_suffix => file_suffix.join("segments").to_str().unwrap()}, {
         let seg_idx = id0.segments_idx().unwrap().unwrap();
-        let segments: Vec<Segment<K>> =
+        let mut segments: Vec<Segment<K>> =
             id0.segments(seg_idx).map(Result::unwrap).collect();
+        segments.sort_unstable_by_key(|seg| (seg.address.start, seg.address.end, seg.selector));
         insta::assert_yaml_snapshot!(segments);
     });
     insta::with_settings!({snapshot_suffix => file_suffix.join("loader_name").to_str().unwrap()}, {

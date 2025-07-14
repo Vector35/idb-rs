@@ -1,6 +1,9 @@
 use crate::{get_id1_section, Args};
 
-use idb_rs::id1::{ByteOp, ByteType};
+use idb_rs::{
+    id1::{ByteOp, ByteType, ID1Section},
+    IDAKind,
+};
 
 use anyhow::Result;
 
@@ -12,8 +15,13 @@ macro_rules! print_char_if_bool {
 
 pub fn dump_id1(args: &Args) -> Result<()> {
     // parse the id1 sector/file
-    let id1 = get_id1_section(args)?;
+    match get_id1_section(args)? {
+        idb_rs::IDAVariants::IDA32(kind) => dump_id1_kind(kind),
+        idb_rs::IDAVariants::IDA64(kind) => dump_id1_kind(kind),
+    }
+}
 
+fn dump_id1_kind<K: IDAKind>(id1: ID1Section<K>) -> Result<()> {
     for (address, byte_info) in id1.all_bytes() {
         print!("{address:08X}: {:#010X} ", byte_info.as_raw());
 
