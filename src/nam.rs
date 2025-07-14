@@ -57,14 +57,15 @@ impl<K: IDAKind> NamSection<K> {
             .map(|_i| input.read_usize().map(Address::from_raw))
             .collect::<Result<_, _>>()?;
         // if anything is left after the page, make sure it's all zeros
-        #[cfg(feature = "restrictive")]
         if available_data > size_required {
+            #[cfg(feature = "restrictive")]
             ensure!((available_data - size_required) % name_len == 0u8.into());
             let len_unused = (available_data - size_required) / name_len;
             for _i in 0..len_unused.into_u64() {
                 // TODO we can allow those values to contain garbage, allow it?
-                let unused_value = input.read_usize()?;
-                ensure!(unused_value == 0u8.into(), "Unparsed value in Nam");
+                let _unused_value = input.read_usize()?;
+                #[cfg(feature = "restrictive")]
+                ensure!(_unused_value == 0u8.into(), "Unparsed value in Nam");
             }
         }
 
