@@ -11,26 +11,29 @@ use crate::ida_reader::{IdbRead, IdbReadKind};
 use crate::{Address, IDAKind, SectionReader, VaVersion};
 
 #[derive(Clone, Debug)]
-pub struct ID1Section {
-    pub seglist: Vec<SegInfo>,
+pub struct ID1Section<K: IDAKind> {
+    pub seglist: Vec<SegInfo<K>>,
 }
 
-impl<K: IDAKind> SectionReader<K> for ID1Section {
+impl<K: IDAKind> SectionReader<K> for ID1Section<K> {
     type Result = Self;
 
-    fn read_section<I: IdbReadKind<K>>(input: &mut I) -> Result<Self> {
-        Self::read_inner::<K>(input)
+    fn read_section<I: IdbReadKind<K>>(
+        input: &mut I,
+        _magic: crate::IDBMagic,
+    ) -> Result<Self> {
+        Self::read_inner(input)
     }
 }
 
-impl ID1Section {
-    fn read_inner<K: IDAKind>(input: &mut impl std::io::Read) -> Result<Self> {
+impl<K: IDAKind> ID1Section<K> {
+    fn read_inner(input: &mut impl std::io::Read) -> Result<Self> {
         // TODO pages are always 0x2000?
         const PAGE_SIZE: usize = 0x2000;
         let mut buf = vec![0; PAGE_SIZE];
         input.read_exact(&mut buf[..])?;
         let mut cursor = &buf[..];
-        let (npages, seglist_raw) = Self::read_header::<K>(&mut cursor)?;
+        let (npages, seglist_raw) = Self::read_header(&mut cursor)?;
         // make sure the unused values a all zero
         ensure!(cursor.iter().all(|b| *b == 0));
 
@@ -96,7 +99,7 @@ impl ID1Section {
                         let data = read_data::<K>(&mut *input, len)?;
                         current_offset += len * K::Usize::from(4u8);
                         Ok(SegInfo {
-                            offset: (seg.address.start).into(),
+                            offset: Address::from_raw(seg.address.start),
                             data,
                         })
                     })
@@ -111,7 +114,7 @@ impl ID1Section {
                             address.end - address.start,
                         )?;
                         Ok(SegInfo {
-                            offset: (address.start).into(),
+                            offset: Address::from_raw(address.start),
                             data,
                         })
                     })
@@ -128,7 +131,7 @@ impl ID1Section {
         Ok(Self { seglist })
     }
 
-    fn read_header<K: IDAKind>(
+    fn read_header(
         input: &mut impl IdbReadKind<K>,
     ) -> Result<(u32, SegInfoRaw<K>)> {
         let version = VaVersion::read(&mut *input)?;
@@ -187,10 +190,13 @@ impl ID1Section {
 
     pub(crate) fn segment_idx_by_address(
         &self,
-        address: u64,
+        address: Address<K>,
     ) -> Result<usize, usize> {
         self.seglist.binary_search_by(|seg| {
-            let seg_end = seg.offset + u64::try_from(seg.data.len()).unwrap();
+            let seg_end = seg.offset
+                + Address::from_raw(
+                    K::Usize::try_from(seg.data.len()).unwrap(),
+                );
             use std::cmp::Ordering::*;
             // this segment is
             match (address.cmp(&seg.offset), address.cmp(&seg_end)) {
@@ -208,29 +214,39 @@ impl ID1Section {
         })
     }
 
-    pub fn segment_by_address(&self, address: u64) -> Option<&SegInfo> {
+    pub fn segment_by_address(
+        &self,
+        address: Address<K>,
+    ) -> Option<&SegInfo<K>> {
         self.segment_idx_by_address(address)
             .ok()
             .map(|idx| &self.seglist[idx])
     }
 
-    pub fn byte_by_address(&self, address: u64) -> Option<ByteInfo> {
+    pub fn byte_by_address(&self, address: Address<K>) -> Option<ByteInfo> {
         self.segment_by_address(address).map(|seg| {
-            ByteInfo(seg.data[usize::try_from(address - seg.offset).unwrap()])
+            let idx: usize = (address.into_raw() - seg.offset.into_raw())
+                .try_into()
+                .unwrap();
+            ByteInfo(seg.data[idx])
         })
     }
 
-    pub fn all_bytes(&self) -> impl Iterator<Item = (u64, ByteInfo)> + use<'_> {
+    pub fn all_bytes(
+        &self,
+    ) -> impl Iterator<Item = (Address<K>, ByteInfo)> + use<'_, K> {
         self.seglist.iter().flat_map(|seg| {
             seg.data.iter().enumerate().map(|(i, b)| {
-                (seg.offset + u64::try_from(i).unwrap(), ByteInfo(*b))
+                let raw_addr =
+                    seg.offset.into_raw() + K::Usize::try_from(i).unwrap();
+                (Address::from_raw(raw_addr), ByteInfo(*b))
             })
         })
     }
 
     pub fn all_bytes_no_tails(
         &self,
-    ) -> impl Iterator<Item = (u64, ByteInfo, usize)> + use<'_> {
+    ) -> impl Iterator<Item = (Address<K>, ByteInfo, usize)> + use<'_, K> {
         self.seglist.iter().flat_map(|seg| {
             seg.data
                 .iter()
@@ -241,21 +257,28 @@ impl ID1Section {
                         .iter()
                         .take_while(|x| ByteInfo(**x).byte_type().is_tail())
                         .count();
-                    (seg.offset + u64::try_from(i).unwrap(), ByteInfo(*b), size)
+                    let raw_addr =
+                        seg.offset.into_raw() + K::Usize::try_from(i).unwrap();
+                    (Address::from_raw(raw_addr), ByteInfo(*b), size)
                 })
         })
     }
 
     // if the address is inside some multi-byte thing, type like a struct or
     // instruction, get the address where it starts
-    pub fn prev_not_tail(&self, ea: u64) -> Option<(u64, ByteInfo)> {
+    pub fn prev_not_tail(
+        &self,
+        ea: Address<K>,
+    ) -> Option<(Address<K>, ByteInfo)> {
         // TODO can data span multiple segments? If so this is incorrect
         let (seg, seg_offset_max) = match self.segment_idx_by_address(ea) {
             // if the segment that contains the offset, check bytes from
             // the current address to the start of the segment
             Ok(idx) => {
                 let seg = &self.seglist[idx];
-                (seg, usize::try_from((ea - seg.offset) + 1).unwrap())
+                let addr: usize =
+                    ((ea - seg.offset).into_raw()).try_into().unwrap();
+                (seg, addr + 1)
             }
             // Not part not part of any segment, use the previous segment,
             // check all bytes in the segment
@@ -271,7 +294,10 @@ impl ID1Section {
     }
 
     // get the address of the next non tail thing
-    pub fn next_not_tail(&self, ea: u64) -> Option<(u64, ByteInfo)> {
+    pub fn next_not_tail(
+        &self,
+        ea: Address<K>,
+    ) -> Option<(Address<K>, ByteInfo)> {
         // TODO can data span multiple segments? If so this is incorrect
         let segs = match self.segment_idx_by_address(ea) {
             // if the segment that contains the offset
@@ -287,13 +313,13 @@ impl ID1Section {
 }
 
 #[derive(Clone, Debug)]
-pub struct SegInfo {
-    pub offset: u64,
+pub struct SegInfo<K: IDAKind> {
+    pub offset: Address<K>,
     // data and flags
     data: Vec<u32>,
 }
 
-impl SegInfo {
+impl<K: IDAKind> SegInfo<K> {
     /// len of the segment in bytes
     pub fn len(&self) -> usize {
         self.data.len()
@@ -309,10 +335,12 @@ impl SegInfo {
 
     pub fn all_bytes(
         &self,
-    ) -> impl DoubleEndedIterator<Item = (u64, ByteInfo)> + ExactSizeIterator + use<'_>
-    {
+    ) -> impl DoubleEndedIterator<Item = (Address<K>, ByteInfo)>
+           + ExactSizeIterator
+           + use<'_, K> {
         self.data.iter().enumerate().map(|(current_offset, byte)| {
-            let addr = self.offset + u64::try_from(current_offset).unwrap();
+            let addr = self.offset
+                + Address::from_raw((current_offset).try_into().unwrap());
             let byte_info = ByteInfo(*byte);
             (addr, byte_info)
         })

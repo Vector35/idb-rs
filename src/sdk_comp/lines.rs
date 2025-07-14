@@ -7,7 +7,7 @@ use super::pro::ea_t;
 use anyhow::Result;
 
 pub struct SourceFile<'a, K: IDAKind> {
-    pub address: Range<K::Usize>,
+    pub address: Range<ea_t<K>>,
     pub name: IDBStr<'a>,
 }
 

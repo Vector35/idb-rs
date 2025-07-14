@@ -7,6 +7,7 @@ use std::num::NonZeroU8;
 use std::ops::Range;
 
 use crate::ida_reader::IdbReadKind;
+use crate::Address;
 
 use super::*;
 
@@ -28,7 +29,7 @@ impl<K: IDAKind> From<SegmentStringsIdx<K>> for NetnodeIdx<K> {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Segment<K: IDAKind> {
-    pub address: Range<K::Usize>,
+    pub address: Range<Address<K>>,
     pub name: SegmentNameIdx<K>,
     // TODO class String
     pub class_id: SegmentNameIdx<K>,
@@ -109,7 +110,8 @@ impl<K: IDAKind> Segment<K> {
         let color = cursor.unpack_dd()?;
 
         Ok(Segment {
-            address: startea..startea + size,
+            address: Address::from_raw(startea)
+                ..Address::from_raw(startea + size),
             name,
             class_id,
             orgbase,

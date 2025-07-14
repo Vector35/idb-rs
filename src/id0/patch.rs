@@ -1,4 +1,4 @@
-use crate::IDAKind;
+use crate::{Address, IDAKind};
 
 use super::{ID0Entry, NetnodeIdx};
 
@@ -14,7 +14,7 @@ impl<K: IDAKind> From<SegmentPatchIdx<K>> for NetnodeIdx<K> {
 }
 
 pub struct Patch<K: IDAKind> {
-    pub address: K::Usize,
+    pub address: Address<K>,
     pub original_byte: u8,
 }
 
@@ -37,6 +37,7 @@ impl<'a, K: IDAKind> SegmentPatchOriginalValueIter<'a, K> {
         let addr_raw = &entry.key[1 + usize::from(K::BYTES)..];
 
         let address = K::usize_try_from_be_bytes(addr_raw)
+            .map(Address::from_raw)
             .ok_or_else(|| anyhow!("Invalid id1 entry address"))?;
 
         let original_value = K::usize_try_from_le_bytes(&entry.value[..])

@@ -15,27 +15,39 @@ pub fn dump_dirtree_types(args: &Args) -> Result<()> {
         FileType::Til => Err(anyhow!("TIL don't contains any ID0 data")),
         FileType::Idb => {
             let mut input = BufReader::new(File::open(&args.input)?);
-            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
-            match format {
-                idb_rs::IDBFormats::Separated(sections) => {
-                    dump_sections(sections, input)
-                }
-                idb_rs::IDBFormats::InlineUncompressed(sections) => {
-                    dump_sections(sections, input)
-                }
-                idb_rs::IDBFormats::InlineCompressed(compressed) => {
-                    let mut decompressed = Vec::new();
-                    let sections = compressed
-                        .decompress_into_memory(input, &mut decompressed)
-                        .unwrap();
-                    dump_sections(sections, Cursor::new(decompressed))
-                }
-            }
+            dump_dirtree_types_kind(
+                idb_rs::identify_idb_file(&mut input)?,
+                input,
+            )
         }
     }
 }
 
-fn dump_sections<R: IDBFormat, I: BufRead + Seek>(
+fn dump_dirtree_types_kind<I: BufRead + Seek>(
+    kind: idb_rs::IDBFormats,
+    input: I,
+) -> Result<()> {
+    match kind {
+        idb_rs::IDBFormats::Separated(IDAVariants::IDA32(sections)) => {
+            dump_sections(sections, input)
+        }
+        idb_rs::IDBFormats::Separated(IDAVariants::IDA64(sections)) => {
+            dump_sections(sections, input)
+        }
+        idb_rs::IDBFormats::InlineUncompressed(sections) => {
+            dump_sections(sections, input)
+        }
+        idb_rs::IDBFormats::InlineCompressed(compressed) => {
+            let mut decompressed = Vec::new();
+            let sections = compressed
+                .decompress_into_memory(input, &mut decompressed)
+                .unwrap();
+            dump_sections(sections, Cursor::new(decompressed))
+        }
+    }
+}
+
+fn dump_sections<K: IDAKind, R: IDBFormat<K>, I: BufRead + Seek>(
     read: R,
     mut input: I,
 ) -> Result<()> {
@@ -47,10 +59,7 @@ fn dump_sections<R: IDBFormat, I: BufRead + Seek>(
         .ok_or_else(|| anyhow!("IDB file don't contains a TIL sector"))?;
     let id0 = read.read_id0(&mut input, id0_location)?;
     let til = read.read_til(&mut input, til_location)?;
-    match id0 {
-        IDAVariants::IDA32(id0) => dump(&id0, &til),
-        IDAVariants::IDA64(id0) => dump(&id0, &til),
-    }
+    dump(&id0, &til)
 }
 
 fn dump<K: IDAKind>(id0: &ID0Section<K>, til: &TILSection) -> Result<()> {

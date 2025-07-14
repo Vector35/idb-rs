@@ -24,7 +24,7 @@ pub struct AddressInfo<'a, K: IDAKind> {
 impl<'a, K: IDAKind> AddressInfo<'a, K> {
     pub fn new(
         id0: &'a ID0Section<K>,
-        id1: &ID1Section,
+        id1: &ID1Section<K>,
         id2: Option<&ID2Section<K>>,
         netdelta: Netdelta<K>,
         address: Address<K>,
@@ -198,7 +198,7 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
 
 pub fn all_address_info<'a, K: IDAKind>(
     id0: &'a ID0Section<K>,
-    id1: &ID1Section,
+    id1: &ID1Section<K>,
     id2: Option<&ID2Section<K>>,
     netdelta: Netdelta<K>,
 ) -> Vec<(AddressInfo<'a, K>, usize)> {

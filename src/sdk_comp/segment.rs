@@ -9,7 +9,7 @@ use super::pro::{bgcolor_t, ea_t, sel_t, uval_t};
 
 #[derive(Debug, Clone)]
 pub struct segment_t<K: IDAKind> {
-    pub range: Range<K::Usize>,
+    pub range: Range<ea_t<K>>,
     pub name: uval_t<K>,
     pub sclass: uval_t<K>,
     pub orgbase: uval_t<K>,
@@ -34,7 +34,7 @@ pub(crate) fn getseg_inner<K: IDAKind>(
     };
     for seg in id0.segments(seg_idx) {
         let seg = seg?;
-        if seg.address.contains(&ea.as_raw()) {
+        if seg.address.contains(&ea) {
             return Ok(Some(seg));
         }
     }
@@ -49,16 +49,16 @@ pub fn getseg<K: IDAKind>(
     getseg_inner(id0, ea).map(|seg| {
         seg.map(|seg| segment_t {
             range: seg.address,
-            name: uval_t::from_raw(seg.name.0),
-            sclass: uval_t::from_raw(seg.class_id.0),
-            orgbase: uval_t::from_raw(seg.orgbase),
+            name: seg.name.0,
+            sclass: seg.class_id.0,
+            orgbase: seg.orgbase,
             align: seg.align.into(),
             comb: seg.comb.into(),
             perm: seg.perm.map(|perm| perm.into_raw()).unwrap_or(0),
             bitness: seg.bitness.into(),
             flags: seg.flags.into_raw().into(),
-            sel: sel_t::from_raw(seg.selector),
-            defsr: seg.defsr.map(|def| sel_t::from_raw(def)),
+            sel: seg.selector,
+            defsr: seg.defsr,
             type_: seg.seg_type.into(),
             color: seg.color,
         })
