@@ -24,7 +24,7 @@ use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
 use std::marker::PhantomData;
 use std::num::NonZeroU64;
 
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::id2::ID2Section;
@@ -433,6 +433,7 @@ impl<K: IDAKind> SeparatedSections<K> {
             self.version,
             self.magic,
         )
+        .context("Read ID0")
     }
 
     pub fn read_id1<I: IdbBufRead + Seek>(
@@ -446,6 +447,7 @@ impl<K: IDAKind> SeparatedSections<K> {
             self.version,
             self.magic,
         )
+        .context("Read ID1")
     }
 
     pub fn read_id2<I: IdbBufRead + Seek>(
@@ -460,6 +462,7 @@ impl<K: IDAKind> SeparatedSections<K> {
             self.version,
             self.magic,
         )
+        .context("Read ID2")
     }
 
     pub fn read_nam<I: IdbBufRead + Seek>(
@@ -473,6 +476,7 @@ impl<K: IDAKind> SeparatedSections<K> {
             self.version,
             self.magic,
         )
+        .context("Read Nam")
     }
 
     pub fn read_til<I: IdbBufRead + Seek>(
@@ -486,6 +490,7 @@ impl<K: IDAKind> SeparatedSections<K> {
             self.version,
             self.magic,
         )
+        .context("Read Til")
     }
 
     pub fn decompress_til<I: IdbBufRead + Seek, O: Write>(
@@ -509,6 +514,7 @@ impl<K: IDAKind> SeparatedSections<K> {
                 TILSection::decompress(&mut input, output)
             }
         }
+        .context("Decompress TIL")
     }
 }
 
