@@ -1,0 +1,7 @@
+---
+source: src/test.rs
+expression: nam
+---
+names:
+  - 4173
+  - 12288

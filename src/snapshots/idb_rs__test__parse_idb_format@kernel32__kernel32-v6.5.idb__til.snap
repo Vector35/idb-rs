@@ -1,0 +1,466 @@
+---
+source: src/test.rs
+expression: til
+---
+header:
+  format: 18
+  description: Local type definitions
+  flags: 18
+  dependencies:
+    - ntddk
+    - ntapi
+    - vc6win
+  compiler_id: Unknown
+  compiler_guessed: false
+  cc: ~
+  cn: N32F48
+  cm: NN
+  def_align: ~
+  type_ordinal_alias: ~
+  size_int: 4
+  size_bool: 1
+  size_enum: 4
+  extended_sizeof_info: ~
+  size_long_double: ~
+  is_universal: false
+symbols: []
+types:
+  - name: _EH4_SCOPETABLE_RECORD
+    ordinal: 1
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: EnclosingLevel
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Basic:
+                    Int:
+                      is_signed: ~
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: FilterFunc
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic: Void
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: HandlerFunc
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Basic: Void
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: _EH4_SCOPETABLE
+    ordinal: 2
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: GSCookieOffset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: DWORD
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: GSCookieXOROffset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: DWORD
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: EHCookieOffset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: DWORD
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: EHCookieXOROffset
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: DWORD
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ScopeRecord
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Array:
+                    alignment: ~
+                    base: 0
+                    nelem: ~
+                    elem_type:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: Struct
+                          typeref_value:
+                            Ref: 0
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: PSCOPETABLE_ENTRY
+    ordinal: 3
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Pointer:
+          closure: Default
+          modifier: ~
+          shifted: ~
+          typ:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Typeref:
+                ref_type: Struct
+                typeref_value:
+                  UnsolvedName: _SCOPETABLE_ENTRY
+    sclass: ~
+  - name: _EH3_EXCEPTION_REGISTRATION
+    ordinal: 4
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: Next
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: Struct
+                          typeref_value:
+                            Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ExceptionHandler
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: PVOID
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: ScopeTable
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      Ref: 2
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: TryLevel
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: DWORD
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+  - name: EH3_EXCEPTION_REGISTRATION
+    ordinal: 5
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Typeref:
+          ref_type: Struct
+          typeref_value:
+            Ref: 3
+    sclass: ~
+  - name: PEH3_EXCEPTION_REGISTRATION
+    ordinal: 6
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Pointer:
+          closure: Default
+          modifier: ~
+          shifted: ~
+          typ:
+            comment: ~
+            is_const: false
+            is_volatile: false
+            type_variant:
+              Typeref:
+                ref_type: Struct
+                typeref_value:
+                  Ref: 3
+    sclass: ~
+  - name: CPPEH_RECORD
+    ordinal: 7
+    tinfo:
+      comment: ~
+      is_const: false
+      is_volatile: false
+      type_variant:
+        Struct:
+          effective_alignment: ~
+          members:
+            - name: old_esp
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: ~
+                    typeref_value:
+                      UnsolvedName: DWORD
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: exc_ptr
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Pointer:
+                    closure: Default
+                    modifier: ~
+                    shifted: ~
+                    typ:
+                      comment: ~
+                      is_const: false
+                      is_volatile: false
+                      type_variant:
+                        Typeref:
+                          ref_type: ~
+                          typeref_value:
+                            UnsolvedName: EXCEPTION_POINTERS
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+            - name: registration
+              comment: ~
+              member_type:
+                comment: ~
+                is_const: false
+                is_volatile: false
+                type_variant:
+                  Typeref:
+                    ref_type: Struct
+                    typeref_value:
+                      Ref: 3
+              att: ~
+              alignment: ~
+              is_baseclass: false
+              is_unaligned: false
+              is_vft: false
+              is_method: false
+              is_unknown_8: false
+          extra_padding: ~
+          is_unaligned: false
+          is_msstruct: false
+          is_cppobj: false
+          is_vft: false
+          is_fixed: false
+          is_uknown_8: false
+          alignment: ~
+    sclass: ~
+macros: []
