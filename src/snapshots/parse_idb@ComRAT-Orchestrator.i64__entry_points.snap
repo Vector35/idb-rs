@@ -1,0 +1,81 @@
+---
+source: src/test.rs
+expression: entry_points
+---
+- name: VFEP
+  address: 6442774336
+  forwarded: ~
+  entry_type: ~
+- name: UMEP
+  address: 6442774352
+  forwarded: ~
+  entry_type: ~
+- name: DllEntryPoint
+  address: 6443139928
+  forwarded: ~
+  entry_type:
+    comment: ~
+    is_const: false
+    is_volatile: false
+    type_variant:
+      Function:
+        calling_convention: Stdcall
+        ret:
+          comment: ~
+          is_const: false
+          is_volatile: false
+          type_variant:
+            Typeref:
+              ref_type: ~
+              typeref_value:
+                UnsolvedName: BOOL
+        args:
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Typeref:
+                  ref_type: ~
+                  typeref_value:
+                    UnsolvedName: HINSTANCE
+            loc: ~
+            flags: ~
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Typeref:
+                  ref_type: ~
+                  typeref_value:
+                    UnsolvedName: DWORD
+            loc: ~
+            flags: ~
+          - name: ~
+            comment: ~
+            ty:
+              comment: ~
+              is_const: false
+              is_volatile: false
+              type_variant:
+                Typeref:
+                  ref_type: ~
+                  typeref_value:
+                    UnsolvedName: LPVOID
+            loc: ~
+            flags: ~
+        retloc: ~
+        method: ~
+        is_noret: false
+        is_pure: false
+        is_high: false
+        is_static: false
+        is_virtual: false
+        is_const: false
+        is_constructor: false
+        is_destructor: false

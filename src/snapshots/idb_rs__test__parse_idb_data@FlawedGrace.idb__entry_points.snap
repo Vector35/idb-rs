@@ -1,8 +1,0 @@
----
-source: src/test.rs
-expression: entry_points
----
-- name: start
-  address: 4448889
-  forwarded: ~
-  entry_type: ~

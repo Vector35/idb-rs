@@ -1,5 +1,0 @@
----
-source: src/test.rs
-expression: c_header_path
----
-"/Program Files/Microsoft Visual Studio/VC98/include\u0000"

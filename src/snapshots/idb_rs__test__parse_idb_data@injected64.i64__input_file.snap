@@ -1,5 +1,0 @@
----
-source: src/test.rs
-expression: input_file
----
-"C:\\Temp\\injected64.bin\u0000"

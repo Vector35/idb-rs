@@ -1,5 +1,0 @@
----
-source: src/test.rs
-expression: database_creation_version
----
-"7.4\u0000"

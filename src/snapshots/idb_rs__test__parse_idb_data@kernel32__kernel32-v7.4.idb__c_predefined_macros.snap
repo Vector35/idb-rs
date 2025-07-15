@@ -1,5 +1,0 @@
----
-source: src/test.rs
-expression: c_predefined_macros
----
-"_cdecl=__cdecl;_pascal=__pascal;_huge=__huge;_near=__near;_far=__far;__inline=;_inline=;inline=;CM_WINNT;MPR50;_INTEGRAL_MAX_BITS=64;_MSC_VER=1400;_CHAR_UNSIGNED=1;_M_IX86=300;__MT__=1;__TLS__=1;_Windows=1;__WIN32__=1;_WIN32_WINNT=0x0500;WINVER=0x0500;_WIN32=1;OLEDBVER=0x0250;SECURITY_WIN32;WIN32_SUPPORT;DBNTWIN32;W32SUT_32;\u0000"

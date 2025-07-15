@@ -1,5 +1,0 @@
----
-source: src/test.rs
-expression: input_file
----
-"C:\\Users\\user\\Downloads\\bitness\\pyidb-bitness\\cat\u0000"

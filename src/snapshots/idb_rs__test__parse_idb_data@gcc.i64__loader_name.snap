@@ -1,6 +1,0 @@
----
-source: src/test.rs
-expression: loader_name
----
-- macho64.dll
-- Mach-O file (EXECUTE). X86_64

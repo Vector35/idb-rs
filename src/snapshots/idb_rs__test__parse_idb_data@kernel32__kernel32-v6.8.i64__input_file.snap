@@ -1,5 +1,0 @@
----
-source: src/test.rs
-expression: input_file
----
-"/home/xvilka/radare/python-idb/tests/data/v6.8/x64/kernel32.dll\u0000"

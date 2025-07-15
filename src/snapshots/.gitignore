@@ -1,2 +1,2 @@
-*.new
-idb_rs__test__parse_*@local__*
+parse_idb@local__*
+parse_til@local__*

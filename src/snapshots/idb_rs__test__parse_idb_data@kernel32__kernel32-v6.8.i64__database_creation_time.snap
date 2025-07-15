@@ -1,5 +1,0 @@
----
-source: src/test.rs
-expression: database_creation_time
----
-1596061192

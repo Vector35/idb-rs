@@ -1,5 +1,0 @@
----
-source: src/test.rs
-expression: input_file_crc32
----
-781741769

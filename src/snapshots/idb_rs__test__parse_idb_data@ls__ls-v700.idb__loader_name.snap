@@ -1,6 +1,0 @@
----
-source: src/test.rs
-expression: loader_name
----
-- elf.ldw
-- ELF for Intel 386 (Executable)

@@ -1,7 +1,0 @@
----
-source: src/test.rs
-expression: nam
----
-names:
-  - 4194304
-  - 4194320
