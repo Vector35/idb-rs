@@ -1,5 +1,0 @@
----
-source: src/test.rs
-expression: c_header_path
----
-"/usr/local/include:/usr/include\u0000"

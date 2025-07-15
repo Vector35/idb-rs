@@ -1,5 +1,0 @@
----
-source: src/test.rs
-expression: input_file
----
-"/tmp/empty-main\u0000"
