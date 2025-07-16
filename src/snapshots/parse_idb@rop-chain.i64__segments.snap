@@ -1,0 +1,25 @@
+---
+hash: CF8B9DC33BCF9E87
+source: src/test.rs
+expression: segments
+---
+[
+ (
+  address: (
+   start: (4194304),
+   end: (4196155),
+  ),
+  name: (0),
+  class_id: (1),
+  orgbase: 0,
+  flags: (16),
+  align: RelByte,
+  comb: Pub,
+  perm: None,
+  bitness: S64Bits,
+  seg_type: Code,
+  selector: 1,
+  defsr: (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+]

@@ -1,0 +1,6 @@
+---
+hash: F4A5451690FC37A2
+source: src/test.rs
+expression: input_file_size
+---
+Some(47904)

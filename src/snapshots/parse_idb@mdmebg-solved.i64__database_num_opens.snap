@@ -1,0 +1,6 @@
+---
+hash: 1F73308400815FEC
+source: src/test.rs
+expression: database_num_opens
+---
+8

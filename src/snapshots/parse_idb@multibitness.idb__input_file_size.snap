@@ -1,0 +1,6 @@
+---
+hash: 3FD90BF312E54E9A
+source: src/test.rs
+expression: input_file_size
+---
+Some(0)

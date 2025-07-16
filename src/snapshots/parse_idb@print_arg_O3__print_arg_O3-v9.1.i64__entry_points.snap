@@ -1,0 +1,25 @@
+---
+hash: CF7AE3ADDC55ABED
+source: src/test.rs
+expression: entry_points
+---
+[
+ (
+  name: ".init_proc",
+  address: 4096,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "start",
+  address: 4240,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: ".term_proc",
+  address: 4516,
+  forwarded: None,
+  entry_type: None,
+ ),
+]

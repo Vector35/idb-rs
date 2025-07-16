@@ -1,0 +1,6 @@
+---
+hash: 359DFEC6FB73EBC0
+source: src/test.rs
+expression: input_file_size
+---
+Some(455680)

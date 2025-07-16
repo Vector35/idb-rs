@@ -1,0 +1,6 @@
+---
+hash: 1F650A9E68FE69DA
+source: src/test.rs
+expression: c_header_path
+---
+Some("/Program Files/Microsoft Visual Studio/VC98/include\0")

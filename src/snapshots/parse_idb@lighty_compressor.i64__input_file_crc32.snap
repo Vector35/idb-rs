@@ -1,0 +1,6 @@
+---
+hash: 7C5555846B599408
+source: src/test.rs
+expression: input_file_crc32
+---
+961532632

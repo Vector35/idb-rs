@@ -1,0 +1,6 @@
+---
+hash: 0BD13B04FCC0BC7F
+source: src/test.rs
+expression: database_num_opens
+---
+30

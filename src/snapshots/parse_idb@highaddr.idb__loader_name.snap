@@ -1,0 +1,6 @@
+---
+hash: D7D8CA735C91D248
+source: src/test.rs
+expression: loader_name
+---
+Some([])

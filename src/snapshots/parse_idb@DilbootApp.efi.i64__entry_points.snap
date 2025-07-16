@@ -1,0 +1,81 @@
+---
+hash: BFB11F78F60E34BD
+source: src/test.rs
+expression: entry_points
+---
+[
+ (
+  name: "_ModuleEntryPoint",
+  address: 1384,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Function((
+    calling_convention: Some(Fastcall),
+    ret: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Typeref((
+      ref_type: None,
+      typeref_value: UnsolvedName(Some("EFI_STATUS")),
+     )),
+    ),
+    args: [
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Typeref((
+        ref_type: None,
+        typeref_value: UnsolvedName(Some("EFI_HANDLE")),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Pointer((
+        closure: Default,
+        modifier: None,
+        shifted: None,
+        typ: (
+         comment: None,
+         is_const: false,
+         is_volatile: false,
+         type_variant: Typeref((
+          ref_type: None,
+          typeref_value: UnsolvedName(Some("EFI_SYSTEM_TABLE")),
+         )),
+        ),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+    ],
+    retloc: None,
+    method: None,
+    is_noret: false,
+    is_pure: false,
+    is_high: false,
+    is_static: false,
+    is_virtual: false,
+    is_const: false,
+    is_constructor: false,
+    is_destructor: false,
+   )),
+  )),
+ ),
+]

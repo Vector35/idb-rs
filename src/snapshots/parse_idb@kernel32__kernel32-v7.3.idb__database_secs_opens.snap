@@ -1,0 +1,6 @@
+---
+hash: A8EE6DDFDDED1A87
+source: src/test.rs
+expression: database_secs_opens
+---
+142

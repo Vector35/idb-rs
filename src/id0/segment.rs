@@ -1,11 +1,13 @@
 use anyhow::Result;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use serde::Serialize;
 
 use std::marker::PhantomData;
 use std::num::NonZeroU8;
 use std::ops::Range;
 
 use crate::ida_reader::IdbReadKind;
+use crate::Address;
 
 use super::*;
 
@@ -25,9 +27,9 @@ impl<K: IDAKind> From<SegmentStringsIdx<K>> for NetnodeIdx<K> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Segment<K: IDAKind> {
-    pub address: Range<K::Usize>,
+    pub address: Range<Address<K>>,
     pub name: SegmentNameIdx<K>,
     // TODO class String
     pub class_id: SegmentNameIdx<K>,
@@ -60,7 +62,7 @@ pub struct Segment<K: IDAKind> {
     pub color: u32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 pub struct SegmentNameIdx<K: IDAKind>(pub K::Usize);
 
 impl<K: IDAKind> Segment<K> {
@@ -108,7 +110,8 @@ impl<K: IDAKind> Segment<K> {
         let color = cursor.unpack_dd()?;
 
         Ok(Segment {
-            address: startea..startea + size,
+            address: Address::from_raw(startea)
+                ..Address::from_raw(startea + size),
             name,
             class_id,
             orgbase,
@@ -125,7 +128,7 @@ impl<K: IDAKind> Segment<K> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize)]
 pub struct SegmentFlag(u8);
 impl SegmentFlag {
     fn from_raw(value: u32) -> Option<Self> {
@@ -190,7 +193,7 @@ impl core::fmt::Debug for SegmentFlag {
     }
 }
 
-#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive)]
+#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive, Serialize)]
 #[repr(u8)]
 pub enum SegmentAlignment {
     /// Absolute segment.
@@ -227,7 +230,7 @@ pub enum SegmentAlignment {
     Rel2048Bytes = flag::segs::sa::SA_REL2048_BYTES,
 }
 
-#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive)]
+#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive, Serialize)]
 #[repr(u8)]
 pub enum SegmentCombination {
     /// Private.
@@ -252,7 +255,7 @@ pub enum SegmentCombination {
     Pub3 = super::flag::segs::sc::SC_PUB3,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize)]
 pub struct SegmentPermission(NonZeroU8);
 
 impl SegmentPermission {
@@ -296,7 +299,7 @@ impl core::fmt::Debug for SegmentPermission {
     }
 }
 
-#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive)]
+#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive, Serialize)]
 #[repr(u8)]
 pub enum SegmentBitness {
     S16Bits = 0,
@@ -312,7 +315,7 @@ impl SegmentBitness {
 
 // Has segment a special type?. (#SEG_XTRN, #SEG_GRP, #SEG_ABSSYM, #SEG_COMM)
 // Does the address belong to a segment with a special type?.(#SEG_XTRN, #SEG_GRP, #SEG_ABSSYM, #SEG_COMM)
-#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive)]
+#[derive(Clone, Copy, Debug, TryFromPrimitive, IntoPrimitive, Serialize)]
 #[repr(u8)]
 pub enum SegmentType {
     /// unknown type, no assumptions
@@ -371,7 +374,7 @@ impl<'a, K: IDAKind> SegmentStringIter<'a, K> {
         let segment_strings = SegmentStringsIter {
             start: 0,
             end: 0,
-            value: &[],
+            value: IDBStr::new(&[]),
             _kind: PhantomData,
         };
         Self {
@@ -379,7 +382,9 @@ impl<'a, K: IDAKind> SegmentStringIter<'a, K> {
             segment_strings,
         }
     }
-    fn inner_next(&mut self) -> Result<Option<(SegmentNameIdx<K>, &'a [u8])>> {
+    fn inner_next(
+        &mut self,
+    ) -> Result<Option<(SegmentNameIdx<K>, IDBStr<'a>)>> {
         // get the next segment string
         if let Some(value) = self.segment_strings.next() {
             return Some(value).transpose();
@@ -398,7 +403,7 @@ impl<'a, K: IDAKind> SegmentStringIter<'a, K> {
         self.segment_strings = SegmentStringsIter {
             start,
             end,
-            value: current_value,
+            value: IDBStr::new(current_value),
             _kind: PhantomData,
         };
         self.inner_next()
@@ -406,7 +411,7 @@ impl<'a, K: IDAKind> SegmentStringIter<'a, K> {
 }
 
 impl<'a, K: IDAKind> Iterator for SegmentStringIter<'a, K> {
-    type Item = Result<(SegmentNameIdx<K>, &'a [u8])>;
+    type Item = Result<(SegmentNameIdx<K>, IDBStr<'a>)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner_next().transpose()
@@ -417,34 +422,36 @@ impl<'a, K: IDAKind> Iterator for SegmentStringIter<'a, K> {
 pub(crate) struct SegmentStringsIter<'a, K> {
     pub(crate) start: u32,
     pub(crate) end: u32,
-    pub(crate) value: &'a [u8],
+    pub(crate) value: IDBStr<'a>,
     _kind: PhantomData<K>,
 }
 
 impl<'a, K: IDAKind> SegmentStringsIter<'a, K> {
-    fn inner_next(&mut self) -> Result<Option<(SegmentNameIdx<K>, &'a [u8])>> {
+    fn inner_next(
+        &mut self,
+    ) -> Result<Option<(SegmentNameIdx<K>, IDBStr<'a>)>> {
+        let mut bytes = self.value.as_bytes();
         if self.start == self.end {
             ensure!(
-                self.value.is_empty(),
+                bytes.is_empty(),
                 "Unparsed data in ID0 Segment String: {}",
-                self.value.len()
+                bytes.len()
             );
             return Ok(None);
         }
-        let len = self.value.unpack_dd()?;
-        let (value, rest) = self
-            .value
+        let len = bytes.unpack_dd()?;
+        let (value, rest) = bytes
             .split_at_checked(len.try_into().unwrap())
             .ok_or_else(|| anyhow!("Invalid ID0 Segment String len"))?;
-        self.value = rest;
+        self.value = IDBStr::new(rest);
         let idx = self.start;
         self.start += 1;
-        Ok(Some((SegmentNameIdx(idx.into()), value)))
+        Ok(Some((SegmentNameIdx(idx.into()), IDBStr::new(value))))
     }
 }
 
 impl<'a, K: IDAKind> Iterator for SegmentStringsIter<'a, K> {
-    type Item = Result<(SegmentNameIdx<K>, &'a [u8])>;
+    type Item = Result<(SegmentNameIdx<K>, IDBStr<'a>)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner_next().transpose()

@@ -1,0 +1,98 @@
+---
+hash: 3989436F7C0B0894
+source: src/test.rs
+expression: entry_points
+---
+[
+ (
+  name: "VFEP",
+  address: 6442774336,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "UMEP",
+  address: 6442774352,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "DllEntryPoint",
+  address: 6443139928,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Function((
+    calling_convention: Some(Stdcall),
+    ret: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Typeref((
+      ref_type: None,
+      typeref_value: UnsolvedName(Some("BOOL")),
+     )),
+    ),
+    args: [
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Typeref((
+        ref_type: None,
+        typeref_value: UnsolvedName(Some("HINSTANCE")),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Typeref((
+        ref_type: None,
+        typeref_value: UnsolvedName(Some("DWORD")),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Typeref((
+        ref_type: None,
+        typeref_value: UnsolvedName(Some("LPVOID")),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+    ],
+    retloc: None,
+    method: None,
+    is_noret: false,
+    is_pure: false,
+    is_high: false,
+    is_static: false,
+    is_virtual: false,
+    is_const: false,
+    is_constructor: false,
+    is_destructor: false,
+   )),
+  )),
+ ),
+]

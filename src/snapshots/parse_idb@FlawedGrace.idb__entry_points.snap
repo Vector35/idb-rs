@@ -1,0 +1,13 @@
+---
+hash: CDA2859F4483422B
+source: src/test.rs
+expression: entry_points
+---
+[
+ (
+  name: "start",
+  address: 4448889,
+  forwarded: None,
+  entry_type: None,
+ ),
+]

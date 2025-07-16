@@ -1,0 +1,6 @@
+---
+hash: 2EF478164DA774CA
+source: src/test.rs
+expression: input_file_size
+---
+Some(115200)

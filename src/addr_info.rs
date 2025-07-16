@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use crate::bytes_info::BytesInfo;
 use crate::id0::entry_iter::EntryTagContinuousSubkeys;
 use crate::id0::flag::nalt::x::NALT_DREF_FROM;
@@ -12,7 +10,7 @@ use crate::id0::{
 use crate::id1::{ByteDataType, ByteInfo, ByteType, ID1Section};
 use crate::id2::ID2Section;
 use crate::til::Type;
-use crate::{Address, IDAKind};
+use crate::{Address, IDAKind, IDBStr, IDBString};
 
 use anyhow::{anyhow, Result};
 
@@ -26,7 +24,7 @@ pub struct AddressInfo<'a, K: IDAKind> {
 impl<'a, K: IDAKind> AddressInfo<'a, K> {
     pub fn new(
         id0: &'a ID0Section<K>,
-        id1: &ID1Section,
+        id1: &ID1Section<K>,
         id2: Option<&ID2Section<K>>,
         netdelta: Netdelta<K>,
         address: Address<K>,
@@ -76,32 +74,32 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
     // the function `get_cmt` search for the next non-tail entry in id1,
     // maybe that's for compatibility reasons, but maybe the `has_comment`
     // flag should be ignored in tail id1 entries
-    pub fn comment(&self) -> Option<&'a [u8]> {
+    pub fn comment(&self) -> Option<IDBStr<'a>> {
         self.id0.comment_at(self.netnode())
     }
 
-    pub fn comment_repeatable(&self) -> Option<&'a [u8]> {
+    pub fn comment_repeatable(&self) -> Option<IDBStr<'a>> {
         if !self.byte_info.has_comment() {
             return None;
         }
         self.id0.comment_repeatable_at(self.netnode())
     }
 
-    pub fn comment_pre(&self) -> Option<impl Iterator<Item = &[u8]>> {
+    pub fn comment_pre(&self) -> Option<impl Iterator<Item = IDBStr<'a>>> {
         if !self.byte_info.has_comment_ext() {
             return None;
         }
         Some(self.id0.comment_pre_at(self.netnode()))
     }
 
-    pub fn comment_post(&self) -> Option<impl Iterator<Item = &[u8]>> {
+    pub fn comment_post(&self) -> Option<impl Iterator<Item = IDBStr<'a>>> {
         if !self.byte_info.has_comment_ext() {
             return None;
         }
         Some(self.id0.comment_post_at(self.netnode()))
     }
 
-    pub fn label(&self) -> Result<Option<Cow<'a, [u8]>>> {
+    pub fn label(&self) -> Result<Option<IDBString>> {
         if !self.byte_info.has_name() {
             if !self.byte_info.has_dummy_name() {
                 return Ok(None);
@@ -121,15 +119,15 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
                     anyhow!("Label is not a valid CStr or ID0 Ref")
                 })?;
             match value {
-                ID0CStr::CStr(label) => Ok(Some(Cow::Borrowed(label))),
+                ID0CStr::CStr(label) => Ok(Some(label.to_idb_string())),
                 ID0CStr::Ref(label_ref) => {
                     let entries = self.id0.address_info_value(label_ref)?;
-                    let label = entries
+                    let label: Vec<u8> = entries
                         .iter()
                         .flat_map(|x| &x.value[..])
                         .copied()
                         .collect();
-                    Ok(Some(Cow::Owned(label)))
+                    Ok(Some(IDBString::new(label)))
                 }
             }
         }
@@ -200,7 +198,7 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
 
 pub fn all_address_info<'a, K: IDAKind>(
     id0: &'a ID0Section<K>,
-    id1: &ID1Section,
+    id1: &ID1Section<K>,
     id2: Option<&ID2Section<K>>,
     netdelta: Netdelta<K>,
 ) -> Vec<(AddressInfo<'a, K>, usize)> {

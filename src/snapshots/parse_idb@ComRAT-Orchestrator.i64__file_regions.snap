@@ -1,0 +1,27 @@
+---
+hash: 11C3B1611E1892EE
+source: src/test.rs
+expression: file_regions
+---
+[
+ (
+  start: 6442455040,
+  end: 6443279360,
+  eva: 1024,
+ ),
+ (
+  start: 6443282432,
+  end: 6443721728,
+  eva: 825344,
+ ),
+ (
+  start: 6443724800,
+  end: 6444103680,
+  eva: 1264640,
+ ),
+ (
+  start: 6444154880,
+  end: 6444192256,
+  eva: 1643520,
+ ),
+]

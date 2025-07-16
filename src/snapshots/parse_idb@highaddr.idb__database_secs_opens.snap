@@ -1,0 +1,6 @@
+---
+hash: 16C440DBC614C29F
+source: src/test.rs
+expression: database_secs_opens
+---
+335

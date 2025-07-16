@@ -1,0 +1,79 @@
+---
+hash: A87FE98C8AD1405C
+source: src/test.rs
+expression: segments
+---
+[
+ (
+  address: (
+   start: (6442455040),
+   end: (6442520576),
+  ),
+  name: (1),
+  class_id: (2),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((5)),
+  bitness: S64Bits,
+  seg_type: Code,
+  selector: 1,
+  defsr: (1, 1, 1, 2, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6442520576),
+   end: (6442520600),
+  ),
+  name: (6),
+  class_id: (4),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((4)),
+  bitness: S64Bits,
+  seg_type: Xtrn,
+  selector: 4,
+  defsr: (1, 1, 1, 2, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6442520600),
+   end: (6442524672),
+  ),
+  name: (3),
+  class_id: (4),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((4)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 2,
+  defsr: (1, 1, 1, 2, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6442524672),
+   end: (6442528768),
+  ),
+  name: (5),
+  class_id: (4),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((4)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 3,
+  defsr: (1, 1, 1, 2, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+]

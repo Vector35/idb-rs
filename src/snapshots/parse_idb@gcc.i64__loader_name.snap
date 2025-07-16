@@ -1,0 +1,9 @@
+---
+hash: A26D52DCA9A569D1
+source: src/test.rs
+expression: loader_name
+---
+Some([
+ "macho64.dll",
+ "Mach-O file (EXECUTE). X86_64",
+])

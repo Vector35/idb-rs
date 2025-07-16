@@ -20,7 +20,7 @@ fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
     println!("Segment strings AKA `$ segstrings`: ");
     for entry in id0.segment_strings(idx) {
         let (name_idx, name) = entry?;
-        println!("  {} {}", name_idx.0, String::from_utf8_lossy(name));
+        println!("  {} {name}", name_idx.0);
     }
 
     Ok(())

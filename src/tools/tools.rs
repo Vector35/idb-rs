@@ -46,11 +46,14 @@ use dump_dirtree_bookmarks_structplace::dump_dirtree_bookmarks_structplace;
 mod dump_dirtree_bookmarks_tiplace;
 use dump_dirtree_bookmarks_tiplace::dump_dirtree_bookmarks_tiplace;
 mod tilib;
-use idb_rs::id0::ID0SectionVariants;
-use idb_rs::id2::ID2SectionVariants;
+use idb_rs::id0::ID0Section;
+use idb_rs::id2::ID2Section;
 use idb_rs::nam::NamSection;
 use idb_rs::til::section::TILSection;
-use idb_rs::IDBFormat;
+use idb_rs::{
+    identify_idb_file, IDAKind, IDAVariants, IDBFormat, IDBFormats, IDA32,
+    IDA64,
+};
 use tilib::tilib_print;
 mod produce_idc;
 use produce_idc::produce_idc;
@@ -58,7 +61,7 @@ use produce_idc::produce_idc;
 use idb_rs::id1::ID1Section;
 
 use std::fs::File;
-use std::io::{BufRead, BufReader, Cursor, Seek};
+use std::io::{BufRead, BufReader, Seek};
 use std::path::PathBuf;
 
 use anyhow::{anyhow, Result};
@@ -179,224 +182,177 @@ impl Args {
     }
 }
 
-fn get_id0_section(args: &Args) -> Result<ID0SectionVariants> {
-    match args.input_type() {
-        FileType::Til => Err(anyhow!("TIL don't contains any ID0 data")),
-        FileType::Idb => {
-            let mut input = BufReader::new(File::open(&args.input)?);
-            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
-            match format {
-                idb_rs::IDBFormats::Separated(sections) => {
-                    get_id0_section_fmt(sections, input)
-                }
-                idb_rs::IDBFormats::InlineUncompressed(sections) => {
-                    get_id0_section_fmt(sections, input)
-                }
-                idb_rs::IDBFormats::InlineCompressed(compressed) => {
-                    let mut decompressed = Vec::new();
-                    let sections = compressed
-                        .decompress_into_memory(input, &mut decompressed)?;
-                    get_id0_section_fmt(sections, Cursor::new(decompressed))
-                }
-            }
-        }
-    }
+trait ParseSection {
+    type Section<K: IDAKind>;
+    fn parse_section<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
+        idb: F,
+        input: I,
+    ) -> Result<Self::Section<K>>;
 }
 
-fn get_id0_id1_id2_sections(
+fn get_sections<P: ParseSection>(
     args: &Args,
-) -> Result<(ID0SectionVariants, ID1Section, Option<ID2SectionVariants>)> {
+) -> Result<IDAVariants<P::Section<IDA32>, P::Section<IDA64>>> {
     match args.input_type() {
         FileType::Til => Err(anyhow!("TIL don't contains any ID0 data")),
         FileType::Idb => {
             let mut input = BufReader::new(File::open(&args.input)?);
-            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
-            match format {
-                idb_rs::IDBFormats::Separated(sections) => {
-                    get_id0_id1_id2_sections_inner(sections, input)
-                }
-                idb_rs::IDBFormats::InlineUncompressed(sections) => {
-                    get_id0_id1_id2_sections_inner(sections, input)
-                }
-                idb_rs::IDBFormats::InlineCompressed(compressed) => {
-                    let mut decompressed = Vec::new();
-                    let sections = compressed.decompress_into_memory(
-                        &mut input,
-                        &mut decompressed,
-                    )?;
-                    get_id0_id1_id2_sections_inner(sections, input)
-                }
-            }
+            get_sections_inner::<_, P>(
+                identify_idb_file(&mut input)?,
+                &mut input,
+            )
         }
     }
 }
 
-fn get_id0_id1_id2_sections_inner<R: IDBFormat, I: BufRead + Seek>(
-    sections: R,
-    mut input: I,
-) -> Result<(ID0SectionVariants, ID1Section, Option<ID2SectionVariants>)> {
-    let id0_location = sections
-        .id0_location()
-        .ok_or_else(|| anyhow!("IDB file don't contains a ID0 sector"))?;
-    let id1_location = sections
-        .id1_location()
-        .ok_or_else(|| anyhow!("IDB file don't contains a ID1 sector"))?;
-    let id2_location = sections.id2_location();
-    let id0 = sections.read_id0(&mut input, id0_location)?;
-    let id1 = sections.read_id1(&mut input, id1_location)?;
-    let id2 = id2_location
-        .map(|id2| sections.read_id2(&mut input, id2))
-        .transpose()?;
-    Ok((id0, id1, id2))
-}
-
-fn get_id0_section_fmt<F: IDBFormat, I: BufRead + Seek>(
-    idb: F,
-    input: I,
-) -> Result<ID0SectionVariants> {
-    let id0 = idb
-        .id0_location()
-        .ok_or_else(|| anyhow!("IDB file don't contains a ID0 sector"))?;
-    idb.read_id0(input, id0)
-}
-
-fn get_id1_section(args: &Args) -> Result<ID1Section> {
-    match args.input_type() {
-        FileType::Til => Err(anyhow!("TIL don't contains any ID1 data")),
-        FileType::Idb => {
-            let mut input = BufReader::new(File::open(&args.input)?);
-            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
-            match format {
-                idb_rs::IDBFormats::Separated(sections) => {
-                    get_id1_section_fmt(sections, input)
-                }
-                idb_rs::IDBFormats::InlineUncompressed(sections) => {
-                    get_id1_section_fmt(sections, input)
-                }
-                idb_rs::IDBFormats::InlineCompressed(compressed) => {
-                    let mut decompressed = Vec::new();
-                    let sections = compressed
-                        .decompress_into_memory(input, &mut decompressed)?;
-                    get_id1_section_fmt(sections, Cursor::new(decompressed))
-                }
-            }
+fn get_sections_inner<I: BufRead + Seek, P: ParseSection>(
+    format: IDBFormats,
+    input: &mut I,
+) -> Result<IDAVariants<P::Section<IDA32>, P::Section<IDA64>>> {
+    match format {
+        idb_rs::IDBFormats::Separated(IDAVariants::IDA32(sections)) => {
+            P::parse_section(sections, input).map(IDAVariants::IDA32)
+        }
+        idb_rs::IDBFormats::Separated(IDAVariants::IDA64(sections)) => {
+            P::parse_section(sections, input).map(IDAVariants::IDA64)
+        }
+        idb_rs::IDBFormats::InlineUncompressed(sections) => {
+            P::parse_section(sections, input).map(IDAVariants::IDA64)
+        }
+        idb_rs::IDBFormats::InlineCompressed(compressed) => {
+            let mut decompressed = Vec::new();
+            let sections = compressed
+                .decompress_into_memory(&mut *input, &mut decompressed)?;
+            P::parse_section(sections, input).map(IDAVariants::IDA64)
         }
     }
 }
 
-fn get_id1_section_fmt<F: IDBFormat, I: BufRead + Seek>(
-    idb: F,
-    input: I,
-) -> Result<ID1Section> {
-    let id1 = idb
-        .id1_location()
-        .ok_or_else(|| anyhow!("IDB file don't contains a ID1 sector"))?;
-    idb.read_id1(input, id1)
-}
-
-fn get_id2_section(args: &Args) -> Result<ID2SectionVariants> {
-    match args.input_type() {
-        FileType::Til => Err(anyhow!("TIL don't contains any ID2 data")),
-        FileType::Idb => {
-            let mut input = BufReader::new(File::open(&args.input)?);
-            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
-            match format {
-                idb_rs::IDBFormats::Separated(sections) => {
-                    get_id2_section_fmt(sections, input)
-                }
-                idb_rs::IDBFormats::InlineUncompressed(sections) => {
-                    get_id2_section_fmt(sections, input)
-                }
-                idb_rs::IDBFormats::InlineCompressed(compressed) => {
-                    let mut decompressed = Vec::new();
-                    let sections = compressed
-                        .decompress_into_memory(input, &mut decompressed)?;
-                    get_id2_section_fmt(sections, Cursor::new(decompressed))
-                }
-            }
+fn get_id0_section(
+    args: &Args,
+) -> Result<IDAVariants<ID0Section<IDA32>, ID0Section<IDA64>>> {
+    struct Parse;
+    impl ParseSection for Parse {
+        type Section<K: IDAKind> = ID0Section<K>;
+        fn parse_section<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
+            idb: F,
+            input: I,
+        ) -> Result<Self::Section<K>> {
+            let location = idb.id0_location().ok_or_else(|| {
+                anyhow!("IDB file don't contains a ID0 sector")
+            })?;
+            idb.read_id0(input, location)
         }
     }
+    get_sections::<Parse>(args)
 }
 
-fn get_id2_section_fmt<F: IDBFormat, I: BufRead + Seek>(
-    idb: F,
-    input: I,
-) -> Result<ID2SectionVariants> {
-    let id2 = idb
-        .id2_location()
-        .ok_or_else(|| anyhow!("IDB file don't contains a ID2 sector"))?;
-    idb.read_id2(input, id2)
+fn get_id1_section(
+    args: &Args,
+) -> Result<IDAVariants<ID1Section<IDA32>, ID1Section<IDA64>>> {
+    struct Parse;
+    impl ParseSection for Parse {
+        type Section<K: IDAKind> = ID1Section<K>;
+        fn parse_section<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
+            idb: F,
+            input: I,
+        ) -> Result<Self::Section<K>> {
+            let location = idb.id1_location().ok_or_else(|| {
+                anyhow!("IDB file don't contains a ID1 sector")
+            })?;
+            idb.read_id1(input, location)
+        }
+    }
+    get_sections::<Parse>(args)
+}
+
+fn get_id2_section(
+    args: &Args,
+) -> Result<IDAVariants<ID2Section<IDA32>, ID2Section<IDA64>>> {
+    struct Parse;
+    impl ParseSection for Parse {
+        type Section<K: IDAKind> = ID2Section<K>;
+        fn parse_section<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
+            idb: F,
+            input: I,
+        ) -> Result<Self::Section<K>> {
+            let location = idb.id2_location().ok_or_else(|| {
+                anyhow!("IDB file don't contains a ID2 sector")
+            })?;
+            idb.read_id2(input, location)
+        }
+    }
+    get_sections::<Parse>(args)
+}
+
+fn get_nam_section(
+    args: &Args,
+) -> Result<IDAVariants<NamSection<IDA32>, NamSection<IDA64>>> {
+    struct Parse;
+    impl ParseSection for Parse {
+        type Section<K: IDAKind> = NamSection<K>;
+        fn parse_section<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
+            idb: F,
+            input: I,
+        ) -> Result<Self::Section<K>> {
+            let location = idb.nam_location().ok_or_else(|| {
+                anyhow!("IDB file don't contains a Nam sector")
+            })?;
+            idb.read_nam(input, location)
+        }
+    }
+    get_sections::<Parse>(args)
 }
 
 fn get_til_section(args: &Args) -> Result<TILSection> {
-    match args.input_type() {
-        FileType::Til => {
-            let mut input = BufReader::new(File::open(&args.input)?);
-            TILSection::read(&mut input)
+    struct Parse;
+    impl ParseSection for Parse {
+        type Section<K: IDAKind> = TILSection;
+        fn parse_section<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
+            idb: F,
+            input: I,
+        ) -> Result<Self::Section<K>> {
+            let location = idb.til_location().ok_or_else(|| {
+                anyhow!("IDB file don't contains a Nam sector")
+            })?;
+            idb.read_til(input, location)
         }
-        FileType::Idb => {
-            let mut input = BufReader::new(File::open(&args.input)?);
-            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
-            match format {
-                idb_rs::IDBFormats::Separated(sections) => {
-                    get_til_section_fmt(sections, input)
-                }
-                idb_rs::IDBFormats::InlineUncompressed(sections) => {
-                    get_til_section_fmt(sections, input)
-                }
-                idb_rs::IDBFormats::InlineCompressed(compressed) => {
-                    let mut decompressed = Vec::new();
-                    let sections = compressed
-                        .decompress_into_memory(input, &mut decompressed)?;
-                    get_til_section_fmt(sections, Cursor::new(decompressed))
-                }
-            }
-        }
+    }
+    match get_sections::<Parse>(args)? {
+        IDAVariants::IDA32(x) | IDAVariants::IDA64(x) => Ok(x),
     }
 }
 
-fn get_til_section_fmt<F: IDBFormat, I: BufRead + Seek>(
-    idb: F,
-    input: I,
-) -> Result<TILSection> {
-    let location = idb
-        .til_location()
-        .ok_or_else(|| anyhow!("IDB file don't contains a TIL sector"))?;
-    idb.read_til(input, location)
-}
+#[allow(type_alias_bounds)]
+type Id0Id1Id2Variant<K: IDAKind> =
+    (ID0Section<K>, ID1Section<K>, Option<ID2Section<K>>);
+type Id0Id1Id2Variants =
+    IDAVariants<Id0Id1Id2Variant<IDA32>, Id0Id1Id2Variant<IDA64>>;
 
-fn get_nam_section(args: &Args) -> Result<NamSection> {
-    match args.input_type() {
-        FileType::Til => Err(anyhow!("TIL don't contains any Nam data")),
-        FileType::Idb => {
-            let mut input = BufReader::new(File::open(&args.input)?);
-            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
-            match format {
-                idb_rs::IDBFormats::Separated(sections) => {
-                    get_nam_section_fmt(sections, input)
-                }
-                idb_rs::IDBFormats::InlineUncompressed(sections) => {
-                    get_nam_section_fmt(sections, input)
-                }
-                idb_rs::IDBFormats::InlineCompressed(compressed) => {
-                    let mut decompressed = Vec::new();
-                    let sections = compressed
-                        .decompress_into_memory(input, &mut decompressed)?;
-                    get_nam_section_fmt(sections, Cursor::new(decompressed))
-                }
-            }
+fn get_id0_id1_id2_sections(args: &Args) -> Result<Id0Id1Id2Variants> {
+    struct Parse;
+    impl ParseSection for Parse {
+        type Section<K: IDAKind> = Id0Id1Id2Variant<K>;
+        fn parse_section<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
+            idb: F,
+            mut input: I,
+        ) -> Result<Self::Section<K>> {
+            let id0_location = idb.id0_location().ok_or_else(|| {
+                anyhow!("IDB file don't contains a ID0 sector")
+            })?;
+            let id1_location = idb.id1_location().ok_or_else(|| {
+                anyhow!("IDB file don't contains a ID1 sector")
+            })?;
+            let id2_location = idb.id2_location();
+            let id0 = idb.read_id0(&mut input, id0_location)?;
+            let id1 = idb.read_id1(&mut input, id1_location)?;
+            let id2 = id2_location
+                .map(|id2| idb.read_id2(&mut input, id2))
+                .transpose()?;
+            Ok((id0, id1, id2))
         }
     }
-}
-
-fn get_nam_section_fmt<F: IDBFormat, I: BufRead + Seek>(
-    idb: F,
-    input: I,
-) -> Result<NamSection> {
-    let location = idb
-        .nam_location()
-        .ok_or_else(|| anyhow!("IDB file don't contains a Nam sector"))?;
-    idb.read_nam(input, location)
+    get_sections::<Parse>(args)
 }
 
 fn main() -> Result<()> {

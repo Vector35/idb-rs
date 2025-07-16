@@ -1,0 +1,31 @@
+---
+hash: 88592ECF03413674
+source: src/test.rs
+expression: til
+---
+Some((
+ header: (
+  format: 16,
+  description: "Local type definitions",
+  flags: (2),
+  dependencies: [
+   "vc6win",
+  ],
+  compiler_id: Unknown,
+  compiler_guessed: false,
+  cc: None,
+  cn: Some(N32F48),
+  cm: Some(NN),
+  def_align: Some(8),
+  type_ordinal_alias: None,
+  size_int: 4,
+  size_bool: 4,
+  size_enum: Some(4),
+  extended_sizeof_info: None,
+  size_long_double: None,
+  is_universal: false,
+ ),
+ symbols: [],
+ types: [],
+ macros: Some([]),
+))

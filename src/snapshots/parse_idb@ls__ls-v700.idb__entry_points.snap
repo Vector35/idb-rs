@@ -1,0 +1,232 @@
+---
+hash: 130A4E7C8136FB7B
+source: src/test.rs
+expression: entry_points
+---
+[
+ (
+  name: ".init_proc",
+  address: 134518444,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "start",
+  address: 134528745,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "_obstack_begin",
+  address: 134585168,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "_obstack_begin_1",
+  address: 134585216,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "_obstack_newchunk",
+  address: 134585264,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "_obstack_allocated_p",
+  address: 134585488,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "_obstack_free",
+  address: 134585536,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Function((
+    calling_convention: None,
+    ret: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Basic(Void),
+    ),
+    args: [
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Pointer((
+        closure: Default,
+        modifier: None,
+        shifted: None,
+        typ: (
+         comment: None,
+         is_const: false,
+         is_volatile: false,
+         type_variant: Typeref((
+          ref_type: Some(Struct),
+          typeref_value: UnsolvedName(Some("obstack")),
+         )),
+        ),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Pointer((
+        closure: Default,
+        modifier: None,
+        shifted: None,
+        typ: (
+         comment: None,
+         is_const: false,
+         is_volatile: false,
+         type_variant: Basic(Void),
+        ),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+    ],
+    retloc: None,
+    method: None,
+    is_noret: false,
+    is_pure: false,
+    is_high: false,
+    is_static: false,
+    is_virtual: false,
+    is_const: false,
+    is_constructor: false,
+    is_destructor: false,
+   )),
+  )),
+ ),
+ (
+  name: "_obstack_memory_used",
+  address: 134585632,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: ".term_proc",
+  address: 134592052,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "_IO_stdin_used",
+  address: 134592100,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "obstack_alloc_failed_handler",
+  address: 134644544,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "program_invocation_short_name",
+  address: 134644608,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "stderr",
+  address: 134644616,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Pointer((
+    closure: Default,
+    modifier: None,
+    shifted: None,
+    typ: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Typeref((
+      ref_type: None,
+      typeref_value: UnsolvedName(Some("_IO_FILE")),
+     )),
+    ),
+   )),
+  )),
+ ),
+ (
+  name: "program_invocation_name",
+  address: 134644620,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "optind",
+  address: 134644624,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "stdout",
+  address: 134644628,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Pointer((
+    closure: Default,
+    modifier: None,
+    shifted: None,
+    typ: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Typeref((
+      ref_type: None,
+      typeref_value: UnsolvedName(Some("FILE")),
+     )),
+    ),
+   )),
+  )),
+ ),
+ (
+  name: "optarg",
+  address: 134644672,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Pointer((
+    closure: Default,
+    modifier: None,
+    shifted: None,
+    typ: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Basic(Char),
+    ),
+   )),
+  )),
+ ),
+]

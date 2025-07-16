@@ -6,13 +6,13 @@ use crate::{Address, IDAKind};
 
 #[derive(Clone, Copy)]
 pub struct BytesInfo<'a, 'b, K: IDAKind> {
-    id1: Option<&'a ID1Section>,
+    id1: Option<&'a ID1Section<K>>,
     id2: Option<&'b ID2Section<K>>,
 }
 
 impl<'a, 'b, K: IDAKind> BytesInfo<'a, 'b, K> {
     pub fn new(
-        id1: Option<&'a ID1Section>,
+        id1: Option<&'a ID1Section<K>>,
         id2: Option<&'b ID2Section<K>>,
     ) -> Self {
         Self { id1, id2 }
@@ -20,7 +20,7 @@ impl<'a, 'b, K: IDAKind> BytesInfo<'a, 'b, K> {
 
     pub fn byte_by_address(&self, address: Address<K>) -> Option<ByteInfo> {
         self.id1
-            .and_then(|id1| id1.byte_by_address(address.into_raw().into()))
+            .and_then(|id1| id1.byte_by_address(address))
             .or_else(|| {
                 self.id2.and_then(|id2| {
                     id2.byte_by_address(address).map(|x| x.byte_info)
@@ -30,13 +30,7 @@ impl<'a, 'b, K: IDAKind> BytesInfo<'a, 'b, K> {
 
     pub fn all_bytes_no_tails(&self) -> Vec<(Address<K>, ByteInfo, usize)> {
         let mut bytes = HashMap::new();
-        let id1 = self
-            .id1
-            .iter()
-            .flat_map(|id1| id1.all_bytes_no_tails())
-            .map(|(addr, byte_info, len)| {
-                (Address::from_raw(addr.try_into().unwrap()), byte_info, len)
-            });
+        let id1 = self.id1.iter().flat_map(|id1| id1.all_bytes_no_tails());
         let id2 = self
             .id2
             .iter()

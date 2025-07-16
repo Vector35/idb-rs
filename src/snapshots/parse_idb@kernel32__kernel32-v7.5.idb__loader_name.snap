@@ -1,0 +1,9 @@
+---
+hash: 8DF6100285401BBC
+source: src/test.rs
+expression: loader_name
+---
+Some([
+ "pe.dll",
+ "Portable executable for 80386 (PE)",
+])

@@ -1,0 +1,6 @@
+---
+hash: 2811A40A415B1734
+source: src/test.rs
+expression: database_secs_opens
+---
+44

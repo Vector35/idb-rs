@@ -1521,7 +1521,7 @@ fn calling_convention_to_str(cc: CallingConvention) -> &'static str {
 fn print_macros(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     let macro_iter = section.macros.iter().flat_map(Vec::as_slice);
     for macro_entry in macro_iter {
-        fmt.write_all(&macro_entry.name)?;
+        fmt.write_all(macro_entry.name.as_bytes())?;
         let mut buf = vec![];
         if let Some(param_num) = macro_entry.param_num {
             buf.push(b'(');

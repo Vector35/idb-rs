@@ -1,0 +1,6 @@
+---
+hash: DF42EBF1218EEAEF
+source: src/test.rs
+expression: input_file_md5
+---
+Some((95, 223, 90, 57, 180, 231, 32, 143, 140, 12, 113, 125, 254, 51, 204, 164))

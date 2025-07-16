@@ -1,0 +1,6 @@
+---
+hash: FC42890924CFE1AE
+source: src/test.rs
+expression: database_secs_opens
+---
+3065924

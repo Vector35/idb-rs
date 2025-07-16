@@ -1,0 +1,6 @@
+---
+hash: 8C1187DBB13B841A
+source: src/test.rs
+expression: c_header_path
+---
+Some("/gcc/usr/local/include;/gcc/usr/include\0")

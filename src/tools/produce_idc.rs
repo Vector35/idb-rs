@@ -7,7 +7,7 @@ use anyhow::{anyhow, ensure, Result};
 use idb_rs::addr_info::{all_address_info, AddressInfo};
 use idb_rs::id0::flag::netnode::nn_res::*;
 use idb_rs::id0::function::{IDBFunctionNonTail, IDBFunctionTail};
-use idb_rs::id0::{ID0Section, Netdelta, NetnodeIdx, ReferenceInfo};
+use idb_rs::id0::{ID0Section, Netdelta, NetnodeIdx, ReferenceInfo, RootInfo};
 use idb_rs::id1::{
     ByteCode, ByteData, ByteDataType, ByteExtended, ByteOp, ByteType,
     ID1Section,
@@ -15,7 +15,7 @@ use idb_rs::id1::{
 use idb_rs::id2::ID2Section;
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
-use idb_rs::{Address, IDAKind, IDAUsize, IDAVariants, IDBFormat};
+use idb_rs::{sdk_comp, Address, IDAKind, IDAVariants, IDBFormat, IDBStr};
 
 use crate::{Args, FileType, ProduceIdcArgs};
 
@@ -26,32 +26,40 @@ pub fn produce_idc(args: &Args, idc_args: &ProduceIdcArgs) -> Result<()> {
         FileType::Til => Err(anyhow!(
             "Produce IDC file from til file is not implemented yet"
         )),
-        FileType::Idb => {
-            let format = idb_rs::IDBFormats::identify_file(&mut input)?;
-            match format {
-                idb_rs::IDBFormats::Separated(sections) => {
-                    produce_idc_section(sections, input, idc_args)
-                }
-                idb_rs::IDBFormats::InlineUncompressed(sections) => {
-                    produce_idc_section(sections, input, idc_args)
-                }
-                idb_rs::IDBFormats::InlineCompressed(compressed) => {
-                    let mut decompressed = Vec::new();
-                    let sections = compressed
-                        .decompress_into_memory(input, &mut decompressed)
-                        .unwrap();
-                    produce_idc_section(
-                        sections,
-                        Cursor::new(decompressed),
-                        idc_args,
-                    )
-                }
-            }
+        FileType::Idb => produce_idc_kind(
+            idb_rs::identify_idb_file(&mut input)?,
+            input,
+            idc_args,
+        ),
+    }
+}
+
+fn produce_idc_kind<I: BufRead + Seek>(
+    format: idb_rs::IDBFormats,
+    input: I,
+    idc_args: &ProduceIdcArgs,
+) -> Result<()> {
+    match format {
+        idb_rs::IDBFormats::Separated(IDAVariants::IDA32(sections)) => {
+            produce_idc_section(sections, input, idc_args)
+        }
+        idb_rs::IDBFormats::Separated(IDAVariants::IDA64(sections)) => {
+            produce_idc_section(sections, input, idc_args)
+        }
+        idb_rs::IDBFormats::InlineUncompressed(sections) => {
+            produce_idc_section(sections, input, idc_args)
+        }
+        idb_rs::IDBFormats::InlineCompressed(compressed) => {
+            let mut decompressed = Vec::new();
+            let sections = compressed
+                .decompress_into_memory(input, &mut decompressed)
+                .unwrap();
+            produce_idc_section(sections, Cursor::new(decompressed), idc_args)
         }
     }
 }
 
-fn produce_idc_section<R: IDBFormat, I: BufRead + Seek>(
+fn produce_idc_section<K: IDAKind, R: IDBFormat<K>, I: BufRead + Seek>(
     sections: R,
     mut input: I,
     idc_args: &ProduceIdcArgs,
@@ -72,52 +80,22 @@ fn produce_idc_section<R: IDBFormat, I: BufRead + Seek>(
         .map(|id2| sections.read_id2(&mut input, id2))
         .transpose()?;
     let til = sections.read_til(&mut input, til_location)?;
-    match (id0, id2) {
-        (IDAVariants::IDA32(id0), Some(IDAVariants::IDA32(id2))) => {
-            produce_idc_inner(
-                &mut std::io::stdout(),
-                idc_args,
-                &id0,
-                &id1,
-                Some(&id2),
-                &til,
-            )
-        }
-        (IDAVariants::IDA32(id0), None) => produce_idc_inner(
-            &mut std::io::stdout(),
-            idc_args,
-            &id0,
-            &id1,
-            None,
-            &til,
-        ),
-        (IDAVariants::IDA64(id0), Some(IDAVariants::IDA64(id2))) => {
-            produce_idc_inner(
-                &mut std::io::stdout(),
-                idc_args,
-                &id0,
-                &id1,
-                Some(&id2),
-                &til,
-            )
-        }
-        (IDAVariants::IDA64(id0), None) => produce_idc_inner(
-            &mut std::io::stdout(),
-            idc_args,
-            &id0,
-            &id1,
-            None,
-            &til,
-        ),
-        (_, _) => unreachable!(),
-    }
+    produce_idc_inner(
+        &mut std::io::stdout(),
+        idc_args,
+        &id0,
+        &id1,
+        id2.as_ref(),
+        &til,
+    )
 }
 
+// InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4b4110
 fn produce_idc_inner<K: IDAKind>(
     fmt: &mut impl Write,
     args: &ProduceIdcArgs,
     id0: &ID0Section<K>,
-    id1: &ID1Section,
+    id1: &ID1Section<K>,
     id2: Option<&ID2Section<K>>,
     til: &TILSection,
 ) -> Result<()> {
@@ -133,9 +111,9 @@ fn produce_idc_inner<K: IDAKind>(
         writeln!(fmt, "// +-------------------------------------------------------------------------+\n//")?;
     }
     // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb6e80
-    let _unknown_value1 = true; // all database, or just range?
+    let dump_all = true;
     let _unknown_value2 = true; // export user types?
-    match (_unknown_value1, _unknown_value2) {
+    match (dump_all, _unknown_value2) {
         (false, false) => {
             // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb919a
             // TODO implement range dump
@@ -182,11 +160,11 @@ fn produce_idc_inner<K: IDAKind>(
     writeln!(fmt, "extern ltf;  // load_type flags")?;
     writeln!(fmt)?;
 
-    produce_main(fmt, _unknown_value1, _unknown_value2)?;
+    produce_main(fmt, dump_all, _unknown_value2)?;
 
-    if _unknown_value1 {
+    if dump_all {
         writeln!(fmt)?;
-        produce_gen_info(fmt, id0, til)?;
+        produce_gen_info(fmt, til, &root_info)?;
         writeln!(fmt)?;
         produce_segments(fmt, id0, id1)?;
     }
@@ -259,11 +237,9 @@ fn produce_main(
 
 fn produce_gen_info<K: IDAKind>(
     fmt: &mut impl Write,
-    id0: &ID0Section<K>,
     til: &TILSection,
+    info: &RootInfo<K>,
 ) -> Result<()> {
-    let root_netnode = id0.root_node()?;
-    let info = id0.ida_info(root_netnode)?;
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// General information")?;
     writeln!(fmt)?;
@@ -323,7 +299,7 @@ fn produce_gen_info<K: IDAKind>(
 fn produce_segments<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
-    id1: &ID1Section,
+    id1: &ID1Section<K>,
 ) -> Result<()> {
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// Information about segmentation")?;
@@ -360,11 +336,12 @@ fn produce_segments<K: IDAKind>(
         // TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb754f
         let comb = 2;
         // TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7544
-        let flags = if id1.segment_by_address(startea.into_u64()).is_none() {
-            "|ADDSEG_SPARSE"
-        } else {
-            ""
-        };
+        let flags =
+            if sdk_comp::range::rangeset_t_find_range(id1, startea).is_some() {
+                "|ADDSEG_SPARSE"
+            } else {
+                ""
+            };
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb75f4
         // https://docs.hex-rays.com/developer-guide/idc/idc-api-reference/alphabetical-list-of-idc-functions/299
         writeln!(
@@ -373,10 +350,8 @@ fn produce_segments<K: IDAKind>(
         )?;
 
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7666
-        let seg_name = id0
-            .segment_name(seg.name)
-            .map(|x| String::from_utf8_lossy(x))
-            .ok();
+        let seg_name =
+            id0.segment_name(seg.name).map(IDBStr::as_utf8_lossy).ok();
         writeln!(
             fmt,
             "  set_segm_name({startea:#X}, {:?});",
@@ -388,7 +363,7 @@ fn produce_segments<K: IDAKind>(
 
         let seg_class_name = id0
             .segment_name(seg.class_id)
-            .map(|x| String::from_utf8_lossy(x))
+            .map(IDBStr::as_utf8_lossy)
             .ok();
         let seg_class_name = seg_class_name.or(seg_name).unwrap_or({
             Cow::Borrowed(match seg.seg_type {
@@ -474,7 +449,7 @@ fn produce_types(fmt: &mut impl Write, til: &TILSection) -> Result<()> {
 fn produce_patches<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
-    id1: &ID1Section,
+    id1: &ID1Section<K>,
 ) -> Result<()> {
     let Some(patches_idx) = id0.segment_patches_idx()? else {
         return Ok(());
@@ -503,7 +478,7 @@ fn produce_patches<K: IDAKind>(
             Ok(patch) => {
                 let address = patch.address;
                 let value = id1
-                    .byte_by_address(patch.address.into())
+                    .byte_by_address(patch.address)
                     .map(|x| x.as_raw())
                     .unwrap_or(0);
                 writeln!(fmt, "  patch_byte({address:#X}, {value:X});")?;
@@ -552,7 +527,7 @@ fn produce_type_load(
 fn produce_bytes_info<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
-    id1: &ID1Section,
+    id1: &ID1Section<K>,
     id2: Option<&ID2Section<K>>,
     _til: &TILSection,
     image_base: Option<Address<K>>,
@@ -579,19 +554,11 @@ fn produce_bytes_info<K: IDAKind>(
             // TODO byte_info.has_comment() ignored?
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1822
             if let Some(cmt) = addr_info.comment() {
-                writeln!(
-                    fmt,
-                    "  set_cmt({address_raw:#X}, {:?}, 0);",
-                    String::from_utf8_lossy(cmt)
-                )?;
+                writeln!(fmt, "  set_cmt({address_raw:#X}, {cmt:?}, 0);")?;
             }
 
             if let Some(cmt) = addr_info.comment_repeatable() {
-                writeln!(
-                    fmt,
-                    "  set_cmt({address_raw:#X}, {:?}, 1);",
-                    String::from_utf8_lossy(cmt)
-                )?;
+                writeln!(fmt, "  set_cmt({address_raw:#X}, {cmt:?}, 1);")?;
             }
 
             // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b1ddd
@@ -600,8 +567,7 @@ fn produce_bytes_info<K: IDAKind>(
             {
                 writeln!(
                     fmt,
-                    "  update_extra_cmt({address_raw:#X}, E_PREV + {i:>3}, {:?});",
-                    String::from_utf8_lossy(cmt)
+                    "  update_extra_cmt({address_raw:#X}, E_PREV + {i:>3}, {cmt:?});"
                 )?;
             }
 
@@ -610,8 +576,7 @@ fn produce_bytes_info<K: IDAKind>(
             {
                 writeln!(
                     fmt,
-                    "  update_extra_cmt({address_raw:#X}, E_NEXT + {i:>3}, {:?});",
-                    String::from_utf8_lossy(cmt)
+                    "  update_extra_cmt({address_raw:#X}, E_NEXT + {i:>3}, {cmt:?});"
                 )?;
             }
         }
@@ -877,11 +842,7 @@ fn produce_bytes_info<K: IDAKind>(
 
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x1b2160
         if let Some(name) = address_info.label()? {
-            writeln!(
-                fmt,
-                "  set_name({address_raw:#X}, {:?});",
-                String::from_utf8_lossy(&name)
-            )?;
+            writeln!(fmt, "  set_name({address_raw:#X}, {name:?});")?;
         }
     }
 
@@ -916,7 +877,7 @@ fn produce_bytes_info_array<K: IDAKind>(
 fn produce_bytes_info_op_code<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
-    id1: &ID1Section,
+    id1: &ID1Section<K>,
     address: Address<K>,
     image_base: Option<Address<K>>,
     netdelta: Netdelta<K>,
@@ -943,7 +904,7 @@ fn produce_bytes_info_op_code<K: IDAKind>(
 fn produce_bytes_info_op_data<K: IDAKind>(
     fmt: &mut impl Write,
     _id0: &ID0Section<K>,
-    _id1: &ID1Section,
+    _id1: &ID1Section<K>,
     address: Address<K>,
     image_base: Option<Address<K>>,
     netdelta: Netdelta<K>,
@@ -968,7 +929,7 @@ fn produce_bytes_info_op_data<K: IDAKind>(
 fn produce_bytes_info_op_op<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
-    _id1: &ID1Section,
+    _id1: &ID1Section<K>,
     address: Address<K>,
     image_base: Option<Address<K>>,
     netdelta: Netdelta<K>,

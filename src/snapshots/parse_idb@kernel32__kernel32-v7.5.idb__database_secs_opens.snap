@@ -1,0 +1,6 @@
+---
+hash: D38CC17CB8B35C34
+source: src/test.rs
+expression: database_secs_opens
+---
+38

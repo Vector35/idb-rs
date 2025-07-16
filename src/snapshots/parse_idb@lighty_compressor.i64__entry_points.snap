@@ -1,0 +1,19 @@
+---
+hash: 71500C29DAEEDE9A
+source: src/test.rs
+expression: entry_points
+---
+[
+ (
+  name: "start",
+  address: 4198402,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "oep",
+  address: 4202624,
+  forwarded: None,
+  entry_type: None,
+ ),
+]

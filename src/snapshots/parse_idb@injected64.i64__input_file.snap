@@ -1,0 +1,6 @@
+---
+hash: 13F96849804BECBF
+source: src/test.rs
+expression: input_file
+---
+"C:\\Temp\\injected64.bin\0"

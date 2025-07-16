@@ -1,0 +1,6 @@
+---
+hash: FB7CA540E2D050AD
+source: src/test.rs
+expression: c_header_path
+---
+Some("/usr/include\0")

@@ -1,0 +1,6 @@
+---
+hash: 6FE2175F0A266924
+source: src/test.rs
+expression: input_file_crc32
+---
+3751534354

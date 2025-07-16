@@ -1,0 +1,6 @@
+---
+hash: B582B316831B7829
+source: src/test.rs
+expression: input_file_crc32
+---
+2825261569

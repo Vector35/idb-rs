@@ -8,7 +8,7 @@ use crate::{id0::ID0Section, IDAKind};
 
 use super::frame::{regvar_t, stkpnt_t};
 use super::nalt::type_t;
-use super::pro::{asize_t, bgcolor_t, ea_t, ida_usize_t, uval_t};
+use super::pro::{asize_t, bgcolor_t, ea_t, uval_t};
 use super::DataFetch;
 
 use anyhow::Result;
@@ -94,11 +94,11 @@ pub fn get_fchunk<'a, K: IDAKind>(
                         tailqty,
                         fpd,
                     }) => func_t_type::T1(func_t_1 {
-                        frame: ida_usize_t::from_raw(frame),
-                        frsize: asize_t::from_raw(frsize),
+                        frame,
+                        frsize,
                         frregs,
-                        argsize: ida_usize_t::from_raw(argsize),
-                        fpd: asize_t::from_raw(fpd),
+                        argsize,
+                        fpd,
                         color: color.unwrap_or(u32::MAX),
                         points: DataFetch::Qty(pntqty),
                         llabels: DataFetch::Qty(llabelqty),

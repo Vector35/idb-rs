@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Context, Result};
+use serde::Serialize;
 
 use std::collections::HashMap;
 use std::num::{NonZeroU16, NonZeroU8};
@@ -10,7 +11,7 @@ use crate::IDBString;
 use super::section::TILSectionHeader;
 use super::{CommentType, TypeAttribute, TypeVariantRaw};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Union {
     pub effective_alignment: Option<NonZeroU16>,
     pub alignment: Option<NonZeroU8>,
@@ -56,7 +57,7 @@ impl Union {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct UnionMember {
     pub name: Option<IDBString>,
     pub comment: Option<CommentType>,

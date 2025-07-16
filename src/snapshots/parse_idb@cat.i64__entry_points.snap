@@ -1,0 +1,91 @@
+---
+hash: 328A26F76EFE2BB7
+source: src/test.rs
+expression: entry_points
+---
+[
+ (
+  name: ".init_proc",
+  address: 4199832,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "start",
+  address: 4204034,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: ".term_proc",
+  address: 4229516,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "program_invocation_short_name",
+  address: 6337312,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "stdout",
+  address: 6337328,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Pointer((
+    closure: Default,
+    modifier: None,
+    shifted: None,
+    typ: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Typeref((
+      ref_type: None,
+      typeref_value: UnsolvedName(Some("FILE")),
+     )),
+    ),
+   )),
+  )),
+ ),
+ (
+  name: "optind",
+  address: 6337344,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "program_invocation_name",
+  address: 6337352,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "stderr",
+  address: 6337360,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Pointer((
+    closure: Default,
+    modifier: None,
+    shifted: None,
+    typ: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Typeref((
+      ref_type: None,
+      typeref_value: UnsolvedName(Some("FILE")),
+     )),
+    ),
+   )),
+  )),
+ ),
+]

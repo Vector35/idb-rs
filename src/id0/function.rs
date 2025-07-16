@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use crate::id0::parse_maybe_cstr;
 use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
-use crate::{flags_to_struct, til, Address, IDAKind};
+use crate::{flags_to_struct, til, Address, IDAKind, IDBStr};
 
 use super::flag::func::*;
 use super::flag::netnode::nn_res::ARRAY_SUP_TAG;
@@ -10,23 +10,24 @@ use super::{flag, ID0Section, NetnodeIdx};
 
 use anyhow::{anyhow, ensure, Result};
 use num_traits::WrappingSub;
+use serde::Serialize;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Comments<'a> {
-    Comment(&'a [u8]),
-    RepeatableComment(&'a [u8]),
-    PreComment(&'a [u8]),
-    PostComment(&'a [u8]),
+    Comment(IDBStr<'a>),
+    RepeatableComment(IDBStr<'a>),
+    PreComment(IDBStr<'a>),
+    PostComment(IDBStr<'a>),
 }
 
 impl<'a> Comments<'a> {
     /// The message on the comment, NOTE that IDA don't have a default character encoding
-    pub fn message(&self) -> &'a [u8] {
+    pub fn message(&self) -> IDBStr<'a> {
         match self {
             Comments::Comment(x)
             | Comments::RepeatableComment(x)
             | Comments::PreComment(x)
-            | Comments::PostComment(x) => x,
+            | Comments::PostComment(x) => *x,
         }
     }
 }
@@ -63,20 +64,20 @@ pub(crate) fn fchunks<K: IDAKind>(
         .map(move |value| IDBFunction::read(&value.value[..]))
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct IDBFunction<K: IDAKind> {
     pub address: Range<Address<K>>,
     pub flags: IDBFunctionFlag,
     pub extra: IDBFunctionType<K>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum IDBFunctionType<K: IDAKind> {
     Tail(IDBFunctionTail<K>),
     NonTail(IDBFunctionNonTail<K>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct IDBFunctionTail<K: IDAKind> {
     /// function owner of the function start
     pub owner: K::Usize,
@@ -84,7 +85,7 @@ pub struct IDBFunctionTail<K: IDAKind> {
     pub _unknown5: Option<u32>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct IDBFunctionNonTail<K: IDAKind> {
     pub frame: K::Usize,
     /// Local variables area
@@ -102,7 +103,7 @@ pub struct IDBFunctionNonTail<K: IDAKind> {
     pub fpd: K::Usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum FunctionsAndComments<'a, K: IDAKind> {
     // It's just the name "$ funcs"
     Name,
@@ -140,7 +141,7 @@ impl<'a, K: IDAKind> FunctionsAndComments<'a, K> {
                 parse_maybe_cstr(value)
                     .map(|value| Self::Comment {
                         address,
-                        comment: Comments::Comment(value),
+                        comment: Comments::Comment(IDBStr::new(value)),
                     })
                     .ok_or_else(|| anyhow!("Invalid Comment string"))
             }
@@ -152,7 +153,9 @@ impl<'a, K: IDAKind> FunctionsAndComments<'a, K> {
                 parse_maybe_cstr(value)
                     .map(|value| Self::Comment {
                         address,
-                        comment: Comments::RepeatableComment(value),
+                        comment: Comments::RepeatableComment(IDBStr::new(
+                            value,
+                        )),
                     })
                     .ok_or_else(|| anyhow!("Invalid Repetable Comment string"))
             }
@@ -350,7 +353,7 @@ impl<'a, K: IDAKind> EntryPointRaw<'a, K> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct EntryPoint<K: IDAKind> {
     pub name: String,
     pub address: K::Usize,

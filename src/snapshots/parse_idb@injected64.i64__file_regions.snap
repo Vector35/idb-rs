@@ -1,0 +1,22 @@
+---
+hash: FCC513F3017AC5D5
+source: src/test.rs
+expression: file_regions
+---
+[
+ (
+  start: 6442455040,
+  end: 6442518016,
+  eva: 1024,
+ ),
+ (
+  start: 6442520576,
+  end: 6442522112,
+  eva: 64000,
+ ),
+ (
+  start: 6442524672,
+  end: 6442525696,
+  eva: 65536,
+ ),
+]

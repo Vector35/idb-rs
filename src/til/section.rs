@@ -2,7 +2,7 @@ use crate::id0::Compiler;
 use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
 use crate::til::{flag, TILMacro, TILTypeInfo, TILTypeInfoRaw};
 use crate::{IDAKind, IDBString, SectionReader};
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use serde::{Deserialize, Serialize};
 
 use std::fmt::Debug;
@@ -14,7 +14,7 @@ use super::function::{CCModel, CCPtrSize, CallingConvention};
 // TODO migrate this to flags
 pub const TIL_SECTION_MAGIC: &[u8; 6] = b"IDATIL";
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TILSection {
     pub header: TILSectionHeader,
     pub symbols: Vec<TILTypeInfo>,
@@ -27,6 +27,7 @@ impl<K: IDAKind> SectionReader<K> for TILSection {
 
     fn read_section<I: IdbReadKind<K> + IdbBufRead>(
         input: &mut I,
+        _magic: crate::IDBMagic,
     ) -> Result<Self> {
         Self::read(input)
     }
@@ -40,8 +41,11 @@ pub(crate) struct TILSectionRaw {
     pub macros: Option<Vec<TILMacro>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TILSectionHeader {
+    /// 02 versions: 4.1
+    /// 17 versions: 5.2 6.1
+    /// 18 versions: 6.5 6.6 6.8 7.0 7.3 7.6 8.3 9.0 9.1
     pub format: u32,
     /// short file name (without path and extension)
     pub description: IDBString,
@@ -72,7 +76,7 @@ pub struct TILSectionHeader {
     pub is_universal: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TILSectionExtendedSizeofInfo {
     pub size_short: NonZeroU8,
     pub size_long: NonZeroU8,
@@ -158,7 +162,8 @@ pub struct TILSectionHeader2 {
 
 impl TILSectionRaw {
     fn read(input: &mut impl IdbBufRead) -> Result<Self> {
-        let header_raw = Self::read_header(&mut *input)?;
+        let header_raw =
+            Self::read_header(&mut *input).context("TIL Section header")?;
 
         // TODO verify that is always false?
         let _mod = header_raw.flags.is_mod();
@@ -688,7 +693,8 @@ impl TILSection {
 
 impl TILSection {
     pub fn read(input: &mut impl IdbBufRead) -> Result<TILSection> {
-        let type_info_raw = TILSectionRaw::read(input)?;
+        let type_info_raw =
+            TILSectionRaw::read(input).context("TIL Section Parsing")?;
         // TODO check for dups?
         let type_by_name = type_info_raw
             .types
@@ -719,7 +725,8 @@ impl TILSection {
                     ty.sclass,
                 )
             })
-            .collect::<Result<_>>()?;
+            .collect::<Result<_>>()
+            .context("TIL Symbols Conversion")?;
         let types = type_info_raw
             .types
             .into_iter()
@@ -737,7 +744,8 @@ impl TILSection {
                     ty.sclass,
                 )
             })
-            .collect::<Result<_>>()?;
+            .collect::<Result<_>>()
+            .context("TIL Types Conversion")?;
 
         Ok(Self {
             header: type_info_raw.header,

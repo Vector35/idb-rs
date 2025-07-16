@@ -1,0 +1,6 @@
+---
+hash: CF1F86B53D3A5F00
+source: src/test.rs
+expression: database_creation_version
+---
+Some("6.5\0")

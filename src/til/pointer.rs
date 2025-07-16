@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use serde::Serialize;
 
 use crate::ida_reader::IdbBufRead;
 use crate::til::{Type, TypeAttribute, TypeRaw};
@@ -9,7 +10,7 @@ use crate::IDBString;
 use super::section::TILSectionHeader;
 use super::CommentType;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Pointer {
     pub closure: PointerType,
     pub modifier: Option<PointerModifier>,
@@ -70,7 +71,7 @@ impl Pointer {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum PointerType {
     Closure(Box<Type>),
     PointerBased(u8),
@@ -111,7 +112,7 @@ impl PointerType {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub enum PointerModifier {
     Ptr32,
     Ptr64,

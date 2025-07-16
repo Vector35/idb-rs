@@ -8,8 +8,8 @@ use num_traits::{AsPrimitive, CheckedAdd, PrimInt, ToBytes};
 use crate::addr_info::SubtypeId;
 use crate::id0::flag::nsup::NSUP_LLABEL;
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
-use crate::{til, Address};
-use crate::{IDAVariants, SectionReader, IDA32, IDA64};
+use crate::SectionReader;
+use crate::{til, Address, IDBStr};
 
 use super::entry_iter::{
     EntryTagContinuousSubkeys, NetnodeRangeIter, NetnodeSupRangeIter,
@@ -19,8 +19,6 @@ use super::flag::nsup::{E_NEXT, E_PREV};
 use super::flag::ridx::*;
 use super::function::*;
 use super::*;
-
-pub type ID0SectionVariants = IDAVariants<ID0Section<IDA32>, ID0Section<IDA64>>;
 
 #[derive(Debug, Clone)]
 pub struct ID0Section<K: IDAKind> {
@@ -56,10 +54,11 @@ impl<K: IDAKind> SectionReader<K> for ID0Section<K> {
 
     fn read_section<I: IdbReadKind<K> + IdbBufRead>(
         input: &mut I,
+        magic: crate::IDBMagic,
     ) -> Result<Self::Result> {
         let mut output = vec![];
         input.read_to_end(&mut output)?;
-        ID0BTree::read_inner(&output[..])
+        ID0BTree::read_inner(&output[..], magic)
             .map(ID0BTree::into_vec)
             .map(|entries| Self {
                 _kind: std::marker::PhantomData,
@@ -503,7 +502,7 @@ impl<K: IDAKind> ID0Section<K> {
     // TODO there is also a "P" entry in patches, it seems to only contains
     // the value 0x01 for each equivalent "A" entry
 
-    pub fn segment_name(&self, idx: SegmentNameIdx<K>) -> Result<&[u8]> {
+    pub fn segment_name(&self, idx: SegmentNameIdx<K>) -> Result<IDBStr<'_>> {
         let seg_idx = self.segment_strings_idx()?;
         // TODO I think this is dependent on the version, and not on availability
         if let Some(seg_idx) = seg_idx {
@@ -523,7 +522,7 @@ impl<K: IDAKind> ID0Section<K> {
     pub(crate) fn name_by_index(
         &self,
         idx: SegmentNameIdx<K>,
-    ) -> Result<&[u8]> {
+    ) -> Result<IDBStr<'_>> {
         // if there is no names, AKA `$ segstrings`, search for the key directly
         let name_idx = self
             .netnode_tag_idx(
@@ -532,6 +531,7 @@ impl<K: IDAKind> ID0Section<K> {
             )
             .ok_or_else(|| anyhow!("Not found name for segment {}", idx.0))?;
         parse_maybe_cstr(&self.entries[name_idx].value)
+            .map(IDBStr::new)
             .ok_or_else(|| anyhow!("Invalid segment name {}", idx.0))
     }
 
@@ -585,8 +585,8 @@ impl<K: IDAKind> ID0Section<K> {
         )
     }
 
-    pub fn input_file(&self, idx: RootNodeIdx<K>) -> Option<&[u8]> {
-        self.netnode_value(idx.into())
+    pub fn input_file(&self, idx: RootNodeIdx<K>) -> Option<IDBStr<'_>> {
+        self.netnode_value(idx.into()).map(IDBStr::new)
     }
 
     // TODO identify the data
@@ -1100,7 +1100,14 @@ impl<K: IDAKind> ID0Section<K> {
                 }
             })
             .collect::<Result<_, _>>()?;
-        result.sort_by_key(|entry| entry.address);
+        result.sort_unstable_by(|a: &EntryPoint<K>, b: &EntryPoint<K>| {
+            match a.address.cmp(&b.address) {
+                ord @ (std::cmp::Ordering::Less
+                | std::cmp::Ordering::Greater) => return ord,
+                std::cmp::Ordering::Equal => {}
+            }
+            a.name.as_str().cmp(b.name.as_str())
+        });
         Ok(result)
     }
 
@@ -1139,17 +1146,20 @@ impl<K: IDAKind> ID0Section<K> {
         Ok(None)
     }
 
-    pub(crate) fn comment_at(&self, netnode: NetnodeIdx<K>) -> Option<&[u8]> {
+    pub(crate) fn comment_at(
+        &self,
+        netnode: NetnodeIdx<K>,
+    ) -> Option<IDBStr<'_>> {
         let comment = self.sup_value(netnode, 0u8.into(), ARRAY_SUP_TAG)?;
-        Some(parse_maybe_cstr(comment).unwrap_or(comment))
+        Some(IDBStr::new(parse_maybe_cstr(comment).unwrap_or(comment)))
     }
 
     pub(crate) fn comment_repeatable_at(
         &self,
         netnode: NetnodeIdx<K>,
-    ) -> Option<&[u8]> {
+    ) -> Option<IDBStr<'_>> {
         let comment = self.sup_value(netnode, 1u8.into(), ARRAY_SUP_TAG)?;
-        Some(parse_maybe_cstr(comment).unwrap_or(comment))
+        Some(IDBStr::new(parse_maybe_cstr(comment).unwrap_or(comment)))
     }
 
     // TODO: comments have a strange hole in id0
@@ -1162,7 +1172,7 @@ impl<K: IDAKind> ID0Section<K> {
     pub(crate) fn comment_pre_at(
         &self,
         netnode: NetnodeIdx<K>,
-    ) -> impl Iterator<Item = &[u8]> {
+    ) -> impl Iterator<Item = IDBStr<'_>> {
         crate::id0::entry_iter::EntryTagContinuousSubkeys::new(
             self,
             netnode,
@@ -1172,13 +1182,17 @@ impl<K: IDAKind> ID0Section<K> {
         // 1000..2000
         // max number of lines, NOTE this check is not done by IDA
         .take(1000)
-        .map(|entry| parse_maybe_cstr(&entry.value).unwrap_or(&entry.value[..]))
+        .map(|entry| {
+            IDBStr::new(
+                parse_maybe_cstr(&entry.value).unwrap_or(&entry.value[..]),
+            )
+        })
     }
 
     pub(crate) fn comment_post_at(
         &self,
         netnode: NetnodeIdx<K>,
-    ) -> impl Iterator<Item = &[u8]> {
+    ) -> impl Iterator<Item = IDBStr<'_>> {
         crate::id0::entry_iter::EntryTagContinuousSubkeys::new(
             self,
             netnode,
@@ -1188,7 +1202,11 @@ impl<K: IDAKind> ID0Section<K> {
         // 2000..3000
         // max number of lines, NOTE this check is not done by IDA
         .take(1000)
-        .map(|entry| parse_maybe_cstr(&entry.value).unwrap_or(&entry.value[..]))
+        .map(|entry| {
+            IDBStr::new(
+                parse_maybe_cstr(&entry.value).unwrap_or(&entry.value[..]),
+            )
+        })
     }
 
     pub fn struct_at(&self, idx: SubtypeId<K>) -> Result<&[u8]> {

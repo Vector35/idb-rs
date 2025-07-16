@@ -1,0 +1,27 @@
+---
+hash: 14FC45865E2C8101
+source: src/test.rs
+expression: file_regions
+---
+[
+ (
+  start: 0,
+  end: 1584,
+  eva: 0,
+ ),
+ (
+  start: 4096,
+  end: 4529,
+  eva: 4096,
+ ),
+ (
+  start: 8192,
+  end: 8404,
+  eva: 8192,
+ ),
+ (
+  start: 15824,
+  end: 16408,
+  eva: 11728,
+ ),
+]

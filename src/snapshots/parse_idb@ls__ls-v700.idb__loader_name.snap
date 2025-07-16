@@ -1,0 +1,9 @@
+---
+hash: 836C9E6A4F120A2B
+source: src/test.rs
+expression: loader_name
+---
+Some([
+ "elf.ldw",
+ "ELF for Intel 386 (Executable)",
+])

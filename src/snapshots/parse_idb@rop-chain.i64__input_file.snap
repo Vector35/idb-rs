@@ -1,0 +1,6 @@
+---
+hash: 8D5A1C803B2B534C
+source: src/test.rs
+expression: input_file
+---
+"C:\\Temp\\rop1.bin\0"

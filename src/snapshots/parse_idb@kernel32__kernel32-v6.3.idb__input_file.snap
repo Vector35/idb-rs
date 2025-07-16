@@ -1,0 +1,6 @@
+---
+hash: 7FEDCB55D6154A35
+source: src/test.rs
+expression: input_file
+---
+"/home/xvilka/IDA/kernel32.dll\0"

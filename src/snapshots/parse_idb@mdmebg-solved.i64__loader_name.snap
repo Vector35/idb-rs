@@ -1,0 +1,9 @@
+---
+hash: 6658A9FF98E57290
+source: src/test.rs
+expression: loader_name
+---
+Some([
+ "elf64.dll",
+ "ELF64 for x86-64 (Shared object)",
+])

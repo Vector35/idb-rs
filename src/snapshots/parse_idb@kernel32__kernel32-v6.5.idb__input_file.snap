@@ -1,0 +1,6 @@
+---
+hash: 57C56D10AC535431
+source: src/test.rs
+expression: input_file
+---
+"/home/xvilka/radare/python-idb/tests/data/v6.5/x32/kernel32.dll\0"
