@@ -1,5 +1,6 @@
 ---
+hash: 1C0930CE9257EE20
 source: src/test.rs
 expression: input_file
 ---
-"C:\\Work\\CPPClass\\backdoor.ex_\u0000"
+"C:\\Work\\CPPClass\\backdoor.ex_\0"

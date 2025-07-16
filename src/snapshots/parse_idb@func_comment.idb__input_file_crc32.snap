@@ -1,4 +1,5 @@
 ---
+hash: 97F6D48587FD22D0
 source: src/test.rs
 expression: input_file_crc32
 ---

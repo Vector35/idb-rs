@@ -1,5 +1,6 @@
 ---
+hash: 0D0DCB5B4C3EF2B3
 source: src/test.rs
 expression: input_file
 ---
-"C:\\Users\\user\\Downloads\\bitness\\pyidb-bitness\\cat\u0000"
+"C:\\Users\\user\\Downloads\\bitness\\pyidb-bitness\\cat\0"

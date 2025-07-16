@@ -1,35 +1,25 @@
 ---
+hash: 052679E3745020D2
 source: src/test.rs
 expression: segments
 ---
-- address:
-    start: 0
-    end: 13
-  name: 0
-  class_id: 1
-  orgbase: 0
-  flags: 16
-  align: RelByte
-  comb: Pub
-  perm: ~
-  bitness: S32Bits
-  seg_type: Code
-  selector: 1
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
+[
+ (
+  address: (
+   start: (0),
+   end: (13),
+  ),
+  name: (0),
+  class_id: (1),
+  orgbase: 0,
+  flags: (16),
+  align: RelByte,
+  comb: Pub,
+  perm: None,
+  bitness: S32Bits,
+  seg_type: Code,
+  selector: 1,
+  defsr: (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+]

@@ -1,7 +1,11 @@
 ---
+hash: 9659E93591DBAF9C
 source: src/test.rs
 expression: nam
 ---
-names:
-  - 4194304
-  - 4194320
+Some((
+ names: [
+  (4194304),
+  (4194320),
+ ],
+))

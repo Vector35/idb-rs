@@ -1,5 +1,6 @@
 ---
+hash: E84A90EB93B2B2E8
 source: src/test.rs
 expression: database_creation_version
 ---
-"8.4\u0000"
+Some("8.4\0")

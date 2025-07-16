@@ -1,7 +1,11 @@
 ---
+hash: DB3FEFD148237B19
 source: src/test.rs
 expression: nam
 ---
-names:
-  - 4173
-  - 12288
+Some((
+ names: [
+  (4173),
+  (12288),
+ ],
+))

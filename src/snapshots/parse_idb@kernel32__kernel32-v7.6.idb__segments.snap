@@ -1,190 +1,115 @@
 ---
+hash: 9BC6D6A946C3F310
 source: src/test.rs
 expression: segments
 ---
-- address:
-    start: 1754267648
-    end: 1754271744
-  name: 3
-  class_id: 4
-  orgbase: 0
-  flags: 84
-  align: RelPage
-  comb: Pub
-  perm: ~
-  bitness: S32Bits
-  seg_type: Data
-  selector: 2
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 4
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 1754271744
-    end: 1755164672
-  name: 1
-  class_id: 2
-  orgbase: 0
-  flags: 16
-  align: RelPara
-  comb: Pub
-  perm: 5
-  bitness: S32Bits
-  seg_type: Code
-  selector: 1
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 4
-    - 0
-    - 0
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 1755164672
-    end: 1755172864
-  name: 5
-  class_id: 4
-  orgbase: 0
-  flags: 16
-  align: RelPara
-  comb: Pub
-  perm: 6
-  bitness: S32Bits
-  seg_type: Data
-  selector: 3
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 4
-    - 0
-    - 0
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 1755172864
-    end: 1755177520
-  name: 6
-  class_id: 4
-  orgbase: 0
-  flags: 16
-  align: RelPara
-  comb: Pub
-  perm: 4
-  bitness: S32Bits
-  seg_type: Xtrn
-  selector: 4
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 4
-    - 0
-    - 0
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 1755213824
-    end: 1755217920
-  name: 7
-  class_id: 4
-  orgbase: 0
-  flags: 16
-  align: RelPara
-  comb: Pub
-  perm: 4
-  bitness: S32Bits
-  seg_type: Data
-  selector: 5
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 4
-    - 0
-    - 0
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 1755217920
-    end: 1755283456
-  name: 8
-  class_id: 4
-  orgbase: 0
-  flags: 20
-  align: RelPara
-  comb: Pub
-  perm: 4
-  bitness: S32Bits
-  seg_type: Data
-  selector: 6
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 4
-    - 0
-    - 0
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
+[
+ (
+  address: (
+   start: (1754267648),
+   end: (1754271744),
+  ),
+  name: (3),
+  class_id: (4),
+  orgbase: 0,
+  flags: (84),
+  align: RelPage,
+  comb: Pub,
+  perm: None,
+  bitness: S32Bits,
+  seg_type: Data,
+  selector: 2,
+  defsr: (0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (1754271744),
+   end: (1755164672),
+  ),
+  name: (1),
+  class_id: (2),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((5)),
+  bitness: S32Bits,
+  seg_type: Code,
+  selector: 1,
+  defsr: (1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (1755164672),
+   end: (1755172864),
+  ),
+  name: (5),
+  class_id: (4),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S32Bits,
+  seg_type: Data,
+  selector: 3,
+  defsr: (1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (1755172864),
+   end: (1755177520),
+  ),
+  name: (6),
+  class_id: (4),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((4)),
+  bitness: S32Bits,
+  seg_type: Xtrn,
+  selector: 4,
+  defsr: (1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (1755213824),
+   end: (1755217920),
+  ),
+  name: (7),
+  class_id: (4),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((4)),
+  bitness: S32Bits,
+  seg_type: Data,
+  selector: 5,
+  defsr: (1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (1755217920),
+   end: (1755283456),
+  ),
+  name: (8),
+  class_id: (4),
+  orgbase: 0,
+  flags: (20),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((4)),
+  bitness: S32Bits,
+  seg_type: Data,
+  selector: 6,
+  defsr: (1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+]

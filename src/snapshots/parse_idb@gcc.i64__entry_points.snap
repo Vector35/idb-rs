@@ -1,242 +1,279 @@
 ---
+hash: D744DD1AA8EDDEE1
 source: src/test.rs
 expression: entry_points
 ---
-- name: __mh_execute_header
-  address: 4294967296
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: true
-    is_volatile: false
-    type_variant:
-      Typeref:
-        ref_type: ~
-        typeref_value:
-          UnsolvedName: mach_header_64
-- name: _appendStructure
-  address: 4294983072
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Function:
-        calling_convention: Fastcall
-        ret:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Basic: Void
-        args:
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Pointer:
-                  closure: Default
-                  modifier: ~
-                  shifted: ~
-                  typ:
-                    comment: ~
-                    is_const: false
-                    is_volatile: false
-                    type_variant:
-                      Pointer:
-                        closure: Default
-                        modifier: ~
-                        shifted: ~
-                        typ:
-                          comment: ~
-                          is_const: false
-                          is_volatile: false
-                          type_variant:
-                            Typeref:
-                              ref_type: ~
-                              typeref_value:
-                                UnsolvedOrd: 25
-            loc: ~
-            flags: ~
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Pointer:
-                  closure: Default
-                  modifier: ~
-                  shifted: ~
-                  typ:
-                    comment: ~
-                    is_const: false
-                    is_volatile: false
-                    type_variant:
-                      Typeref:
-                        ref_type: ~
-                        typeref_value:
-                          UnsolvedOrd: 24
-            loc: ~
-            flags: ~
-        retloc: ~
-        method: ~
-        is_noret: false
-        is_pure: false
-        is_high: false
-        is_static: false
-        is_virtual: false
-        is_const: false
-        is_constructor: false
-        is_destructor: false
-- name: _printList
-  address: 4294983248
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Function:
-        calling_convention: Fastcall
-        ret:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Basic: Void
-        args:
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Pointer:
-                  closure: Default
-                  modifier: ~
-                  shifted: ~
-                  typ:
-                    comment: ~
-                    is_const: false
-                    is_volatile: false
-                    type_variant:
-                      Typeref:
-                        ref_type: ~
-                        typeref_value:
-                          UnsolvedOrd: 25
-            loc: ~
-            flags: ~
-        retloc: ~
-        method: ~
-        is_noret: false
-        is_pure: false
-        is_high: false
-        is_static: false
-        is_virtual: false
-        is_const: false
-        is_constructor: false
-        is_destructor: false
-- name: _main
-  address: 4294983392
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Function:
-        calling_convention: Cdecl
-        ret:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Basic:
-              Int:
-                is_signed: ~
-        args:
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Basic:
-                  Int:
-                    is_signed: ~
-            loc: ~
-            flags: ~
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Pointer:
-                  closure: Default
-                  modifier: ~
-                  shifted: ~
-                  typ:
-                    comment: ~
-                    is_const: false
-                    is_volatile: false
-                    type_variant:
-                      Pointer:
-                        closure: Default
-                        modifier: ~
-                        shifted: ~
-                        typ:
-                          comment: ~
-                          is_const: true
-                          is_volatile: false
-                          type_variant:
-                            Basic: Char
-            loc: ~
-            flags: ~
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Pointer:
-                  closure: Default
-                  modifier: ~
-                  shifted: ~
-                  typ:
-                    comment: ~
-                    is_const: false
-                    is_volatile: false
-                    type_variant:
-                      Pointer:
-                        closure: Default
-                        modifier: ~
-                        shifted: ~
-                        typ:
-                          comment: ~
-                          is_const: true
-                          is_volatile: false
-                          type_variant:
-                            Basic: Char
-            loc: ~
-            flags: ~
-        retloc: ~
-        method: ~
-        is_noret: false
-        is_pure: false
-        is_high: false
-        is_static: false
-        is_virtual: false
-        is_const: false
-        is_constructor: false
-        is_destructor: false
+[
+ (
+  name: "__mh_execute_header",
+  address: 4294967296,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: true,
+   is_volatile: false,
+   type_variant: Typeref((
+    ref_type: None,
+    typeref_value: UnsolvedName(Some("mach_header_64")),
+   )),
+  )),
+ ),
+ (
+  name: "_appendStructure",
+  address: 4294983072,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Function((
+    calling_convention: Some(Fastcall),
+    ret: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Basic(Void),
+    ),
+    args: [
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Pointer((
+        closure: Default,
+        modifier: None,
+        shifted: None,
+        typ: (
+         comment: None,
+         is_const: false,
+         is_volatile: false,
+         type_variant: Pointer((
+          closure: Default,
+          modifier: None,
+          shifted: None,
+          typ: (
+           comment: None,
+           is_const: false,
+           is_volatile: false,
+           type_variant: Typeref((
+            ref_type: None,
+            typeref_value: UnsolvedOrd(25),
+           )),
+          ),
+         )),
+        ),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Pointer((
+        closure: Default,
+        modifier: None,
+        shifted: None,
+        typ: (
+         comment: None,
+         is_const: false,
+         is_volatile: false,
+         type_variant: Typeref((
+          ref_type: None,
+          typeref_value: UnsolvedOrd(24),
+         )),
+        ),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+    ],
+    retloc: None,
+    method: None,
+    is_noret: false,
+    is_pure: false,
+    is_high: false,
+    is_static: false,
+    is_virtual: false,
+    is_const: false,
+    is_constructor: false,
+    is_destructor: false,
+   )),
+  )),
+ ),
+ (
+  name: "_printList",
+  address: 4294983248,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Function((
+    calling_convention: Some(Fastcall),
+    ret: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Basic(Void),
+    ),
+    args: [
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Pointer((
+        closure: Default,
+        modifier: None,
+        shifted: None,
+        typ: (
+         comment: None,
+         is_const: false,
+         is_volatile: false,
+         type_variant: Typeref((
+          ref_type: None,
+          typeref_value: UnsolvedOrd(25),
+         )),
+        ),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+    ],
+    retloc: None,
+    method: None,
+    is_noret: false,
+    is_pure: false,
+    is_high: false,
+    is_static: false,
+    is_virtual: false,
+    is_const: false,
+    is_constructor: false,
+    is_destructor: false,
+   )),
+  )),
+ ),
+ (
+  name: "_main",
+  address: 4294983392,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Function((
+    calling_convention: Some(Cdecl),
+    ret: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Basic(Int(
+      is_signed: None,
+     )),
+    ),
+    args: [
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Basic(Int(
+        is_signed: None,
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Pointer((
+        closure: Default,
+        modifier: None,
+        shifted: None,
+        typ: (
+         comment: None,
+         is_const: false,
+         is_volatile: false,
+         type_variant: Pointer((
+          closure: Default,
+          modifier: None,
+          shifted: None,
+          typ: (
+           comment: None,
+           is_const: true,
+           is_volatile: false,
+           type_variant: Basic(Char),
+          ),
+         )),
+        ),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Pointer((
+        closure: Default,
+        modifier: None,
+        shifted: None,
+        typ: (
+         comment: None,
+         is_const: false,
+         is_volatile: false,
+         type_variant: Pointer((
+          closure: Default,
+          modifier: None,
+          shifted: None,
+          typ: (
+           comment: None,
+           is_const: true,
+           is_volatile: false,
+           type_variant: Basic(Char),
+          ),
+         )),
+        ),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+    ],
+    retloc: None,
+    method: None,
+    is_noret: false,
+    is_pure: false,
+    is_high: false,
+    is_static: false,
+    is_virtual: false,
+    is_const: false,
+    is_constructor: false,
+    is_destructor: false,
+   )),
+  )),
+ ),
+]

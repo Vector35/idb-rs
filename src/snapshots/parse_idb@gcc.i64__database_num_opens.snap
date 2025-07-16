@@ -1,4 +1,5 @@
 ---
+hash: AA7695B0B5C470F8
 source: src/test.rs
 expression: database_num_opens
 ---

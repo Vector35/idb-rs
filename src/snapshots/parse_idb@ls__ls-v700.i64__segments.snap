@@ -1,717 +1,421 @@
 ---
+hash: 0CCC34CC7A39A058
 source: src/test.rs
 expression: segments
 ---
-- address:
-    start: 4194304
-    end: 4202856
-  name: 1
-  class_id: 2
-  orgbase: 0
-  flags: 16
-  align: RelByte
-  comb: Pub
-  perm: 5
-  bitness: S64Bits
-  seg_type: Code
-  selector: 1
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 17
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 4202856
-    end: 4202882
-  name: 4
-  class_id: 2
-  orgbase: 0
-  flags: 16
-  align: RelDble
-  comb: Pub
-  perm: 5
-  bitness: S64Bits
-  seg_type: Code
-  selector: 4
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 4202882
-    end: 4202896
-  name: 1
-  class_id: 2
-  orgbase: 0
-  flags: 16
-  align: RelByte
-  comb: Pub
-  perm: 5
-  bitness: S64Bits
-  seg_type: Code
-  selector: 1
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 17
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 4202896
-    end: 4204704
-  name: 5
-  class_id: 2
-  orgbase: 0
-  flags: 16
-  align: RelPara
-  comb: Pub
-  perm: 5
-  bitness: S64Bits
-  seg_type: Code
-  selector: 5
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 4204704
-    end: 4267770
-  name: 6
-  class_id: 2
-  orgbase: 0
-  flags: 16
-  align: RelPara
-  comb: Pub
-  perm: 5
-  bitness: S64Bits
-  seg_type: Code
-  selector: 6
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 4267770
-    end: 4267772
-  name: 1
-  class_id: 2
-  orgbase: 0
-  flags: 16
-  align: RelByte
-  comb: Pub
-  perm: 5
-  bitness: S64Bits
-  seg_type: Code
-  selector: 1
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 17
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 4267772
-    end: 4267781
-  name: 7
-  class_id: 2
-  orgbase: 0
-  flags: 16
-  align: RelDble
-  comb: Pub
-  perm: 5
-  bitness: S64Bits
-  seg_type: Code
-  selector: 7
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 4267781
-    end: 4267808
-  name: 1
-  class_id: 2
-  orgbase: 0
-  flags: 16
-  align: RelByte
-  comb: Pub
-  perm: 5
-  bitness: S64Bits
-  seg_type: Code
-  selector: 1
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 17
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 4267808
-    end: 4288540
-  name: 8
-  class_id: 9
-  orgbase: 0
-  flags: 16
-  align: Rel32Bytes
-  comb: Pub
-  perm: 4
-  bitness: S64Bits
-  seg_type: Data
-  selector: 8
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 4288540
-    end: 4290376
-  name: 10
-  class_id: 9
-  orgbase: 0
-  flags: 16
-  align: RelDble
-  comb: Pub
-  perm: 4
-  bitness: S64Bits
-  seg_type: Data
-  selector: 9
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 4290376
-    end: 4300100
-  name: 11
-  class_id: 9
-  orgbase: 0
-  flags: 16
-  align: RelQword
-  comb: Pub
-  perm: 4
-  bitness: S64Bits
-  seg_type: Data
-  selector: 10
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 6397424
-    end: 6397432
-  name: 12
-  class_id: 3
-  orgbase: 0
-  flags: 16
-  align: RelQword
-  comb: Pub
-  perm: 6
-  bitness: S64Bits
-  seg_type: Data
-  selector: 11
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 6397432
-    end: 6397440
-  name: 13
-  class_id: 3
-  orgbase: 0
-  flags: 16
-  align: RelQword
-  comb: Pub
-  perm: 6
-  bitness: S64Bits
-  seg_type: Data
-  selector: 12
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 6397440
-    end: 6397448
-  name: 14
-  class_id: 3
-  orgbase: 0
-  flags: 16
-  align: RelQword
-  comb: Pub
-  perm: 6
-  bitness: S64Bits
-  seg_type: Data
-  selector: 13
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 6397448
-    end: 6397944
-  name: 1
-  class_id: 3
-  orgbase: 0
-  flags: 16
-  align: RelByte
-  comb: Pub
-  perm: 6
-  bitness: S64Bits
-  seg_type: Data
-  selector: 2
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 17
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 6397944
-    end: 6397952
-  name: 15
-  class_id: 3
-  orgbase: 0
-  flags: 16
-  align: RelQword
-  comb: Pub
-  perm: 6
-  bitness: S64Bits
-  seg_type: Data
-  selector: 14
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 6397952
-    end: 6398872
-  name: 16
-  class_id: 3
-  orgbase: 0
-  flags: 16
-  align: RelQword
-  comb: Pub
-  perm: 6
-  bitness: S64Bits
-  seg_type: Data
-  selector: 15
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 6398872
-    end: 6398880
-  name: 1
-  class_id: 3
-  orgbase: 0
-  flags: 16
-  align: RelByte
-  comb: Pub
-  perm: 6
-  bitness: S64Bits
-  seg_type: Data
-  selector: 2
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 17
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 6398880
-    end: 6399476
-  name: 17
-  class_id: 3
-  orgbase: 0
-  flags: 16
-  align: Rel32Bytes
-  comb: Pub
-  perm: 6
-  bitness: S64Bits
-  seg_type: Data
-  selector: 16
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 6399476
-    end: 6399488
-  name: 1
-  class_id: 3
-  orgbase: 0
-  flags: 16
-  align: RelByte
-  comb: Pub
-  perm: 6
-  bitness: S64Bits
-  seg_type: Data
-  selector: 2
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 17
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 6399488
-    end: 6402912
-  name: 18
-  class_id: 19
-  orgbase: 0
-  flags: 16
-  align: Rel32Bytes
-  comb: Pub
-  perm: 6
-  bitness: S64Bits
-  seg_type: Bss
-  selector: 17
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 17
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 6402912
-    end: 6402913
-  name: 20
-  class_id: 0
-  orgbase: 0
-  flags: 16
-  align: RelByte
-  comb: Pub
-  perm: ~
-  bitness: S64Bits
-  seg_type: "Null"
-  selector: 18
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
-- address:
-    start: 6402920
-    end: 6403840
-  name: 21
-  class_id: 0
-  orgbase: 0
-  flags: 16
-  align: RelQword
-  comb: Pub
-  perm: ~
-  bitness: S64Bits
-  seg_type: Xtrn
-  selector: 19
-  defsr:
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-    - 0
-  color: 0
+[
+ (
+  address: (
+   start: (4194304),
+   end: (4202856),
+  ),
+  name: (1),
+  class_id: (2),
+  orgbase: 0,
+  flags: (16),
+  align: RelByte,
+  comb: Pub,
+  perm: Some((5)),
+  bitness: S64Bits,
+  seg_type: Code,
+  selector: 1,
+  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (4202856),
+   end: (4202882),
+  ),
+  name: (4),
+  class_id: (2),
+  orgbase: 0,
+  flags: (16),
+  align: RelDble,
+  comb: Pub,
+  perm: Some((5)),
+  bitness: S64Bits,
+  seg_type: Code,
+  selector: 4,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (4202882),
+   end: (4202896),
+  ),
+  name: (1),
+  class_id: (2),
+  orgbase: 0,
+  flags: (16),
+  align: RelByte,
+  comb: Pub,
+  perm: Some((5)),
+  bitness: S64Bits,
+  seg_type: Code,
+  selector: 1,
+  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (4202896),
+   end: (4204704),
+  ),
+  name: (5),
+  class_id: (2),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((5)),
+  bitness: S64Bits,
+  seg_type: Code,
+  selector: 5,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (4204704),
+   end: (4267770),
+  ),
+  name: (6),
+  class_id: (2),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((5)),
+  bitness: S64Bits,
+  seg_type: Code,
+  selector: 6,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (4267770),
+   end: (4267772),
+  ),
+  name: (1),
+  class_id: (2),
+  orgbase: 0,
+  flags: (16),
+  align: RelByte,
+  comb: Pub,
+  perm: Some((5)),
+  bitness: S64Bits,
+  seg_type: Code,
+  selector: 1,
+  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (4267772),
+   end: (4267781),
+  ),
+  name: (7),
+  class_id: (2),
+  orgbase: 0,
+  flags: (16),
+  align: RelDble,
+  comb: Pub,
+  perm: Some((5)),
+  bitness: S64Bits,
+  seg_type: Code,
+  selector: 7,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (4267781),
+   end: (4267808),
+  ),
+  name: (1),
+  class_id: (2),
+  orgbase: 0,
+  flags: (16),
+  align: RelByte,
+  comb: Pub,
+  perm: Some((5)),
+  bitness: S64Bits,
+  seg_type: Code,
+  selector: 1,
+  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (4267808),
+   end: (4288540),
+  ),
+  name: (8),
+  class_id: (9),
+  orgbase: 0,
+  flags: (16),
+  align: Rel32Bytes,
+  comb: Pub,
+  perm: Some((4)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 8,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (4288540),
+   end: (4290376),
+  ),
+  name: (10),
+  class_id: (9),
+  orgbase: 0,
+  flags: (16),
+  align: RelDble,
+  comb: Pub,
+  perm: Some((4)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 9,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (4290376),
+   end: (4300100),
+  ),
+  name: (11),
+  class_id: (9),
+  orgbase: 0,
+  flags: (16),
+  align: RelQword,
+  comb: Pub,
+  perm: Some((4)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 10,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6397424),
+   end: (6397432),
+  ),
+  name: (12),
+  class_id: (3),
+  orgbase: 0,
+  flags: (16),
+  align: RelQword,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 11,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6397432),
+   end: (6397440),
+  ),
+  name: (13),
+  class_id: (3),
+  orgbase: 0,
+  flags: (16),
+  align: RelQword,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 12,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6397440),
+   end: (6397448),
+  ),
+  name: (14),
+  class_id: (3),
+  orgbase: 0,
+  flags: (16),
+  align: RelQword,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 13,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6397448),
+   end: (6397944),
+  ),
+  name: (1),
+  class_id: (3),
+  orgbase: 0,
+  flags: (16),
+  align: RelByte,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 2,
+  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6397944),
+   end: (6397952),
+  ),
+  name: (15),
+  class_id: (3),
+  orgbase: 0,
+  flags: (16),
+  align: RelQword,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 14,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6397952),
+   end: (6398872),
+  ),
+  name: (16),
+  class_id: (3),
+  orgbase: 0,
+  flags: (16),
+  align: RelQword,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 15,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6398872),
+   end: (6398880),
+  ),
+  name: (1),
+  class_id: (3),
+  orgbase: 0,
+  flags: (16),
+  align: RelByte,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 2,
+  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6398880),
+   end: (6399476),
+  ),
+  name: (17),
+  class_id: (3),
+  orgbase: 0,
+  flags: (16),
+  align: Rel32Bytes,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 16,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6399476),
+   end: (6399488),
+  ),
+  name: (1),
+  class_id: (3),
+  orgbase: 0,
+  flags: (16),
+  align: RelByte,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S64Bits,
+  seg_type: Data,
+  selector: 2,
+  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6399488),
+   end: (6402912),
+  ),
+  name: (18),
+  class_id: (19),
+  orgbase: 0,
+  flags: (16),
+  align: Rel32Bytes,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S64Bits,
+  seg_type: Bss,
+  selector: 17,
+  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6402912),
+   end: (6402913),
+  ),
+  name: (20),
+  class_id: (0),
+  orgbase: 0,
+  flags: (16),
+  align: RelByte,
+  comb: Pub,
+  perm: None,
+  bitness: S64Bits,
+  seg_type: Null,
+  selector: 18,
+  defsr: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (6402920),
+   end: (6403840),
+  ),
+  name: (21),
+  class_id: (0),
+  orgbase: 0,
+  flags: (16),
+  align: RelQword,
+  comb: Pub,
+  perm: None,
+  bitness: S64Bits,
+  seg_type: Xtrn,
+  selector: 19,
+  defsr: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  color: 0,
+ ),
+]

@@ -1,4 +1,5 @@
 ---
+hash: 6620BD3C58A1A248
 source: src/test.rs
 expression: database_creation_time
 ---

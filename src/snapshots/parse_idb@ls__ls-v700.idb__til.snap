@@ -1,2548 +1,2913 @@
 ---
+hash: C3D9C31B2504ADD4
 source: src/test.rs
 expression: til
 ---
-header:
-  format: 18
-  description: Local type definitions
-  flags: 18
-  dependencies:
-    - gnuunx
-  compiler_id: Unknown
-  compiler_guessed: false
-  cc: ~
-  cn: N32F48
-  cm: NN
-  def_align: ~
-  type_ordinal_alias: ~
-  size_int: 4
-  size_bool: 1
-  size_enum: 4
-  extended_sizeof_info: ~
-  size_long_double: ~
-  is_universal: false
-symbols: []
-types:
-  - name: option
-    ordinal: 1
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: name
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: true
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: has_arg
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: flag
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          Int:
-                            is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: val
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: $EE5E8BDA873FE0A606F5340B5687DB85
-    ordinal: 4
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: __val
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 32
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 4
-                            is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: __sigset_t
-    ordinal: 3
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: ~
-          typeref_value:
-            Ref: 1
-    sclass: ~
-  - name: sigset_t
-    ordinal: 2
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: ~
-          typeref_value:
-            Ref: 2
-    sclass: ~
-  - name: __sighandler_t
-    ordinal: 7
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Pointer:
-          closure: Default
-          modifier: ~
-          shifted: ~
-          typ:
-            comment: ~
-            is_const: false
-            is_volatile: false
-            type_variant:
-              Function:
-                calling_convention: ~
-                ret:
-                  comment: ~
-                  is_const: false
-                  is_volatile: false
-                  type_variant:
-                    Basic: Void
-                args:
-                  - name: ~
-                    comment: ~
-                    ty:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          Int:
-                            is_signed: ~
-                    loc: ~
-                    flags: ~
-                retloc: ~
-                method: ~
-                is_noret: false
-                is_pure: false
-                is_high: false
-                is_static: false
-                is_virtual: false
-                is_const: false
-                is_constructor: false
-                is_destructor: false
-    sclass: ~
-  - name: __pid_t
-    ordinal: 12
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Basic:
-          Int:
-            is_signed: ~
-    sclass: ~
-  - name: __uid_t
-    ordinal: 13
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Basic:
-          Int:
-            is_signed: false
-    sclass: ~
-  - name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$DDF278A5B88F81FEC3CBEE828E282CB3"
-    ordinal: 11
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: si_pid
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 5
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_uid
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 6
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: sigval
-    ordinal: 16
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: ~
-          members:
-            - name: sival_int
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-            - name: sival_ptr
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Void
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: sigval_t
-    ordinal: 15
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: ~
-          typeref_value:
-            Ref: 8
-    sclass: ~
-  - name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$F43D85AC31CEBD8CC07B08111ABDF065"
-    ordinal: 14
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: si_tid
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_overrun
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_sigval
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 9
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$002955E8B5DE3B92E30DFEF7AB65BFE2"
-    ordinal: 17
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: si_pid
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 5
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_uid
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 6
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_sigval
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 9
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: __clock_t
-    ordinal: 19
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Basic:
-          IntSized:
-            bytes: 4
-            is_signed: ~
-    sclass: ~
-  - name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$353EAF26536A4016665766004ADC0BD6"
-    ordinal: 18
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: si_pid
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 5
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_uid
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 6
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_status
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_utime
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 12
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_stime
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 12
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$394784BEE55B7018BCA7354475FB2ABC"
-    ordinal: 20
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: si_addr
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Void
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$25B90AD06DB8EE87065EE071226F4194"
-    ordinal: 21
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: si_band
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 4
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_fd
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC"
-    ordinal: 10
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: ~
-          members:
-            - name: _pad
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 29
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          Int:
-                            is_signed: ~
-            - name: _kill
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 7
-            - name: _timer
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 10
-            - name: _rt
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 11
-            - name: _sigchld
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 13
-            - name: _sigfault
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 14
-            - name: _sigpoll
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 15
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: siginfo
-    ordinal: 9
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: si_signo
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_errno
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: si_code
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _sifields
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 16
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: siginfo_t
-    ordinal: 8
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: ~
-          typeref_value:
-            Ref: 17
-    sclass: ~
-  - name: "sigaction::$27D95C566038B5553D3488E7932C67F0"
-    ordinal: 6
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: ~
-          members:
-            - name: sa_handler
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 4
-            - name: sa_sigaction
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Function:
-                          calling_convention: ~
-                          ret:
-                            comment: ~
-                            is_const: false
-                            is_volatile: false
-                            type_variant:
-                              Basic: Void
-                          args:
-                            - name: ~
-                              comment: ~
-                              ty:
-                                comment: ~
-                                is_const: false
-                                is_volatile: false
-                                type_variant:
-                                  Basic:
-                                    Int:
-                                      is_signed: ~
-                              loc: ~
-                              flags: ~
-                            - name: ~
-                              comment: ~
-                              ty:
-                                comment: ~
-                                is_const: false
-                                is_volatile: false
-                                type_variant:
-                                  Pointer:
-                                    closure: Default
-                                    modifier: ~
-                                    shifted: ~
-                                    typ:
-                                      comment: ~
-                                      is_const: false
-                                      is_volatile: false
-                                      type_variant:
-                                        Typeref:
-                                          ref_type: ~
-                                          typeref_value:
-                                            Ref: 18
-                              loc: ~
-                              flags: ~
-                            - name: ~
-                              comment: ~
-                              ty:
-                                comment: ~
-                                is_const: false
-                                is_volatile: false
-                                type_variant:
-                                  Pointer:
-                                    closure: Default
-                                    modifier: ~
-                                    shifted: ~
-                                    typ:
-                                      comment: ~
-                                      is_const: false
-                                      is_volatile: false
-                                      type_variant:
-                                        Basic: Void
-                              loc: ~
-                              flags: ~
-                          retloc: ~
-                          method: ~
-                          is_noret: false
-                          is_pure: false
-                          is_high: false
-                          is_static: false
-                          is_virtual: false
-                          is_const: false
-                          is_constructor: false
-                          is_destructor: false
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: sigaction
-    ordinal: 5
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: __sigaction_handler
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 19
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: sa_mask
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 2
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: sa_flags
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: sa_restorer
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Function:
-                          calling_convention: Voidarg
-                          ret:
-                            comment: ~
-                            is_const: false
-                            is_volatile: false
-                            type_variant:
-                              Basic: Void
-                          args: []
-                          retloc: ~
-                          method: ~
-                          is_noret: false
-                          is_pure: false
-                          is_high: false
-                          is_static: false
-                          is_virtual: false
-                          is_const: false
-                          is_constructor: false
-                          is_destructor: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: __jmp_buf
-    ordinal: 23
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Array:
-          alignment: ~
-          base: 0
-          nelem: 6
-          elem_type:
-            comment: ~
-            is_const: false
-            is_volatile: false
-            type_variant:
-              Basic:
-                Int:
-                  is_signed: ~
-    sclass: ~
-  - name: __jmp_buf_tag
-    ordinal: 22
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: __jmpbuf
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 21
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: __mask_was_saved
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: __saved_mask
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 2
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: wint_t
-    ordinal: 28
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Basic:
-          Int:
-            is_signed: false
-    sclass: ~
-  - name: "$2216EDA7495BBAF57C7F27A68DB83E35::$0740F39446D5E828B16B7363880DB674"
-    ordinal: 27
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: ~
-          members:
-            - name: __wch
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 23
-            - name: __wchb
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 4
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: $2216EDA7495BBAF57C7F27A68DB83E35
-    ordinal: 26
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: __count
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: __value
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 24
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: __mbstate_t
-    ordinal: 25
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: ~
-          typeref_value:
-            Ref: 25
-    sclass: ~
-  - name: mbstate_t
-    ordinal: 24
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: ~
-          typeref_value:
-            Ref: 26
-    sclass: ~
-  - name: __time_t
-    ordinal: 30
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Basic:
-          IntSized:
-            bytes: 4
-            is_signed: ~
-    sclass: ~
-  - name: __suseconds_t
-    ordinal: 31
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Basic:
-          IntSized:
-            bytes: 4
-            is_signed: ~
-    sclass: ~
-  - name: timeval
-    ordinal: 29
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: tv_sec
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 28
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tv_usec
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 29
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: tm
-    ordinal: 32
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: tm_sec
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tm_min
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tm_hour
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tm_mday
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tm_mon
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tm_year
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tm_wday
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tm_yday
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tm_isdst
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tm_gmtoff
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 4
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tm_zone
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: true
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: timespec
-    ordinal: 33
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: tv_sec
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 28
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: tv_nsec
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 4
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: _IO_marker
-    ordinal: 35
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: _next
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Typeref:
-                          ref_type: ~
-                          typeref_value:
-                            Ref: 33
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _sbuf
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Typeref:
-                          ref_type: ~
-                          typeref_value:
-                            Ref: 39
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _pos
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: __off_t
-    ordinal: 36
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Basic:
-          IntSized:
-            bytes: 4
-            is_signed: ~
-    sclass: ~
-  - name: _IO_lock_t
-    ordinal: 37
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Basic: Void
-    sclass: ~
-  - name: __quad_t
-    ordinal: 39
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Basic:
-          IntSized:
-            bytes: 8
-            is_signed: ~
-    sclass: ~
-  - name: __off64_t
-    ordinal: 38
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: ~
-          typeref_value:
-            Ref: 36
-    sclass: ~
-  - name: size_t
-    ordinal: 40
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Basic:
-          IntSized:
-            bytes: 4
-            is_signed: false
-    sclass: ~
-  - name: _IO_FILE
-    ordinal: 34
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: _flags
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _IO_read_ptr
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _IO_read_end
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _IO_read_base
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _IO_write_base
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _IO_write_ptr
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _IO_write_end
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _IO_buf_base
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _IO_buf_end
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _IO_save_base
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _IO_backup_base
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _IO_save_end
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _markers
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Typeref:
-                          ref_type: ~
-                          typeref_value:
-                            Ref: 33
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _chain
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Typeref:
-                          ref_type: ~
-                          typeref_value:
-                            Ref: 39
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _fileno
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _flags2
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _old_offset
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 34
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _cur_column
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 2
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _vtable_offset
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 1
-                      is_signed: true
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _shortbuf
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 1
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _lock
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Typeref:
-                          ref_type: ~
-                          typeref_value:
-                            Ref: 35
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _offset
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 37
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: __pad1
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Void
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: __pad2
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Void
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: __pad3
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Void
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: __pad4
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Void
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: __pad5
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Typeref:
-                    ref_type: ~
-                    typeref_value:
-                      Ref: 38
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _mode
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: _unused2
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 40
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-macros: []
+Some((
+ header: (
+  format: 18,
+  description: "Local type definitions",
+  flags: (18),
+  dependencies: [
+   "gnuunx",
+  ],
+  compiler_id: Unknown,
+  compiler_guessed: false,
+  cc: None,
+  cn: Some(N32F48),
+  cm: Some(NN),
+  def_align: None,
+  type_ordinal_alias: None,
+  size_int: 4,
+  size_bool: 1,
+  size_enum: Some(4),
+  extended_sizeof_info: None,
+  size_long_double: None,
+  is_universal: false,
+ ),
+ symbols: [],
+ types: [
+  (
+   name: "option",
+   ordinal: 1,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("name"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: true,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("has_arg"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("flag"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Int(
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("val"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "$EE5E8BDA873FE0A606F5340B5687DB85",
+   ordinal: 4,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("__val"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(32),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 4,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__sigset_t",
+   ordinal: 3,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: None,
+     typeref_value: Ref(1),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "sigset_t",
+   ordinal: 2,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: None,
+     typeref_value: Ref(2),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__sighandler_t",
+   ordinal: 7,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Pointer((
+     closure: Default,
+     modifier: None,
+     shifted: None,
+     typ: (
+      comment: None,
+      is_const: false,
+      is_volatile: false,
+      type_variant: Function((
+       calling_convention: None,
+       ret: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Void),
+       ),
+       args: [
+        (
+         name: None,
+         comment: None,
+         ty: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Int(
+           is_signed: None,
+          )),
+         ),
+         loc: None,
+         flags: None,
+        ),
+       ],
+       retloc: None,
+       method: None,
+       is_noret: false,
+       is_pure: false,
+       is_high: false,
+       is_static: false,
+       is_virtual: false,
+       is_const: false,
+       is_constructor: false,
+       is_destructor: false,
+      )),
+     ),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__pid_t",
+   ordinal: 12,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Basic(Int(
+     is_signed: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__uid_t",
+   ordinal: 13,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Basic(Int(
+     is_signed: Some(false),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$DDF278A5B88F81FEC3CBEE828E282CB3",
+   ordinal: 11,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("si_pid"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(5),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_uid"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(6),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "sigval",
+   ordinal: 16,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: None,
+     members: [
+      (
+       name: Some("sival_int"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+      ),
+      (
+       name: Some("sival_ptr"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Void),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "sigval_t",
+   ordinal: 15,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: None,
+     typeref_value: Ref(8),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$F43D85AC31CEBD8CC07B08111ABDF065",
+   ordinal: 14,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("si_tid"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_overrun"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_sigval"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(9),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$002955E8B5DE3B92E30DFEF7AB65BFE2",
+   ordinal: 17,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("si_pid"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(5),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_uid"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(6),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_sigval"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(9),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__clock_t",
+   ordinal: 19,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Basic(IntSized(
+     bytes: 4,
+     is_signed: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$353EAF26536A4016665766004ADC0BD6",
+   ordinal: 18,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("si_pid"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(5),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_uid"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(6),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_status"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_utime"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(12),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_stime"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(12),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$394784BEE55B7018BCA7354475FB2ABC",
+   ordinal: 20,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("si_addr"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Void),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC::$25B90AD06DB8EE87065EE071226F4194",
+   ordinal: 21,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("si_band"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 4,
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_fd"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "siginfo::$9703D8310E6E5AF54AB70219D84A4EBC",
+   ordinal: 10,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: None,
+     members: [
+      (
+       name: Some("_pad"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(29),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Int(
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("_kill"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(7),
+        )),
+       ),
+      ),
+      (
+       name: Some("_timer"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(10),
+        )),
+       ),
+      ),
+      (
+       name: Some("_rt"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(11),
+        )),
+       ),
+      ),
+      (
+       name: Some("_sigchld"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(13),
+        )),
+       ),
+      ),
+      (
+       name: Some("_sigfault"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(14),
+        )),
+       ),
+      ),
+      (
+       name: Some("_sigpoll"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(15),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "siginfo",
+   ordinal: 9,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("si_signo"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_errno"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("si_code"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_sifields"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(16),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "siginfo_t",
+   ordinal: 8,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: None,
+     typeref_value: Ref(17),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "sigaction::$27D95C566038B5553D3488E7932C67F0",
+   ordinal: 6,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: None,
+     members: [
+      (
+       name: Some("sa_handler"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(4),
+        )),
+       ),
+      ),
+      (
+       name: Some("sa_sigaction"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Function((
+           calling_convention: None,
+           ret: (
+            comment: None,
+            is_const: false,
+            is_volatile: false,
+            type_variant: Basic(Void),
+           ),
+           args: [
+            (
+             name: None,
+             comment: None,
+             ty: (
+              comment: None,
+              is_const: false,
+              is_volatile: false,
+              type_variant: Basic(Int(
+               is_signed: None,
+              )),
+             ),
+             loc: None,
+             flags: None,
+            ),
+            (
+             name: None,
+             comment: None,
+             ty: (
+              comment: None,
+              is_const: false,
+              is_volatile: false,
+              type_variant: Pointer((
+               closure: Default,
+               modifier: None,
+               shifted: None,
+               typ: (
+                comment: None,
+                is_const: false,
+                is_volatile: false,
+                type_variant: Typeref((
+                 ref_type: None,
+                 typeref_value: Ref(18),
+                )),
+               ),
+              )),
+             ),
+             loc: None,
+             flags: None,
+            ),
+            (
+             name: None,
+             comment: None,
+             ty: (
+              comment: None,
+              is_const: false,
+              is_volatile: false,
+              type_variant: Pointer((
+               closure: Default,
+               modifier: None,
+               shifted: None,
+               typ: (
+                comment: None,
+                is_const: false,
+                is_volatile: false,
+                type_variant: Basic(Void),
+               ),
+              )),
+             ),
+             loc: None,
+             flags: None,
+            ),
+           ],
+           retloc: None,
+           method: None,
+           is_noret: false,
+           is_pure: false,
+           is_high: false,
+           is_static: false,
+           is_virtual: false,
+           is_const: false,
+           is_constructor: false,
+           is_destructor: false,
+          )),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "sigaction",
+   ordinal: 5,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("__sigaction_handler"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(19),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("sa_mask"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(2),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("sa_flags"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("sa_restorer"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Function((
+           calling_convention: Some(Voidarg),
+           ret: (
+            comment: None,
+            is_const: false,
+            is_volatile: false,
+            type_variant: Basic(Void),
+           ),
+           args: [],
+           retloc: None,
+           method: None,
+           is_noret: false,
+           is_pure: false,
+           is_high: false,
+           is_static: false,
+           is_virtual: false,
+           is_const: false,
+           is_constructor: false,
+           is_destructor: false,
+          )),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__jmp_buf",
+   ordinal: 23,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Array((
+     alignment: None,
+     base: 0,
+     nelem: Some(6),
+     elem_type: (
+      comment: None,
+      is_const: false,
+      is_volatile: false,
+      type_variant: Basic(Int(
+       is_signed: None,
+      )),
+     ),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__jmp_buf_tag",
+   ordinal: 22,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("__jmpbuf"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(21),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("__mask_was_saved"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("__saved_mask"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(2),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "wint_t",
+   ordinal: 28,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Basic(Int(
+     is_signed: Some(false),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "$2216EDA7495BBAF57C7F27A68DB83E35::$0740F39446D5E828B16B7363880DB674",
+   ordinal: 27,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: None,
+     members: [
+      (
+       name: Some("__wch"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(23),
+        )),
+       ),
+      ),
+      (
+       name: Some("__wchb"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(4),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "$2216EDA7495BBAF57C7F27A68DB83E35",
+   ordinal: 26,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("__count"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("__value"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(24),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__mbstate_t",
+   ordinal: 25,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: None,
+     typeref_value: Ref(25),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "mbstate_t",
+   ordinal: 24,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: None,
+     typeref_value: Ref(26),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__time_t",
+   ordinal: 30,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Basic(IntSized(
+     bytes: 4,
+     is_signed: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__suseconds_t",
+   ordinal: 31,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Basic(IntSized(
+     bytes: 4,
+     is_signed: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "timeval",
+   ordinal: 29,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("tv_sec"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(28),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tv_usec"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(29),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "tm",
+   ordinal: 32,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("tm_sec"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tm_min"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tm_hour"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tm_mday"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tm_mon"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tm_year"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tm_wday"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tm_yday"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tm_isdst"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tm_gmtoff"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 4,
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tm_zone"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: true,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "timespec",
+   ordinal: 33,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("tv_sec"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(28),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("tv_nsec"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 4,
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "_IO_marker",
+   ordinal: 35,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("_next"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Typeref((
+           ref_type: None,
+           typeref_value: Ref(33),
+          )),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_sbuf"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Typeref((
+           ref_type: None,
+           typeref_value: Ref(39),
+          )),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_pos"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__off_t",
+   ordinal: 36,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Basic(IntSized(
+     bytes: 4,
+     is_signed: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "_IO_lock_t",
+   ordinal: 37,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Basic(Void),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__quad_t",
+   ordinal: 39,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Basic(IntSized(
+     bytes: 8,
+     is_signed: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__off64_t",
+   ordinal: 38,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: None,
+     typeref_value: Ref(36),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "size_t",
+   ordinal: 40,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Basic(IntSized(
+     bytes: 4,
+     is_signed: Some(false),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "_IO_FILE",
+   ordinal: 34,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("_flags"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_IO_read_ptr"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_IO_read_end"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_IO_read_base"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_IO_write_base"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_IO_write_ptr"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_IO_write_end"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_IO_buf_base"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_IO_buf_end"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_IO_save_base"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_IO_backup_base"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_IO_save_end"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_markers"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Typeref((
+           ref_type: None,
+           typeref_value: Ref(33),
+          )),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_chain"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Typeref((
+           ref_type: None,
+           typeref_value: Ref(39),
+          )),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_fileno"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_flags2"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_old_offset"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(34),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_cur_column"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 2,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_vtable_offset"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 1,
+         is_signed: Some(true),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_shortbuf"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(1),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_lock"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Typeref((
+           ref_type: None,
+           typeref_value: Ref(35),
+          )),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_offset"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(37),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("__pad1"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Void),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("__pad2"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Void),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("__pad3"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Void),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("__pad4"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Void),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("__pad5"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Typeref((
+         ref_type: None,
+         typeref_value: Ref(38),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_mode"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("_unused2"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(40),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+ ],
+ macros: Some([]),
+))

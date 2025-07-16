@@ -1,5 +1,6 @@
 ---
+hash: B31062E24A642CC1
 source: src/test.rs
 expression: database_creation_version
 ---
-"7.1\u0000"
+Some("7.1\0")

@@ -1,4 +1,5 @@
 ---
+hash: 89355E366619411B
 source: src/test.rs
 expression: database_num_opens
 ---

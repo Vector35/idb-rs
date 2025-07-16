@@ -1,6 +1,9 @@
 ---
+hash: 5E00E33042C9E629
 source: src/test.rs
 expression: loader_name
 ---
-- pe64.dll
-- Portable executable for AMD64 (PE)
+Some([
+ "pe64.dll",
+ "Portable executable for AMD64 (PE)",
+])

@@ -1,16 +1,27 @@
 ---
+hash: D568FE34B1AB11C5
 source: src/test.rs
 expression: file_regions
 ---
-- start: 4198400
-  end: 4202496
-  eva: 1024
-- start: 4202496
-  end: 4205568
-  eva: 5120
-- start: 4206592
-  end: 4207104
-  eva: 8192
-- start: 4210688
-  end: 4211712
-  eva: 8704
+[
+ (
+  start: 4198400,
+  end: 4202496,
+  eva: 1024,
+ ),
+ (
+  start: 4202496,
+  end: 4205568,
+  eva: 5120,
+ ),
+ (
+  start: 4206592,
+  end: 4207104,
+  eva: 8192,
+ ),
+ (
+  start: 4210688,
+  end: 4211712,
+  eva: 8704,
+ ),
+]

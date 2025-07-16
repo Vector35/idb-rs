@@ -1,6 +1,9 @@
 ---
+hash: 22886CBE351E1D02
 source: src/test.rs
 expression: loader_name
 ---
-- pe.llx
-- Portable executable for 80386 (PE)
+Some([
+ "pe.llx",
+ "Portable executable for 80386 (PE)",
+])

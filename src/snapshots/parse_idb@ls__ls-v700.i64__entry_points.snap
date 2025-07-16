@@ -1,92 +1,118 @@
 ---
+hash: 2F4A68497A90243C
 source: src/test.rs
 expression: entry_points
 ---
-- name: ".init_proc"
-  address: 4202856
-  forwarded: ~
-  entry_type: ~
-- name: start
-  address: 4212880
-  forwarded: ~
-  entry_type: ~
-- name: ".term_proc"
-  address: 4267772
-  forwarded: ~
-  entry_type: ~
-- name: __bss_start
-  address: 6399476
-  forwarded: ~
-  entry_type: ~
-- name: program_invocation_short_name
-  address: 6399488
-  forwarded: ~
-  entry_type: ~
-- name: stdout
-  address: 6399504
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Pointer:
-        closure: Default
-        modifier: ~
-        shifted: ~
-        typ:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Typeref:
-              ref_type: ~
-              typeref_value:
-                UnsolvedName: FILE
-- name: optind
-  address: 6399520
-  forwarded: ~
-  entry_type: ~
-- name: optarg
-  address: 6399552
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Pointer:
-        closure: Default
-        modifier: ~
-        shifted: ~
-        typ:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Basic: Char
-- name: program_invocation_name
-  address: 6399560
-  forwarded: ~
-  entry_type: ~
-- name: stderr
-  address: 6399568
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Pointer:
-        closure: Default
-        modifier: ~
-        shifted: ~
-        typ:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Typeref:
-              ref_type: ~
-              typeref_value:
-                UnsolvedName: FILE
+[
+ (
+  name: ".init_proc",
+  address: 4202856,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "start",
+  address: 4212880,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: ".term_proc",
+  address: 4267772,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "__bss_start",
+  address: 6399476,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "program_invocation_short_name",
+  address: 6399488,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "stdout",
+  address: 6399504,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Pointer((
+    closure: Default,
+    modifier: None,
+    shifted: None,
+    typ: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Typeref((
+      ref_type: None,
+      typeref_value: UnsolvedName(Some("FILE")),
+     )),
+    ),
+   )),
+  )),
+ ),
+ (
+  name: "optind",
+  address: 6399520,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "optarg",
+  address: 6399552,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Pointer((
+    closure: Default,
+    modifier: None,
+    shifted: None,
+    typ: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Basic(Char),
+    ),
+   )),
+  )),
+ ),
+ (
+  name: "program_invocation_name",
+  address: 6399560,
+  forwarded: None,
+  entry_type: None,
+ ),
+ (
+  name: "stderr",
+  address: 6399568,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Pointer((
+    closure: Default,
+    modifier: None,
+    shifted: None,
+    typ: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Typeref((
+      ref_type: None,
+      typeref_value: UnsolvedName(Some("FILE")),
+     )),
+    ),
+   )),
+  )),
+ ),
+]

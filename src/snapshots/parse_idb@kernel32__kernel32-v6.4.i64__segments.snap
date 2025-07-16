@@ -1,97 +1,61 @@
 ---
+hash: 14C5A660B41942DE
 source: src/test.rs
 expression: segments
 ---
-- address:
-    start: 1754271744
-    end: 1755164672
-  name: 68
-  class_id: 69
-  orgbase: 0
-  flags: 16
-  align: RelPara
-  comb: Pub
-  perm: 5
-  bitness: S32Bits
-  seg_type: Code
-  selector: 1
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 3
-    - 0
-    - 0
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 1755164672
-    end: 1755172864
-  name: 70
-  class_id: 71
-  orgbase: 0
-  flags: 16
-  align: RelPara
-  comb: Pub
-  perm: 6
-  bitness: S32Bits
-  seg_type: Data
-  selector: 2
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 3
-    - 0
-    - 0
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
-- address:
-    start: 1755172864
-    end: 1755177520
-  name: 72
-  class_id: 71
-  orgbase: 0
-  flags: 16
-  align: RelPara
-  comb: Pub
-  perm: 4
-  bitness: S32Bits
-  seg_type: Xtrn
-  selector: 3
-  defsr:
-    - 1
-    - 1
-    - 1
-    - 3
-    - 0
-    - 0
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-    - 1
-  color: 0
+[
+ (
+  address: (
+   start: (1754271744),
+   end: (1755164672),
+  ),
+  name: (68),
+  class_id: (69),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((5)),
+  bitness: S32Bits,
+  seg_type: Code,
+  selector: 1,
+  defsr: (1, 1, 1, 3, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (1755164672),
+   end: (1755172864),
+  ),
+  name: (70),
+  class_id: (71),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((6)),
+  bitness: S32Bits,
+  seg_type: Data,
+  selector: 2,
+  defsr: (1, 1, 1, 3, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+ (
+  address: (
+   start: (1755172864),
+   end: (1755177520),
+  ),
+  name: (72),
+  class_id: (71),
+  orgbase: 0,
+  flags: (16),
+  align: RelPara,
+  comb: Pub,
+  perm: Some((4)),
+  bitness: S32Bits,
+  seg_type: Xtrn,
+  selector: 3,
+  defsr: (1, 1, 1, 3, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  color: 0,
+ ),
+]

@@ -1,5 +1,6 @@
 ---
+hash: EA2DD420BD9272D7
 source: src/test.rs
 expression: input_file
 ---
-"C:\\Documents and Settings\\Administrator\\���� ȭ��\\ls\u0000"
+"C:\\Documents and Settings\\Administrator\\���� ȭ��\\ls\0"

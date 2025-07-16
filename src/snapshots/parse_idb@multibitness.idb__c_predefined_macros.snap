@@ -1,5 +1,6 @@
 ---
+hash: FC49BE3F68BBF8CB
 source: src/test.rs
 expression: c_predefined_macros
 ---
-"\u0000"
+Some("\0")

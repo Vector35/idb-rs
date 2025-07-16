@@ -1,6 +1,9 @@
 ---
+hash: 67DE28BC65ABE3E2
 source: src/test.rs
 expression: loader_name
 ---
-- elf64.dll
-- ELF64 for x86-64 (Executable)
+Some([
+ "elf64.dll",
+ "ELF64 for x86-64 (Executable)",
+])

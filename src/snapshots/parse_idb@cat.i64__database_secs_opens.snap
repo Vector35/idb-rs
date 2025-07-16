@@ -1,4 +1,5 @@
 ---
+hash: 9C091E64EADA536B
 source: src/test.rs
 expression: database_secs_opens
 ---
