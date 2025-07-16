@@ -1,5 +1,6 @@
 ---
+hash: 3E438599E49A35E5
 source: src/test.rs
 expression: input_file
 ---
-"/mnt/c/Users/eliasb/OneDrive/SAMPLES/madam2_ctf/madame\u0000"
+"/mnt/c/Users/eliasb/OneDrive/SAMPLES/madam2_ctf/madame\0"

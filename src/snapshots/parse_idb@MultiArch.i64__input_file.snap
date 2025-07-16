@@ -1,5 +1,6 @@
 ---
+hash: 6948F77F6D071517
 source: src/test.rs
 expression: input_file
 ---
-"C:\\allthingsida\\multiarch\\input_src\\build\\Release\\MultiArch.exe\u0000"
+"C:\\allthingsida\\multiarch\\input_src\\build\\Release\\MultiArch.exe\0"

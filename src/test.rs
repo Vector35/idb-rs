@@ -1,12 +1,115 @@
 use rstest::rstest;
 
 use std::fs::File;
-use std::io::Cursor;
+use std::hash::Hasher;
+use std::io::{BufWriter, Cursor};
 use std::path::{Path, PathBuf};
 
 use crate::id0::function::FunctionsAndComments;
 use crate::id0::{FileRegions, Segment};
 use crate::*;
+
+macro_rules! assert_dyn {
+    ($test_root:literal, $(&)? $filename:ident, $(&)? $value:ident $(,)?) => {{
+        assert_dyn_data($test_root, &$filename, stringify!($value), &$value);
+    }};
+}
+
+fn assert_dyn_data<T: Serialize>(
+    test_root: &str,
+    filename: &str,
+    test_name: &str,
+    data: &T,
+) {
+    let root_env = env!("CARGO_MANIFEST_DIR");
+    let snapfile = format!(
+        "{root_env}/src/snapshots/{test_root}@{}__{test_name}.snap",
+        filename.replace("/", "__"),
+    );
+
+    if !std::fs::exists(&snapfile).unwrap() {
+        // just create the file
+        generate_file(&snapfile, test_name, data);
+        return;
+    }
+
+    // output the file into a new and compare with the original
+    let snapfile_new = format!("{snapfile}.new");
+    let new_hash = generate_file(&snapfile_new, test_name, data);
+    let old_hash = read_hash(&snapfile);
+
+    // ensure the new file is equal to the old one
+    // what's the chance of a hash colistion? 1 in u64::MAX?
+    assert!(new_hash == old_hash, "Files Hash don't match");
+    // if the files are equal delete the new one
+    std::fs::remove_file(&snapfile_new).unwrap();
+}
+
+const HASH_SIZE: usize = 8;
+const HASH_PREV: &str = "---\nhash: ";
+
+fn read_hash(filename: &str) -> u64 {
+    let mut file = File::open(filename).unwrap();
+    let mut buf = [0u8; HASH_SIZE * 2]; // 2 because 1 byte is 2 chars
+    file.seek(SeekFrom::Start(HASH_PREV.len().try_into().unwrap()))
+        .unwrap();
+    file.read_exact(&mut buf).unwrap();
+    u64::from_str_radix(str::from_utf8(&buf).unwrap(), 16).unwrap()
+}
+
+fn generate_file<T: Serialize>(
+    filename: &str,
+    test_name: &str,
+    data: &T,
+) -> u64 {
+    let mut file = BufWriter::new(File::create(filename).unwrap());
+    let hash_dummy = core::str::from_utf8(&[b'!'; HASH_SIZE * 2]).unwrap();
+    file.write_fmt(format_args!(
+        "{HASH_PREV}{hash_dummy}\nsource: {}\nexpression: {}\n---\n",
+        file!(),
+        test_name,
+    ))
+    .unwrap();
+    struct MyFile<W: std::io::Write> {
+        file: W,
+        hash: rustc_hash::FxHasher,
+    }
+    impl<W: std::io::Write> std::fmt::Write for MyFile<W> {
+        fn write_str(&mut self, s: &str) -> std::fmt::Result {
+            self.hash.write(s.as_bytes());
+            match self.file.write_all(s.as_bytes()) {
+                Ok(_) => Ok(()),
+                Err(_) => Err(std::fmt::Error::default()),
+            }
+        }
+    }
+    let mut my_file = MyFile {
+        file,
+        hash: rustc_hash::FxHasher::with_seed(0),
+    };
+    let config = ron::ser::PrettyConfig::default()
+        .indentor(" ")
+        .separator(" ")
+        .struct_names(false)
+        .escape_strings(true);
+    // write the serialized type
+    ron::ser::to_writer_pretty(&mut my_file, data, config).unwrap();
+    // goes back and write the calculated hash
+    my_file
+        .file
+        .seek(SeekFrom::Start(HASH_PREV.len().try_into().unwrap()))
+        .unwrap();
+    let hash = my_file.hash.finish();
+    let hash_str = format!("{hash:0width$X}", width = HASH_SIZE * 2);
+    assert!(
+        hash_str.len() <= HASH_SIZE * 2,
+        "Hash len is too big: {}",
+        hash_str.len()
+    );
+    my_file.file.write_all(hash_str.as_bytes()).unwrap();
+    // return the hash
+    hash
+}
 
 #[test]
 fn parse_id0_til() {
@@ -239,16 +342,7 @@ fn parse_struct_with_fixed() {
 }
 
 #[rstest]
-fn parse_til(
-    #[files("resources/tils/**/*.til")]
-    #[exclude("resources/tils/local/.*")]
-    file: PathBuf,
-) {
-    parse_til_inner(file)
-}
-
-#[rstest]
-fn parse_local_til(#[files("resources/tils/local/**/*.til")] file: PathBuf) {
+fn parse_til(#[files("resources/tils/**/*.til")] file: PathBuf) {
     parse_til_inner(file)
 }
 
@@ -256,16 +350,6 @@ fn parse_local_til(#[files("resources/tils/local/**/*.til")] file: PathBuf) {
 fn parse_idb(
     #[files("resources/idbs/**/*.i64")]
     #[files("resources/idbs/**/*.idb")]
-    #[exclude("resources/idbs/local/.*")]
-    filename: PathBuf,
-) {
-    parse_idb_inner(filename)
-}
-
-#[rstest]
-fn parse_local_idb(
-    #[files("resources/idbs/local/**/*.i64")]
-    #[files("resources/idbs/local/**/*.idb")]
     filename: PathBuf,
 ) {
     parse_idb_inner(filename)
@@ -292,9 +376,7 @@ fn parse_til_inner(file: PathBuf) {
     let mut input = BufReader::new(File::open(file).unwrap());
     // TODO make a SmartReader
     let til = TILSection::read(&mut input).unwrap();
-    insta::with_settings!({snapshot_suffix => file_suffix_str, sort_maps => true}, {
-        insta::assert_yaml_snapshot!(til);
-    });
+    assert_dyn!("parse_til", file_suffix_str, til);
 
     assert_eq!(
         input.peek_u8().unwrap(),
@@ -304,38 +386,37 @@ fn parse_til_inner(file: PathBuf) {
 }
 
 fn parse_idb_inner(file: PathBuf) {
-    let file_suffix: PathBuf = remove_base_dir(&file, "idbs").collect();
-    println!("{}", file_suffix.to_str().unwrap());
+    let filename: PathBuf = remove_base_dir(&file, "idbs").collect();
+    let filename_str = filename.to_str().unwrap();
+    println!("{filename_str}");
     let mut input = BufReader::new(File::open(&file).unwrap());
     let format = identify_idb_file(&mut input).unwrap();
-    insta::with_settings!({sort_maps => true}, {
-        match format {
-            IDBFormats::Separated(IDAVariants::IDA32(sections)) => {
-                parse_idb_format(file_suffix, &mut input, &sections)
-            }
-            IDBFormats::Separated(IDAVariants::IDA64(sections)) => {
-                parse_idb_format(file_suffix, &mut input, &sections)
-            }
-            IDBFormats::InlineUncompressed(sections) => {
-                parse_idb_format(file_suffix, &mut input, &sections)
-            }
-            IDBFormats::InlineCompressed(compressed) => {
-                let mut decompressed = Vec::new();
-                let sections = compressed
-                    .decompress_into_memory(input, &mut decompressed)
-                    .unwrap();
-                parse_idb_format(
-                    file_suffix,
-                    &mut Cursor::new(decompressed),
-                    &sections,
-                );
-            }
+    match format {
+        IDBFormats::Separated(IDAVariants::IDA32(sections)) => {
+            parse_idb_format(filename_str, &mut input, &sections)
         }
-    });
+        IDBFormats::Separated(IDAVariants::IDA64(sections)) => {
+            parse_idb_format(filename_str, &mut input, &sections)
+        }
+        IDBFormats::InlineUncompressed(sections) => {
+            parse_idb_format(filename_str, &mut input, &sections)
+        }
+        IDBFormats::InlineCompressed(compressed) => {
+            let mut decompressed = Vec::new();
+            let sections = compressed
+                .decompress_into_memory(input, &mut decompressed)
+                .unwrap();
+            parse_idb_format(
+                filename_str,
+                &mut Cursor::new(decompressed),
+                &sections,
+            );
+        }
+    }
 }
 
 fn parse_idb_format<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
-    file_suffix: PathBuf,
+    filename: &str,
     input: &mut I,
     sections: &F,
 ) {
@@ -354,24 +435,16 @@ fn parse_idb_format<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
     let til = sections
         .til_location()
         .map(|til| sections.read_til(&mut *input, til).unwrap());
-    if let Some(til) = &til {
-        insta::with_settings!({snapshot_suffix => file_suffix.join("til").to_str().unwrap()}, {
-            insta::assert_yaml_snapshot!(til);
-        });
-    }
+    assert_dyn!("parse_idb", filename, til);
     let nam = sections
         .nam_location()
         .map(|idx| sections.read_nam(&mut *input, idx).unwrap());
-    if let Some(nam) = &nam {
-        insta::with_settings!({snapshot_suffix => file_suffix.join("nam").to_str().unwrap()}, {
-            insta::assert_yaml_snapshot!(nam);
-        });
-    }
-    parse_idb_data(file_suffix, &id0, &id1, id2.as_ref(), til.as_ref())
+    assert_dyn!("parse_idb", filename, nam);
+    parse_idb_data(filename, &id0, &id1, id2.as_ref(), til.as_ref())
 }
 
 fn parse_idb_data<K>(
-    file_suffix: PathBuf,
+    filename: &str,
     id0: &ID0Section<K>,
     id1: &ID1Section<K>,
     id2: Option<&ID2Section<K>>,
@@ -382,84 +455,70 @@ fn parse_idb_data<K>(
     // parse all id0 information
     let root_netnode = id0.root_node().unwrap();
     let ida_info = id0.ida_info(root_netnode.into()).unwrap();
-    insta::with_settings!({snapshot_suffix => file_suffix.join("ida_info").to_str().unwrap()}, {
-        insta::assert_yaml_snapshot!(ida_info);
-    });
+    assert_dyn!("parse_idb", filename, ida_info);
 
-    insta::with_settings!({snapshot_suffix => file_suffix.join("segments").to_str().unwrap()}, {
-        let seg_idx = id0.segments_idx().unwrap().unwrap();
-        let mut segments: Vec<Segment<K>> =
-            id0.segments(seg_idx).map(Result::unwrap).collect();
-        segments.sort_unstable_by_key(|seg| (seg.address.start, seg.address.end, seg.selector));
-        insta::assert_yaml_snapshot!(segments);
+    let seg_idx = id0.segments_idx().unwrap().unwrap();
+    let mut segments: Vec<Segment<K>> =
+        id0.segments(seg_idx).map(Result::unwrap).collect();
+    segments.sort_unstable_by_key(|seg| {
+        (seg.address.start, seg.address.end, seg.selector)
     });
-    insta::with_settings!({snapshot_suffix => file_suffix.join("loader_name").to_str().unwrap()}, {
-        let loader_name: Option<Vec<&str>> = id0
-            .loader_name()
-            .unwrap()
-            .map(|iter| iter.map(Result::unwrap).collect());
-        insta::assert_yaml_snapshot!(loader_name);
-    });
+    assert_dyn!("parse_idb", filename, segments);
+
+    let loader_name: Option<Vec<&str>> = id0
+        .loader_name()
+        .unwrap()
+        .map(|iter| iter.map(Result::unwrap).collect());
+    assert_dyn!("parse_idb", filename, loader_name);
+
     let root_info_idx = id0.root_node().unwrap();
     // I belive the input file should always be present, but maybe I'm wrong,
     // I need know if this unwrap panics
-    insta::with_settings!({snapshot_suffix => file_suffix.join("input_file").to_str().unwrap()}, {
-        let input_file = id0.input_file(root_info_idx).unwrap();
-        insta::assert_yaml_snapshot!(input_file);
-    });
-    insta::with_settings!({snapshot_suffix => file_suffix.join("input_file_size").to_str().unwrap()}, {
-        let input_file_size = id0.input_file_size(root_info_idx).unwrap();
-        insta::assert_yaml_snapshot!(input_file_size);
-    });
-    insta::with_settings!({snapshot_suffix => file_suffix.join("input_file_crc32").to_str().unwrap()}, {
-        let input_file_crc32 =
-            id0.input_file_crc32(root_info_idx).unwrap().unwrap();
-        insta::assert_yaml_snapshot!(input_file_crc32);
-    });
-    insta::with_settings!({snapshot_suffix => file_suffix.join("input_file_sha256").to_str().unwrap()}, {
-        let input_file_sha256 = id0.input_file_sha256(root_info_idx).unwrap();
-        insta::assert_yaml_snapshot!(input_file_sha256);
-    });
-    insta::with_settings!({snapshot_suffix => file_suffix.join("input_file_md5").to_str().unwrap()}, {
-        let input_file_md5 = id0.input_file_md5(root_info_idx).unwrap();
-        insta::assert_yaml_snapshot!(input_file_md5);
-    });
+    let input_file = id0.input_file(root_info_idx).unwrap();
+    assert_dyn!("parse_idb", filename, input_file);
+
+    let input_file_size = id0.input_file_size(root_info_idx).unwrap();
+    assert_dyn!("parse_idb", filename, input_file_size);
+
+    let input_file_crc32 =
+        id0.input_file_crc32(root_info_idx).unwrap().unwrap();
+    assert_dyn!("parse_idb", filename, input_file_crc32);
+
+    let input_file_sha256 = id0.input_file_sha256(root_info_idx).unwrap();
+    assert_dyn!("parse_idb", filename, input_file_sha256);
+
+    let input_file_md5 = id0.input_file_md5(root_info_idx).unwrap();
+    assert_dyn!("parse_idb", filename, input_file_md5);
+
     // TODO I think database information is always available, check that...
-    insta::with_settings!({snapshot_suffix => file_suffix.join("database_num_opens").to_str().unwrap()}, {
-        let database_num_opens =
-            id0.database_num_opens(root_info_idx).unwrap().unwrap();
-        insta::assert_yaml_snapshot!(database_num_opens);
-    });
-    insta::with_settings!({snapshot_suffix => file_suffix.join("database_secs_opens").to_str().unwrap()}, {
-        let database_secs_opens =
-            id0.database_secs_opens(root_info_idx).unwrap().unwrap();
-        insta::assert_yaml_snapshot!(database_secs_opens);
-    });
-    insta::with_settings!({snapshot_suffix => file_suffix.join("database_creation_time").to_str().unwrap()}, {
-        let database_creation_time =
-            id0.database_creation_time(root_info_idx).unwrap().unwrap();
-        insta::assert_yaml_snapshot!(database_creation_time);
-    });
-    insta::with_settings!({snapshot_suffix => file_suffix.join("database_initial_version").to_str().unwrap()}, {
-        let database_initial_version = id0
-            .database_initial_version(root_info_idx)
-            .unwrap()
-            .unwrap();
-        insta::assert_yaml_snapshot!(database_initial_version);
-    });
-    insta::with_settings!({snapshot_suffix => file_suffix.join("database_creation_version").to_str().unwrap()}, {
-        let database_creation_version =
-            id0.database_creation_version(root_info_idx);
-        insta::assert_yaml_snapshot!(database_creation_version);
-    });
-    insta::with_settings!({snapshot_suffix => file_suffix.join("c_predefined_macros").to_str().unwrap()}, {
-        let c_predefined_macros = id0.c_predefined_macros(root_info_idx);
-        insta::assert_yaml_snapshot!(c_predefined_macros);
-    });
-    insta::with_settings!({snapshot_suffix => file_suffix.join("c_header_path").to_str().unwrap()}, {
-        let c_header_path = id0.c_header_path(root_info_idx);
-        insta::assert_yaml_snapshot!(c_header_path);
-    });
+    let database_num_opens =
+        id0.database_num_opens(root_info_idx).unwrap().unwrap();
+    assert_dyn!("parse_idb", filename, database_num_opens);
+
+    let database_secs_opens =
+        id0.database_secs_opens(root_info_idx).unwrap().unwrap();
+    assert_dyn!("parse_idb", filename, database_secs_opens);
+
+    let database_creation_time =
+        id0.database_creation_time(root_info_idx).unwrap().unwrap();
+    assert_dyn!("parse_idb", filename, database_creation_time);
+
+    let database_initial_version = id0
+        .database_initial_version(root_info_idx)
+        .unwrap()
+        .unwrap();
+    assert_dyn!("parse_idb", filename, database_initial_version);
+
+    let database_creation_version =
+        id0.database_creation_version(root_info_idx);
+    assert_dyn!("parse_idb", filename, database_creation_version);
+
+    let c_predefined_macros = id0.c_predefined_macros(root_info_idx);
+    assert_dyn!("parse_idb", filename, c_predefined_macros);
+
+    let c_header_path = id0.c_header_path(root_info_idx);
+    assert_dyn!("parse_idb", filename, c_header_path);
+
     // TODO identify the data
     //let Some(_) = id0.output_file_encoding_idx(root_info_idx) else {todo!()};
     //let Some(_) = id0.ids_modenode_id(root_info_idx) else {todo!()};
@@ -479,24 +538,22 @@ fn parse_idb_data<K>(
     //id0.selectors(root_info_idx).unwrap().collect();
     //let Some(_) = id0.file_format_name_loader(root_info_idx) else {todo!()};
 
-    insta::with_settings!({snapshot_suffix => file_suffix.join("file_regions").to_str().unwrap()}, {
-        let file_regions_idx = id0.file_regions_idx().unwrap();
-        let file_regions: Vec<FileRegions<K>> = id0
-            .file_regions(file_regions_idx, ida_info.version)
-            .map(Result::unwrap)
-            .collect();
-        insta::assert_yaml_snapshot!(file_regions);
-    });
+    let file_regions_idx = id0.file_regions_idx().unwrap();
+    let file_regions: Vec<FileRegions<K>> = id0
+        .file_regions(file_regions_idx, ida_info.version)
+        .map(Result::unwrap)
+        .collect();
+    assert_dyn!("parse_idb", filename, file_regions);
+
     if let Some(func_idx) = id0.funcs_idx().unwrap() {
         let _functions_and_comments: Vec<FunctionsAndComments<'_, K>> = id0
             .functions_and_comments(func_idx)
             .map(Result::unwrap)
             .collect();
     }
-    insta::with_settings!({snapshot_suffix => file_suffix.join("entry_points").to_str().unwrap()}, {
-        let entry_points = id0.entry_points().unwrap();
-        insta::assert_yaml_snapshot!(entry_points);
-    });
+    let entry_points = id0.entry_points().unwrap();
+    assert_dyn!("parse_idb", filename, entry_points);
+
     let _ = id0.dirtree_bpts().unwrap();
     let _ = id0.dirtree_enums().unwrap();
 

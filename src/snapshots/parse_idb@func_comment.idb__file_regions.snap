@@ -1,7 +1,12 @@
 ---
+hash: A58613D5D7B7A284
 source: src/test.rs
 expression: file_regions
 ---
-- start: 0
-  end: 13
-  eva: 0
+[
+ (
+  start: 0,
+  end: 13,
+  eva: 0,
+ ),
+]

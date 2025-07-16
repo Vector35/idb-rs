@@ -2,7 +2,7 @@ use crate::id0::Compiler;
 use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
 use crate::til::{flag, TILMacro, TILTypeInfo, TILTypeInfoRaw};
 use crate::{IDAKind, IDBString, SectionReader};
-use anyhow::{anyhow, ensure, Result};
+use anyhow::{anyhow, ensure, Context, Result};
 use serde::{Deserialize, Serialize};
 
 use std::fmt::Debug;
@@ -162,7 +162,8 @@ pub struct TILSectionHeader2 {
 
 impl TILSectionRaw {
     fn read(input: &mut impl IdbBufRead) -> Result<Self> {
-        let header_raw = Self::read_header(&mut *input)?;
+        let header_raw =
+            Self::read_header(&mut *input).context("TIL Section header")?;
 
         // TODO verify that is always false?
         let _mod = header_raw.flags.is_mod();
@@ -692,7 +693,8 @@ impl TILSection {
 
 impl TILSection {
     pub fn read(input: &mut impl IdbBufRead) -> Result<TILSection> {
-        let type_info_raw = TILSectionRaw::read(input)?;
+        let type_info_raw =
+            TILSectionRaw::read(input).context("TIL Section Parsing")?;
         // TODO check for dups?
         let type_by_name = type_info_raw
             .types
@@ -723,7 +725,8 @@ impl TILSection {
                     ty.sclass,
                 )
             })
-            .collect::<Result<_>>()?;
+            .collect::<Result<_>>()
+            .context("TIL Symbols Conversion")?;
         let types = type_info_raw
             .types
             .into_iter()
@@ -741,7 +744,8 @@ impl TILSection {
                     ty.sclass,
                 )
             })
-            .collect::<Result<_>>()?;
+            .collect::<Result<_>>()
+            .context("TIL Types Conversion")?;
 
         Ok(Self {
             header: type_info_raw.header,

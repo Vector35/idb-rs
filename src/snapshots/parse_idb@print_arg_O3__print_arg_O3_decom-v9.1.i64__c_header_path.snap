@@ -1,5 +1,6 @@
 ---
+hash: F8EE29E6E1C0EF09
 source: src/test.rs
 expression: c_header_path
 ---
-"/usr/local/include:/usr/include\u0000"
+Some("/usr/local/include:/usr/include\0")

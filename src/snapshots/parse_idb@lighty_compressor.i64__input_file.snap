@@ -1,5 +1,6 @@
 ---
+hash: 49D52B6510766EA2
 source: src/test.rs
 expression: input_file
 ---
-"C:\\allthingsida\\malware-re\\virus_lighty_compressor.pe\u0000"
+"C:\\allthingsida\\malware-re\\virus_lighty_compressor.pe\0"

@@ -1,7 +1,12 @@
 ---
+hash: 2104262C3B707297
 source: src/test.rs
 expression: file_regions
 ---
-- start: 4198400
-  end: 4198912
-  eva: 1024
+[
+ (
+  start: 4198400,
+  end: 4198912,
+  eva: 1024,
+ ),
+]

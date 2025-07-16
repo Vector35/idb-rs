@@ -1,1943 +1,2252 @@
 ---
+hash: DDB0512ABB150329
 source: src/test.rs
 expression: til
 ---
-header:
-  format: 18
-  description: Local type definitions
-  flags: 18
-  dependencies:
-    - gnulnx_x64
-  compiler_id: Unknown
-  compiler_guessed: false
-  cc: ~
-  cn: N32F48
-  cm: NN
-  def_align: ~
-  type_ordinal_alias: ~
-  size_int: 4
-  size_bool: 1
-  size_enum: 4
-  extended_sizeof_info: ~
-  size_long_double: ~
-  is_universal: false
-symbols:
-  - name: RSA_PKCS1_PADDING
-    ordinal: 1
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: ~
-          typeref_value:
-            Ref: 19
-    sclass: ~
-  - name: RSA_NO_PADDING
-    ordinal: 3
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: ~
-          typeref_value:
-            Ref: 19
-    sclass: ~
-  - name: RSA_PKCS1_OAEP_PADDING
-    ordinal: 4
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: ~
-          typeref_value:
-            Ref: 19
-    sclass: ~
-  - name: RSA_X931_PADDING
-    ordinal: 5
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: ~
-          typeref_value:
-            Ref: 19
-    sclass: ~
-types:
-  - name: Elf64_Sym
-    ordinal: 1
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: st_name
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 4
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: st_info
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 1
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: st_other
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 1
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: st_shndx
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 2
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: st_value
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 8
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: st_size
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 8
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: 8
-    sclass: ~
-  - name: Elf64_Rela
-    ordinal: 2
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: r_offset
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 8
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: r_info
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 8
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: r_addend
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 8
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: Elf64_Dyn
-    ordinal: 3
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: d_tag
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 8
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: d_un
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 8
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: Elf64_Verneed
-    ordinal: 4
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: vn_version
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 2
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: vn_cnt
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 2
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: vn_file
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 4
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: vn_aux
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 4
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: vn_next
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 4
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: 4
-    sclass: ~
-  - name: Elf64_Vernaux
-    ordinal: 5
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: vna_hash
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 4
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: vna_flags
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 2
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: vna_other
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 2
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: vna_name
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 4
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: vna_next
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 4
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: 4
-    sclass: ~
-  - name: __va_list_tag
-    ordinal: 6
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: gp_offset
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: fp_offset
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: overflow_arg_area
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Void
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: reg_save_area
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Void
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: gcc_va_list
-    ordinal: 7
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Array:
-          alignment: ~
-          base: 0
-          nelem: 1
-          elem_type:
-            comment: ~
-            is_const: false
-            is_volatile: false
-            type_variant:
-              Typeref:
-                ref_type: ~
-                typeref_value:
-                  Ref: 5
-    sclass: ~
-  - name: __m64
-    ordinal: 8
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: 8
-          members:
-            - name: m64_u64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 8
-                      is_signed: false
-            - name: m64_f32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 2
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          Float:
-                            bytes: 4
-            - name: m64_i8
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 1
-                            is_signed: ~
-            - name: m64_i16
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 4
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 2
-                            is_signed: ~
-            - name: m64_i32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 2
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 4
-                            is_signed: ~
-            - name: m64_i64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    IntSized:
-                      bytes: 8
-                      is_signed: ~
-            - name: m64_u8
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 1
-                            is_signed: false
-            - name: m64_u16
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 4
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 2
-                            is_signed: false
-            - name: m64_u32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 2
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 4
-                            is_signed: false
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: __m128
-    ordinal: 9
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: 16
-          members:
-            - name: m128_f32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 4
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          Float:
-                            bytes: 4
-            - name: m128_u64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 2
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 8
-                            is_signed: false
-            - name: m128_i8
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 16
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 1
-                            is_signed: ~
-            - name: m128_i16
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 2
-                            is_signed: ~
-            - name: m128_i32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 4
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 4
-                            is_signed: ~
-            - name: m128_i64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 2
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 8
-                            is_signed: ~
-            - name: m128_u8
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 16
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 1
-                            is_signed: false
-            - name: m128_u16
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 2
-                            is_signed: false
-            - name: m128_u32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 4
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 4
-                            is_signed: false
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: __m128d
-    ordinal: 10
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: m128d_f64
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 2
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          Float:
-                            bytes: 8
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: __m128i
-    ordinal: 11
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: 16
-          members:
-            - name: m128i_i8
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 16
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 1
-                            is_signed: ~
-            - name: m128i_i16
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 2
-                            is_signed: ~
-            - name: m128i_i32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 4
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 4
-                            is_signed: ~
-            - name: m128i_i64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 2
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 8
-                            is_signed: ~
-            - name: m128i_u8
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 16
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 1
-                            is_signed: false
-            - name: m128i_u16
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 2
-                            is_signed: false
-            - name: m128i_u32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 4
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 4
-                            is_signed: false
-            - name: m128i_u64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 2
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 8
-                            is_signed: false
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: __m256
-    ordinal: 12
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: 32
-          members:
-            - name: m256_f32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          Float:
-                            bytes: 4
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: __m256d
-    ordinal: 13
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: 32
-          members:
-            - name: m256d_f64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 4
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          Float:
-                            bytes: 8
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: __m256i
-    ordinal: 14
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: 32
-          members:
-            - name: m256i_i8
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 32
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 1
-                            is_signed: ~
-            - name: m256i_i16
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 16
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 2
-                            is_signed: ~
-            - name: m256i_i32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 4
-                            is_signed: ~
-            - name: m256i_i64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 4
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 8
-                            is_signed: ~
-            - name: m256i_u8
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 32
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 1
-                            is_signed: false
-            - name: m256i_u16
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 16
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 2
-                            is_signed: false
-            - name: m256i_u32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 4
-                            is_signed: false
-            - name: m256i_u64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 4
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 8
-                            is_signed: false
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: __m512
-    ordinal: 15
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: 64
-          members:
-            - name: m512_f32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 16
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          Float:
-                            bytes: 4
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: __m512d
-    ordinal: 16
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: 64
-          members:
-            - name: m512d_f64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          Float:
-                            bytes: 8
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: __m512i
-    ordinal: 17
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Union:
-          effective_alignment: ~
-          alignment: 64
-          members:
-            - name: m512i_i8
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 64
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 1
-                            is_signed: ~
-            - name: m512i_i16
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 32
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 2
-                            is_signed: ~
-            - name: m512i_i32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 16
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 4
-                            is_signed: ~
-            - name: m512i_i64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 8
-                            is_signed: ~
-            - name: m512i_u8
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 64
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 1
-                            is_signed: false
-            - name: m512i_u16
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 32
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 2
-                            is_signed: false
-            - name: m512i_u32
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 16
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 4
-                            is_signed: false
-            - name: m512i_u64
-              comment: ~
-              ty:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 8
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          IntSized:
-                            bytes: 8
-                            is_signed: false
-          is_unaligned: false
-          is_unknown_8: false
-    sclass: ~
-  - name: BIGNUM
-    ordinal: 18
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Pointer:
-          closure: Default
-          modifier: ~
-          shifted: ~
-          typ:
-            comment: ~
-            is_const: false
-            is_volatile: false
-            type_variant:
-              Basic: Void
-    sclass: ~
-  - name: RSA
-    ordinal: 19
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Pointer:
-          closure: Default
-          modifier: ~
-          shifted: ~
-          typ:
-            comment: ~
-            is_const: false
-            is_volatile: false
-            type_variant:
-              Basic: Void
-    sclass: ~
-  - name: RSA_PADDING
-    ordinal: 20
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Enum:
-          is_signed: false
-          is_unsigned: false
-          is_64: false
-          output_format: Hex
-          members:
-            Regular:
-              - name: RSA_PKCS1_PADDING
-                comment: ~
-                value: 1
-              - name: RSA_NO_PADDING
-                comment: ~
-                value: 3
-              - name: RSA_PKCS1_OAEP_PADDING
-                comment: ~
-                value: 4
-              - name: RSA_X931_PADDING
-                comment: ~
-                value: 5
-          storage_size: ~
-    sclass: ~
-  - name: AES_KEY
-    ordinal: 23
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Typeref:
-          ref_type: Struct
-          typeref_value:
-            Ref: 21
-    sclass: ~
-  - name: aes_key_st
-    ordinal: 22
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: rd_key
-              comment:
-                Unknown5: 3
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 60
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic:
-                          Int:
-                            is_signed: false
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: rounds
-              comment:
-                Unknown5: 4
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Basic:
-                    Int:
-                      is_signed: ~
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-  - name: userinput_t
-    ordinal: 24
-    tinfo:
-      comment: ~
-      is_const: false
-      is_volatile: false
-      type_variant:
-        Struct:
-          effective_alignment: ~
-          members:
-            - name: part1
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 10
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-            - name: part2
-              comment: ~
-              member_type:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Array:
-                    alignment: ~
-                    base: 0
-                    nelem: 246
-                    elem_type:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Basic: Char
-              att: ~
-              alignment: ~
-              is_baseclass: false
-              is_unaligned: false
-              is_vft: false
-              is_method: false
-              is_unknown_8: false
-          extra_padding: ~
-          is_unaligned: false
-          is_msstruct: false
-          is_cppobj: false
-          is_vft: false
-          is_fixed: false
-          is_uknown_8: false
-          alignment: ~
-    sclass: ~
-macros: []
+Some((
+ header: (
+  format: 18,
+  description: "Local type definitions",
+  flags: (18),
+  dependencies: [
+   "gnulnx_x64",
+  ],
+  compiler_id: Unknown,
+  compiler_guessed: false,
+  cc: None,
+  cn: Some(N32F48),
+  cm: Some(NN),
+  def_align: None,
+  type_ordinal_alias: None,
+  size_int: 4,
+  size_bool: 1,
+  size_enum: Some(4),
+  extended_sizeof_info: None,
+  size_long_double: None,
+  is_universal: false,
+ ),
+ symbols: [
+  (
+   name: "RSA_PKCS1_PADDING",
+   ordinal: 1,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: None,
+     typeref_value: Ref(19),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "RSA_NO_PADDING",
+   ordinal: 3,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: None,
+     typeref_value: Ref(19),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "RSA_PKCS1_OAEP_PADDING",
+   ordinal: 4,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: None,
+     typeref_value: Ref(19),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "RSA_X931_PADDING",
+   ordinal: 5,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: None,
+     typeref_value: Ref(19),
+    )),
+   ),
+   sclass: None,
+  ),
+ ],
+ types: [
+  (
+   name: "Elf64_Sym",
+   ordinal: 1,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("st_name"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 4,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("st_info"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 1,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("st_other"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 1,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("st_shndx"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 2,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("st_value"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 8,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("st_size"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 8,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: Some(8),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "Elf64_Rela",
+   ordinal: 2,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("r_offset"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 8,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("r_info"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 8,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("r_addend"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 8,
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "Elf64_Dyn",
+   ordinal: 3,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("d_tag"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 8,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("d_un"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 8,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "Elf64_Verneed",
+   ordinal: 4,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("vn_version"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 2,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("vn_cnt"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 2,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("vn_file"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 4,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("vn_aux"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 4,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("vn_next"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 4,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: Some(4),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "Elf64_Vernaux",
+   ordinal: 5,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("vna_hash"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 4,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("vna_flags"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 2,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("vna_other"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 2,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("vna_name"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 4,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("vna_next"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 4,
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: Some(4),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__va_list_tag",
+   ordinal: 6,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("gp_offset"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("fp_offset"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: Some(false),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("overflow_arg_area"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Void),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("reg_save_area"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Pointer((
+         closure: Default,
+         modifier: None,
+         shifted: None,
+         typ: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Void),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "gcc_va_list",
+   ordinal: 7,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Array((
+     alignment: None,
+     base: 0,
+     nelem: Some(1),
+     elem_type: (
+      comment: None,
+      is_const: false,
+      is_volatile: false,
+      type_variant: Typeref((
+       ref_type: None,
+       typeref_value: Ref(5),
+      )),
+     ),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__m64",
+   ordinal: 8,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: Some(8),
+     members: [
+      (
+       name: Some("m64_u64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 8,
+         is_signed: Some(false),
+        )),
+       ),
+      ),
+      (
+       name: Some("m64_f32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(2),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Float(
+           bytes: 4,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m64_i8"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 1,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m64_i16"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(4),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 2,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m64_i32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(2),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 4,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m64_i64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(IntSized(
+         bytes: 8,
+         is_signed: None,
+        )),
+       ),
+      ),
+      (
+       name: Some("m64_u8"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 1,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m64_u16"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(4),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 2,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m64_u32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(2),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 4,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__m128",
+   ordinal: 9,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: Some(16),
+     members: [
+      (
+       name: Some("m128_f32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(4),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Float(
+           bytes: 4,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128_u64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(2),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 8,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128_i8"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(16),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 1,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128_i16"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 2,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128_i32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(4),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 4,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128_i64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(2),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 8,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128_u8"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(16),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 1,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128_u16"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 2,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128_u32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(4),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 4,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__m128d",
+   ordinal: 10,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("m128d_f64"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(2),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Float(
+           bytes: 8,
+          )),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__m128i",
+   ordinal: 11,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: Some(16),
+     members: [
+      (
+       name: Some("m128i_i8"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(16),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 1,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128i_i16"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 2,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128i_i32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(4),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 4,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128i_i64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(2),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 8,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128i_u8"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(16),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 1,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128i_u16"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 2,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128i_u32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(4),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 4,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m128i_u64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(2),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 8,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__m256",
+   ordinal: 12,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: Some(32),
+     members: [
+      (
+       name: Some("m256_f32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Float(
+           bytes: 4,
+          )),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__m256d",
+   ordinal: 13,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: Some(32),
+     members: [
+      (
+       name: Some("m256d_f64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(4),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Float(
+           bytes: 8,
+          )),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__m256i",
+   ordinal: 14,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: Some(32),
+     members: [
+      (
+       name: Some("m256i_i8"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(32),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 1,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m256i_i16"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(16),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 2,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m256i_i32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 4,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m256i_i64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(4),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 8,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m256i_u8"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(32),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 1,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m256i_u16"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(16),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 2,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m256i_u32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 4,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m256i_u64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(4),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 8,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__m512",
+   ordinal: 15,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: Some(64),
+     members: [
+      (
+       name: Some("m512_f32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(16),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Float(
+           bytes: 4,
+          )),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__m512d",
+   ordinal: 16,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: Some(64),
+     members: [
+      (
+       name: Some("m512d_f64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Float(
+           bytes: 8,
+          )),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "__m512i",
+   ordinal: 17,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Union((
+     effective_alignment: None,
+     alignment: Some(64),
+     members: [
+      (
+       name: Some("m512i_i8"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(64),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 1,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m512i_i16"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(32),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 2,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m512i_i32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(16),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 4,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m512i_i64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 8,
+           is_signed: None,
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m512i_u8"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(64),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 1,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m512i_u16"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(32),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 2,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m512i_u32"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(16),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 4,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+      (
+       name: Some("m512i_u64"),
+       comment: None,
+       ty: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(8),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(IntSized(
+           bytes: 8,
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+      ),
+     ],
+     is_unaligned: false,
+     is_unknown_8: false,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "BIGNUM",
+   ordinal: 18,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Pointer((
+     closure: Default,
+     modifier: None,
+     shifted: None,
+     typ: (
+      comment: None,
+      is_const: false,
+      is_volatile: false,
+      type_variant: Basic(Void),
+     ),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "RSA",
+   ordinal: 19,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Pointer((
+     closure: Default,
+     modifier: None,
+     shifted: None,
+     typ: (
+      comment: None,
+      is_const: false,
+      is_volatile: false,
+      type_variant: Basic(Void),
+     ),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "RSA_PADDING",
+   ordinal: 20,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Enum((
+     is_signed: false,
+     is_unsigned: false,
+     is_64: false,
+     output_format: Hex,
+     members: Regular([
+      (
+       name: Some("RSA_PKCS1_PADDING"),
+       comment: None,
+       value: 1,
+      ),
+      (
+       name: Some("RSA_NO_PADDING"),
+       comment: None,
+       value: 3,
+      ),
+      (
+       name: Some("RSA_PKCS1_OAEP_PADDING"),
+       comment: None,
+       value: 4,
+      ),
+      (
+       name: Some("RSA_X931_PADDING"),
+       comment: None,
+       value: 5,
+      ),
+     ]),
+     storage_size: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "AES_KEY",
+   ordinal: 23,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Typeref((
+     ref_type: Some(Struct),
+     typeref_value: Ref(21),
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "aes_key_st",
+   ordinal: 22,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("rd_key"),
+       comment: Some(Unknown5(3)),
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(60),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Int(
+           is_signed: Some(false),
+          )),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("rounds"),
+       comment: Some(Unknown5(4)),
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Int(
+         is_signed: None,
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+  (
+   name: "userinput_t",
+   ordinal: 24,
+   tinfo: (
+    comment: None,
+    is_const: false,
+    is_volatile: false,
+    type_variant: Struct((
+     effective_alignment: None,
+     members: [
+      (
+       name: Some("part1"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(10),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+      (
+       name: Some("part2"),
+       comment: None,
+       member_type: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Array((
+         alignment: None,
+         base: 0,
+         nelem: Some(246),
+         elem_type: (
+          comment: None,
+          is_const: false,
+          is_volatile: false,
+          type_variant: Basic(Char),
+         ),
+        )),
+       ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
+      ),
+     ],
+     extra_padding: None,
+     is_unaligned: false,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
+     is_uknown_8: false,
+     alignment: None,
+    )),
+   ),
+   sclass: None,
+  ),
+ ],
+ macros: Some([]),
+))

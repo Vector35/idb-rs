@@ -1,5 +1,8 @@
 ---
+hash: 0C9A7568B21D950F
 source: src/test.rs
 expression: nam
 ---
-names: []
+Some((
+ names: [],
+))

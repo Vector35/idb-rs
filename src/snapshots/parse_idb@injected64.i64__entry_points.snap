@@ -1,77 +1,92 @@
 ---
+hash: EBA827A396944F45
 source: src/test.rs
 expression: entry_points
 ---
-- name: DllEntryPoint
-  address: 6442470536
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Function:
-        calling_convention: Stdcall
-        ret:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Typeref:
-              ref_type: ~
-              typeref_value:
-                UnsolvedName: BOOL
-        args:
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Typeref:
-                  ref_type: ~
-                  typeref_value:
-                    UnsolvedName: HINSTANCE
-            loc: ~
-            flags: ~
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Typeref:
-                  ref_type: ~
-                  typeref_value:
-                    UnsolvedName: DWORD
-            loc: ~
-            flags: ~
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Typeref:
-                  ref_type: ~
-                  typeref_value:
-                    UnsolvedName: LPVOID
-            loc: ~
-            flags: ~
-        retloc: ~
-        method: ~
-        is_noret: false
-        is_pure: false
-        is_high: false
-        is_static: false
-        is_virtual: false
-        is_const: false
-        is_constructor: false
-        is_destructor: false
-- name: test
-  address: 6442470544
-  forwarded: ~
-  entry_type: ~
+[
+ (
+  name: "DllEntryPoint",
+  address: 6442470536,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Function((
+    calling_convention: Some(Stdcall),
+    ret: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Typeref((
+      ref_type: None,
+      typeref_value: UnsolvedName(Some("BOOL")),
+     )),
+    ),
+    args: [
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Typeref((
+        ref_type: None,
+        typeref_value: UnsolvedName(Some("HINSTANCE")),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Typeref((
+        ref_type: None,
+        typeref_value: UnsolvedName(Some("DWORD")),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Typeref((
+        ref_type: None,
+        typeref_value: UnsolvedName(Some("LPVOID")),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+    ],
+    retloc: None,
+    method: None,
+    is_noret: false,
+    is_pure: false,
+    is_high: false,
+    is_static: false,
+    is_virtual: false,
+    is_const: false,
+    is_constructor: false,
+    is_destructor: false,
+   )),
+  )),
+ ),
+ (
+  name: "test",
+  address: 6442470544,
+  forwarded: None,
+  entry_type: None,
+ ),
+]

@@ -1,13 +1,22 @@
 ---
+hash: 889447DFC51FE4A3
 source: src/test.rs
 expression: file_regions
 ---
-- start: 352
-  end: 353
-  eva: 77
-- start: 4173
-  end: 4448
-  eva: 77
-- start: 12288
-  end: 12365
-  eva: 0
+[
+ (
+  start: 352,
+  end: 353,
+  eva: 77,
+ ),
+ (
+  start: 4173,
+  end: 4448,
+  eva: 77,
+ ),
+ (
+  start: 12288,
+  end: 12365,
+  eva: 0,
+ ),
+]

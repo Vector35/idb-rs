@@ -1,5 +1,6 @@
 ---
+hash: AA0D318DE8DC7B2C
 source: src/test.rs
 expression: input_file_size
 ---
-18656
+Some(18656)

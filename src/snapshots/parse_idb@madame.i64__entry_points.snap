@@ -1,208 +1,235 @@
 ---
+hash: 0D9CD9DC780EC656
 source: src/test.rs
 expression: entry_points
 ---
-- name: ".init_proc"
-  address: 4198400
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Function:
-        calling_convention: ~
-        ret:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Pointer:
-              closure: Default
-              modifier: ~
-              shifted: ~
-              typ:
-                comment: ~
-                is_const: false
-                is_volatile: false
-                type_variant:
-                  Pointer:
-                    closure: Default
-                    modifier: ~
-                    shifted: ~
-                    typ:
-                      comment: ~
-                      is_const: false
-                      is_volatile: false
-                      type_variant:
-                        Function:
-                          calling_convention: Voidarg
-                          ret:
-                            comment: ~
-                            is_const: false
-                            is_volatile: false
-                            type_variant:
-                              Basic:
-                                IntSized:
-                                  bytes: 8
-                                  is_signed: ~
-                          args: []
-                          retloc: ~
-                          method: ~
-                          is_noret: false
-                          is_pure: false
-                          is_high: false
-                          is_static: false
-                          is_virtual: false
-                          is_const: false
-                          is_constructor: false
-                          is_destructor: false
-        args: []
-        retloc: ~
-        method: ~
-        is_noret: false
-        is_pure: false
-        is_high: false
-        is_static: false
-        is_virtual: false
-        is_const: false
-        is_constructor: false
-        is_destructor: false
-- name: start
-  address: 4198928
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Function:
-        calling_convention: Fastcall
-        ret:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Basic: Void
-        args:
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Basic:
-                  IntSized:
-                    bytes: 8
-                    is_signed: ~
-            loc: ~
-            flags: ~
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Basic:
-                  IntSized:
-                    bytes: 8
-                    is_signed: ~
-            loc: ~
-            flags: ~
-          - name: ~
-            comment: ~
-            ty:
-              comment: ~
-              is_const: false
-              is_volatile: false
-              type_variant:
-                Pointer:
-                  closure: Default
-                  modifier: ~
-                  shifted: ~
-                  typ:
-                    comment: ~
-                    is_const: false
-                    is_volatile: false
-                    type_variant:
-                      Function:
-                        calling_convention: Voidarg
-                        ret:
-                          comment: ~
-                          is_const: false
-                          is_volatile: false
-                          type_variant:
-                            Basic: Void
-                        args: []
-                        retloc: ~
-                        method: ~
-                        is_noret: false
-                        is_pure: false
-                        is_high: false
-                        is_static: false
-                        is_virtual: false
-                        is_const: false
-                        is_constructor: false
-                        is_destructor: false
-            loc: ~
-            flags: ~
-        retloc: ~
-        method: ~
-        is_noret: true
-        is_pure: false
-        is_high: false
-        is_static: false
-        is_virtual: false
-        is_const: false
-        is_constructor: false
-        is_destructor: false
-- name: ".term_proc"
-  address: 4204328
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Function:
-        calling_convention: ~
-        ret:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Basic: Void
-        args: []
-        retloc: ~
-        method: ~
-        is_noret: false
-        is_pure: false
-        is_high: false
-        is_static: false
-        is_virtual: false
-        is_const: false
-        is_constructor: false
-        is_destructor: false
-- name: stdin
-  address: 4227168
-  forwarded: ~
-  entry_type:
-    comment: ~
-    is_const: false
-    is_volatile: false
-    type_variant:
-      Pointer:
-        closure: Default
-        modifier: ~
-        shifted: ~
-        typ:
-          comment: ~
-          is_const: false
-          is_volatile: false
-          type_variant:
-            Typeref:
-              ref_type: ~
-              typeref_value:
-                UnsolvedName: FILE
+[
+ (
+  name: ".init_proc",
+  address: 4198400,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Function((
+    calling_convention: None,
+    ret: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Pointer((
+      closure: Default,
+      modifier: None,
+      shifted: None,
+      typ: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Pointer((
+        closure: Default,
+        modifier: None,
+        shifted: None,
+        typ: (
+         comment: None,
+         is_const: false,
+         is_volatile: false,
+         type_variant: Function((
+          calling_convention: Some(Voidarg),
+          ret: (
+           comment: None,
+           is_const: false,
+           is_volatile: false,
+           type_variant: Basic(IntSized(
+            bytes: 8,
+            is_signed: None,
+           )),
+          ),
+          args: [],
+          retloc: None,
+          method: None,
+          is_noret: false,
+          is_pure: false,
+          is_high: false,
+          is_static: false,
+          is_virtual: false,
+          is_const: false,
+          is_constructor: false,
+          is_destructor: false,
+         )),
+        ),
+       )),
+      ),
+     )),
+    ),
+    args: [],
+    retloc: None,
+    method: None,
+    is_noret: false,
+    is_pure: false,
+    is_high: false,
+    is_static: false,
+    is_virtual: false,
+    is_const: false,
+    is_constructor: false,
+    is_destructor: false,
+   )),
+  )),
+ ),
+ (
+  name: "start",
+  address: 4198928,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Function((
+    calling_convention: Some(Fastcall),
+    ret: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Basic(Void),
+    ),
+    args: [
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Basic(IntSized(
+        bytes: 8,
+        is_signed: None,
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Basic(IntSized(
+        bytes: 8,
+        is_signed: None,
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+     (
+      name: None,
+      comment: None,
+      ty: (
+       comment: None,
+       is_const: false,
+       is_volatile: false,
+       type_variant: Pointer((
+        closure: Default,
+        modifier: None,
+        shifted: None,
+        typ: (
+         comment: None,
+         is_const: false,
+         is_volatile: false,
+         type_variant: Function((
+          calling_convention: Some(Voidarg),
+          ret: (
+           comment: None,
+           is_const: false,
+           is_volatile: false,
+           type_variant: Basic(Void),
+          ),
+          args: [],
+          retloc: None,
+          method: None,
+          is_noret: false,
+          is_pure: false,
+          is_high: false,
+          is_static: false,
+          is_virtual: false,
+          is_const: false,
+          is_constructor: false,
+          is_destructor: false,
+         )),
+        ),
+       )),
+      ),
+      loc: None,
+      flags: None,
+     ),
+    ],
+    retloc: None,
+    method: None,
+    is_noret: true,
+    is_pure: false,
+    is_high: false,
+    is_static: false,
+    is_virtual: false,
+    is_const: false,
+    is_constructor: false,
+    is_destructor: false,
+   )),
+  )),
+ ),
+ (
+  name: ".term_proc",
+  address: 4204328,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Function((
+    calling_convention: None,
+    ret: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Basic(Void),
+    ),
+    args: [],
+    retloc: None,
+    method: None,
+    is_noret: false,
+    is_pure: false,
+    is_high: false,
+    is_static: false,
+    is_virtual: false,
+    is_const: false,
+    is_constructor: false,
+    is_destructor: false,
+   )),
+  )),
+ ),
+ (
+  name: "stdin",
+  address: 4227168,
+  forwarded: None,
+  entry_type: Some((
+   comment: None,
+   is_const: false,
+   is_volatile: false,
+   type_variant: Pointer((
+    closure: Default,
+    modifier: None,
+    shifted: None,
+    typ: (
+     comment: None,
+     is_const: false,
+     is_volatile: false,
+     type_variant: Typeref((
+      ref_type: None,
+      typeref_value: UnsolvedName(Some("FILE")),
+     )),
+    ),
+   )),
+  )),
+ ),
+]

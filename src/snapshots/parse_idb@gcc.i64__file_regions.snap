@@ -1,13 +1,22 @@
 ---
+hash: 9E37B61355A52CC0
 source: src/test.rs
 expression: file_regions
 ---
-- start: 4294967296
-  end: 4294983680
-  eva: 0
-- start: 4294983680
-  end: 4295000064
-  eva: 16384
-- start: 4295000064
-  end: 4295016448
-  eva: 32768
+[
+ (
+  start: 4294967296,
+  end: 4294983680,
+  eva: 0,
+ ),
+ (
+  start: 4294983680,
+  end: 4295000064,
+  eva: 16384,
+ ),
+ (
+  start: 4295000064,
+  end: 4295016448,
+  eva: 32768,
+ ),
+]

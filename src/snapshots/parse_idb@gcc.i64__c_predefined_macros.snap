@@ -1,5 +1,6 @@
 ---
+hash: B723B43C5FD827B4
 source: src/test.rs
 expression: c_predefined_macros
 ---
-"__GNUC__=4;__CHAR_BIT__=8;unix=1;__unix=1;__unix__=1;__ELF__=1;\u0000"
+Some("__GNUC__=4;__CHAR_BIT__=8;unix=1;__unix=1;__unix__=1;__ELF__=1;\0")

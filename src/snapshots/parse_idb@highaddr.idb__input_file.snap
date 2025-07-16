@@ -1,5 +1,6 @@
 ---
+hash: 02A0F8EE1A2FE73F
 source: src/test.rs
 expression: input_file
 ---
-"Z:\\home\\user\\Documents\\code\\python-idb\\tests\\data\\empty\\empty.bin\u0000"
+"Z:\\home\\user\\Documents\\code\\python-idb\\tests\\data\\empty\\empty.bin\0"

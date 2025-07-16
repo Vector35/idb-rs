@@ -1,5 +1,6 @@
 ---
+hash: E4D315A626047757
 source: src/test.rs
 expression: input_file
 ---
-"/home/xvilka/radare/python-idb/tests/data/v6.5/x64/kernel32.dll\u0000"
+"/home/xvilka/radare/python-idb/tests/data/v6.5/x64/kernel32.dll\0"

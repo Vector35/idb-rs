@@ -1,6 +1,9 @@
 ---
+hash: A9C3B8349179C7B7
 source: src/test.rs
 expression: loader_name
 ---
-- pe64.so
-- Portable executable for 80386 (PE)
+Some([
+ "pe64.so",
+ "Portable executable for 80386 (PE)",
+])

@@ -1,5 +1,6 @@
 ---
+hash: F7491059FFB5D2B0
 source: src/test.rs
 expression: input_file
 ---
-"C:\\Temp\\idbs\\y0da\\EXE\\y0da-new.exe\u0000"
+"C:\\Temp\\idbs\\y0da\\EXE\\y0da-new.exe\0"
