@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Cursor, Seek, Write};
 
@@ -13,9 +12,10 @@ use idb_rs::id1::{
     ID1Section,
 };
 use idb_rs::id2::ID2Section;
+use idb_rs::sdk_comp::prelude::*;
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
-use idb_rs::{sdk_comp, Address, IDAKind, IDAVariants, IDBFormat, IDBStr};
+use idb_rs::{Address, IDAKind, IDAVariants, IDBFormat, IDBStr};
 
 use crate::{Args, FileType, ProduceIdcArgs};
 
@@ -26,36 +26,28 @@ pub fn produce_idc(args: &Args, idc_args: &ProduceIdcArgs) -> Result<()> {
         FileType::Til => Err(anyhow!(
             "Produce IDC file from til file is not implemented yet"
         )),
-        FileType::Idb => produce_idc_kind(
-            idb_rs::identify_idb_file(&mut input)?,
-            input,
-            idc_args,
-        ),
-    }
-}
-
-fn produce_idc_kind<I: BufRead + Seek>(
-    format: idb_rs::IDBFormats,
-    input: I,
-    idc_args: &ProduceIdcArgs,
-) -> Result<()> {
-    match format {
-        idb_rs::IDBFormats::Separated(IDAVariants::IDA32(sections)) => {
-            produce_idc_section(sections, input, idc_args)
-        }
-        idb_rs::IDBFormats::Separated(IDAVariants::IDA64(sections)) => {
-            produce_idc_section(sections, input, idc_args)
-        }
-        idb_rs::IDBFormats::InlineUncompressed(sections) => {
-            produce_idc_section(sections, input, idc_args)
-        }
-        idb_rs::IDBFormats::InlineCompressed(compressed) => {
-            let mut decompressed = Vec::new();
-            let sections = compressed
-                .decompress_into_memory(input, &mut decompressed)
-                .unwrap();
-            produce_idc_section(sections, Cursor::new(decompressed), idc_args)
-        }
+        FileType::Idb => match idb_rs::identify_idb_file(&mut input)? {
+            idb_rs::IDBFormats::Separated(IDAVariants::IDA32(sections)) => {
+                produce_idc_section(sections, input, idc_args)
+            }
+            idb_rs::IDBFormats::Separated(IDAVariants::IDA64(sections)) => {
+                produce_idc_section(sections, input, idc_args)
+            }
+            idb_rs::IDBFormats::InlineUncompressed(sections) => {
+                produce_idc_section(sections, input, idc_args)
+            }
+            idb_rs::IDBFormats::InlineCompressed(compressed) => {
+                let mut decompressed = Vec::new();
+                let sections = compressed
+                    .decompress_into_memory(input, &mut decompressed)
+                    .unwrap();
+                produce_idc_section(
+                    sections,
+                    Cursor::new(decompressed),
+                    idc_args,
+                )
+            }
+        },
     }
 }
 
@@ -323,25 +315,21 @@ fn produce_segments<K: IDAKind>(
     writeln!(fmt)?;
 
     // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb74b7
-    for seg in segs {
+    let mut current_segment = get_first_seg(id0)?;
+    while let Some(seg) = current_segment {
         let startea = seg.address.start;
         let endea = seg.address.end;
-        let base = seg.selector;
-        let use32 = match seg.bitness {
-            idb_rs::id0::SegmentBitness::S16Bits => 0,
-            idb_rs::id0::SegmentBitness::S32Bits => 1,
-            idb_rs::id0::SegmentBitness::S64Bits => 2,
-        };
+        let base = seg.sel;
+        let use32: u8 = seg.bitness.into();
         let align: u8 = seg.align.into();
         // TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb754f
         let comb = 2;
         // TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7544
-        let flags =
-            if sdk_comp::range::rangeset_t_find_range(id1, startea).is_some() {
-                "|ADDSEG_SPARSE"
-            } else {
-                ""
-            };
+        let flags = if rangeset_t_find_range(id1, startea).is_some() {
+            "|ADDSEG_SPARSE"
+        } else {
+            ""
+        };
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb75f4
         // https://docs.hex-rays.com/developer-guide/idc/idc-api-reference/alphabetical-list-of-idc-functions/299
         writeln!(
@@ -350,39 +338,24 @@ fn produce_segments<K: IDAKind>(
         )?;
 
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7666
-        let seg_name =
-            id0.segment_name(seg.name).map(IDBStr::as_utf8_lossy).ok();
+        let seg_name = get_segm_name(id0, &seg, 0)?;
         writeln!(
             fmt,
             "  set_segm_name({startea:#X}, {:?});",
             seg_name
-                .as_ref()
-                .map(std::borrow::Borrow::borrow)
-                .unwrap_or_else(|| "[NONAME]")
+                .map(IDBStr::as_utf8_lossy)
+                .unwrap_or_else(|| format!("seg{}", seg.sel).into())
         )?;
 
-        let seg_class_name = id0
-            .segment_name(seg.class_id)
-            .map(IDBStr::as_utf8_lossy)
-            .ok();
-        let seg_class_name = seg_class_name.or(seg_name).unwrap_or({
-            Cow::Borrowed(match seg.seg_type {
-                idb_rs::id0::SegmentType::Norm => "NORM",
-                idb_rs::id0::SegmentType::Xtrn => "XTRN",
-                idb_rs::id0::SegmentType::Code => "CODE",
-                idb_rs::id0::SegmentType::Data => "DATA",
-                idb_rs::id0::SegmentType::Imp => "IMP",
-                idb_rs::id0::SegmentType::Grp => "GRP",
-                idb_rs::id0::SegmentType::Null => "NULL",
-                idb_rs::id0::SegmentType::Undf => "UNDF",
-                idb_rs::id0::SegmentType::Bss => "BSS",
-                idb_rs::id0::SegmentType::Abssym => "ABSSYM",
-                idb_rs::id0::SegmentType::Comm => "COMM",
-                idb_rs::id0::SegmentType::Imem => "IMEM",
-            })
-        });
+        let seg_class_name = get_segm_class(id0, &seg)?;
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7699
-        writeln!(fmt, "  set_segm_class({startea:#X}, {seg_class_name:?});")?;
+        writeln!(
+            fmt,
+            "  set_segm_class({startea:#X}, {:?});",
+            seg_class_name
+                .map(IDBStr::as_utf8_lossy)
+                .unwrap_or_else(|| format!("seg{}", seg.sel).into())
+        )?;
 
         //// TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb76ac
         //for _def_ref in seg.defsr.iter().filter(|x| **x != 0) {
@@ -392,10 +365,12 @@ fn produce_segments<K: IDAKind>(
 
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb74e1
         // https://docs.hex-rays.com/developer-guide/idc/idc-api-reference/alphabetical-list-of-idc-functions/310
-        let seg_class_raw: u8 = seg.seg_type.into();
+        let seg_class_raw: u8 = seg.type_.into();
         if seg_class_raw != 0 {
             writeln!(fmt, "  set_segm_type({startea:#X}, {seg_class_raw});")?;
         }
+
+        current_segment = get_next_seg(id0, seg.address.start)?;
     }
 
     // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb8c35

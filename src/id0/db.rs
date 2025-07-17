@@ -460,6 +460,7 @@ impl<K: IDAKind> ID0Section<K> {
             .map(|x| x.map(|x| SegmentIdx(x.0)))
     }
 
+    /// Return an iterator of segments, ordered by address start
     pub fn segments(&self, idx: SegmentIdx<K>) -> SegmentIter<'_, K> {
         let segments = self.sup_range(idx.into(), ARRAY_SUP_TAG);
         SegmentIter {
@@ -502,17 +503,20 @@ impl<K: IDAKind> ID0Section<K> {
     // TODO there is also a "P" entry in patches, it seems to only contains
     // the value 0x01 for each equivalent "A" entry
 
-    pub fn segment_name(&self, idx: SegmentNameIdx<K>) -> Result<IDBStr<'_>> {
+    pub fn segment_name(
+        &self,
+        idx: SegmentNameIdx<K>,
+    ) -> Result<Option<IDBStr<'_>>> {
         let seg_idx = self.segment_strings_idx()?;
         // TODO I think this is dependent on the version, and not on availability
         if let Some(seg_idx) = seg_idx {
             for seg in self.segment_strings(seg_idx) {
                 let (seg_idx, seg_value) = seg?;
                 if seg_idx.0 == idx.0 {
-                    return Ok(seg_value);
+                    return Ok(Some(seg_value));
                 }
             }
-            Err(anyhow!("Unable to find ID0 Segment Name"))
+            Ok(None)
         } else {
             // if there is no names, AKA `$ segstrings`, search for the key directly
             self.name_by_index(idx)
@@ -522,16 +526,17 @@ impl<K: IDAKind> ID0Section<K> {
     pub(crate) fn name_by_index(
         &self,
         idx: SegmentNameIdx<K>,
-    ) -> Result<IDBStr<'_>> {
+    ) -> Result<Option<IDBStr<'_>>> {
         // if there is no names, AKA `$ segstrings`, search for the key directly
-        let name_idx = self
-            .netnode_tag_idx(
-                NetnodeIdx(K::Usize::from(0xFFu8).swap_bytes() | idx.0),
-                NAME_TAG,
-            )
-            .ok_or_else(|| anyhow!("Not found name for segment {}", idx.0))?;
+        let Some(name_idx) = self.netnode_tag_idx(
+            NetnodeIdx(K::Usize::from(0xFFu8).swap_bytes() | idx.0),
+            NAME_TAG,
+        ) else {
+            return Ok(None);
+        };
         parse_maybe_cstr(&self.entries[name_idx].value)
             .map(IDBStr::new)
+            .map(Option::Some)
             .ok_or_else(|| anyhow!("Invalid segment name {}", idx.0))
     }
 

@@ -16,9 +16,10 @@ pub fn get_sourcefile<K: IDAKind>(
     id0: &ID0Section<K>,
     ea: ea_t<K>,
 ) -> Result<Option<SourceFile<'_, K>>> {
-    let seg = super::segment::getseg_inner(id0, ea)?;
+    let seg =
+        super::segment::getseg_inner(id0, |seg| seg.address.contains(&ea))?;
     if let Some(seg) = seg {
-        let name = id0.segment_name(seg.name).unwrap_or(IDBStr::new(&[]));
+        let name = id0.segment_name(seg.name)?.unwrap_or(IDBStr::new(&[]));
         Ok(Some(SourceFile {
             name,
             address: seg.address,
