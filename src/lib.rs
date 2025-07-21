@@ -1,3 +1,42 @@
+// TODO IDA 9.2
+// new line(s) at bytes.hpp:
+// ```
+// #define GFE_32BIT 0x0004      ///< get only low 32 bits of flags
+// ```
+//
+// new line(s) at entry.hpp:
+// ```
+// #define AEF_WEAK         0x4    ///< make name weak
+// #define AEF_NOFORCE      0x8    ///< if the specified address already has a name, the new name
+//                                 ///< will be appended to the regular comment, except for the
+//                                 ///< case when the old name is weak and the new one is not.
+// ```
+//
+// new line(s) at hexrays.hpp:
+// ```
+// #define OPROP_ABI     0x40 ///< is used to organize arg/retval of a call
+//                            ///< such operands should be combined more carefully
+//                            ///< than others at least on BE platforms
+// ```
+//
+// new line(s) at typeinf.hpp:
+// ```
+// #define TAUDT_TUPLE     0x0800  ///< tuple:  tuples are like structs but are
+//                                 ///<         returned differently from functions
+// ```
+// ```
+// #define TIL_ECC 0x0200  ///< extended callcnv_t
+// ```
+// ```
+// GTA_UDT_BITS,       ///< udt: get udt_type_data_t::taudt_bits
+// ```
+// ```
+// STA_TUPLE,          ///< struct: set as tuple
+// ```
+//
+// The GTA_IS_VFTABLE and GTA_IS_FIXED got obsolete
+//
+// The getinf INF_COMPILER_INFO replacing INF_CC
 #![forbid(unsafe_code)]
 pub mod addr_info;
 pub mod bytes_info;
