@@ -8,7 +8,7 @@ use anyhow::Result;
 
 pub struct SourceFile<'a, K: IDAKind> {
     pub address: Range<ea_t<K>>,
-    pub name: IDBStr<'a>,
+    pub name: Option<IDBStr<'a>>,
 }
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4e4c60
@@ -16,11 +16,11 @@ pub fn get_sourcefile<K: IDAKind>(
     id0: &ID0Section<K>,
     ea: ea_t<K>,
 ) -> Result<Option<SourceFile<'_, K>>> {
-    let seg = super::segment::getseg_inner(id0, ea)?;
+    let seg =
+        super::segment::getseg_inner(id0, |seg| seg.address.contains(&ea))?;
     if let Some(seg) = seg {
-        let name = id0.segment_name(seg.name).unwrap_or(IDBStr::new(&[]));
         Ok(Some(SourceFile {
-            name,
+            name: id0.segment_name(seg.name)?,
             address: seg.address,
         }))
     } else {
