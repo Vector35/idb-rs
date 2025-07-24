@@ -1,6 +1,7 @@
 use num_traits::CheckedSub;
 
 use crate::id1::{ID1Section, SegInfo};
+use crate::id2::{ID2Entry, ID2Section};
 use crate::IDAKind;
 
 use super::pro::ea_t;
@@ -18,6 +19,12 @@ pub fn rangeset_t_find_range<K: IDAKind>(
     address: ea_t<K>,
 ) -> Option<&SegInfo<K>> {
     id1.segment_by_address(address)
+}
+pub fn rangeset_t_find_range_id2<K: IDAKind>(
+    id2: &ID2Section<K>,
+    address: ea_t<K>,
+) -> Option<&ID2Entry<K>> {
+    id2.entry_by_address(address)
 }
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x874da0
