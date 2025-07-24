@@ -1454,10 +1454,7 @@ impl std::fmt::Display for IDBStr<'_> {
 
 impl std::fmt::Debug for IDBStr<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use std::fmt::Write;
-        f.write_char('"')?;
-        f.write_str(&self.as_utf8_lossy())?;
-        f.write_char('"')?;
+        f.write_fmt(format_args!("{:?}", self.as_utf8_lossy()))?;
         Ok(())
     }
 }

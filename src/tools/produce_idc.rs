@@ -15,7 +15,7 @@ use idb_rs::id2::ID2Section;
 use idb_rs::sdk_comp::prelude::*;
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
-use idb_rs::{Address, IDAKind, IDAVariants, IDBFormat};
+use idb_rs::{Address, IDAKind, IDAVariants, IDBFormat, IDBStr};
 
 use crate::{Args, FileType, ProduceIdcArgs};
 
@@ -158,7 +158,7 @@ fn produce_idc_inner<K: IDAKind>(
         writeln!(fmt)?;
         produce_gen_info(fmt, til, &root_info)?;
         writeln!(fmt)?;
-        produce_segments(fmt, id0, id1)?;
+        produce_segments(fmt, id0, id1, id2)?;
     }
 
     if _unknown_value2 {
@@ -291,7 +291,8 @@ fn produce_gen_info<K: IDAKind>(
 fn produce_segments<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
-    id1: &ID1Section<K>,
+    _id1: &ID1Section<K>,
+    id2: Option<&ID2Section<K>>,
 ) -> Result<()> {
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// Information about segmentation")?;
@@ -325,7 +326,10 @@ fn produce_segments<K: IDAKind>(
         // TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb754f
         let comb = 2;
         // TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7544
-        let flags = if rangeset_t_find_range(id1, seg.address.start).is_some() {
+        let flags = if id2
+            .and_then(|id2| rangeset_t_find_range_id2(id2, seg.address.start))
+            .is_some()
+        {
             "|ADDSEG_SPARSE"
         } else {
             ""
@@ -338,12 +342,11 @@ fn produce_segments<K: IDAKind>(
         )?;
 
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7666
-        let seg_name = get_segm_name(id0, &seg, 0)?
-            .unwrap_or(idb_rs::IDBStr::new(b"[NO_NAME]"));
+        let seg_name = get_segm_name(id0, &seg, 0)?;
         writeln!(fmt, "  set_segm_name({startea:#X}, {seg_name:?});")?;
 
-        let seg_class_name = get_segm_class(id0, &seg)?
-            .unwrap_or(idb_rs::IDBStr::new(b"[NO_NAME]"));
+        let seg_class_name =
+            get_segm_class(id0, &seg)?.unwrap_or(IDBStr::new(b""));
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7699
         writeln!(fmt, "  set_segm_class({startea:#X}, {seg_class_name:?});")?;
 

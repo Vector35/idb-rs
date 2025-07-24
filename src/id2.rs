@@ -140,4 +140,11 @@ impl<K: IDAKind> ID2Section<K> {
             .iter()
             .find(|x| !x.byte_info.byte_type().is_tail())
     }
+
+    pub fn entry_by_address(
+        &self,
+        address: Address<K>,
+    ) -> Option<&ID2Entry<K>> {
+        self.entries.iter().find(|entry| entry.address == address)
+    }
 }

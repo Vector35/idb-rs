@@ -625,7 +625,6 @@ impl<K: IDAKind> ID0Section<K> {
         self.root_node_value(idx, RIDX_ALT_IDSNODE, ARRAY_ALT_TAG)
     }
 
-    /// image base, AKA the offset between address and netnode value
     pub fn image_base(
         &self,
         idx: RootNodeIdx<K>,
