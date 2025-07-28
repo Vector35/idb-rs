@@ -40,6 +40,14 @@ impl<K: IDAKind> From<FuncIdx<K>> for NetnodeIdx<K> {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct FuncordsIdx<K: IDAKind>(pub(crate) K::Usize);
+impl<K: IDAKind> From<FuncordsIdx<K>> for NetnodeIdx<K> {
+    fn from(value: FuncordsIdx<K>) -> Self {
+        Self(value.0)
+    }
+}
+
 pub(crate) fn funcs_idx<K: IDAKind>(
     id0: &ID0Section<K>,
 ) -> Result<Option<FuncIdx<K>>> {

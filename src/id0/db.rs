@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::ffi::CStr;
 use std::ops::Range;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use num_traits::{AsPrimitive, CheckedAdd, PrimInt, ToBytes};
 
 use crate::addr_info::SubtypeId;
@@ -360,6 +360,21 @@ impl<K: IDAKind> ID0Section<K> {
     ) -> Option<&[u8]> {
         self.netnode_tag_alt_idx(idx, alt, tag)
             .map(|idx| &self.entries[idx].value[..])
+    }
+
+    pub fn altval(
+        &self,
+        idx: NetnodeIdx<K>,
+        alt: K::Usize,
+        tag: u8,
+    ) -> Result<Option<NetnodeIdx<K>>> {
+        self.netnode_tag_alt_idx(idx, alt.into(), tag)
+            .map(|idx| {
+                K::usize_try_from_le_bytes(&self.entries[idx].value[..])
+                    .map(NetnodeIdx::from_raw)
+                    .ok_or_else(|| anyhow!("Invalid netnode_altval"))
+            })
+            .transpose()
     }
 
     pub fn sup_first(
@@ -1223,6 +1238,51 @@ impl<K: IDAKind> ID0Section<K> {
         let value =
             entry.value.strip_prefix(b"$$ ").unwrap_or(&entry.value[..]);
         Ok(value)
+    }
+
+    /// read the `$ funcords` entries of the database
+    pub fn funcords_idx(&self) -> Result<Option<FuncordsIdx<K>>> {
+        self.netnode_idx_by_name("$ funcords")
+            .map(|idx| idx.map(|idx| FuncordsIdx(idx.0)))
+    }
+
+    pub fn funcords(&self, idx: FuncordsIdx<K>) -> Result<Vec<K::Usize>> {
+        let num = self
+            .altval(idx.into(), 0u8.into(), ARRAY_ALT_TAG)?
+            .ok_or_else(|| anyhow!("Missing Array entry for funcords"))?;
+        if num.0 == 0u8.into() {
+            return Ok(vec![]);
+        }
+        // TODO this is probably divided between multiple entries
+        let data_iter = self.blob(idx.into(), 0u8.into(), ARRAY_SUP_TAG);
+        let data_vec: Vec<u8> = data_iter.collect();
+        let mut data = &data_vec[..];
+        let mut address = vec![];
+        let mut idx = K::Usize::from(0u8);
+        let mut acc = K::Usize::from(0u8);
+        loop {
+            let offset = IdbReadKind::<K>::unpack_usize(&mut data)
+                .context("Get funcords offset")?;
+            // first function is allowed to be located at addr 0
+            if acc != 0u8.into() {
+                ensure!(
+                    offset != 0u8.into(),
+                    "Two functions with the same address on funcords"
+                );
+            }
+            acc = acc
+                .checked_add(&offset)
+                .ok_or_else(|| anyhow!("Invalid function offset value"))?;
+            address.push(acc);
+
+            idx += 1u8.into();
+            if idx == num.0 {
+                break;
+            }
+        }
+        #[cfg(feature = "restrictive")]
+        ensure!(data.len() == 0, "funcord contains more data then expected");
+        Ok(address)
     }
 
     // TODO are those K::Usize Address or Netnodes?

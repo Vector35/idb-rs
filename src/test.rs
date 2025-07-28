@@ -551,6 +551,9 @@ fn parse_idb_data<K>(
             .map(Result::unwrap)
             .collect();
     }
+    if let Some(funcord_idx) = id0.funcords_idx().unwrap() {
+        let _funcords: Vec<_> = id0.funcords(funcord_idx).unwrap();
+    }
     let entry_points = id0.entry_points().unwrap();
     assert_dyn!("parse_idb", filename, entry_points);
 
