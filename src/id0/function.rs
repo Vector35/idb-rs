@@ -1,15 +1,16 @@
 use std::ops::Range;
 
+use crate::id0::entry_iter::EntryTagContinuousFlat;
 use crate::id0::parse_maybe_cstr;
-use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind};
+use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind, IteratorReader};
 use crate::{flags_to_struct, til, Address, IDAKind, IDBStr};
 
 use super::flag::func::*;
 use super::flag::netnode::nn_res::ARRAY_SUP_TAG;
 use super::{flag, ID0Section, NetnodeIdx};
 
-use anyhow::{anyhow, ensure, Result};
-use num_traits::WrappingSub;
+use anyhow::{anyhow, ensure, Context, Result};
+use num_traits::{CheckedAdd, WrappingSub};
 use serde::Serialize;
 
 #[derive(Clone, Debug, Serialize)]
@@ -367,4 +368,59 @@ pub struct EntryPoint<K: IDAKind> {
     pub address: K::Usize,
     pub forwarded: Option<String>,
     pub entry_type: Option<til::Type>,
+}
+
+pub struct FuncordIterator<'a, K: IDAKind> {
+    num: K::Usize,
+    acc: K::Usize,
+    data: EntryTagContinuousFlat<'a, K>,
+}
+
+impl<'a, K: IDAKind> Iterator for FuncordIterator<'a, K> {
+    type Item = Result<Address<K>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next_inner().transpose()
+    }
+}
+
+impl<'a, K: IDAKind> FuncordIterator<'a, K> {
+    pub fn new(num: K::Usize, data: EntryTagContinuousFlat<'a, K>) -> Self {
+        Self {
+            num,
+            data,
+            acc: 0u8.into(),
+        }
+    }
+
+    pub fn next_inner(&mut self) -> Result<Option<Address<K>>> {
+        if self.num == 0u8.into() {
+            // TODO allow this? InnerRef seems to not mind this having garbage
+            #[cfg(feature = "restrictive")]
+            ensure!(
+                self.data.next().is_none(),
+                "funcord contains more data then expected"
+            );
+            return Ok(None);
+        }
+
+        let offset = IdbReadKind::<K>::unpack_usize(&mut IteratorReader::new(
+            &mut self.data,
+        ))
+        .context("funcord contains less data then expected")?;
+        // first function is allowed to be located at addr 0
+        if self.acc != 0u8.into() {
+            ensure!(
+                offset != 0u8.into(),
+                "Two functions with the same address on funcords"
+            );
+        }
+        self.acc = self
+            .acc
+            .checked_add(&offset)
+            .ok_or_else(|| anyhow!("Invalid function offset value"))?;
+
+        self.num -= 1u8.into();
+        Ok(Some(Address::from_raw(self.acc)))
+    }
 }
