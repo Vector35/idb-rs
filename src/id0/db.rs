@@ -2,10 +2,11 @@ use std::borrow::Cow;
 use std::ffi::CStr;
 use std::ops::Range;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use num_traits::{AsPrimitive, CheckedAdd, PrimInt, ToBytes};
 
 use crate::addr_info::SubtypeId;
+use crate::id0::entry_iter::EntryTagContinuousFlat;
 use crate::id0::flag::nsup::NSUP_LLABEL;
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
 use crate::SectionReader;
@@ -439,10 +440,8 @@ impl<K: IDAKind> ID0Section<K> {
         idx: NetnodeIdx<K>,
         start: K::Usize,
         tag: u8,
-    ) -> impl Iterator<Item = u8> + use<'a, K> {
-        EntryTagContinuousSubkeys::<'_, K>::new(self, idx, tag, start)
-            .flat_map(|entry| &entry.value[..])
-            .copied()
+    ) -> EntryTagContinuousFlat<'a, K> {
+        EntryTagContinuousSubkeys::<'_, K>::new(self, idx, tag, start).flatten()
     }
 
     pub(crate) fn address_info_value(
@@ -1246,43 +1245,16 @@ impl<K: IDAKind> ID0Section<K> {
             .map(|idx| idx.map(|idx| FuncordsIdx(idx.0)))
     }
 
-    pub fn funcords(&self, idx: FuncordsIdx<K>) -> Result<Vec<K::Usize>> {
+    /// return all the functions in order of address start
+    pub fn funcords(
+        &self,
+        idx: FuncordsIdx<K>,
+    ) -> Result<FuncordIterator<'_, K>> {
         let num = self
             .altval(idx.into(), 0u8.into(), ARRAY_ALT_TAG)?
             .ok_or_else(|| anyhow!("Missing Array entry for funcords"))?;
-        if num.0 == 0u8.into() {
-            return Ok(vec![]);
-        }
-        // TODO this is probably divided between multiple entries
-        let data_iter = self.blob(idx.into(), 0u8.into(), ARRAY_SUP_TAG);
-        let data_vec: Vec<u8> = data_iter.collect();
-        let mut data = &data_vec[..];
-        let mut address = vec![];
-        let mut idx = K::Usize::from(0u8);
-        let mut acc = K::Usize::from(0u8);
-        loop {
-            let offset = IdbReadKind::<K>::unpack_usize(&mut data)
-                .context("Get funcords offset")?;
-            // first function is allowed to be located at addr 0
-            if acc != 0u8.into() {
-                ensure!(
-                    offset != 0u8.into(),
-                    "Two functions with the same address on funcords"
-                );
-            }
-            acc = acc
-                .checked_add(&offset)
-                .ok_or_else(|| anyhow!("Invalid function offset value"))?;
-            address.push(acc);
-
-            idx += 1u8.into();
-            if idx == num.0 {
-                break;
-            }
-        }
-        #[cfg(feature = "restrictive")]
-        ensure!(data.len() == 0, "funcord contains more data then expected");
-        Ok(address)
+        let data = self.blob(idx.into(), 0u8.into(), ARRAY_SUP_TAG);
+        Ok(FuncordIterator::new(num.0, data))
     }
 
     // TODO are those K::Usize Address or Netnodes?

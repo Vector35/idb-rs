@@ -67,6 +67,13 @@ impl<'a, K: IDAKind> EntryTagContinuousSubkeys<'a, K> {
             expected_alt,
         }
     }
+
+    pub fn flatten(self) -> EntryTagContinuousFlat<'a, K> {
+        EntryTagContinuousFlat {
+            entries: self,
+            current_entry: &[],
+        }
+    }
 }
 
 impl<'a, K: IDAKind> Iterator for EntryTagContinuousSubkeys<'a, K> {
@@ -79,6 +86,30 @@ impl<'a, K: IDAKind> Iterator for EntryTagContinuousSubkeys<'a, K> {
         }
         self.expected_alt += 1u8.into();
         Some(current)
+    }
+}
+
+pub struct EntryTagContinuousFlat<'a, K: IDAKind> {
+    entries: EntryTagContinuousSubkeys<'a, K>,
+    current_entry: &'a [u8],
+}
+
+impl<'a, K: IDAKind> Iterator for EntryTagContinuousFlat<'a, K> {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some((current, rest)) = self.current_entry.split_first() {
+            // return the current value
+            self.current_entry = rest;
+            return Some(*current);
+        }
+
+        // if not more entries get the next one
+        self.current_entry = &self.entries.next()?.value[..];
+        // NOTE the recursive is called to force check if the entry have values
+        // although having an empty entry is nonsensical, it's valid on a DB
+        // level
+        return self.next();
     }
 }
 

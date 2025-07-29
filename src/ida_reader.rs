@@ -6,6 +6,25 @@ use std::ops::Range;
 use crate::til::{TypeAttribute, TypeAttributeExt};
 use crate::{IDAKind, IDAUsize};
 
+pub struct IteratorReader<I>(I);
+impl<I> IteratorReader<I> {
+    pub fn new(iter: I) -> Self {
+        Self(iter)
+    }
+}
+
+impl<I: Iterator<Item = u8>> Read for IteratorReader<I> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        for (i, current) in buf.iter_mut().enumerate() {
+            let Some(current_value) = self.0.next() else {
+                return Ok(i);
+            };
+            *current = current_value;
+        }
+        Ok(buf.len())
+    }
+}
+
 pub trait IdbRead: Read {
     fn read_u8(&mut self) -> Result<u8> {
         let mut data = [0; 1];

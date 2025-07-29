@@ -953,6 +953,9 @@ fn produce_bytes_info_op_op<K: IDAKind>(
                     .netnode_name(netnode)
                     .map(String::from_utf8_lossy)
                     .unwrap_or("".into());
+                // TODO check the version for the correct prefix?
+                let enum_name =
+                    enum_name.strip_prefix("$$ ").unwrap_or(&enum_name);
                 // TODO find the serial or implement get_enum_id
                 let serial = 0;
                 writeln!(
