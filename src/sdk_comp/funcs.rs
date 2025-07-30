@@ -3,18 +3,19 @@ use std::ops::Range;
 use crate::id0::function::{
     IDBFunctionNonTail, IDBFunctionTail, IDBFunctionType,
 };
-use crate::Address;
+use crate::id0::Netdelta;
 use crate::{id0::ID0Section, IDAKind};
+use crate::{Address, IDBString};
 
 use super::frame::{regvar_t, stkpnt_t};
 use super::nalt::type_t;
 use super::pro::{asize_t, bgcolor_t, ea_t, uval_t};
 use super::DataFetch;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 pub struct func_t<'a, K: IDAKind> {
-    pub range: Range<K::Usize>,
+    pub range: Range<Address<K>>,
     pub flags: u64,
     pub func_t_type: func_t_type<'a, K>,
 }
@@ -66,8 +67,7 @@ pub fn get_fchunk<'a, K: IDAKind>(
         let chunk = chunk?;
         if chunk.address.contains(&Address::from_raw(ea.0)) {
             return Ok(Some(func_t {
-                range: chunk.address.start.into_raw()
-                    ..chunk.address.end.into_raw(),
+                range: chunk.address,
                 flags: chunk.flags.into_raw(),
                 func_t_type: match chunk.extra {
                     IDBFunctionType::Tail(IDBFunctionTail {
@@ -127,5 +127,59 @@ pub fn get_func<'a, K: IDAKind>(
         get_fchunk(id0, *owner)
     } else {
         Ok(Some(func))
+    }
+}
+
+pub fn getn_func<'a, K: IDAKind>(
+    id0: &'a ID0Section<K>,
+    n: usize,
+) -> Result<Option<func_t<'a, K>>> {
+    // TODO how the old versions work?
+    let ords = id0
+        .funcords_idx()?
+        .ok_or_else(|| anyhow!("Missing funcords entry"))?;
+    let Some(addr) = id0.funcords(ords)?.skip(n).next() else {
+        return Ok(None);
+    };
+    get_func(id0, addr?)
+}
+
+pub fn get_func_num<'a, K: IDAKind>(
+    id0: &'a ID0Section<K>,
+    ea: ea_t<K>,
+) -> Result<Option<usize>> {
+    // TODO how the old versions work?
+    let ords = id0
+        .funcords_idx()?
+        .ok_or_else(|| anyhow!("Missing funcords entry"))?;
+    for (i, fun_addr) in id0.funcords(ords)?.enumerate() {
+        if fun_addr? == ea {
+            return Ok(Some(i));
+        }
+    }
+    Ok(None)
+}
+
+pub fn get_func_qty<'a, K: IDAKind>(id0: &'a ID0Section<K>) -> Result<usize> {
+    // TODO how the old versions work?
+    let ords = id0
+        .funcords_idx()?
+        .ok_or_else(|| anyhow!("Missing funcords entry"))?;
+    Ok(id0.funcords(ords)?.count())
+}
+
+pub fn get_func_cmt<'a, K: IDAKind>(
+    id0: &'a ID0Section<K>,
+    netdelta: Netdelta<K>,
+    addr: Address<K>,
+    repeatable: bool,
+) -> Result<Option<IDBString>> {
+    let func_idx = id0
+        .funcs_idx()?
+        .ok_or_else(|| anyhow!("Missing funcs entry"))?;
+    if repeatable {
+        id0.func_repeatable_cmt(func_idx, netdelta, addr)
+    } else {
+        id0.func_cmt(func_idx, netdelta, addr)
     }
 }

@@ -55,14 +55,6 @@ pub(crate) fn funcs_idx<K: IDAKind>(
     Ok(id0.netnode_idx_by_name("$ funcs")?.map(|x| FuncIdx(x.0)))
 }
 
-pub(crate) fn functions_and_comments<K: IDAKind>(
-    id0: &ID0Section<K>,
-    idx: FuncIdx<K>,
-) -> impl Iterator<Item = Result<FunctionsAndComments<'_, K>>> {
-    id0.netnode_range(idx.into())
-        .map(move |(key, value)| FunctionsAndComments::read(key, value))
-}
-
 pub(crate) fn fchunks<K: IDAKind>(
     id0: &ID0Section<K>,
     idx: FuncIdx<K>,
@@ -110,68 +102,6 @@ pub struct IDBFunctionNonTail<K: IDAKind> {
     pub color: Option<u32>,
     pub tailqty: u16,
     pub fpd: K::Usize,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub enum FunctionsAndComments<'a, K: IDAKind> {
-    // It's just the name "$ funcs"
-    Name,
-    Function(IDBFunction<K>),
-    Comment {
-        address: K::Usize,
-        comment: Comments<'a>,
-    },
-    Unknown {
-        key: &'a [u8],
-        value: &'a [u8],
-    },
-}
-
-impl<'a, K: IDAKind> FunctionsAndComments<'a, K> {
-    pub(crate) fn read(key: &'a [u8], value: &'a [u8]) -> Result<Self> {
-        let [key_type, sub_key @ ..] = key else {
-            return Err(anyhow!("invalid Funcs subkey"));
-        };
-        match *key_type {
-            flag::netnode::nn_res::NAME_TAG => {
-                ensure!(parse_maybe_cstr(value) == Some(&b"$ funcs"[..]));
-                Ok(Self::Name)
-            }
-            flag::netnode::nn_res::ARRAY_SUP_TAG => {
-                IDBFunction::read(value).map(Self::Function)
-            }
-            // some kind of style setting, maybe setting font and background color
-            b'R' | b'C' if value.starts_with(&[4, 3, 2, 1]) => {
-                Ok(Self::Unknown { key, value })
-            }
-            b'C' => {
-                let address = K::usize_try_from_be_bytes(sub_key)
-                    .ok_or_else(|| anyhow!("Invalid Comment address"))?;
-                parse_maybe_cstr(value)
-                    .map(|value| Self::Comment {
-                        address,
-                        comment: Comments::Comment(IDBStr::new(value)),
-                    })
-                    .ok_or_else(|| anyhow!("Invalid Comment string"))
-            }
-            b'R' => {
-                let address =
-                    K::usize_try_from_be_bytes(sub_key).ok_or_else(|| {
-                        anyhow!("Invalid Repetable Comment address")
-                    })?;
-                parse_maybe_cstr(value)
-                    .map(|value| Self::Comment {
-                        address,
-                        comment: Comments::RepeatableComment(IDBStr::new(
-                            value,
-                        )),
-                    })
-                    .ok_or_else(|| anyhow!("Invalid Repetable Comment string"))
-            }
-            // TODO find the meaning of "$ funcs" b'V' entries
-            _ => Ok(Self::Unknown { key, value }),
-        }
-    }
 }
 
 impl<K: IDAKind> IDBFunction<K> {

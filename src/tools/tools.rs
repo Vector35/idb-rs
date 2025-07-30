@@ -61,7 +61,7 @@ use produce_idc::produce_idc;
 use idb_rs::id1::ID1Section;
 
 use std::fs::File;
-use std::io::{BufRead, BufReader, Seek};
+use std::io::{BufRead, BufReader, Cursor, Seek};
 use std::path::PathBuf;
 
 use anyhow::{anyhow, Result};
@@ -223,7 +223,8 @@ fn get_sections_inner<I: BufRead + Seek, P: ParseSection>(
             let mut decompressed = Vec::new();
             let sections = compressed
                 .decompress_into_memory(&mut *input, &mut decompressed)?;
-            P::parse_section(sections, input).map(IDAVariants::IDA64)
+            P::parse_section(sections, Cursor::new(&decompressed[..]))
+                .map(IDAVariants::IDA64)
         }
     }
 }
