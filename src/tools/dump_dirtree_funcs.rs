@@ -44,9 +44,15 @@ pub fn print_function<K: IDAKind>(
     let root_info_idx = id0.root_node()?;
     let root_info = id0.ida_info(root_info_idx)?;
     let image_base = root_info.netdelta();
-    let info = AddressInfo::new(id0, id1, id2, image_base, address).unwrap();
-    let name = info.label()?;
-    let ty = info.tinfo()?;
+    let info = AddressInfo::new(id0, id1, id2, image_base, address);
+    let name = info
+        .as_ref()
+        .and_then(|info| info.label().transpose())
+        .transpose()?;
+    let ty = info
+        .as_ref()
+        .and_then(|info| info.tinfo().transpose())
+        .transpose()?;
 
     print!("{:#x}:", address.into_raw());
     match (name, ty) {

@@ -55,24 +55,27 @@ impl ID0Header {
         // NOTE before version V15, the string was at 0xd(13), after that
         // at 0x13(19). I think this is was a mistake on the developers part,
         // mixing the offset 13 with 0x13.
-        let version = if magic == IDBMagic::IDA0 {
-            let version = ID0Version::read(&mut &buf[0xd..0x27])
-                .ok_or_else(|| anyhow!("Unknown B-tree version"))?;
-            if version != ID0Version::V15 {
-                return Err(anyhow!(
-                    "Unexpected ID0 B-Tree Version header location"
-                ));
+        let version = match magic {
+            IDBMagic::IDA0 => {
+                let version = ID0Version::read(&mut &buf[0xd..0x27])
+                    .ok_or_else(|| anyhow!("Unknown B-tree version"))?;
+                if version != ID0Version::V15 {
+                    return Err(anyhow!(
+                        "Unexpected ID0 B-Tree Version header location"
+                    ));
+                }
+                version
             }
-            version
-        } else {
-            let version = ID0Version::read(&mut &buf[0x13..0x2d])
-                .ok_or_else(|| anyhow!("Unknown B-tree version"))?;
-            if version == ID0Version::V15 {
-                return Err(anyhow!(
-                    "Unexpected ID0 B-Tree Version header location"
-                ));
+            IDBMagic::IDA1 | IDBMagic::IDA2 => {
+                let version = ID0Version::read(&mut &buf[0x13..0x2d])
+                    .ok_or_else(|| anyhow!("Unknown B-tree version"))?;
+                if version == ID0Version::V15 {
+                    return Err(anyhow!(
+                        "Unexpected ID0 B-Tree Version header location"
+                    ));
+                }
+                version
             }
-            version
         };
 
         let mut buf_current = &buf[..];

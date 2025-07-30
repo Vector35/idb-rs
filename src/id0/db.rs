@@ -9,8 +9,8 @@ use crate::addr_info::SubtypeId;
 use crate::id0::entry_iter::EntryTagContinuousFlat;
 use crate::id0::flag::nsup::NSUP_LLABEL;
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
-use crate::SectionReader;
 use crate::{til, Address, IDBStr};
+use crate::{IDBString, SectionReader};
 
 use super::entry_iter::{
     EntryTagContinuousSubkeys, NetnodeRangeIter, NetnodeSupRangeIter,
@@ -1000,14 +1000,6 @@ impl<K: IDAKind> ID0Section<K> {
         funcs_idx(self)
     }
 
-    /// read the `$ funcs` entries of the database
-    pub fn functions_and_comments(
-        &self,
-        idx: FuncIdx<K>,
-    ) -> impl Iterator<Item = Result<FunctionsAndComments<'_, K>>> {
-        functions_and_comments(self, idx)
-    }
-
     pub fn fchunks(
         &self,
         idx: FuncIdx<K>,
@@ -1015,18 +1007,60 @@ impl<K: IDAKind> ID0Section<K> {
         fchunks(self, idx)
     }
 
-    pub fn function_containing_address(
+    fn cmt_inner(
         &self,
         idx: FuncIdx<K>,
-        ea: Address<K>,
-    ) -> Result<Option<IDBFunction<K>>> {
-        for fun in fchunks(self, idx) {
-            let fun = fun?;
-            if fun.address.contains(&ea) {
-                return Ok(Some(fun));
-            }
+        netdelta: Netdelta<K>,
+        addr: Address<K>,
+        tag: u8,
+    ) -> Result<Option<IDBString>> {
+        let Some(cmt) = self.sup_value(idx.into(), addr.into_raw(), tag) else {
+            return Ok(None);
+        };
+        // NOTE this is a u32
+        if !cmt.starts_with(&0x01020304u32.to_le_bytes()) {
+            return Ok(Some(IDBString(cmt.to_vec())));
         }
-        Ok(None)
+
+        let netnode = netdelta.ea2node(addr);
+        let Some(cmt) = self.sup_value(idx.into(), netnode.into_raw(), tag)
+        else {
+            return Ok(None);
+        };
+        // TODO is this u64 or usize?
+        // NOTE this is a u64
+        ensure!(
+            cmt.starts_with(&0x01020304u64.to_le_bytes()),
+            "Invalid cmt type 4321"
+        );
+        let Some(num) = cmt.get(8..16).and_then(K::usize_try_from_le_bytes)
+        else {
+            return Err(anyhow!("Invalid cmt type 4321 value"));
+        };
+
+        // TODO ignore if it is repeatable not not?
+        Ok(Some(IDBString(
+            self.blob(NetnodeIdx::from_raw(num), 0u8.into(), b'S')
+                .collect(),
+        )))
+    }
+
+    pub fn func_cmt(
+        &self,
+        idx: FuncIdx<K>,
+        netdelta: Netdelta<K>,
+        addr: Address<K>,
+    ) -> Result<Option<IDBString>> {
+        self.cmt_inner(idx, netdelta, addr, b'C')
+    }
+
+    pub fn func_repeatable_cmt(
+        &self,
+        idx: FuncIdx<K>,
+        netdelta: Netdelta<K>,
+        addr: Address<K>,
+    ) -> Result<Option<IDBString>> {
+        self.cmt_inner(idx, netdelta, addr, b'R')
     }
 
     // TODO implement $ fixups

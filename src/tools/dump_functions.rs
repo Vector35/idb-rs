@@ -3,7 +3,7 @@ use crate::{get_id0_id1_id2_sections, Id0Id1Id2Variant};
 
 use anyhow::Result;
 
-use idb_rs::id0::function::{Comments, EntryPoint, FunctionsAndComments};
+use idb_rs::id0::function::EntryPoint;
 use idb_rs::{Address, IDAKind, IDAVariants};
 
 pub fn dump_functions(args: &Args) -> Result<()> {
@@ -15,45 +15,45 @@ pub fn dump_functions(args: &Args) -> Result<()> {
 }
 
 fn dump<K: IDAKind>((id0, id1, id2): Id0Id1Id2Variant<K>) -> Result<()> {
-    println!("Functions addresses AKA `$ funcords`: ");
-    if let Some(idx) = id0.funcords_idx()? {
-        for address in id0.funcords(idx).unwrap() {
-            println!("  {:#016X?}", address.unwrap().into_raw());
+    let root_info_idx = id0.root_node()?;
+    let root_info = id0.ida_info(root_info_idx)?;
+    let netdelta = root_info.netdelta();
+
+    let funcords_idx = id0.funcords_idx()?;
+    if let Some(idx) = funcords_idx {
+        println!("Functions addresses AKA `$ funcords`: ");
+        for address in id0.funcords(idx)? {
+            println!("  {:#016X?}", address?.into_raw());
         }
     };
 
-    if let Some(idx) = id0.funcs_idx()? {
+    let funcs_idx = id0.funcs_idx()?;
+    if let Some(funcs_idx) = funcs_idx {
         println!();
-        println!("Function and Comments AKA `$ funcs`: ");
-        for entry in id0.functions_and_comments(idx) {
-            match entry? {
-                FunctionsAndComments::Name => {}
-                FunctionsAndComments::Function(idbfunction) => {
-                    println!(
-                        "  Function at {:#x}..{:#x}",
-                        idbfunction.address.start, idbfunction.address.end
-                    );
-                }
-                FunctionsAndComments::Comment {
-                    address,
-                    comment: Comments::Comment(value),
-                } => {
+        println!("Function Chunks at `$ funcs`: ");
+        for idbfunction in id0.fchunks(funcs_idx) {
+            let idbfunction = idbfunction?;
+            println!(
+                "  Function at {:#x}..{:#x}",
+                idbfunction.address.start, idbfunction.address.end
+            );
+        }
+
+        if let Some(funcords_idx) = funcords_idx {
+            println!();
+            println!("Function Comments at `$ funcs`: ");
+            for address in id0.funcords(funcords_idx)? {
+                let address = address?;
+                if let Some(value) =
+                    id0.func_cmt(funcs_idx, netdelta, address)?
+                {
                     println!("  Comment at {address:#x}: `{value}`",);
                 }
-                FunctionsAndComments::Comment {
-                    address,
-                    comment: Comments::RepeatableComment(value),
-                } => {
+                if let Some(value) =
+                    id0.func_repeatable_cmt(funcs_idx, netdelta, address)?
+                {
                     println!("  RepeatableComment at {address:#x}: `{value}`",);
                 }
-                // There is no Pre/Post comments on funcs
-                FunctionsAndComments::Comment {
-                    address: _,
-                    comment: Comments::PreComment(_) | Comments::PostComment(_),
-                } => {
-                    unreachable!()
-                }
-                FunctionsAndComments::Unknown { .. } => {}
             }
         }
     }

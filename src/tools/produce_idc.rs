@@ -5,7 +5,6 @@ use anyhow::{anyhow, ensure, Result};
 
 use idb_rs::addr_info::{all_address_info, AddressInfo};
 use idb_rs::id0::flag::netnode::nn_res::*;
-use idb_rs::id0::function::{IDBFunctionNonTail, IDBFunctionTail};
 use idb_rs::id0::{ID0Section, Netdelta, NetnodeIdx, ReferenceInfo, RootInfo};
 use idb_rs::id1::{
     ByteCode, ByteData, ByteDataType, ByteExtended, ByteOp, ByteType,
@@ -984,54 +983,23 @@ fn produce_functions<K: IDAKind>(
     _til: &TILSection,
     netdelta: Netdelta<K>,
 ) -> Result<()> {
-    use idb_rs::id0::function::FunctionsAndComments;
-    use idb_rs::id0::function::FunctionsAndComments::*;
-    use idb_rs::id0::function::IDBFunctionType::*;
-
-    // TODO find the InnerRef for this, maybe it's just `$ dirtree/funcs`
-    let Some(idx) = id0.funcs_idx()? else {
-        return Ok(());
-    };
-    let id0_funcs = id0.functions_and_comments(idx);
-    let funcs: Vec<_> = id0_funcs
-        .filter_map(|fun| match fun {
-            Err(e) => Some(Err(e)),
-            Ok(FunctionsAndComments::Function(fun)) => Some(Ok(fun)),
-            Ok(
-                Name
-                | FunctionsAndComments::Comment { .. }
-                | FunctionsAndComments::Unknown { .. },
-            ) => None,
-        })
-        .collect::<Result<_>>()?;
-
-    if funcs.is_empty() {
-        return Ok(());
-    }
-
     // TODO find the number of functions
     writeln!(fmt)?;
     writeln!(fmt, "static Functions_0(void)")?;
     writeln!(fmt, "{{")?;
-    for fun in funcs {
-        let addr = fun.address.start.into_raw();
-        let addr_end = fun.address.end.into_raw();
+    let func_qty = get_func_qty(id0)?;
+    for n in 0..func_qty {
+        let fun = getn_func(id0, n)?.unwrap();
+        let addr = fun.range.start.into_raw();
+        let addr_end = fun.range.end.into_raw();
         writeln!(fmt, "  add_func({addr:#X}, {addr_end:#X});")?;
-        writeln!(
-            fmt,
-            "  set_func_flags({addr:#X}, {:#x});",
-            fun.flags.into_raw()
-        )?;
+        writeln!(fmt, "  set_func_flags({addr:#X}, {:#x});", fun.flags)?;
         writeln!(fmt, "  apply_type({addr:#X}, \"TODO\");")?;
-        match &fun.extra {
-            Tail(IDBFunctionTail {
-                owner,
-                _unknown4,
-                _unknown5,
-            }) => {
+        match &fun.func_t_type {
+            func_t_type::T2(func_t_2 { owner, .. }) => {
                 writeln!(fmt, "  set_frame_size({addr:#X}, {owner:#X?});")?;
             }
-            NonTail(IDBFunctionNonTail {
+            func_t_type::T1(func_t_1 {
                 frsize,
                 frregs,
                 argsize,
@@ -1042,9 +1010,9 @@ fn produce_functions<K: IDAKind>(
                     "  set_frame_size({addr:#X}, {frsize:#X}, {frregs}, {argsize:#X});"
                 )?;
             }
-            NonTail(_) => {}
+            func_t_type::T1(_) => {}
         }
-        for (address, label) in id0.local_labels(netdelta, fun.address.start)? {
+        for (address, label) in id0.local_labels(netdelta, fun.range.start)? {
             writeln!(
                 fmt,
                 "  set_name({:#X}, {:?}, SN_LOCAL);",
