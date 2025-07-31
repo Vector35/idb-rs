@@ -157,8 +157,7 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
         // usually this string ends with \x00, but maybe there is no garanty for that.
         // TODO what if there is more fields that can fit a id0 entry
         let field_names = if let Some(fields_entry) = iter.next() {
-            let value = parse_maybe_cstr(&fields_entry.value)
-                .ok_or_else(|| anyhow!("Incomplete Fields for TIL Type"))?;
+            let value = parse_maybe_cstr(&fields_entry.value);
             crate::ida_reader::split_strings_from_array(value)
                 .ok_or_else(|| anyhow!("Invalid Fields for TIL Type"))?
         } else {

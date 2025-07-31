@@ -248,7 +248,7 @@ impl<'a, K: IDAKind> EntryPointRaw<'a, K> {
             return Err(anyhow!("invalid Funcs subkey"));
         };
         if *key_type == b'N' {
-            ensure!(parse_maybe_cstr(value) == Some(&b"$ entry points"[..]));
+            ensure!(parse_maybe_cstr(value) == &b"$ entry points"[..]);
             return Ok(Self::Name);
         }
         let Some(sub_key) = K::usize_try_from_be_bytes(sub_key) else {
@@ -270,22 +270,16 @@ impl<'a, K: IDAKind> EntryPointRaw<'a, K> {
                     ordinal,
                 })
                 .map_err(|_| anyhow!("Invalid Ordinal value")),
-            b'F' => parse_maybe_cstr(value)
-                .and_then(|symbol| {
-                    Some(Self::ForwardedSymbol {
-                        key: sub_key,
-                        symbol: std::str::from_utf8(symbol).ok()?,
-                    })
-                })
-                .ok_or_else(|| anyhow!("Invalid Forwarded symbol name")),
-            flag::netnode::nn_res::ARRAY_SUP_TAG => parse_maybe_cstr(value)
-                .and_then(|name| {
-                    Some(Self::FunctionName {
-                        key: sub_key,
-                        name: std::str::from_utf8(name).ok()?,
-                    })
-                })
-                .ok_or_else(|| anyhow!("Invalid Function name")),
+            b'F' => Ok(Self::ForwardedSymbol {
+                key: sub_key,
+                symbol: std::str::from_utf8(parse_maybe_cstr(value))
+                    .map_err(|_| anyhow!("Invalid Forwarded symbol name"))?,
+            }),
+            flag::netnode::nn_res::ARRAY_SUP_TAG => Ok(Self::FunctionName {
+                key: sub_key,
+                name: std::str::from_utf8(parse_maybe_cstr(value))
+                    .map_err(|_| anyhow!("Invalid Function name"))?,
+            }),
             // TODO find the meaning of "$ funcs" b'V' entry
             _ => Ok(Self::Unknown { key, value }),
         }

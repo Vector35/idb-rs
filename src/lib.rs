@@ -1157,7 +1157,7 @@ where
             read_section::<F, _, _>(
                 input,
                 section_header.compress,
-                section_header.len.into(),
+                section_header.len,
                 magic,
             )
         }

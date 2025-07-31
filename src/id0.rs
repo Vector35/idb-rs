@@ -102,11 +102,11 @@ pub(crate) fn key_from_netnode_tag_hash<K: IDAKind>(
 }
 
 // parse a string that maybe is finalized with \x00
-pub(crate) fn parse_maybe_cstr(data: &[u8]) -> Option<&[u8]> {
+pub(crate) fn parse_maybe_cstr(data: &[u8]) -> &[u8] {
     // find the end of the string
     let end_pos = data.iter().position(|b| *b == 0).unwrap_or(data.len());
     // Return the slice up to the first null byte
-    Some(&data[..end_pos])
+    &data[..end_pos]
 }
 
 pub(crate) enum ID0CStr<'a, K: IDAKind> {
@@ -123,7 +123,7 @@ impl<'a, K: IDAKind> ID0CStr<'a, K> {
             [b'\x00', rest @ ..] => {
                 K::usize_try_from_be_bytes(rest).map(ID0CStr::Ref)
             }
-            _ => parse_maybe_cstr(data).map(IDBStr::new).map(ID0CStr::CStr),
+            _ => Some(ID0CStr::CStr(IDBStr::new(parse_maybe_cstr(data)))),
         }
     }
 }

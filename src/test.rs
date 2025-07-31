@@ -5,7 +5,6 @@ use std::hash::Hasher;
 use std::io::{BufWriter, Cursor};
 use std::path::{Path, PathBuf};
 
-use crate::id0::function::FunctionsAndComments;
 use crate::id0::{FileRegions, Segment};
 use crate::*;
 
@@ -455,6 +454,7 @@ fn parse_idb_data<K>(
     // parse all id0 information
     let root_netnode = id0.root_node().unwrap();
     let ida_info = id0.ida_info(root_netnode.into()).unwrap();
+    let netdelta = ida_info.netdelta();
     assert_dyn!("parse_idb", filename, ida_info);
 
     let seg_idx = id0.segments_idx().unwrap().unwrap();
@@ -545,18 +545,34 @@ fn parse_idb_data<K>(
         .collect();
     assert_dyn!("parse_idb", filename, file_regions);
 
-    if let Some(func_idx) = id0.funcs_idx().unwrap() {
-        let _functions_and_comments: Vec<FunctionsAndComments<'_, K>> = id0
-            .functions_and_comments(func_idx)
-            .map(Result::unwrap)
-            .collect();
-    }
     if let Some(funcord_idx) = id0.funcords_idx().unwrap() {
-        let _funcords: Vec<Address<K>> = id0
+        let funcords: Vec<Address<K>> = id0
             .funcords(funcord_idx)
             .unwrap()
             .map(Result::unwrap)
             .collect();
+        assert_dyn!("parse_idb", filename, funcords);
+        if let Some(funcs_idx) = id0.funcs_idx().unwrap() {
+            let function_comments: Vec<(u64, Option<String>, Option<String>)> =
+                funcords
+                    .into_iter()
+                    .filter_map(|addr| {
+                        let cmt = id0
+                            .func_cmt(funcs_idx, netdelta, addr)
+                            .unwrap()
+                            .map(|str| str.to_string());
+                        let cmt_repeatable = id0
+                            .func_cmt(funcs_idx, netdelta, addr)
+                            .unwrap()
+                            .map(|str| str.to_string());
+                        if cmt.is_none() && cmt_repeatable.is_none() {
+                            return None;
+                        }
+                        Some((addr.0.into_u64(), cmt, cmt_repeatable))
+                    })
+                    .collect();
+            assert_dyn!("parse_idb", filename, function_comments);
+        }
     }
     let entry_points = id0.entry_points().unwrap();
     assert_dyn!("parse_idb", filename, entry_points);
@@ -565,7 +581,6 @@ fn parse_idb_data<K>(
     let _ = id0.dirtree_enums().unwrap();
 
     if let Some(dirtree_names) = id0.dirtree_names().unwrap() {
-        let image_base = ida_info.netdelta();
         dirtree_names.visit_leafs(|addr| {
             // NOTE it's know that some labels are missing from the byte
             // info but not from the databases, maybe in cases they are
@@ -574,14 +589,14 @@ fn parse_idb_data<K>(
                 id0,
                 id1,
                 id2,
-                image_base,
+                netdelta,
                 Address::from_raw(*addr),
             )
             .or_else(|| {
                 // TODO make sure this new_forced is required
                 crate::addr_info::AddressInfo::new_forced(
                     id0,
-                    image_base,
+                    netdelta,
                     Address::from_raw(*addr),
                 )
             })

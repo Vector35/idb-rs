@@ -36,11 +36,11 @@ impl<K: IDAKind> From<Segment<K>> for segment_t<K> {
             align: seg.align.into(),
             comb: seg.comb.into(),
             perm: seg.perm.map(|perm| perm.into_raw()).unwrap_or(0),
-            bitness: seg.bitness.into(),
+            bitness: seg.bitness,
             flags: seg.flags.into_raw().into(),
             sel: seg.selector,
             defsr: seg.defsr,
-            type_: seg.seg_type.into(),
+            type_: seg.seg_type,
             color: seg.color,
         }
     }

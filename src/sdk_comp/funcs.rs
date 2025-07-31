@@ -138,14 +138,14 @@ pub fn getn_func<'a, K: IDAKind>(
     let ords = id0
         .funcords_idx()?
         .ok_or_else(|| anyhow!("Missing funcords entry"))?;
-    let Some(addr) = id0.funcords(ords)?.skip(n).next() else {
+    let Some(addr) = id0.funcords(ords)?.nth(n) else {
         return Ok(None);
     };
     get_func(id0, addr?)
 }
 
-pub fn get_func_num<'a, K: IDAKind>(
-    id0: &'a ID0Section<K>,
+pub fn get_func_num<K: IDAKind>(
+    id0: &ID0Section<K>,
     ea: ea_t<K>,
 ) -> Result<Option<usize>> {
     // TODO how the old versions work?
@@ -160,7 +160,7 @@ pub fn get_func_num<'a, K: IDAKind>(
     Ok(None)
 }
 
-pub fn get_func_qty<'a, K: IDAKind>(id0: &'a ID0Section<K>) -> Result<usize> {
+pub fn get_func_qty<K: IDAKind>(id0: &ID0Section<K>) -> Result<usize> {
     // TODO how the old versions work?
     let ords = id0
         .funcords_idx()?
@@ -168,8 +168,8 @@ pub fn get_func_qty<'a, K: IDAKind>(id0: &'a ID0Section<K>) -> Result<usize> {
     Ok(id0.funcords(ords)?.count())
 }
 
-pub fn get_func_cmt<'a, K: IDAKind>(
-    id0: &'a ID0Section<K>,
+pub fn get_func_cmt<K: IDAKind>(
+    id0: &ID0Section<K>,
     netdelta: Netdelta<K>,
     addr: Address<K>,
     repeatable: bool,
