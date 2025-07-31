@@ -109,7 +109,7 @@ impl<'a, K: IDAKind> Iterator for EntryTagContinuousFlat<'a, K> {
         // NOTE the recursive is called to force check if the entry have values
         // although having an empty entry is nonsensical, it's valid on a DB
         // level
-        return self.next();
+        self.next()
     }
 }
 

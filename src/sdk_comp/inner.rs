@@ -5,8 +5,8 @@ use crate::sdk_comp::segment::segment_t;
 use crate::{IDAKind, IDBStr, IDBString};
 
 // TODO implement based on the InnerRef
-pub fn get_segm_name<'a, K: IDAKind>(
-    id0: &'a ID0Section<K>,
+pub fn get_segm_name<K: IDAKind>(
+    id0: &ID0Section<K>,
     s: &segment_t<K>,
     flags: i32,
 ) -> Result<IDBString> {

@@ -44,14 +44,12 @@ impl<K: IDAKind> RootInfo<K> {
 
         let mut processor = data.cpu_name.to_vec();
         // remove any \x00 that marks the end of the str
-        let cpu_str_part = parse_maybe_cstr(&processor[..])
-            .ok_or_else(|| anyhow!("Invalid RootInfo CStr cpu name"))?;
+        let cpu_str_part = parse_maybe_cstr(&processor[..]);
         processor.truncate(cpu_str_part.len());
 
         let mut strlit_name_prefix = data.strlit_name_prefix.to_vec();
         // remove any \x00 that marks the end of the str
-        let strlit_name_prefix_part = parse_maybe_cstr(&processor[..])
-            .ok_or_else(|| anyhow!("Invalid RootInfo CStr cpu name"))?;
+        let strlit_name_prefix_part = parse_maybe_cstr(&processor[..]);
         strlit_name_prefix.truncate(strlit_name_prefix_part.len());
 
         let is_cc_guessed = data.cc_id_raw & 0x80 != 0;

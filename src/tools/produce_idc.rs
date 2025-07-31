@@ -321,7 +321,7 @@ fn produce_segments<K: IDAKind>(
         let endea = seg.address.end.into_raw();
         let base = seg.sel;
         let use32: u8 = seg.bitness.into();
-        let align: u8 = seg.align.into();
+        let align = seg.align;
         // TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb754f
         let comb = 2;
         // TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb7544
@@ -995,6 +995,18 @@ fn produce_functions<K: IDAKind>(
         writeln!(fmt, "  add_func({addr:#X}, {addr_end:#X});")?;
         writeln!(fmt, "  set_func_flags({addr:#X}, {:#x});", fun.flags)?;
         writeln!(fmt, "  apply_type({addr:#X}, \"TODO\");")?;
+        for repeatable in [false, true] {
+            if let Some(cmt) =
+                get_func_cmt(id0, netdelta, fun.range.start, repeatable)?
+            {
+                writeln!(
+                    fmt,
+                    "  set_func_cmt({addr:#X}, {:?}, {});",
+                    cmt.as_utf8_lossy(),
+                    repeatable as u8
+                )?;
+            }
+        }
         match &fun.func_t_type {
             func_t_type::T2(func_t_2 { owner, .. }) => {
                 writeln!(fmt, "  set_frame_size({addr:#X}, {owner:#X?});")?;

@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::ffi::CStr;
 use std::ops::Range;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use num_traits::{AsPrimitive, CheckedAdd, PrimInt, ToBytes};
 
 use crate::addr_info::SubtypeId;
@@ -369,7 +369,7 @@ impl<K: IDAKind> ID0Section<K> {
         alt: K::Usize,
         tag: u8,
     ) -> Result<Option<NetnodeIdx<K>>> {
-        self.netnode_tag_alt_idx(idx, alt.into(), tag)
+        self.netnode_tag_alt_idx(idx, alt, tag)
             .map(|idx| {
                 K::usize_try_from_le_bytes(&self.entries[idx].value[..])
                     .map(NetnodeIdx::from_raw)
@@ -532,25 +532,22 @@ impl<K: IDAKind> ID0Section<K> {
             Ok(None)
         } else {
             // if there is no names, AKA `$ segstrings`, search for the key directly
-            self.name_by_index(idx)
+            Ok(self.name_by_index(idx))
         }
     }
 
     pub(crate) fn name_by_index(
         &self,
         idx: SegmentNameIdx<K>,
-    ) -> Result<Option<IDBStr<'_>>> {
+    ) -> Option<IDBStr<'_>> {
         // if there is no names, AKA `$ segstrings`, search for the key directly
-        let Some(name_idx) = self.netnode_tag_idx(
+        self.netnode_tag_idx(
             NetnodeIdx(K::Usize::from(0xFFu8).swap_bytes() | idx.0),
             NAME_TAG,
-        ) else {
-            return Ok(None);
-        };
-        parse_maybe_cstr(&self.entries[name_idx].value)
-            .map(IDBStr::new)
-            .map(Option::Some)
-            .ok_or_else(|| anyhow!("Invalid segment name {}", idx.0))
+        )
+        .map(|name_idx| {
+            IDBStr::new(parse_maybe_cstr(&self.entries[name_idx].value))
+        })
     }
 
     /// read the `$ loader name` entries of the database
@@ -1017,31 +1014,40 @@ impl<K: IDAKind> ID0Section<K> {
         let Some(cmt) = self.sup_value(idx.into(), addr.into_raw(), tag) else {
             return Ok(None);
         };
-        // NOTE this is a u32
+
+        // NOTE the value is stored as 8 bytes in the 64bits version, but it
+        // only checks the first 4 bytes
         if !cmt.starts_with(&0x01020304u32.to_le_bytes()) {
-            return Ok(Some(IDBString(cmt.to_vec())));
+            return Ok(Some(IDBString(parse_maybe_cstr(cmt).to_vec())));
         }
 
         let netnode = netdelta.ea2node(addr);
-        let Some(cmt) = self.sup_value(idx.into(), netnode.into_raw(), tag)
+        let Some(cmt2) = self.sup_value(idx.into(), netnode.into_raw(), tag)
         else {
             return Ok(None);
         };
-        // TODO is this u64 or usize?
-        // NOTE this is a u64
+        // NOTE this is a usize and not u32, the full value is actually 8 bytes
+        let mut cursor = cmt2;
+        let header = IdbReadKind::<K>::read_usize(&mut cursor)
+            .context("Missing function cmt 4321 header")?;
         ensure!(
-            cmt.starts_with(&0x01020304u64.to_le_bytes()),
+            header == K::Usize::from(0x01020304u32),
             "Invalid cmt type 4321"
         );
-        let Some(num) = cmt.get(8..16).and_then(K::usize_try_from_le_bytes)
-        else {
-            return Err(anyhow!("Invalid cmt type 4321 value"));
-        };
-
+        let idx = IdbReadKind::<K>::read_usize(&mut cursor)
+            .context("Missing function cmt 4321 netnode_idx")?;
         // TODO ignore if it is repeatable not not?
         Ok(Some(IDBString(
-            self.blob(NetnodeIdx::from_raw(num), 0u8.into(), b'S')
-                .collect(),
+            crate::id0::entry_iter::EntryTagContinuousSubkeys::new(
+                self,
+                NetnodeIdx::from_raw(idx),
+                ARRAY_SUP_TAG,
+                0u8.into(),
+            )
+            .flat_map(|entry| {
+                parse_maybe_cstr(&entry.value).iter().chain(b"\n").copied()
+            })
+            .collect(),
         )))
     }
 
@@ -1202,7 +1208,7 @@ impl<K: IDAKind> ID0Section<K> {
         netnode: NetnodeIdx<K>,
     ) -> Option<IDBStr<'_>> {
         let comment = self.sup_value(netnode, 0u8.into(), ARRAY_SUP_TAG)?;
-        Some(IDBStr::new(parse_maybe_cstr(comment).unwrap_or(comment)))
+        Some(IDBStr::new(parse_maybe_cstr(comment)))
     }
 
     pub(crate) fn comment_repeatable_at(
@@ -1210,7 +1216,7 @@ impl<K: IDAKind> ID0Section<K> {
         netnode: NetnodeIdx<K>,
     ) -> Option<IDBStr<'_>> {
         let comment = self.sup_value(netnode, 1u8.into(), ARRAY_SUP_TAG)?;
-        Some(IDBStr::new(parse_maybe_cstr(comment).unwrap_or(comment)))
+        Some(IDBStr::new(parse_maybe_cstr(comment)))
     }
 
     // TODO: comments have a strange hole in id0
@@ -1233,11 +1239,7 @@ impl<K: IDAKind> ID0Section<K> {
         // 1000..2000
         // max number of lines, NOTE this check is not done by IDA
         .take(1000)
-        .map(|entry| {
-            IDBStr::new(
-                parse_maybe_cstr(&entry.value).unwrap_or(&entry.value[..]),
-            )
-        })
+        .map(|entry| IDBStr::new(parse_maybe_cstr(&entry.value)))
     }
 
     pub(crate) fn comment_post_at(
@@ -1253,11 +1255,7 @@ impl<K: IDAKind> ID0Section<K> {
         // 2000..3000
         // max number of lines, NOTE this check is not done by IDA
         .take(1000)
-        .map(|entry| {
-            IDBStr::new(
-                parse_maybe_cstr(&entry.value).unwrap_or(&entry.value[..]),
-            )
-        })
+        .map(|entry| IDBStr::new(parse_maybe_cstr(&entry.value)))
     }
 
     pub fn struct_at(&self, idx: SubtypeId<K>) -> Result<&[u8]> {

@@ -281,8 +281,7 @@ impl<K: IDAKind> RootInfo<K> {
         let mut processor = [0; 8];
         input.read_exact(&mut processor)?;
         // remove any \x00 that marks the end of the str
-        let cpu_str_part = parse_maybe_cstr(&processor[..])
-            .ok_or_else(|| anyhow!("Invalid RootInfo CStr cpu name"))?;
+        let cpu_str_part = parse_maybe_cstr(&processor[..]);
         let processor = processor[0..cpu_str_part.len()].to_vec();
 
         let genflags = Inffl::new(input.read_u16()?)?;
@@ -476,8 +475,7 @@ impl<K: IDAKind> RootInfo<K> {
         let mut processor = vec![0; cpu_len];
         input.read_exact(&mut processor)?;
         // remove any \x00 that marks the end of the str
-        let cpu_str_part = parse_maybe_cstr(&processor[..])
-            .ok_or_else(|| anyhow!("Invalid RootInfo CStr cpu name"))?;
+        let cpu_str_part = parse_maybe_cstr(&processor[..]);
         processor.truncate(cpu_str_part.len());
 
         // NOTE in this version parse_* functions are used

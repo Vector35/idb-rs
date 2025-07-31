@@ -57,7 +57,7 @@ impl ID0Header {
         // mixing the offset 13 with 0x13.
         let version = match magic {
             IDBMagic::IDA0 => {
-                let version = ID0Version::read(&mut &buf[0xd..0x27])
+                let version = ID0Version::read(&buf[0xd..0x27])
                     .ok_or_else(|| anyhow!("Unknown B-tree version"))?;
                 if version != ID0Version::V15 {
                     return Err(anyhow!(
@@ -67,7 +67,7 @@ impl ID0Header {
                 version
             }
             IDBMagic::IDA1 | IDBMagic::IDA2 => {
-                let version = ID0Version::read(&mut &buf[0x13..0x2d])
+                let version = ID0Version::read(&buf[0x13..0x2d])
                     .ok_or_else(|| anyhow!("Unknown B-tree version"))?;
                 if version == ID0Version::V15 {
                     return Err(anyhow!(

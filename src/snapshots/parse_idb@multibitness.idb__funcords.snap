@@ -1,0 +1,9 @@
+---
+hash: 61BA5EF827344E71
+source: src/test.rs
+expression: funcords
+---
+[
+ (0),
+ (4096),
+]
