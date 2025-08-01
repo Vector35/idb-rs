@@ -1,8 +1,8 @@
 ---
-hash: 47C5F0192260A6C0
+hash: 68D0C910C0752D17
 source: src/test.rs
 expression: function_comments
 ---
 [
- (3, Some("function comment\0"), Some("function comment\0")),
+ (3, Some("function comment"), Some("function comment")),
 ]
