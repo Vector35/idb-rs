@@ -5,7 +5,7 @@ use std::ops::Range;
 use crate::id0::{
     ID0Section, Segment, SegmentBitness, SegmentNameIdx, SegmentType,
 };
-use crate::IDAKind;
+use crate::{IDAKind, IDBStr, IDBString};
 
 use super::pro::{bgcolor_t, ea_t, sel_t, uval_t};
 
@@ -117,4 +117,31 @@ pub fn get_last_seg<K: IDAKind>(
         .last()
         .map(|seg| seg.map(|seg| seg.into()))
         .transpose()
+}
+
+pub fn get_segm_name<K: IDAKind>(
+    id0: &ID0Section<K>,
+    s: &segment_t<K>,
+    flags: i32,
+) -> Result<IDBString> {
+    if flags != 0 {
+        todo!();
+    }
+    if let Some(name) = id0.segment_name(s.name)? {
+        return Ok(name.to_idb_string());
+    }
+
+    Ok(IDBString::new(format!("seg{:03}", s.name.0).into_bytes()))
+}
+
+// TODO implement based on the InnerRef
+pub fn get_segm_class<'a, K: IDAKind>(
+    id0: &'a ID0Section<K>,
+    s: &segment_t<K>,
+) -> Result<Option<IDBStr<'a>>> {
+    if let Some(class_name) = id0.segment_name(s.sclass)? {
+        return Ok(Some(class_name));
+    }
+
+    id0.segment_name(s.name)
 }

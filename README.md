@@ -14,6 +14,10 @@ TODO
 
 IDB file format documentation: [fileformat.md](doc/fileformat.md).
 
+## SDK compatibility layer
+
+The crate implement a few functions in a similar way to original API: [sdk_comp.md](doc/sdk_comp.md).
+
 ## License
 
 This plugin is released under the Apache-2.0 license.
