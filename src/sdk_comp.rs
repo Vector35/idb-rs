@@ -1,8 +1,6 @@
 pub mod bytes;
 pub mod frame;
 pub mod funcs;
-/// Functions that are exported on the lib but not part of the SDK
-pub mod inner;
 pub mod lines;
 pub mod nalt;
 pub mod netnode;
@@ -23,7 +21,6 @@ pub mod prelude {
     pub use super::bytes::*;
     pub use super::frame::*;
     pub use super::funcs::*;
-    pub use super::inner::*;
     pub use super::lines::*;
     pub use super::nalt::*;
     pub use super::netnode::*;
