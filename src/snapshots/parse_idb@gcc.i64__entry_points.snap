@@ -1,5 +1,5 @@
 ---
-hash: D744DD1AA8EDDEE1
+hash: 065A7EFFF007A0E9
 source: src/test.rs
 expression: entry_points
 ---
@@ -14,7 +14,7 @@ expression: entry_points
    is_volatile: false,
    type_variant: Typeref((
     ref_type: None,
-    typeref_value: UnsolvedName(Some("mach_header_64")),
+    typeref_value: Name(Some("mach_header_64")),
    )),
   )),
  ),
@@ -60,7 +60,7 @@ expression: entry_points
            is_volatile: false,
            type_variant: Typeref((
             ref_type: None,
-            typeref_value: UnsolvedOrd(25),
+            typeref_value: Ordinal(25),
            )),
           ),
          )),
@@ -87,7 +87,7 @@ expression: entry_points
          is_volatile: false,
          type_variant: Typeref((
           ref_type: None,
-          typeref_value: UnsolvedOrd(24),
+          typeref_value: Ordinal(24),
          )),
         ),
        )),
@@ -143,7 +143,7 @@ expression: entry_points
          is_volatile: false,
          type_variant: Typeref((
           ref_type: None,
-          typeref_value: UnsolvedOrd(25),
+          typeref_value: Ordinal(25),
          )),
         ),
        )),

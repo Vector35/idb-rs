@@ -1,5 +1,5 @@
 ---
-hash: 60A836CDC33C8B44
+hash: C5F75BE1F639A8D3
 source: src/test.rs
 expression: til
 ---
@@ -119,7 +119,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -144,7 +144,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: UnsolvedName(Some("DWORD")),
+         typeref_value: Name(Some("DWORD")),
         )),
        ),
        att: None,
@@ -164,7 +164,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: UnsolvedName(Some("DWORD")),
+         typeref_value: Name(Some("DWORD")),
         )),
        ),
        att: None,
@@ -184,7 +184,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: UnsolvedName(Some("DWORD")),
+         typeref_value: Name(Some("DWORD")),
         )),
        ),
        att: None,
@@ -204,7 +204,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: UnsolvedName(Some("DWORD")),
+         typeref_value: Name(Some("DWORD")),
         )),
        ),
        att: None,
@@ -232,7 +232,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: Some(Struct),
-           typeref_value: Ref(0),
+           typeref_value: Ordinal(1),
           )),
          ),
         )),
@@ -252,7 +252,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -275,7 +275,7 @@ Some((
       is_volatile: false,
       type_variant: Typeref((
        ref_type: Some(Struct),
-       typeref_value: UnsolvedName(Some("_SCOPETABLE_ENTRY")),
+       typeref_value: Name(Some("_SCOPETABLE_ENTRY")),
       )),
      ),
     )),
@@ -309,7 +309,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: Some(Struct),
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
         )),
@@ -331,7 +331,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: UnsolvedName(Some("PVOID")),
+         typeref_value: Name(Some("PVOID")),
         )),
        ),
        att: None,
@@ -351,7 +351,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(2),
+         typeref_value: Ordinal(3),
         )),
        ),
        att: None,
@@ -371,7 +371,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: UnsolvedName(Some("DWORD")),
+         typeref_value: Name(Some("DWORD")),
         )),
        ),
        att: None,
@@ -389,7 +389,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -404,7 +404,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(3),
+     typeref_value: Name(Some("_EH3_EXCEPTION_REGISTRATION")),
     )),
    ),
    sclass: None,
@@ -426,7 +426,7 @@ Some((
       is_volatile: false,
       type_variant: Typeref((
        ref_type: Some(Struct),
-       typeref_value: Ref(3),
+       typeref_value: Name(Some("_EH3_EXCEPTION_REGISTRATION")),
       )),
      ),
     )),
@@ -452,7 +452,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: UnsolvedName(Some("DWORD")),
+         typeref_value: Name(Some("DWORD")),
         )),
        ),
        att: None,
@@ -480,7 +480,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: UnsolvedName(Some("EXCEPTION_POINTERS")),
+           typeref_value: Name(Some("EXCEPTION_POINTERS")),
           )),
          ),
         )),
@@ -502,7 +502,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: Some(Struct),
-         typeref_value: Ref(3),
+         typeref_value: Ordinal(4),
         )),
        ),
        att: None,
@@ -520,7 +520,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),

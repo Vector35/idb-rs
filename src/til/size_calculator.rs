@@ -4,10 +4,9 @@ use std::num::NonZeroU8;
 use crate::til::bitfield::Bitfield;
 
 use super::r#enum::Enum;
-use super::r#struct::StructMember;
 use super::section::TILSection;
-use super::union::Union;
-use super::{Basic, Type, TypeVariant, Typeref, TyperefValue};
+use super::udt::{UDTMember, UDT};
+use super::{Basic, Type, TypeVariant, Typeref};
 
 pub struct TILTypeSizeSolver<'a> {
     section: &'a TILSection,
@@ -155,10 +154,11 @@ impl<'a> TILTypeSizeSolver<'a> {
                 }
                 sum
             }
-            TypeVariant::Union(Union { members, .. }) => {
+            TypeVariant::Union(UDT { members, .. }) => {
                 let mut max = 0;
                 for member in members {
-                    let size = self.inner_type_size_bytes(&member.ty)?;
+                    let size =
+                        self.inner_type_size_bytes(&member.member_type)?;
                     max = max.max(size);
                 }
                 max
@@ -173,11 +173,9 @@ impl<'a> TILTypeSizeSolver<'a> {
     }
 
     fn solve_typedef(&mut self, typedef: &Typeref) -> Option<u64> {
-        let TyperefValue::Ref(idx) = &typedef.typeref_value else {
-            return None;
-        };
-        let ty = self.section.get_type_by_idx(*idx);
-        self.type_size_bytes(Some(*idx), &ty.tinfo)
+        let idx = self.section.get_ref_value_idx(&typedef.typeref_value)?;
+        let ty = self.section.get_type_by_idx(idx);
+        self.type_size_bytes(Some(idx), &ty.tinfo)
     }
 
     pub fn type_align_bytes(
@@ -220,10 +218,8 @@ impl<'a> TILTypeSizeSolver<'a> {
                 self.inner_type_align_bytes(&array.elem_type, size.unwrap_or(1))
             }
             TypeVariant::Typeref(ty) => {
-                let TyperefValue::Ref(idx) = &ty.typeref_value else {
-                    return None;
-                };
-                let ty = &self.section.types[*idx].tinfo;
+                let idx = self.section.get_ref_value_idx(&ty.typeref_value)?;
+                let ty = &self.section.types[idx].tinfo;
                 let size = self.inner_type_size_bytes(ty).unwrap_or(1);
                 self.inner_type_align_bytes(ty, size)
             }
@@ -258,9 +254,13 @@ impl<'a> TILTypeSizeSolver<'a> {
                     .members
                     .iter()
                     .filter_map(|member| {
-                        let type_bytes =
-                            self.type_size_bytes(None, &member.ty).unwrap_or(0);
-                        self.inner_type_align_bytes(&member.ty, type_bytes)
+                        let type_bytes = self
+                            .type_size_bytes(None, &member.member_type)
+                            .unwrap_or(0);
+                        self.inner_type_align_bytes(
+                            &member.member_type,
+                            type_bytes,
+                        )
                     })
                     .max()
                     .unwrap_or(1);
@@ -280,7 +280,7 @@ impl<'a> TILTypeSizeSolver<'a> {
 
 fn condensate_bitfields_from_struct(
     first_field: Bitfield,
-    rest: &mut &[StructMember],
+    rest: &mut &[UDTMember],
 ) -> NonZeroU8 {
     let field_bytes = first_field.nbytes;
     let field_bits: u16 = u16::from(first_field.nbytes.get()) * 8;

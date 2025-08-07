@@ -4,9 +4,8 @@ use idb_rs::til::bitfield::Bitfield;
 use idb_rs::til::function::{CallingConvention, Function};
 use idb_rs::til::pointer::Pointer;
 use idb_rs::til::r#enum::{Enum, EnumMember, EnumMembers};
-use idb_rs::til::r#struct::{Struct, StructMemberAtt};
 use idb_rs::til::section::TILSection;
-use idb_rs::til::union::Union;
+use idb_rs::til::udt::{StructMemberAtt, UDT};
 use idb_rs::til::{
     Basic, SClass, TILTypeInfo, TILTypeSizeSolver, Type, TypeVariant, Typeref,
     TyperefType, TyperefValue,
@@ -390,7 +389,7 @@ fn print_til_type_root(
         | TypeVariant::Union(_)
         | TypeVariant::Enum(_) => {}
         TypeVariant::Typeref(Typeref {
-            typeref_value: TyperefValue::UnsolvedName(None),
+            typeref_value: TyperefValue::Name(None),
             ref_type: Some(_),
         }) => {}
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x443906
@@ -425,7 +424,7 @@ fn print_til_type_root(
             }
             TypeVariant::Union(til_union)
                 if members_solvable(
-                    til_union.members.iter().map(|m| &m.ty),
+                    til_union.members.iter().map(|m| &m.member_type),
                     solver,
                 ) =>
             {
@@ -850,25 +849,14 @@ fn print_til_type_typedef(
         need_space = true;
     }
     // get the type referenced by the typdef
-    match &typedef.typeref_value {
-        TyperefValue::Ref(idx) => {
-            if need_space {
-                write!(fmt, " ")?;
-            }
-            let inner_ty = &section.types[*idx];
-            fmt.write_all(inner_ty.name.as_bytes())?;
-            need_space = true;
+    if let Some(idx) = section.get_ref_value_idx(&typedef.typeref_value) {
+        if need_space {
+            write!(fmt, " ")?;
         }
-        TyperefValue::UnsolvedName(Some(name)) => {
-            if need_space {
-                write!(fmt, " ")?;
-            }
-            fmt.write_all(name.as_bytes())?;
-            need_space = true;
-        }
-        // Nothing to print
-        TyperefValue::UnsolvedName(None) | TyperefValue::UnsolvedOrd(_) => {}
-    };
+        let inner_ty = &section.types[idx];
+        fmt.write_all(inner_ty.name.as_bytes())?;
+        need_space = true;
+    }
     // print the type name, if some
     if let Some(name) = name {
         if need_space {
@@ -887,7 +875,7 @@ fn print_til_type_struct(
     section: &TILSection,
     name: Option<&[u8]>,
     _til_type: &Type,
-    til_struct: &Struct,
+    til_struct: &UDT,
     print_name: bool,
 ) -> Result<()> {
     if tilib_args.dump_struct_layout == Some(true) {
@@ -897,7 +885,7 @@ fn print_til_type_struct(
     }
     write!(fmt, "struct")?;
     if til_struct.is_unaligned {
-        if til_struct.is_uknown_8 {
+        if til_struct.is_unknown_8 {
             write!(fmt, " __attribute__((packed))")?;
         } else {
             write!(fmt, " __unaligned")?;
@@ -1003,7 +991,7 @@ fn print_til_type_union(
     section: &TILSection,
     name: Option<&[u8]>,
     _til_type: &Type,
-    til_union: &Union,
+    til_union: &UDT,
     print_name: bool,
 ) -> Result<()> {
     if tilib_args.dump_struct_layout == Some(true) {
@@ -1039,7 +1027,7 @@ fn print_til_type_union(
             section,
             name,
             member_name,
-            &member.ty,
+            &member.member_type,
             false,
             true,
             true,
@@ -1112,16 +1100,17 @@ fn print_til_type_complex_member(
         }
     };
 
-    let inner_type = match &typedef.typeref_value {
-        TyperefValue::Ref(idx) => &section.types[*idx],
-        TyperefValue::UnsolvedName(Some(name)) => {
+    let idx = section.get_ref_value_idx(&typedef.typeref_value);
+    let inner_type = match (idx, &typedef.typeref_value) {
+        (Some(idx), _) => &section.types[idx],
+        (None, TyperefValue::Name(Some(name))) => {
             if let Some(ref_type) = &typedef.ref_type {
                 print_typeref_type_prefix(fmt, *ref_type)?;
             }
             fmt.write_all(name.as_bytes())?;
             return Ok(());
         }
-        TyperefValue::UnsolvedOrd(_) | TyperefValue::UnsolvedName(None) => {
+        (None, _) => {
             return print_default();
         }
     };
@@ -1404,7 +1393,7 @@ fn print_til_struct_member_basic_att(
         return Ok(());
     };
 
-    use idb_rs::til::r#struct::ExtAttBasicFmt::*;
+    use idb_rs::til::udt::ExtAttBasicFmt::*;
     if basic_att.is_inv_bits {
         write!(fmt, " __invbits")?
     }
@@ -1438,11 +1427,11 @@ fn print_til_struct_member_basic_att(
     if let Some(tabform) = basic_att.tabform {
         // InnerRef InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x48857f
         let val1 = match tabform.val1 {
-            idb_rs::til::r#struct::ExtAttBasicTabformVal1::NODUPS => "NODUPS",
-            idb_rs::til::r#struct::ExtAttBasicTabformVal1::HEX => "HEX",
-            idb_rs::til::r#struct::ExtAttBasicTabformVal1::DEC => "DEC",
-            idb_rs::til::r#struct::ExtAttBasicTabformVal1::OCT => "OCT",
-            idb_rs::til::r#struct::ExtAttBasicTabformVal1::BIN => "BIN",
+            idb_rs::til::udt::ExtAttBasicTabformVal1::NODUPS => "NODUPS",
+            idb_rs::til::udt::ExtAttBasicTabformVal1::HEX => "HEX",
+            idb_rs::til::udt::ExtAttBasicTabformVal1::DEC => "DEC",
+            idb_rs::til::udt::ExtAttBasicTabformVal1::OCT => "OCT",
+            idb_rs::til::udt::ExtAttBasicTabformVal1::BIN => "BIN",
         };
         write!(fmt, " __tabform({val1},{})", tabform.val2)?;
     }
@@ -1454,27 +1443,20 @@ fn print_til_type_only(
     section: &TILSection,
     tinfo: &Type,
 ) -> Result<()> {
-    match &tinfo.type_variant {
-        TypeVariant::Typeref(Typeref {
-            typeref_value: TyperefValue::UnsolvedName(Some(name)),
-            ref_type: _,
-        }) => {
-            fmt.write_all(name.as_bytes())?;
-        }
-        TypeVariant::Typeref(Typeref {
-            typeref_value: TyperefValue::UnsolvedName(None),
-            ref_type: _,
-        }) => {}
-        TypeVariant::Typeref(Typeref {
-            typeref_value: TyperefValue::Ref(idx),
-            ref_type: _,
-        }) => {
-            //TypeVariant::Typeref(Typeref::Ordinal(ord)) => {
-            let ty = &section.types[*idx];
-            fmt.write_all(ty.name.as_bytes())?;
-        }
-        _ => {}
+    let TypeVariant::Typeref(typeref) = &tinfo.type_variant else {
+        return Ok(());
     };
+
+    if let Some(idx) = section.get_ref_value_idx(&typeref.typeref_value) {
+        let ty = &section.types[idx];
+        fmt.write_all(ty.name.as_bytes())?;
+    } else if let TypeVariant::Typeref(Typeref {
+        typeref_value: TyperefValue::Name(Some(name)),
+        ref_type: _,
+    }) = &tinfo.type_variant
+    {
+        fmt.write_all(name.as_bytes())?;
+    }
     Ok(())
 }
 
@@ -1573,12 +1555,11 @@ fn is_vft(section: &TILSection, typ: &Type) -> bool {
         // TODO struct with only function-pointers is also vftable?
         TypeVariant::Struct(ty) => ty.is_vft,
         TypeVariant::Typeref(typedef) => {
-            let inner_type = match &typedef.typeref_value {
-                TyperefValue::Ref(idx) => &section.types[*idx],
-                TyperefValue::UnsolvedOrd(_)
-                | TyperefValue::UnsolvedName(_) => return false,
+            let Some(idx) = section.get_ref_value_idx(&typedef.typeref_value)
+            else {
+                return false;
             };
-            is_vft(section, &inner_type.tinfo)
+            is_vft(section, &section.types[idx].tinfo)
         }
         _ => false,
     }
@@ -1649,7 +1630,7 @@ fn print_til_type_struct_layout(
     name: Option<&[u8]>,
     type_idx: usize,
     til_type: &Type,
-    til_struct: &Struct,
+    til_struct: &UDT,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     let unpadded_size = solver
@@ -1783,7 +1764,7 @@ fn print_til_type_union_layout(
     name: Option<&[u8]>,
     type_idx: usize,
     til_type: &Type,
-    til_union: &Union,
+    til_union: &UDT,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     let total_size = solver
@@ -1794,9 +1775,11 @@ fn print_til_type_union_layout(
         .unwrap_or(1);
     let offset = 0;
     for (i, member) in til_union.members.iter().enumerate() {
-        let member_size = solver.type_size_bytes(None, &member.ty).unwrap_or(0);
+        let member_size = solver
+            .type_size_bytes(None, &member.member_type)
+            .unwrap_or(0);
         let member_align = solver
-            .type_align_bytes(None, &member.ty, member_size)
+            .type_align_bytes(None, &member.member_type, member_size)
             .unwrap_or(1);
         write!(fmt, "// {i:>2}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 ")?;
         if let Some(name) = name {
@@ -1814,11 +1797,23 @@ fn print_til_type_union_layout(
                 write!(fmt, " ")?;
             }
             None => {
-                print_name_first_time(fmt, section, &member.ty.type_variant)?;
+                print_name_first_time(
+                    fmt,
+                    section,
+                    &member.member_type.type_variant,
+                )?;
             }
         }
         print_til_type(
-            fmt, tilib_args, 0, section, None, &member.ty, false, true, false,
+            fmt,
+            tilib_args,
+            0,
+            section,
+            None,
+            &member.member_type,
+            false,
+            true,
+            false,
         )?;
         writeln!(fmt, ";")?;
     }
@@ -1848,8 +1843,9 @@ fn print_name_first_time(
 ) -> Result<()> {
     match ty {
         TypeVariant::Typeref(typeref) => {
-            if let TyperefValue::Ref(idx) = &typeref.typeref_value {
-                let ty = section.get_type_by_idx(*idx);
+            if let Some(idx) = section.get_ref_value_idx(&typeref.typeref_value)
+            {
+                let ty = section.get_type_by_idx(idx);
                 if let TypeVariant::Struct(_)
                 | TypeVariant::Enum(_)
                 | TypeVariant::Union(_) = &ty.tinfo.type_variant

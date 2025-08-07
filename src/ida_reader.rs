@@ -542,36 +542,27 @@ pub trait IdbBufRead: IdbRead + BufRead {
         Ok(acc)
     }
 
-    fn read_tah(&mut self) -> Result<Option<TypeAttribute>> {
+    fn read_tah(&mut self) -> Result<Option<Option<TypeAttribute>>> {
         // TODO TAH in each type have a especial meaning, verify those
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477080
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452830
-        let Some(tah) = self.peek_u8()? else {
-            return Err(anyhow!(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "Unexpected EoF on DA"
-            )));
-        };
-        if tah == 0xFE {
-            Ok(Some(self.read_type_attribute()?))
-        } else {
-            Ok(None)
+        match self.peek_u8()? {
+            Some(0xFE) => Ok(Some(Some(self.read_type_attribute()?))),
+            Some(_) => Ok(Some(None)),
+            None => Ok(None),
         }
     }
 
-    fn read_sdacl(&mut self) -> Result<Option<TypeAttribute>> {
-        let Some(sdacl) = self.peek_u8()? else {
-            return Err(anyhow!(std::io::Error::new(
-                std::io::ErrorKind::UnexpectedEof,
-                "Unexpected EoF on SDACL"
-            )));
-        };
-
-        // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477eff
-        //NOTE: original op ((sdacl as u8 & 0xcf) ^ 0xC0) as i32 <= 0x01
-        matches!(sdacl, 0xC0..=0xC1 | 0xD0..=0xD1 | 0xE0..=0xE1 | 0xF0..=0xF1)
-            .then(|| self.read_type_attribute())
-            .transpose()
+    fn read_sdacl(&mut self) -> Result<Option<Option<TypeAttribute>>> {
+        match self.peek_u8()? {
+            // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x477eff
+            //NOTE: original op ((sdacl as u8 & 0xcf) ^ 0xC0) as i32 <= 0x01
+            Some(0xC0..=0xC1 | 0xD0..=0xD1 | 0xE0..=0xE1 | 0xF0..=0xF1) => {
+                Ok(Some(Some(self.read_type_attribute()?)))
+            }
+            Some(_) => Ok(Some(None)),
+            None => Ok(None),
+        }
     }
 }
 

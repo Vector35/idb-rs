@@ -1,6 +1,6 @@
 use std::num::NonZeroU8;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::Serialize;
 
 use crate::ida_reader::IdbBufRead;
@@ -40,26 +40,21 @@ impl Bitfield {
             super::flag::tf_complex::BTMT_BFLDI64 => 8,
             _ => unreachable!(),
         };
-        let dt = input.read_dt()?;
+        let dt = input.read_dt().context("Bitrange DT value")?;
         let width = dt >> 1;
         let unsigned = (dt & 1) > 0;
-        match input.read_tah()? {
-            None => {}
-            Some(TypeAttribute {
-                tattr: _tattr,
-                extended: _extended,
-            }) => {
-                #[cfg(feature = "restrictive")]
-                anyhow::ensure!(
-                    _tattr == 0,
-                    "Unknown TypeAttribute {_tattr:x}"
-                );
-                #[cfg(feature = "restrictive")]
-                anyhow::ensure!(
-                    _extended.is_none(),
-                    "Unknown TypeAttribute ext {_extended:x?}"
-                );
-            }
+        if let Some(Some(TypeAttribute {
+            tattr: _tattr,
+            extended: _extended,
+        })) = input.read_tah().context("Bitrange Type Attribute")?
+        {
+            #[cfg(feature = "restrictive")]
+            anyhow::ensure!(_tattr == 0, "Unknown TypeAttribute {_tattr:x}");
+            #[cfg(feature = "restrictive")]
+            anyhow::ensure!(
+                _extended.is_none(),
+                "Unknown TypeAttribute ext {_extended:x?}"
+            );
         }
         Ok(Self {
             unsigned,

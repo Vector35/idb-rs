@@ -1,5 +1,5 @@
 ---
-hash: 0D9CD9DC780EC656
+hash: 377C9232A6F7475D
 source: src/test.rs
 expression: entry_points
 ---
@@ -226,7 +226,7 @@ expression: entry_points
      is_volatile: false,
      type_variant: Typeref((
       ref_type: None,
-      typeref_value: UnsolvedName(Some("FILE")),
+      typeref_value: Name(Some("FILE")),
      )),
     ),
    )),

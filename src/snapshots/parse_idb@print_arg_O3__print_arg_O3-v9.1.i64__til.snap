@@ -1,5 +1,5 @@
 ---
-hash: E607E7082F154522
+hash: 189E5622FF87F018
 source: src/test.rs
 expression: til
 ---
@@ -35,7 +35,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(7),
+     typeref_value: Name(Some("enum_8")),
     )),
    ),
    sclass: None,
@@ -49,7 +49,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(7),
+     typeref_value: Name(Some("enum_8")),
     )),
    ),
    sclass: None,
@@ -63,7 +63,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(7),
+     typeref_value: Name(Some("enum_8")),
     )),
    ),
    sclass: None,
@@ -77,7 +77,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(7),
+     typeref_value: Name(Some("enum_8")),
     )),
    ),
    sclass: None,
@@ -91,7 +91,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Name(Some("enum_9")),
     )),
    ),
    sclass: None,
@@ -105,7 +105,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Name(Some("enum_9")),
     )),
    ),
    sclass: None,
@@ -119,7 +119,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Name(Some("enum_9")),
     )),
    ),
    sclass: None,
@@ -133,7 +133,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Name(Some("enum_9")),
     )),
    ),
    sclass: None,
@@ -147,7 +147,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Name(Some("enum_9")),
     )),
    ),
    sclass: None,
@@ -161,7 +161,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Name(Some("enum_9")),
     )),
    ),
    sclass: None,
@@ -175,7 +175,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Name(Some("enum_9")),
     )),
    ),
    sclass: None,
@@ -329,7 +329,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: true,
+     is_unknown_8: true,
      alignment: None,
     )),
    ),
@@ -412,7 +412,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -475,7 +475,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -603,7 +603,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: true,
+     is_unknown_8: true,
      alignment: None,
     )),
    ),
@@ -731,7 +731,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: true,
+     is_unknown_8: true,
      alignment: None,
     )),
    ),
@@ -803,7 +803,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: true,
-     is_uknown_8: true,
+     is_unknown_8: true,
      alignment: None,
     )),
    ),
@@ -818,22 +818,28 @@ Some((
     is_volatile: false,
     type_variant: Union((
      effective_alignment: None,
-     alignment: Some(16),
      members: [
       (
        name: Some("field_0"),
        comment: None,
-       ty: (
+       member_type: (
         comment: None,
         is_const: false,
         is_volatile: false,
         type_variant: Basic(Char),
        ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
       ),
       (
        name: Some("field_1"),
        comment: None,
-       ty: (
+       member_type: (
         comment: None,
         is_const: false,
         is_volatile: false,
@@ -842,11 +848,18 @@ Some((
          is_signed: None,
         )),
        ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
       ),
       (
        name: Some("field_2"),
        comment: None,
-       ty: (
+       member_type: (
         comment: None,
         is_const: false,
         is_volatile: false,
@@ -854,10 +867,23 @@ Some((
          is_signed: None,
         )),
        ),
+       att: None,
+       alignment: None,
+       is_baseclass: false,
+       is_unaligned: false,
+       is_vft: false,
+       is_method: false,
+       is_unknown_8: false,
       ),
      ],
+     extra_padding: None,
      is_unaligned: true,
+     is_msstruct: false,
+     is_cppobj: false,
+     is_vft: false,
+     is_fixed: false,
      is_unknown_8: true,
+     alignment: Some(16),
     )),
    ),
    sclass: None,
