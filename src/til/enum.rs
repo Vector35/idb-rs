@@ -1,7 +1,7 @@
 use std::num::NonZeroU8;
 
 use crate::ida_reader::IdbBufRead;
-use crate::til::{flag, TypeAttribute, TypeRaw, TypeVariantRaw};
+use crate::til::{flag, Type, TypeAttribute, TypeVariant, Typeref};
 use crate::IDBString;
 use anyhow::{anyhow, ensure, Result};
 use serde::Serialize;
@@ -22,102 +22,13 @@ pub struct Enum {
 }
 
 impl Enum {
-    pub(crate) fn new(
-        _til: &TILSectionHeader,
-        value: EnumRaw,
-        fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<CommentType>>,
-    ) -> Result<Self> {
-        let members = match value.members {
-            EnumMembersRaw::Regular(members) => EnumMembers::Regular(
-                members
-                    .into_iter()
-                    .map(|member| {
-                        Self::new_enum_member(member, fields, comments)
-                    })
-                    .collect(),
-            ),
-            EnumMembersRaw::BitMask(members) => EnumMembers::Groups(
-                members
-                    .into_iter()
-                    .map(|(mask, members)| {
-                        let field =
-                            Self::new_enum_member(mask, fields, comments);
-                        let sub_fields = members
-                            .into_iter()
-                            .map(|member| {
-                                Self::new_enum_member(member, fields, comments)
-                            })
-                            .collect();
-                        EnumGroup { field, sub_fields }
-                    })
-                    .collect(),
-            ),
-        };
-        Ok(Self {
-            is_signed: value.is_signed,
-            is_unsigned: value.is_unsigned,
-            is_64: value.is_64,
-            output_format: value.output_format,
-            members,
-            storage_size: value.storage_size,
-        })
-    }
-
-    pub(crate) fn new_enum_member(
-        value: u64,
-        fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<CommentType>>,
-    ) -> EnumMember {
-        EnumMember {
-            name: fields.next().flatten(),
-            comment: comments.next().flatten(),
-            value,
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub enum EnumMembers {
-    Regular(Vec<EnumMember>),
-    Groups(Vec<EnumGroup>),
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct EnumGroup {
-    pub field: EnumMember,
-    pub sub_fields: Vec<EnumMember>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct EnumMember {
-    pub name: Option<IDBString>,
-    pub comment: Option<CommentType>,
-    pub value: u64,
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct EnumRaw {
-    pub(crate) is_signed: bool,
-    pub(crate) is_unsigned: bool,
-    pub(crate) is_64: bool,
-    pub(crate) output_format: EnumFormat,
-    pub(crate) members: EnumMembersRaw,
-    pub(crate) storage_size: Option<NonZeroU8>,
-}
-
-#[derive(Clone, Debug)]
-pub(crate) enum EnumMembersRaw {
-    Regular(Vec<u64>),
-    BitMask(Vec<(u64, Vec<u64>)>),
-}
-
-impl EnumRaw {
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473a08
     pub(crate) fn read(
         input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
-    ) -> Result<TypeVariantRaw> {
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
+    ) -> Result<TypeVariant> {
         use flag::tattr_enum::*;
         use flag::tf_enum::*;
 
@@ -126,22 +37,22 @@ impl EnumRaw {
         let Some((member_num, _)) = input.read_dt_de()? else {
             // is ref
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
-            let ref_type = TypeRaw::read_ref(&mut *input, header)?;
+            let ref_type = Type::read_ref(&mut *input, header)?;
             // TODO ensure all bits from sdacl are parsed
             let _taenum_bits = input.read_sdacl()?;
-            let TypeVariantRaw::Typedef(ref_type) = ref_type.variant else {
+            let TypeVariant::Typeref(ref_type) = ref_type.type_variant else {
                 return Err(anyhow!("EnumRef Non Typedef"));
             };
-            return Ok(TypeVariantRaw::EnumRef(ref_type));
+            return Ok(TypeVariant::Typeref(Typeref::new_enum(ref_type)));
         };
 
         let mut is_64 = false;
         let mut is_signed = false;
         let mut is_unsigned = false;
-        if let Some(TypeAttribute {
+        if let Some(Some(TypeAttribute {
             tattr,
             extended: _extended,
-        }) = input.read_tah()?
+        })) = input.read_tah()?
         {
             // TODO enum have an align field (MAX_DECL_ALIGN) in tattr?
             is_64 = tattr & TAENUM_64BIT != 0;
@@ -221,16 +132,16 @@ impl EnumRaw {
         };
 
         let members = if bte & BTE_BITFIELD != 0 {
-            EnumMembersRaw::BitMask(Self::read_members_bitmask(
-                input, member_num, mask, is_64,
+            EnumMembers::Groups(Self::read_members_bitmask(
+                input, member_num, mask, is_64, fields, comments,
             )?)
         } else {
-            EnumMembersRaw::Regular(Self::read_member_regular(
-                input, member_num, mask, is_64,
+            EnumMembers::Regular(Self::read_member_regular(
+                input, member_num, mask, is_64, fields, comments,
             )?)
         };
 
-        Ok(TypeVariantRaw::Enum(EnumRaw {
+        Ok(TypeVariant::Enum(Self {
             is_signed,
             is_unsigned,
             is_64,
@@ -245,7 +156,9 @@ impl EnumRaw {
         member_num: u32,
         mask: u64,
         is_64: bool,
-    ) -> Result<Vec<u64>> {
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
+    ) -> Result<Vec<EnumMember>> {
         let mut low_acc: u32 = 0;
         let mut high_acc: u32 = 0;
         (0..member_num)
@@ -258,7 +171,9 @@ impl EnumRaw {
                 }
 
                 // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452472 deserialize_enum
-                Ok((((high_acc as u64) << 32) | low_acc as u64) & mask)
+                let member_value =
+                    (((high_acc as u64) << 32) | low_acc as u64) & mask;
+                Ok(Self::new_enum_member(member_value, fields, comments))
             })
             .collect()
     }
@@ -268,7 +183,9 @@ impl EnumRaw {
         member_num: u32,
         mask: u64,
         is_64: bool,
-    ) -> Result<Vec<(u64, Vec<u64>)>> {
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
+    ) -> Result<Vec<EnumGroup>> {
         (0..member_num)
             .map(|_i| {
                 // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452527 deserialize_enum
@@ -279,9 +196,10 @@ impl EnumRaw {
                 let mask_high = if is_64 { input.read_de()? } else { 0 };
                 let mask =
                     (((mask_high as u64) << 32) | mask_low as u64) & mask;
+                let field = Self::new_enum_member(mask, fields, comments);
                 let mut acc_low: u32 = 0;
                 let mut acc_high: u32 = 0;
-                let sub_members = (0..group_num - 1)
+                let sub_fields = (0..group_num - 1)
                     .map(|_i| {
                         // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x45242f deserialize_enum
                         // NOTE this is originaly i32, but wrapping_add a u32/i32 have the same result
@@ -291,13 +209,50 @@ impl EnumRaw {
                         }
 
                         // Allowed at InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x452472 deserialize_enum
-                        Ok((((acc_high as u64) << 32) | acc_low as u64) & mask)
+                        let member_value =
+                            (((acc_high as u64) << 32) | acc_low as u64) & mask;
+                        Ok(Self::new_enum_member(
+                            member_value,
+                            fields,
+                            comments,
+                        ))
                     })
                     .collect::<Result<_>>()?;
-                Ok((mask, sub_members))
+                Ok(EnumGroup { field, sub_fields })
             })
             .collect()
     }
+
+    pub(crate) fn new_enum_member(
+        value: u64,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
+    ) -> EnumMember {
+        EnumMember {
+            name: fields.next().flatten(),
+            comment: comments.next().flatten(),
+            value,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub enum EnumMembers {
+    Regular(Vec<EnumMember>),
+    Groups(Vec<EnumGroup>),
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct EnumGroup {
+    pub field: EnumMember,
+    pub sub_fields: Vec<EnumMember>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct EnumMember {
+    pub name: Option<IDBString>,
+    pub comment: Option<CommentType>,
+    pub value: u64,
 }
 
 #[derive(Clone, Copy, Debug, Serialize)]

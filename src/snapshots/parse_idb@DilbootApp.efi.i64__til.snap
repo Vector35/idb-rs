@@ -1,5 +1,5 @@
 ---
-hash: 980F046AAA3FB72C
+hash: E4A50E47E101C447
 source: src/test.rs
 expression: til
 ---
@@ -35,7 +35,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(59),
+     typeref_value: Name(Some("$D0B5F529F135535C2F72FA899444D28F")),
     )),
    ),
    sclass: None,
@@ -49,7 +49,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(59),
+     typeref_value: Name(Some("$D0B5F529F135535C2F72FA899444D28F")),
     )),
    ),
    sclass: None,
@@ -63,7 +63,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(59),
+     typeref_value: Name(Some("$D0B5F529F135535C2F72FA899444D28F")),
     )),
    ),
    sclass: None,
@@ -77,7 +77,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(59),
+     typeref_value: Name(Some("$D0B5F529F135535C2F72FA899444D28F")),
     )),
    ),
    sclass: None,
@@ -91,7 +91,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(71),
+     typeref_value: Name(Some("$A4A7036DB846195D87A951F0573D391A")),
     )),
    ),
    sclass: None,
@@ -105,7 +105,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(71),
+     typeref_value: Name(Some("$A4A7036DB846195D87A951F0573D391A")),
     )),
    ),
    sclass: None,
@@ -119,7 +119,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(71),
+     typeref_value: Name(Some("$A4A7036DB846195D87A951F0573D391A")),
     )),
    ),
    sclass: None,
@@ -133,7 +133,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(71),
+     typeref_value: Name(Some("$A4A7036DB846195D87A951F0573D391A")),
     )),
    ),
    sclass: None,
@@ -147,7 +147,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -161,7 +161,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -175,7 +175,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -189,7 +189,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -203,7 +203,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -217,7 +217,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -231,7 +231,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -245,7 +245,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -259,7 +259,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -273,7 +273,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -287,7 +287,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -301,7 +301,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -315,7 +315,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -329,7 +329,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -343,7 +343,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -357,7 +357,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(73),
+     typeref_value: Name(Some("$3E9500C5A8AA10B6E24D346688989D6A")),
     )),
    ),
    sclass: None,
@@ -371,7 +371,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(83),
+     typeref_value: Name(Some("$6EA627E77A15F8AB1B742C5151465F4C")),
     )),
    ),
    sclass: None,
@@ -385,7 +385,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(83),
+     typeref_value: Name(Some("$6EA627E77A15F8AB1B742C5151465F4C")),
     )),
    ),
    sclass: None,
@@ -399,7 +399,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(83),
+     typeref_value: Name(Some("$6EA627E77A15F8AB1B742C5151465F4C")),
     )),
    ),
    sclass: None,
@@ -413,7 +413,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(90),
+     typeref_value: Name(Some("$22AC71E436D42DF8AFFA867BCD8ABD68")),
     )),
    ),
    sclass: None,
@@ -427,7 +427,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(97),
+     typeref_value: Name(Some("$C6B9B55EC0CF2CC10BC8BD6EC3D85252")),
     )),
    ),
    sclass: None,
@@ -441,7 +441,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(97),
+     typeref_value: Name(Some("$C6B9B55EC0CF2CC10BC8BD6EC3D85252")),
     )),
    ),
    sclass: None,
@@ -455,7 +455,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(97),
+     typeref_value: Name(Some("$C6B9B55EC0CF2CC10BC8BD6EC3D85252")),
     )),
    ),
    sclass: None,
@@ -469,7 +469,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(134),
+     typeref_value: Name(Some("$B274290133773A9B078A468AA22878DB")),
     )),
    ),
    sclass: None,
@@ -483,7 +483,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(134),
+     typeref_value: Name(Some("$B274290133773A9B078A468AA22878DB")),
     )),
    ),
    sclass: None,
@@ -497,7 +497,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(134),
+     typeref_value: Name(Some("$B274290133773A9B078A468AA22878DB")),
     )),
    ),
    sclass: None,
@@ -511,7 +511,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(134),
+     typeref_value: Name(Some("$B274290133773A9B078A468AA22878DB")),
     )),
    ),
    sclass: None,
@@ -525,7 +525,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -539,7 +539,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -553,7 +553,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -567,7 +567,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -581,7 +581,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -595,7 +595,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -609,7 +609,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -623,7 +623,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -637,7 +637,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -651,7 +651,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -665,7 +665,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -679,7 +679,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -693,7 +693,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(188),
+     typeref_value: Name(Some("$51C1AFD47B5AB406FF3AB4AD771221D8")),
     )),
    ),
    sclass: None,
@@ -707,7 +707,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(209),
+     typeref_value: Name(Some("$0033834A84128E2393CD9DDEED42A2D5")),
     )),
    ),
    sclass: None,
@@ -721,7 +721,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(209),
+     typeref_value: Name(Some("$0033834A84128E2393CD9DDEED42A2D5")),
     )),
    ),
    sclass: None,
@@ -735,7 +735,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(209),
+     typeref_value: Name(Some("$0033834A84128E2393CD9DDEED42A2D5")),
     )),
    ),
    sclass: None,
@@ -749,7 +749,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(209),
+     typeref_value: Name(Some("$0033834A84128E2393CD9DDEED42A2D5")),
     )),
    ),
    sclass: None,
@@ -763,7 +763,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(209),
+     typeref_value: Name(Some("$0033834A84128E2393CD9DDEED42A2D5")),
     )),
    ),
    sclass: None,
@@ -876,7 +876,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -891,7 +891,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(0),
+     typeref_value: Ordinal(1),
     )),
    ),
    sclass: None,
@@ -905,7 +905,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(1),
+     typeref_value: Ordinal(2),
     )),
    ),
    sclass: None,
@@ -940,7 +940,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(130),
+     typeref_value: Ordinal(6),
     )),
    ),
    sclass: None,
@@ -954,7 +954,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(9),
+     typeref_value: Ordinal(8),
     )),
    ),
    sclass: None,
@@ -1020,7 +1020,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(7),
+         typeref_value: Ordinal(9),
         )),
        ),
        att: None,
@@ -1040,7 +1040,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -1060,7 +1060,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -1080,7 +1080,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -1100,7 +1100,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -1118,7 +1118,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -1133,7 +1133,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(22),
+     typeref_value: Ordinal(13),
     )),
    ),
    sclass: None,
@@ -1147,7 +1147,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(35),
+     typeref_value: Ordinal(25),
     )),
    ),
    sclass: None,
@@ -1175,7 +1175,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(14),
+     typeref_value: Ordinal(17),
     )),
    ),
    sclass: None,
@@ -1189,7 +1189,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(15),
+     typeref_value: Ordinal(18),
     )),
    ),
    sclass: None,
@@ -1203,7 +1203,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(7),
+     typeref_value: Ordinal(9),
     )),
    ),
    sclass: None,
@@ -1231,7 +1231,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -1252,7 +1252,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(10),
+             typeref_value: Ordinal(12),
             )),
            ),
           )),
@@ -1269,7 +1269,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(12),
+           typeref_value: Ordinal(15),
           )),
          ),
          loc: None,
@@ -1301,7 +1301,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(19),
+     typeref_value: Ordinal(21),
     )),
    ),
    sclass: None,
@@ -1339,7 +1339,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(18),
+         typeref_value: Ordinal(22),
         )),
        ),
        att: None,
@@ -1359,7 +1359,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(6),
+         typeref_value: Ordinal(11),
         )),
        ),
        att: None,
@@ -1377,7 +1377,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -1406,7 +1406,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -1427,7 +1427,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(10),
+             typeref_value: Ordinal(12),
             )),
            ),
           )),
@@ -1452,7 +1452,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(17),
+             typeref_value: Ordinal(20),
             )),
            ),
           )),
@@ -1517,7 +1517,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(16),
+         typeref_value: Ordinal(14),
         )),
        ),
        att: None,
@@ -1537,7 +1537,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(20),
+         typeref_value: Ordinal(19),
         )),
        ),
        att: None,
@@ -1557,7 +1557,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(21),
+         typeref_value: Ordinal(23),
         )),
        ),
        att: None,
@@ -1575,7 +1575,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -1604,7 +1604,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -1625,7 +1625,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(11),
+             typeref_value: Ordinal(24),
             )),
            ),
           )),
@@ -1642,7 +1642,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(12),
+           typeref_value: Ordinal(15),
           )),
          ),
          loc: None,
@@ -1688,7 +1688,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -1709,7 +1709,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(11),
+             typeref_value: Ordinal(24),
             )),
            ),
           )),
@@ -1734,7 +1734,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(6),
+             typeref_value: Ordinal(11),
             )),
            ),
           )),
@@ -1782,7 +1782,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -1803,7 +1803,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(11),
+             typeref_value: Ordinal(24),
             )),
            ),
           )),
@@ -1828,7 +1828,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(6),
+             typeref_value: Ordinal(11),
             )),
            ),
           )),
@@ -1876,7 +1876,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -1897,7 +1897,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(11),
+             typeref_value: Ordinal(24),
             )),
            ),
           )),
@@ -1914,7 +1914,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -1937,7 +1937,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -1962,7 +1962,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -2010,7 +2010,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -2031,7 +2031,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(11),
+             typeref_value: Ordinal(24),
             )),
            ),
           )),
@@ -2048,7 +2048,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -2094,7 +2094,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -2115,7 +2115,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(11),
+             typeref_value: Ordinal(24),
             )),
            ),
           )),
@@ -2132,7 +2132,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -2178,7 +2178,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -2199,7 +2199,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(11),
+             typeref_value: Ordinal(24),
             )),
            ),
           )),
@@ -2247,7 +2247,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -2268,7 +2268,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(11),
+             typeref_value: Ordinal(24),
             )),
            ),
           )),
@@ -2285,7 +2285,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -2300,7 +2300,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -2346,7 +2346,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -2367,7 +2367,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(11),
+             typeref_value: Ordinal(24),
             )),
            ),
           )),
@@ -2384,7 +2384,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(12),
+           typeref_value: Ordinal(15),
           )),
          ),
          loc: None,
@@ -2416,7 +2416,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(34),
+     typeref_value: Ordinal(36),
     )),
    ),
    sclass: None,
@@ -2454,7 +2454,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(33),
+         typeref_value: Ordinal(37),
         )),
        ),
        att: None,
@@ -2474,7 +2474,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(33),
+         typeref_value: Ordinal(37),
         )),
        ),
        att: None,
@@ -2494,7 +2494,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(33),
+         typeref_value: Ordinal(37),
         )),
        ),
        att: None,
@@ -2514,7 +2514,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(33),
+         typeref_value: Ordinal(37),
         )),
        ),
        att: None,
@@ -2534,7 +2534,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(33),
+         typeref_value: Ordinal(37),
         )),
        ),
        att: None,
@@ -2554,7 +2554,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(12),
+         typeref_value: Ordinal(15),
         )),
        ),
        att: None,
@@ -2572,7 +2572,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -2597,7 +2597,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(23),
+         typeref_value: Ordinal(26),
         )),
        ),
        att: None,
@@ -2617,7 +2617,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(24),
+         typeref_value: Ordinal(27),
         )),
        ),
        att: None,
@@ -2637,7 +2637,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(25),
+         typeref_value: Ordinal(28),
         )),
        ),
        att: None,
@@ -2657,7 +2657,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(26),
+         typeref_value: Ordinal(29),
         )),
        ),
        att: None,
@@ -2677,7 +2677,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(27),
+         typeref_value: Ordinal(30),
         )),
        ),
        att: None,
@@ -2697,7 +2697,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(28),
+         typeref_value: Ordinal(31),
         )),
        ),
        att: None,
@@ -2717,7 +2717,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(29),
+         typeref_value: Ordinal(32),
         )),
        ),
        att: None,
@@ -2737,7 +2737,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(30),
+         typeref_value: Ordinal(33),
         )),
        ),
        att: None,
@@ -2757,7 +2757,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(31),
+         typeref_value: Ordinal(34),
         )),
        ),
        att: None,
@@ -2785,7 +2785,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(32),
+           typeref_value: Ordinal(35),
           )),
          ),
         )),
@@ -2805,7 +2805,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -2820,7 +2820,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(67),
+     typeref_value: Ordinal(39),
     )),
    ),
    sclass: None,
@@ -2834,7 +2834,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(129),
+     typeref_value: Ordinal(69),
     )),
    ),
    sclass: None,
@@ -2848,7 +2848,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(41),
+     typeref_value: Ordinal(42),
     )),
    ),
    sclass: None,
@@ -2900,7 +2900,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(18),
+         typeref_value: Ordinal(22),
         )),
        ),
        att: None,
@@ -2920,7 +2920,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        att: None,
@@ -2940,7 +2940,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        att: None,
@@ -2960,7 +2960,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        att: None,
@@ -2980,7 +2980,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        att: None,
@@ -3000,7 +3000,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        att: None,
@@ -3020,7 +3020,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        att: None,
@@ -3040,7 +3040,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -3060,7 +3060,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(40),
+         typeref_value: Ordinal(44),
         )),
        ),
        att: None,
@@ -3080,7 +3080,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        att: None,
@@ -3100,7 +3100,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        att: None,
@@ -3118,7 +3118,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -3143,7 +3143,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -3163,7 +3163,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -3183,7 +3183,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(12),
+         typeref_value: Ordinal(15),
         )),
        ),
        att: None,
@@ -3201,7 +3201,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -3216,7 +3216,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(42),
+     typeref_value: Ordinal(46),
     )),
    ),
    sclass: None,
@@ -3244,7 +3244,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -3265,7 +3265,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(38),
+             typeref_value: Ordinal(41),
             )),
            ),
           )),
@@ -3290,7 +3290,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(43),
+             typeref_value: Ordinal(45),
             )),
            ),
           )),
@@ -3338,7 +3338,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -3359,7 +3359,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(38),
+             typeref_value: Ordinal(41),
             )),
            ),
           )),
@@ -3407,7 +3407,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -3428,7 +3428,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(12),
+             typeref_value: Ordinal(15),
             )),
            ),
           )),
@@ -3453,7 +3453,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(12),
+             typeref_value: Ordinal(15),
             )),
            ),
           )),
@@ -3478,7 +3478,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(38),
+             typeref_value: Ordinal(41),
             )),
            ),
           )),
@@ -3526,7 +3526,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -3539,7 +3539,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(12),
+           typeref_value: Ordinal(15),
           )),
          ),
          loc: None,
@@ -3562,7 +3562,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(38),
+             typeref_value: Ordinal(41),
             )),
            ),
           )),
@@ -3596,7 +3596,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(51),
+     typeref_value: Ordinal(52),
     )),
    ),
    sclass: None,
@@ -3610,7 +3610,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(7),
+     typeref_value: Ordinal(9),
     )),
    ),
    sclass: None,
@@ -3624,7 +3624,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(7),
+     typeref_value: Ordinal(9),
     )),
    ),
    sclass: None,
@@ -3648,7 +3648,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -3668,7 +3668,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(49),
+         typeref_value: Ordinal(53),
         )),
        ),
        att: None,
@@ -3688,7 +3688,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(50),
+         typeref_value: Ordinal(54),
         )),
        ),
        att: None,
@@ -3708,7 +3708,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(7),
+         typeref_value: Ordinal(9),
         )),
        ),
        att: None,
@@ -3728,7 +3728,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(7),
+         typeref_value: Ordinal(9),
         )),
        ),
        att: None,
@@ -3746,7 +3746,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -3775,7 +3775,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -3788,7 +3788,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -3803,7 +3803,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -3818,7 +3818,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(8),
+           typeref_value: Ordinal(10),
           )),
          ),
          loc: None,
@@ -3841,7 +3841,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(48),
+             typeref_value: Ordinal(51),
             )),
            ),
           )),
@@ -3889,7 +3889,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -3902,7 +3902,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -3980,7 +3980,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -4001,7 +4001,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(6),
+             typeref_value: Ordinal(11),
             )),
            ),
           )),
@@ -4026,7 +4026,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -4051,7 +4051,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(8),
+             typeref_value: Ordinal(10),
             )),
            ),
           )),
@@ -4076,7 +4076,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -4146,7 +4146,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -4167,7 +4167,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -4192,7 +4192,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(6),
+             typeref_value: Ordinal(11),
             )),
            ),
           )),
@@ -4217,7 +4217,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -4265,7 +4265,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -4286,7 +4286,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(6),
+             typeref_value: Ordinal(11),
             )),
            ),
           )),
@@ -4311,7 +4311,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -4328,7 +4328,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(8),
+           typeref_value: Ordinal(10),
           )),
          ),
          loc: None,
@@ -4343,7 +4343,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -4411,7 +4411,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -4432,7 +4432,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(8),
+             typeref_value: Ordinal(10),
             )),
            ),
           )),
@@ -4466,7 +4466,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(116),
+     typeref_value: Ordinal(130),
     )),
    ),
    sclass: None,
@@ -4519,7 +4519,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Enum),
-     typeref_value: Ref(59),
+     typeref_value: Ordinal(62),
     )),
    ),
    sclass: None,
@@ -4557,7 +4557,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(60),
+           typeref_value: Ordinal(61),
           )),
          ),
          loc: None,
@@ -4572,7 +4572,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(13),
+           typeref_value: Ordinal(16),
           )),
          ),
          loc: None,
@@ -4587,7 +4587,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -4651,7 +4651,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(2),
+         typeref_value: Ordinal(3),
         )),
        ),
        att: None,
@@ -4671,7 +4671,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -4691,7 +4691,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -4711,7 +4711,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -4729,7 +4729,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -4744,7 +4744,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(62),
+     typeref_value: Ordinal(65),
     )),
    ),
    sclass: None,
@@ -4772,7 +4772,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -4801,7 +4801,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(63),
+               typeref_value: Ordinal(64),
               )),
              ),
             )),
@@ -4820,7 +4820,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -4835,7 +4835,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(49),
+           typeref_value: Ordinal(53),
           )),
          ),
          loc: None,
@@ -4881,7 +4881,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -4910,7 +4910,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(63),
+               typeref_value: Ordinal(64),
               )),
              ),
             )),
@@ -4929,7 +4929,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -4952,7 +4952,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(7),
+             typeref_value: Ordinal(9),
             )),
            ),
           )),
@@ -4977,7 +4977,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(60),
+             typeref_value: Ordinal(61),
             )),
            ),
           )),
@@ -5025,7 +5025,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -5038,7 +5038,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(8),
+           typeref_value: Ordinal(10),
           )),
          ),
          loc: None,
@@ -5061,7 +5061,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(7),
+             typeref_value: Ordinal(9),
             )),
            ),
           )),
@@ -5086,7 +5086,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(7),
+             typeref_value: Ordinal(9),
             )),
            ),
           )),
@@ -5111,7 +5111,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(7),
+             typeref_value: Ordinal(9),
             )),
            ),
           )),
@@ -5155,7 +5155,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(5),
+         typeref_value: Ordinal(7),
         )),
        ),
        att: None,
@@ -5175,7 +5175,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(44),
+         typeref_value: Ordinal(40),
         )),
        ),
        att: None,
@@ -5195,7 +5195,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(45),
+         typeref_value: Ordinal(47),
         )),
        ),
        att: None,
@@ -5215,7 +5215,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(46),
+         typeref_value: Ordinal(48),
         )),
        ),
        att: None,
@@ -5235,7 +5235,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(47),
+         typeref_value: Ordinal(49),
         )),
        ),
        att: None,
@@ -5255,7 +5255,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(52),
+         typeref_value: Ordinal(50),
         )),
        ),
        att: None,
@@ -5275,7 +5275,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(53),
+         typeref_value: Ordinal(55),
         )),
        ),
        att: None,
@@ -5295,7 +5295,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(54),
+         typeref_value: Ordinal(56),
         )),
        ),
        att: None,
@@ -5315,7 +5315,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(55),
+         typeref_value: Ordinal(57),
         )),
        ),
        att: None,
@@ -5335,7 +5335,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(56),
+         typeref_value: Ordinal(58),
         )),
        ),
        att: None,
@@ -5355,7 +5355,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(57),
+         typeref_value: Ordinal(59),
         )),
        ),
        att: None,
@@ -5375,7 +5375,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(61),
+         typeref_value: Ordinal(60),
         )),
        ),
        att: None,
@@ -5395,7 +5395,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(64),
+         typeref_value: Ordinal(63),
         )),
        ),
        att: None,
@@ -5415,7 +5415,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(65),
+         typeref_value: Ordinal(66),
         )),
        ),
        att: None,
@@ -5435,7 +5435,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(66),
+         typeref_value: Ordinal(67),
         )),
        ),
        att: None,
@@ -5453,7 +5453,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -5468,7 +5468,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(15),
+     typeref_value: Ordinal(18),
     )),
    ),
    sclass: None,
@@ -5496,7 +5496,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(68),
+         typeref_value: Ordinal(71),
         )),
        ),
        args: [
@@ -5509,7 +5509,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(68),
+           typeref_value: Ordinal(71),
           )),
          ),
          loc: None,
@@ -5565,7 +5565,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(68),
+           typeref_value: Ordinal(71),
           )),
          ),
          loc: None,
@@ -5636,7 +5636,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Enum),
-     typeref_value: Ref(71),
+     typeref_value: Ordinal(75),
     )),
    ),
    sclass: None,
@@ -5749,7 +5749,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Enum),
-     typeref_value: Ref(73),
+     typeref_value: Ordinal(77),
     )),
    ),
    sclass: None,
@@ -5777,7 +5777,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -5790,7 +5790,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(72),
+           typeref_value: Ordinal(74),
           )),
          ),
          loc: None,
@@ -5805,7 +5805,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(74),
+           typeref_value: Ordinal(76),
           )),
          ),
          loc: None,
@@ -5820,7 +5820,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -5843,7 +5843,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(49),
+             typeref_value: Ordinal(53),
             )),
            ),
           )),
@@ -5891,7 +5891,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -5904,7 +5904,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(49),
+           typeref_value: Ordinal(53),
           )),
          ),
          loc: None,
@@ -5919,7 +5919,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -5965,7 +5965,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -5986,7 +5986,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -6011,7 +6011,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(48),
+             typeref_value: Ordinal(51),
             )),
            ),
           )),
@@ -6036,7 +6036,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -6061,7 +6061,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -6086,7 +6086,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(8),
+             typeref_value: Ordinal(10),
             )),
            ),
           )),
@@ -6134,7 +6134,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -6147,7 +6147,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(74),
+           typeref_value: Ordinal(76),
           )),
          ),
          loc: None,
@@ -6162,7 +6162,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -6240,7 +6240,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -6316,7 +6316,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(21),
+           typeref_value: Ordinal(23),
           )),
          ),
          loc: None,
@@ -6384,7 +6384,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -6397,7 +6397,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(8),
+           typeref_value: Ordinal(10),
           )),
          ),
          loc: None,
@@ -6412,7 +6412,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(68),
+           typeref_value: Ordinal(71),
           )),
          ),
          loc: None,
@@ -6427,7 +6427,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(80),
+           typeref_value: Ordinal(83),
           )),
          ),
          loc: None,
@@ -6472,7 +6472,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(21),
+             typeref_value: Ordinal(23),
             )),
            ),
           )),
@@ -6506,7 +6506,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(147),
+     typeref_value: Ordinal(131),
     )),
    ),
    sclass: None,
@@ -6554,7 +6554,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Enum),
-     typeref_value: Ref(83),
+     typeref_value: Ordinal(86),
     )),
    ),
    sclass: None,
@@ -6582,7 +6582,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -6595,7 +6595,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(21),
+           typeref_value: Ordinal(23),
           )),
          ),
          loc: None,
@@ -6610,7 +6610,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(84),
+           typeref_value: Ordinal(85),
           )),
          ),
          loc: None,
@@ -6625,7 +6625,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -6671,7 +6671,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -6684,7 +6684,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -6707,7 +6707,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(21),
+             typeref_value: Ordinal(23),
             )),
            ),
           )),
@@ -6732,7 +6732,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -6780,7 +6780,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -6793,7 +6793,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(21),
+           typeref_value: Ordinal(23),
           )),
          ),
          loc: None,
@@ -6839,7 +6839,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -6852,7 +6852,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(21),
+           typeref_value: Ordinal(23),
           )),
          ),
          loc: None,
@@ -6898,7 +6898,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -6911,7 +6911,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(21),
+           typeref_value: Ordinal(23),
           )),
          ),
          loc: None,
@@ -6967,7 +6967,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Enum),
-     typeref_value: Ref(90),
+     typeref_value: Ordinal(93),
     )),
    ),
    sclass: None,
@@ -6995,7 +6995,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -7016,7 +7016,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(3),
+             typeref_value: Ordinal(4),
             )),
            ),
           )),
@@ -7041,7 +7041,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -7058,7 +7058,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(91),
+           typeref_value: Ordinal(92),
           )),
          ),
          loc: None,
@@ -7126,7 +7126,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -7139,7 +7139,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -7162,7 +7162,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -7254,7 +7254,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -7267,7 +7267,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -7290,7 +7290,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -7360,7 +7360,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -7373,7 +7373,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -7396,7 +7396,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -7476,7 +7476,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -7497,7 +7497,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -7514,7 +7514,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(21),
+           typeref_value: Ordinal(23),
           )),
          ),
          loc: None,
@@ -7612,7 +7612,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Enum),
-     typeref_value: Ref(97),
+     typeref_value: Ordinal(100),
     )),
    ),
    sclass: None,
@@ -7640,7 +7640,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -7653,7 +7653,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(98),
+           typeref_value: Ordinal(99),
           )),
          ),
          loc: None,
@@ -7676,7 +7676,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -7723,7 +7723,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -7748,7 +7748,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(3),
+             typeref_value: Ordinal(4),
             )),
            ),
           )),
@@ -7792,7 +7792,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        att: None,
@@ -7812,7 +7812,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        att: None,
@@ -7840,7 +7840,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(39),
+           typeref_value: Ordinal(43),
           )),
          ),
         )),
@@ -7860,7 +7860,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -7875,7 +7875,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(100),
+     typeref_value: Ordinal(103),
     )),
    ),
    sclass: None,
@@ -7903,7 +7903,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -7924,7 +7924,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -7957,7 +7957,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(101),
+               typeref_value: Ordinal(102),
               )),
              ),
             )),
@@ -7984,7 +7984,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(3),
+             typeref_value: Ordinal(4),
             )),
            ),
           )),
@@ -8032,7 +8032,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -8053,7 +8053,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -8123,7 +8123,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -8136,7 +8136,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(12),
+           typeref_value: Ordinal(15),
           )),
          ),
          loc: None,
@@ -8151,7 +8151,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -8174,7 +8174,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(101),
+             typeref_value: Ordinal(102),
             )),
            ),
           )),
@@ -8213,7 +8213,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -8236,7 +8236,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(3),
+             typeref_value: Ordinal(4),
             )),
            ),
           )),
@@ -8284,7 +8284,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -8297,7 +8297,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -8320,7 +8320,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -8353,7 +8353,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(6),
+               typeref_value: Ordinal(11),
               )),
              ),
             )),
@@ -8403,7 +8403,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -8416,7 +8416,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -8431,7 +8431,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(13),
+           typeref_value: Ordinal(16),
           )),
          ),
          loc: None,
@@ -8446,7 +8446,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -8469,7 +8469,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(6),
+             typeref_value: Ordinal(11),
             )),
            ),
           )),
@@ -8517,7 +8517,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -8530,7 +8530,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -8576,7 +8576,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -8589,7 +8589,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -8604,7 +8604,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -8650,7 +8650,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -8671,7 +8671,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(7),
+             typeref_value: Ordinal(9),
             )),
            ),
           )),
@@ -8719,7 +8719,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -8732,7 +8732,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -8778,7 +8778,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -8791,7 +8791,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -8806,7 +8806,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -8821,7 +8821,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -8844,7 +8844,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(6),
+             typeref_value: Ordinal(11),
             )),
            ),
           )),
@@ -8892,7 +8892,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -8905,7 +8905,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -8928,7 +8928,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(3),
+             typeref_value: Ordinal(4),
             )),
            ),
           )),
@@ -8953,7 +8953,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(101),
+             typeref_value: Ordinal(102),
             )),
            ),
           )),
@@ -8970,7 +8970,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(12),
+           typeref_value: Ordinal(15),
           )),
          ),
          loc: None,
@@ -9016,7 +9016,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -9029,7 +9029,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -9044,7 +9044,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -9059,7 +9059,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -9105,7 +9105,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -9118,7 +9118,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -9141,7 +9141,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -9190,7 +9190,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -9205,7 +9205,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -9220,7 +9220,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(8),
+           typeref_value: Ordinal(10),
           )),
          ),
          loc: None,
@@ -9266,7 +9266,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -9279,7 +9279,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -9302,7 +9302,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -9319,7 +9319,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -9334,7 +9334,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -9376,7 +9376,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(2),
+         typeref_value: Ordinal(3),
         )),
        ),
        att: None,
@@ -9421,7 +9421,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -9446,7 +9446,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(3),
+         typeref_value: Ordinal(4),
         )),
        ),
        att: None,
@@ -9466,7 +9466,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(3),
+         typeref_value: Ordinal(4),
         )),
        ),
        att: None,
@@ -9486,7 +9486,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -9506,7 +9506,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -9524,7 +9524,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -9539,7 +9539,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(117),
+     typeref_value: Ordinal(119),
     )),
    ),
    sclass: None,
@@ -9567,7 +9567,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -9580,7 +9580,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -9603,7 +9603,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -9636,7 +9636,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(118),
+               typeref_value: Ordinal(118),
               )),
              ),
             )),
@@ -9663,7 +9663,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -9711,7 +9711,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -9724,7 +9724,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -9763,7 +9763,7 @@ Some((
                 is_volatile: false,
                 type_variant: Typeref((
                  ref_type: None,
-                 typeref_value: Ref(2),
+                 typeref_value: Ordinal(3),
                 )),
                ),
               )),
@@ -9792,7 +9792,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -9840,7 +9840,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -9853,7 +9853,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(98),
+           typeref_value: Ordinal(99),
           )),
          ),
          loc: None,
@@ -9876,7 +9876,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -9923,7 +9923,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -9956,7 +9956,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(3),
+               typeref_value: Ordinal(4),
               )),
              ),
             )),
@@ -10006,7 +10006,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -10027,7 +10027,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -10129,7 +10129,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -10150,7 +10150,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(3),
+             typeref_value: Ordinal(4),
             )),
            ),
           )),
@@ -10198,7 +10198,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -10211,7 +10211,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -10257,7 +10257,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -10292,7 +10292,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -10315,7 +10315,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(8),
+             typeref_value: Ordinal(10),
             )),
            ),
           )),
@@ -10417,7 +10417,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -10495,7 +10495,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -10510,7 +10510,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(39),
+           typeref_value: Ordinal(43),
           )),
          ),
          loc: None,
@@ -10556,7 +10556,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -10569,7 +10569,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(8),
+           typeref_value: Ordinal(10),
           )),
          ),
          loc: None,
@@ -10584,7 +10584,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(68),
+           typeref_value: Ordinal(71),
           )),
          ),
          loc: None,
@@ -10599,7 +10599,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(80),
+           typeref_value: Ordinal(83),
           )),
          ),
          loc: None,
@@ -10644,7 +10644,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -10669,7 +10669,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(21),
+             typeref_value: Ordinal(23),
             )),
            ),
           )),
@@ -10713,7 +10713,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(5),
+         typeref_value: Ordinal(7),
         )),
        ),
        att: None,
@@ -10733,7 +10733,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(69),
+         typeref_value: Ordinal(70),
         )),
        ),
        att: None,
@@ -10753,7 +10753,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(70),
+         typeref_value: Ordinal(72),
         )),
        ),
        att: None,
@@ -10773,7 +10773,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(75),
+         typeref_value: Ordinal(73),
         )),
        ),
        att: None,
@@ -10793,7 +10793,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(76),
+         typeref_value: Ordinal(78),
         )),
        ),
        att: None,
@@ -10813,7 +10813,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(77),
+         typeref_value: Ordinal(79),
         )),
        ),
        att: None,
@@ -10833,7 +10833,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(78),
+         typeref_value: Ordinal(80),
         )),
        ),
        att: None,
@@ -10853,7 +10853,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(79),
+         typeref_value: Ordinal(81),
         )),
        ),
        att: None,
@@ -10873,7 +10873,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(81),
+         typeref_value: Ordinal(82),
         )),
        ),
        att: None,
@@ -10893,7 +10893,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(85),
+         typeref_value: Ordinal(84),
         )),
        ),
        att: None,
@@ -10913,7 +10913,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(86),
+         typeref_value: Ordinal(87),
         )),
        ),
        att: None,
@@ -10933,7 +10933,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(87),
+         typeref_value: Ordinal(88),
         )),
        ),
        att: None,
@@ -10953,7 +10953,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(88),
+         typeref_value: Ordinal(89),
         )),
        ),
        att: None,
@@ -10973,7 +10973,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(89),
+         typeref_value: Ordinal(90),
         )),
        ),
        att: None,
@@ -10993,7 +10993,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(92),
+         typeref_value: Ordinal(91),
         )),
        ),
        att: None,
@@ -11013,7 +11013,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(93),
+         typeref_value: Ordinal(94),
         )),
        ),
        att: None,
@@ -11033,7 +11033,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(94),
+         typeref_value: Ordinal(95),
         )),
        ),
        att: None,
@@ -11053,7 +11053,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(95),
+         typeref_value: Ordinal(96),
         )),
        ),
        att: None,
@@ -11100,7 +11100,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(96),
+         typeref_value: Ordinal(97),
         )),
        ),
        att: None,
@@ -11120,7 +11120,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(99),
+         typeref_value: Ordinal(98),
         )),
        ),
        att: None,
@@ -11140,7 +11140,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(102),
+         typeref_value: Ordinal(101),
         )),
        ),
        att: None,
@@ -11160,7 +11160,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(103),
+         typeref_value: Ordinal(104),
         )),
        ),
        att: None,
@@ -11180,7 +11180,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(104),
+         typeref_value: Ordinal(105),
         )),
        ),
        att: None,
@@ -11200,7 +11200,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(105),
+         typeref_value: Ordinal(106),
         )),
        ),
        att: None,
@@ -11220,7 +11220,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(106),
+         typeref_value: Ordinal(107),
         )),
        ),
        att: None,
@@ -11240,7 +11240,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(107),
+         typeref_value: Ordinal(108),
         )),
        ),
        att: None,
@@ -11260,7 +11260,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(108),
+         typeref_value: Ordinal(109),
         )),
        ),
        att: None,
@@ -11280,7 +11280,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(109),
+         typeref_value: Ordinal(110),
         )),
        ),
        att: None,
@@ -11300,7 +11300,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(110),
+         typeref_value: Ordinal(111),
         )),
        ),
        att: None,
@@ -11320,7 +11320,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(111),
+         typeref_value: Ordinal(112),
         )),
        ),
        att: None,
@@ -11340,7 +11340,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(112),
+         typeref_value: Ordinal(113),
         )),
        ),
        att: None,
@@ -11360,7 +11360,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(113),
+         typeref_value: Ordinal(114),
         )),
        ),
        att: None,
@@ -11380,7 +11380,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(114),
+         typeref_value: Ordinal(115),
         )),
        ),
        att: None,
@@ -11400,7 +11400,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(115),
+         typeref_value: Ordinal(116),
         )),
        ),
        att: None,
@@ -11420,7 +11420,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(119),
+         typeref_value: Ordinal(117),
         )),
        ),
        att: None,
@@ -11440,7 +11440,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(120),
+         typeref_value: Ordinal(120),
         )),
        ),
        att: None,
@@ -11460,7 +11460,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(121),
+         typeref_value: Ordinal(121),
         )),
        ),
        att: None,
@@ -11480,7 +11480,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(122),
+         typeref_value: Ordinal(122),
         )),
        ),
        att: None,
@@ -11500,7 +11500,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(123),
+         typeref_value: Ordinal(123),
         )),
        ),
        att: None,
@@ -11520,7 +11520,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(124),
+         typeref_value: Ordinal(124),
         )),
        ),
        att: None,
@@ -11540,7 +11540,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(125),
+         typeref_value: Ordinal(125),
         )),
        ),
        att: None,
@@ -11560,7 +11560,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(126),
+         typeref_value: Ordinal(126),
         )),
        ),
        att: None,
@@ -11580,7 +11580,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(127),
+         typeref_value: Ordinal(127),
         )),
        ),
        att: None,
@@ -11600,7 +11600,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(128),
+         typeref_value: Ordinal(128),
         )),
        ),
        att: None,
@@ -11618,7 +11618,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -11643,7 +11643,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(5),
+         typeref_value: Ordinal(7),
         )),
        ),
        att: None,
@@ -11671,7 +11671,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(6),
+           typeref_value: Ordinal(11),
           )),
          ),
         )),
@@ -11693,7 +11693,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -11713,7 +11713,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(3),
+         typeref_value: Ordinal(4),
         )),
        ),
        att: None,
@@ -11741,7 +11741,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(10),
+           typeref_value: Ordinal(12),
           )),
          ),
         )),
@@ -11763,7 +11763,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(3),
+         typeref_value: Ordinal(4),
         )),
        ),
        att: None,
@@ -11791,7 +11791,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(11),
+           typeref_value: Ordinal(24),
           )),
          ),
         )),
@@ -11813,7 +11813,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(3),
+         typeref_value: Ordinal(4),
         )),
        ),
        att: None,
@@ -11841,7 +11841,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(11),
+           typeref_value: Ordinal(24),
           )),
          ),
         )),
@@ -11871,7 +11871,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(36),
+           typeref_value: Ordinal(38),
           )),
          ),
         )),
@@ -11901,7 +11901,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(37),
+           typeref_value: Ordinal(68),
           )),
          ),
         )),
@@ -11923,7 +11923,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(15),
+         typeref_value: Ordinal(18),
         )),
        ),
        att: None,
@@ -11951,7 +11951,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(58),
+           typeref_value: Ordinal(129),
           )),
          ),
         )),
@@ -11971,7 +11971,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -12000,7 +12000,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -12021,7 +12021,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(82),
+             typeref_value: Ordinal(133),
             )),
            ),
           )),
@@ -12046,7 +12046,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -12085,7 +12085,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -12127,7 +12127,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(137),
+         typeref_value: Ordinal(136),
         )),
        ),
        att: None,
@@ -12147,7 +12147,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(137),
+         typeref_value: Ordinal(136),
         )),
        ),
        att: None,
@@ -12165,7 +12165,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -12190,7 +12190,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(136),
+         typeref_value: Ordinal(138),
         )),
        ),
        att: None,
@@ -12210,7 +12210,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(136),
+         typeref_value: Ordinal(138),
         )),
        ),
        att: None,
@@ -12228,7 +12228,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -12282,7 +12282,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Enum),
-     typeref_value: Ref(134),
+     typeref_value: Ordinal(140),
     )),
    ),
    sclass: None,
@@ -12310,7 +12310,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -12331,7 +12331,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(138),
+             typeref_value: Ordinal(134),
             )),
            ),
           )),
@@ -12348,7 +12348,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(135),
+           typeref_value: Ordinal(139),
           )),
          ),
          loc: None,
@@ -12363,7 +12363,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -12378,7 +12378,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -12432,7 +12432,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(133),
+     typeref_value: Ordinal(137),
     )),
    ),
    sclass: None,
@@ -12446,7 +12446,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(132),
+     typeref_value: Ordinal(135),
     )),
    ),
    sclass: None,
@@ -12537,7 +12537,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -12550,7 +12550,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(139),
+           typeref_value: Ordinal(142),
           )),
          ),
          loc: None,
@@ -12565,7 +12565,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -12633,7 +12633,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -12654,7 +12654,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -12693,7 +12693,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -12739,7 +12739,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -12760,7 +12760,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -12777,7 +12777,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(141),
+           typeref_value: Ordinal(144),
           )),
          ),
          loc: None,
@@ -12855,7 +12855,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -12876,7 +12876,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -12945,7 +12945,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -12993,7 +12993,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -13006,7 +13006,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -13073,7 +13073,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -13121,7 +13121,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -13134,7 +13134,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(144),
+           typeref_value: Ordinal(147),
           )),
          ),
          loc: None,
@@ -13157,7 +13157,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -13182,7 +13182,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(3),
+             typeref_value: Ordinal(4),
             )),
            ),
           )),
@@ -13230,7 +13230,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -13243,7 +13243,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(3),
+           typeref_value: Ordinal(4),
           )),
          ),
          loc: None,
@@ -13285,7 +13285,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(5),
+         typeref_value: Ordinal(7),
         )),
        ),
        att: None,
@@ -13313,7 +13313,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(6),
+           typeref_value: Ordinal(11),
           )),
          ),
         )),
@@ -13335,7 +13335,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -13355,7 +13355,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(131),
+         typeref_value: Ordinal(132),
         )),
        ),
        att: None,
@@ -13375,7 +13375,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(138),
+         typeref_value: Ordinal(134),
         )),
        ),
        att: None,
@@ -13395,7 +13395,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(78),
+         typeref_value: Ordinal(80),
         )),
        ),
        att: None,
@@ -13415,7 +13415,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(79),
+         typeref_value: Ordinal(81),
         )),
        ),
        att: None,
@@ -13435,7 +13435,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(75),
+         typeref_value: Ordinal(73),
         )),
        ),
        att: None,
@@ -13455,7 +13455,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(76),
+         typeref_value: Ordinal(78),
         )),
        ),
        att: None,
@@ -13475,7 +13475,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(140),
+         typeref_value: Ordinal(141),
         )),
        ),
        att: None,
@@ -13495,7 +13495,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(15),
+         typeref_value: Ordinal(18),
         )),
        ),
        att: None,
@@ -13515,7 +13515,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(15),
+         typeref_value: Ordinal(18),
         )),
        ),
        att: None,
@@ -13543,7 +13543,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
         )),
@@ -13602,7 +13602,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(15),
+         typeref_value: Ordinal(18),
         )),
        ),
        att: None,
@@ -13630,7 +13630,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(58),
+           typeref_value: Ordinal(129),
           )),
          ),
         )),
@@ -13652,7 +13652,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(92),
+         typeref_value: Ordinal(91),
         )),
        ),
        att: None,
@@ -13672,7 +13672,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(94),
+         typeref_value: Ordinal(95),
         )),
        ),
        att: None,
@@ -13692,7 +13692,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(95),
+         typeref_value: Ordinal(96),
         )),
        ),
        att: None,
@@ -13712,7 +13712,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(142),
+         typeref_value: Ordinal(143),
         )),
        ),
        att: None,
@@ -13732,7 +13732,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(99),
+         typeref_value: Ordinal(98),
         )),
        ),
        att: None,
@@ -13752,7 +13752,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(122),
+         typeref_value: Ordinal(122),
         )),
        ),
        att: None,
@@ -13772,7 +13772,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(143),
+         typeref_value: Ordinal(145),
         )),
        ),
        att: None,
@@ -13792,7 +13792,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(145),
+         typeref_value: Ordinal(146),
         )),
        ),
        att: None,
@@ -13812,7 +13812,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(146),
+         typeref_value: Ordinal(148),
         )),
        ),
        att: None,
@@ -13830,7 +13830,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -13845,7 +13845,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(228),
+     typeref_value: Ordinal(150),
     )),
    ),
    sclass: None,
@@ -13859,7 +13859,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(231),
+     typeref_value: Ordinal(228),
     )),
    ),
    sclass: None,
@@ -13914,7 +13914,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(15),
+         typeref_value: Ordinal(18),
         )),
        ),
        att: None,
@@ -13942,7 +13942,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(2),
+           typeref_value: Ordinal(3),
           )),
          ),
         )),
@@ -13989,7 +13989,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -14004,7 +14004,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(151),
+     typeref_value: Ordinal(153),
     )),
    ),
    sclass: None,
@@ -14032,7 +14032,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -14061,7 +14061,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -14088,7 +14088,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(152),
+             typeref_value: Ordinal(152),
             )),
            ),
           )),
@@ -14136,7 +14136,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -14165,7 +14165,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -14192,7 +14192,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(152),
+             typeref_value: Ordinal(152),
             )),
            ),
           )),
@@ -14217,7 +14217,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(152),
+             typeref_value: Ordinal(152),
             )),
            ),
           )),
@@ -14265,7 +14265,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -14294,7 +14294,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -14321,7 +14321,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -14338,7 +14338,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -14369,7 +14369,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(152),
+               typeref_value: Ordinal(152),
               )),
              ),
             )),
@@ -14437,7 +14437,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(158),
+     typeref_value: Ordinal(158),
     )),
    ),
    sclass: None,
@@ -14465,7 +14465,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -14494,7 +14494,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -14521,7 +14521,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(156),
+             typeref_value: Ordinal(157),
             )),
            ),
           )),
@@ -14587,7 +14587,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(15),
+         typeref_value: Ordinal(18),
         )),
        ),
        att: None,
@@ -14615,7 +14615,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(2),
+           typeref_value: Ordinal(3),
           )),
          ),
         )),
@@ -14637,7 +14637,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(157),
+         typeref_value: Ordinal(159),
         )),
        ),
        att: None,
@@ -14655,7 +14655,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -14684,7 +14684,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -14713,7 +14713,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -14740,7 +14740,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(156),
+             typeref_value: Ordinal(157),
             )),
            ),
           )),
@@ -14774,7 +14774,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Ordinal(10),
     )),
    ),
    sclass: None,
@@ -14802,7 +14802,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -14831,7 +14831,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -14858,7 +14858,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(160),
+             typeref_value: Ordinal(161),
             )),
            ),
           )),
@@ -14906,7 +14906,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -14935,7 +14935,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -14954,7 +14954,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(160),
+           typeref_value: Ordinal(161),
           )),
          ),
          loc: None,
@@ -15000,7 +15000,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -15029,7 +15029,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -15111,7 +15111,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -15140,7 +15140,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -15159,7 +15159,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(18),
+           typeref_value: Ordinal(22),
           )),
          ),
          loc: None,
@@ -15174,7 +15174,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(18),
+           typeref_value: Ordinal(22),
           )),
          ),
          loc: None,
@@ -15273,7 +15273,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -15302,7 +15302,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -15321,7 +15321,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -15344,7 +15344,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(165),
+             typeref_value: Ordinal(166),
             )),
            ),
           )),
@@ -15378,7 +15378,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(232),
+     typeref_value: Ordinal(232),
     )),
    ),
    sclass: None,
@@ -15392,7 +15392,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(39),
+     typeref_value: Ordinal(43),
     )),
    ),
    sclass: None,
@@ -15441,7 +15441,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -15470,7 +15470,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -15489,7 +15489,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(168),
+           typeref_value: Ordinal(168),
           )),
          ),
          loc: None,
@@ -15504,7 +15504,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(165),
+           typeref_value: Ordinal(166),
           )),
          ),
          loc: None,
@@ -15527,7 +15527,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(169),
+             typeref_value: Ordinal(169),
             )),
            ),
           )),
@@ -15561,7 +15561,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(39),
+     typeref_value: Ordinal(43),
     )),
    ),
    sclass: None,
@@ -15589,7 +15589,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -15618,7 +15618,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -15637,7 +15637,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(171),
+           typeref_value: Ordinal(171),
           )),
          ),
          loc: None,
@@ -15652,7 +15652,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(169),
+           typeref_value: Ordinal(169),
           )),
          ),
          loc: None,
@@ -15730,7 +15730,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -15759,7 +15759,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -15778,7 +15778,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(49),
+           typeref_value: Ordinal(53),
           )),
          ),
          loc: None,
@@ -15793,7 +15793,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -15839,7 +15839,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -15868,7 +15868,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -15887,7 +15887,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(74),
+           typeref_value: Ordinal(76),
           )),
          ),
          loc: None,
@@ -15902,7 +15902,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -15925,7 +15925,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(49),
+             typeref_value: Ordinal(53),
             )),
            ),
           )),
@@ -15973,7 +15973,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -16002,7 +16002,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -16021,7 +16021,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -16153,7 +16153,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -16231,7 +16231,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -16246,7 +16246,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(39),
+           typeref_value: Ordinal(43),
           )),
          ),
          loc: None,
@@ -16278,7 +16278,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Ordinal(10),
     )),
    ),
    sclass: None,
@@ -16292,7 +16292,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Ordinal(10),
     )),
    ),
    sclass: None,
@@ -16316,7 +16316,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(18),
+         typeref_value: Ordinal(22),
         )),
        ),
        att: None,
@@ -16336,7 +16336,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(18),
+         typeref_value: Ordinal(22),
         )),
        ),
        att: None,
@@ -16356,7 +16356,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(2),
+         typeref_value: Ordinal(3),
         )),
        ),
        att: None,
@@ -16374,7 +16374,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -16389,7 +16389,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(180),
+     typeref_value: Ordinal(181),
     )),
    ),
    sclass: None,
@@ -16417,7 +16417,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -16446,7 +16446,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -16465,7 +16465,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(178),
+           typeref_value: Ordinal(178),
           )),
          ),
          loc: None,
@@ -16480,7 +16480,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(179),
+           typeref_value: Ordinal(179),
           )),
          ),
          loc: None,
@@ -16495,7 +16495,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(8),
+           typeref_value: Ordinal(10),
           )),
          ),
          loc: None,
@@ -16518,7 +16518,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -16543,7 +16543,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(181),
+             typeref_value: Ordinal(180),
             )),
            ),
           )),
@@ -16591,7 +16591,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -16620,7 +16620,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -16656,7 +16656,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(207),
+     typeref_value: Ordinal(184),
     )),
    ),
    sclass: None,
@@ -16670,7 +16670,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(208),
+     typeref_value: Ordinal(207),
     )),
    ),
    sclass: None,
@@ -16694,7 +16694,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(190),
+         typeref_value: Ordinal(187),
         )),
        ),
        att: None,
@@ -16714,7 +16714,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(190),
+         typeref_value: Ordinal(187),
         )),
        ),
        att: None,
@@ -16732,7 +16732,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -16747,7 +16747,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(186),
+     typeref_value: Ordinal(186),
     )),
    ),
    sclass: None,
@@ -16845,7 +16845,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Enum),
-     typeref_value: Ref(188),
+     typeref_value: Ordinal(189),
     )),
    ),
    sclass: None,
@@ -16873,7 +16873,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -16902,7 +16902,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -16929,7 +16929,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -16946,7 +16946,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(189),
+           typeref_value: Ordinal(188),
           )),
          ),
          loc: None,
@@ -16961,7 +16961,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -16976,7 +16976,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -17044,7 +17044,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        args: [
@@ -17073,7 +17073,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -17100,7 +17100,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -17117,7 +17117,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -17163,7 +17163,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(18),
+         typeref_value: Ordinal(22),
         )),
        ),
        args: [
@@ -17192,7 +17192,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -17219,7 +17219,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -17236,7 +17236,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -17282,7 +17282,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        args: [
@@ -17311,7 +17311,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -17338,7 +17338,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -17355,7 +17355,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -17401,7 +17401,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(7),
+         typeref_value: Ordinal(9),
         )),
        ),
        args: [
@@ -17430,7 +17430,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -17457,7 +17457,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -17474,7 +17474,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -17546,7 +17546,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -17573,7 +17573,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -17590,7 +17590,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -17605,7 +17605,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(39),
+           typeref_value: Ordinal(43),
           )),
          ),
          loc: None,
@@ -17677,7 +17677,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -17704,7 +17704,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -17721,7 +17721,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -17736,7 +17736,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(18),
+           typeref_value: Ordinal(22),
           )),
          ),
          loc: None,
@@ -17808,7 +17808,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -17835,7 +17835,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -17852,7 +17852,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -17867,7 +17867,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(8),
+           typeref_value: Ordinal(10),
           )),
          ),
          loc: None,
@@ -17939,7 +17939,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -17966,7 +17966,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -17983,7 +17983,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -17998,7 +17998,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -18044,7 +18044,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(39),
+         typeref_value: Ordinal(43),
         )),
        ),
        args: [
@@ -18073,7 +18073,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -18100,7 +18100,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -18117,7 +18117,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -18163,7 +18163,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(18),
+         typeref_value: Ordinal(22),
         )),
        ),
        args: [
@@ -18192,7 +18192,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -18219,7 +18219,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -18236,7 +18236,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -18282,7 +18282,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        args: [
@@ -18311,7 +18311,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -18338,7 +18338,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -18355,7 +18355,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -18401,7 +18401,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(7),
+         typeref_value: Ordinal(9),
         )),
        ),
        args: [
@@ -18430,7 +18430,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -18457,7 +18457,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -18474,7 +18474,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -18546,7 +18546,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -18573,7 +18573,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -18590,7 +18590,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -18605,7 +18605,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(39),
+           typeref_value: Ordinal(43),
           )),
          ),
          loc: None,
@@ -18677,7 +18677,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -18704,7 +18704,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -18721,7 +18721,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -18736,7 +18736,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(18),
+           typeref_value: Ordinal(22),
           )),
          ),
          loc: None,
@@ -18808,7 +18808,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -18835,7 +18835,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -18852,7 +18852,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -18867,7 +18867,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(8),
+           typeref_value: Ordinal(10),
           )),
          ),
          loc: None,
@@ -18939,7 +18939,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -18966,7 +18966,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(184),
+             typeref_value: Ordinal(183),
             )),
            ),
           )),
@@ -18983,7 +18983,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -18998,7 +18998,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -19040,7 +19040,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(187),
+         typeref_value: Ordinal(185),
         )),
        ),
        att: None,
@@ -19060,7 +19060,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(187),
+         typeref_value: Ordinal(185),
         )),
        ),
        att: None,
@@ -19080,7 +19080,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(191),
+         typeref_value: Ordinal(190),
         )),
        ),
        att: None,
@@ -19100,7 +19100,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(192),
+         typeref_value: Ordinal(191),
         )),
        ),
        att: None,
@@ -19120,7 +19120,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(193),
+         typeref_value: Ordinal(192),
         )),
        ),
        att: None,
@@ -19140,7 +19140,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(194),
+         typeref_value: Ordinal(193),
         )),
        ),
        att: None,
@@ -19160,7 +19160,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(195),
+         typeref_value: Ordinal(194),
         )),
        ),
        att: None,
@@ -19180,7 +19180,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(196),
+         typeref_value: Ordinal(195),
         )),
        ),
        att: None,
@@ -19200,7 +19200,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(197),
+         typeref_value: Ordinal(196),
         )),
        ),
        att: None,
@@ -19220,7 +19220,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(198),
+         typeref_value: Ordinal(197),
         )),
        ),
        att: None,
@@ -19240,7 +19240,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(199),
+         typeref_value: Ordinal(198),
         )),
        ),
        att: None,
@@ -19260,7 +19260,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(200),
+         typeref_value: Ordinal(199),
         )),
        ),
        att: None,
@@ -19280,7 +19280,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(201),
+         typeref_value: Ordinal(200),
         )),
        ),
        att: None,
@@ -19300,7 +19300,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(202),
+         typeref_value: Ordinal(201),
         )),
        ),
        att: None,
@@ -19320,7 +19320,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(203),
+         typeref_value: Ordinal(202),
         )),
        ),
        att: None,
@@ -19340,7 +19340,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(204),
+         typeref_value: Ordinal(203),
         )),
        ),
        att: None,
@@ -19360,7 +19360,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(205),
+         typeref_value: Ordinal(204),
         )),
        ),
        att: None,
@@ -19380,7 +19380,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(206),
+         typeref_value: Ordinal(205),
         )),
        ),
        att: None,
@@ -19398,7 +19398,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -19423,7 +19423,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(211),
+         typeref_value: Ordinal(208),
         )),
        ),
        att: None,
@@ -19443,7 +19443,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(211),
+         typeref_value: Ordinal(208),
         )),
        ),
        att: None,
@@ -19463,7 +19463,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(212),
+         typeref_value: Ordinal(211),
         )),
        ),
        att: None,
@@ -19483,7 +19483,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(18),
+         typeref_value: Ordinal(22),
         )),
        ),
        att: None,
@@ -19501,7 +19501,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -19560,7 +19560,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Enum),
-     typeref_value: Ref(209),
+     typeref_value: Ordinal(210),
     )),
    ),
    sclass: None,
@@ -19588,7 +19588,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -19617,7 +19617,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -19644,7 +19644,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(185),
+             typeref_value: Ordinal(206),
             )),
            ),
           )),
@@ -19661,7 +19661,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(210),
+           typeref_value: Ordinal(209),
           )),
          ),
          loc: None,
@@ -19676,7 +19676,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -19744,7 +19744,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -19773,7 +19773,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -19800,7 +19800,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(185),
+             typeref_value: Ordinal(206),
             )),
            ),
           )),
@@ -19817,7 +19817,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(210),
+           typeref_value: Ordinal(209),
           )),
          ),
          loc: None,
@@ -19832,7 +19832,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(7),
+           typeref_value: Ordinal(9),
           )),
          ),
          loc: None,
@@ -19922,7 +19922,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -19943,7 +19943,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -19960,7 +19960,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(165),
+           typeref_value: Ordinal(166),
           )),
          ),
          loc: None,
@@ -19983,7 +19983,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(169),
+             typeref_value: Ordinal(169),
             )),
            ),
           )),
@@ -20017,7 +20017,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(216),
+     typeref_value: Ordinal(215),
     )),
    ),
    sclass: None,
@@ -20031,7 +20031,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Ordinal(10),
     )),
    ),
    sclass: None,
@@ -20055,7 +20055,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(2),
+         typeref_value: Ordinal(3),
         )),
        ),
        att: None,
@@ -20075,7 +20075,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(168),
+         typeref_value: Ordinal(168),
         )),
        ),
        att: None,
@@ -20095,7 +20095,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(215),
+         typeref_value: Ordinal(216),
         )),
        ),
        att: None,
@@ -20142,7 +20142,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -20160,7 +20160,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -20189,7 +20189,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -20202,7 +20202,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(169),
+           typeref_value: Ordinal(169),
           )),
          ),
          loc: None,
@@ -20225,7 +20225,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(214),
+             typeref_value: Ordinal(214),
             )),
            ),
           )),
@@ -20259,7 +20259,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(220),
+     typeref_value: Ordinal(219),
     )),
    ),
    sclass: None,
@@ -20273,7 +20273,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: None,
-     typeref_value: Ref(8),
+     typeref_value: Ordinal(10),
     )),
    ),
    sclass: None,
@@ -20297,7 +20297,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(219),
+         typeref_value: Ordinal(220),
         )),
        ),
        att: None,
@@ -20317,7 +20317,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(2),
+         typeref_value: Ordinal(3),
         )),
        ),
        att: None,
@@ -20337,7 +20337,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(2),
+         typeref_value: Ordinal(3),
         )),
        ),
        att: None,
@@ -20384,7 +20384,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(7),
+         typeref_value: Ordinal(9),
         )),
        ),
        att: None,
@@ -20402,7 +20402,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -20431,7 +20431,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -20444,7 +20444,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(165),
+           typeref_value: Ordinal(166),
           )),
          ),
          loc: None,
@@ -20467,7 +20467,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(218),
+             typeref_value: Ordinal(218),
             )),
            ),
           )),
@@ -20515,7 +20515,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -20528,7 +20528,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(169),
+           typeref_value: Ordinal(169),
           )),
          ),
          loc: None,
@@ -20574,7 +20574,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -20603,7 +20603,7 @@ Some((
               is_volatile: false,
               type_variant: Typeref((
                ref_type: None,
-               typeref_value: Ref(148),
+               typeref_value: Ordinal(149),
               )),
              ),
             )),
@@ -20622,7 +20622,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(171),
+           typeref_value: Ordinal(171),
           )),
          ),
          loc: None,
@@ -20637,7 +20637,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -20652,7 +20652,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(169),
+           typeref_value: Ordinal(169),
           )),
          ),
          loc: None,
@@ -20707,7 +20707,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(8),
+             typeref_value: Ordinal(10),
             )),
            ),
           )),
@@ -20755,7 +20755,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -20768,7 +20768,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(169),
+           typeref_value: Ordinal(169),
           )),
          ),
          loc: None,
@@ -20791,7 +20791,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(226),
+             typeref_value: Ordinal(224),
             )),
            ),
           )),
@@ -20835,7 +20835,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(2),
+         typeref_value: Ordinal(3),
         )),
        ),
        att: None,
@@ -20855,7 +20855,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(168),
+         typeref_value: Ordinal(168),
         )),
        ),
        att: None,
@@ -20875,7 +20875,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(215),
+         typeref_value: Ordinal(216),
         )),
        ),
        att: None,
@@ -20922,7 +20922,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -20942,7 +20942,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(8),
+         typeref_value: Ordinal(10),
         )),
        ),
        att: None,
@@ -20960,7 +20960,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -20975,7 +20975,7 @@ Some((
     is_volatile: false,
     type_variant: Typeref((
      ref_type: Some(Struct),
-     typeref_value: Ref(225),
+     typeref_value: Ordinal(225),
     )),
    ),
    sclass: None,
@@ -21013,7 +21013,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(60),
+           typeref_value: Ordinal(61),
           )),
          ),
          loc: None,
@@ -21028,7 +21028,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(13),
+           typeref_value: Ordinal(16),
           )),
          ),
          loc: None,
@@ -21043,7 +21043,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(15),
+           typeref_value: Ordinal(18),
           )),
          ),
          loc: None,
@@ -21107,7 +21107,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(5),
+         typeref_value: Ordinal(7),
         )),
        ),
        att: None,
@@ -21127,7 +21127,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(153),
+         typeref_value: Ordinal(151),
         )),
        ),
        att: None,
@@ -21147,7 +21147,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(154),
+         typeref_value: Ordinal(154),
         )),
        ),
        att: None,
@@ -21167,7 +21167,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(155),
+         typeref_value: Ordinal(155),
         )),
        ),
        att: None,
@@ -21187,7 +21187,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(159),
+         typeref_value: Ordinal(156),
         )),
        ),
        att: None,
@@ -21207,7 +21207,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(161),
+         typeref_value: Ordinal(160),
         )),
        ),
        att: None,
@@ -21227,7 +21227,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(162),
+         typeref_value: Ordinal(162),
         )),
        ),
        att: None,
@@ -21247,7 +21247,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(163),
+         typeref_value: Ordinal(163),
         )),
        ),
        att: None,
@@ -21267,7 +21267,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(164),
+         typeref_value: Ordinal(164),
         )),
        ),
        att: None,
@@ -21287,7 +21287,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(166),
+         typeref_value: Ordinal(165),
         )),
        ),
        att: None,
@@ -21307,7 +21307,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(170),
+         typeref_value: Ordinal(167),
         )),
        ),
        att: None,
@@ -21327,7 +21327,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(172),
+         typeref_value: Ordinal(170),
         )),
        ),
        att: None,
@@ -21347,7 +21347,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(173),
+         typeref_value: Ordinal(172),
         )),
        ),
        att: None,
@@ -21367,7 +21367,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(174),
+         typeref_value: Ordinal(173),
         )),
        ),
        att: None,
@@ -21387,7 +21387,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(175),
+         typeref_value: Ordinal(174),
         )),
        ),
        att: None,
@@ -21407,7 +21407,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(176),
+         typeref_value: Ordinal(175),
         )),
        ),
        att: None,
@@ -21427,7 +21427,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(177),
+         typeref_value: Ordinal(176),
         )),
        ),
        att: None,
@@ -21447,7 +21447,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(182),
+         typeref_value: Ordinal(177),
         )),
        ),
        att: None,
@@ -21467,7 +21467,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(183),
+         typeref_value: Ordinal(182),
         )),
        ),
        att: None,
@@ -21495,7 +21495,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(184),
+           typeref_value: Ordinal(183),
           )),
          ),
         )),
@@ -21525,7 +21525,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: None,
-           typeref_value: Ref(185),
+           typeref_value: Ordinal(206),
           )),
          ),
         )),
@@ -21547,7 +21547,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(213),
+         typeref_value: Ordinal(212),
         )),
        ),
        att: None,
@@ -21567,7 +21567,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(217),
+         typeref_value: Ordinal(213),
         )),
        ),
        att: None,
@@ -21587,7 +21587,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(221),
+         typeref_value: Ordinal(217),
         )),
        ),
        att: None,
@@ -21607,7 +21607,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(222),
+         typeref_value: Ordinal(221),
         )),
        ),
        att: None,
@@ -21627,7 +21627,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(223),
+         typeref_value: Ordinal(222),
         )),
        ),
        att: None,
@@ -21647,7 +21647,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(224),
+         typeref_value: Ordinal(223),
         )),
        ),
        att: None,
@@ -21667,7 +21667,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(227),
+         typeref_value: Ordinal(226),
         )),
        ),
        att: None,
@@ -21685,7 +21685,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -21714,7 +21714,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -21735,7 +21735,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(149),
+             typeref_value: Ordinal(227),
             )),
            ),
           )),
@@ -21760,7 +21760,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(6),
+             typeref_value: Ordinal(11),
             )),
            ),
           )),
@@ -21785,7 +21785,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -21810,7 +21810,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(8),
+             typeref_value: Ordinal(10),
             )),
            ),
           )),
@@ -21835,7 +21835,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -21905,7 +21905,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(13),
+         typeref_value: Ordinal(16),
         )),
        ),
        args: [
@@ -21926,7 +21926,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(149),
+             typeref_value: Ordinal(227),
             )),
            ),
           )),
@@ -21951,7 +21951,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(15),
+             typeref_value: Ordinal(18),
             )),
            ),
           )),
@@ -21976,7 +21976,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(6),
+             typeref_value: Ordinal(11),
             )),
            ),
           )),
@@ -22001,7 +22001,7 @@ Some((
             is_volatile: false,
             type_variant: Typeref((
              ref_type: None,
-             typeref_value: Ref(2),
+             typeref_value: Ordinal(3),
             )),
            ),
           )),
@@ -22045,7 +22045,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(229),
+         typeref_value: Ordinal(229),
         )),
        ),
        att: None,
@@ -22065,7 +22065,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(230),
+         typeref_value: Ordinal(230),
         )),
        ),
        att: None,
@@ -22083,7 +22083,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -22108,7 +22108,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(54),
+         typeref_value: Ordinal(56),
         )),
        ),
        att: None,
@@ -22128,7 +22128,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(55),
+         typeref_value: Ordinal(57),
         )),
        ),
        att: None,
@@ -22148,7 +22148,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(56),
+         typeref_value: Ordinal(58),
         )),
        ),
        att: None,
@@ -22168,7 +22168,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: Ref(66),
+         typeref_value: Ordinal(67),
         )),
        ),
        att: None,
@@ -22186,7 +22186,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),

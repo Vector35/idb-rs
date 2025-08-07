@@ -1,22 +1,22 @@
-use std::collections::HashMap;
 use std::num::NonZeroU8;
 
 use crate::ida_reader::IdbBufRead;
-use crate::til::{Type, TypeRaw};
+use crate::til::{Type, TypeVariant, Typeref};
 use crate::IDBString;
 use anyhow::{anyhow, ensure, Context, Result};
 use num_enum::{FromPrimitive, IntoPrimitive, TryFromPrimitive};
 use serde::Serialize;
 
 use super::section::TILSectionHeader;
-use super::{CommentType, TypeAttribute, TypeVariantRaw};
+use super::{CommentType, TypeAttribute};
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Struct {
+pub struct UDT {
     pub effective_alignment: Option<NonZeroU8>,
-    pub members: Vec<StructMember>,
+    pub members: Vec<UDTMember>,
     pub extra_padding: Option<u64>,
 
+    // TODO some of those flags seems to have diferent meaning if union/struct
     /// Unaligned struct
     pub is_unaligned: bool,
     /// Gcc msstruct attribute
@@ -25,85 +25,54 @@ pub struct Struct {
     is_cppobj: bool,
     /// Virtual function table
     pub is_vft: bool,
-    /// struct have a fixed len
+    /// udt have a fixed len
     pub is_fixed: bool,
     /// Unknown meaning, use at your own risk
-    pub is_uknown_8: bool,
+    pub is_unknown_8: bool,
     /// Alignment in bytes
     pub alignment: Option<NonZeroU8>,
 }
-impl Struct {
-    pub(crate) fn new(
-        til: &TILSectionHeader,
-        type_by_name: &HashMap<Vec<u8>, usize>,
-        type_by_ord: &HashMap<u64, usize>,
-        value: StructRaw,
-        fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<CommentType>>,
-    ) -> Result<Self> {
-        let members = value
-            .members
-            .into_iter()
-            .map(|member| {
-                StructMember::new(
-                    til,
-                    type_by_name,
-                    type_by_ord,
-                    member,
-                    fields,
-                    comments,
-                )
-            })
-            .collect::<Result<_>>()?;
-        Ok(Struct {
-            effective_alignment: value.effective_alignment,
-            members,
-            extra_padding: value.extra_padding,
-            is_unaligned: value.is_unaligned,
-            is_msstruct: value.is_msstruct,
-            is_cppobj: value.is_cppobj,
-            is_vft: value.is_vft,
-            is_fixed: value.is_fixed,
-            is_uknown_8: value.is_unknown_8,
-            alignment: value.alignment,
-        })
-    }
 
-    pub fn is_cppobj(&self) -> bool {
-        // TODO check innerref, maybe baseclass don't need to be the first, nor
-        // need to only one
-        self.is_cppobj
-            || matches!(self.members.first(), Some(first) if first.is_baseclass)
-    }
+enum UDTDiscriminants {
+    Definition(UDT),
+    Reference(Typeref),
 }
 
-#[derive(Clone, Debug)]
-pub(crate) struct StructRaw {
-    effective_alignment: Option<NonZeroU8>,
-    members: Vec<StructMemberRaw>,
-    extra_padding: Option<u64>,
-
-    /// Unaligned struct
-    is_unaligned: bool,
-    /// Gcc msstruct attribute
-    is_msstruct: bool,
-    /// C++ object, not simple pod type
-    is_cppobj: bool,
-    /// Virtual function table
-    is_vft: bool,
-    /// struct have a fixed len
-    is_fixed: bool,
-    // TODO unknown meaning
-    is_unknown_8: bool,
-    /// Alignment in bytes
-    alignment: Option<NonZeroU8>,
-}
-
-impl StructRaw {
-    pub fn read(
+impl UDT {
+    pub fn read_struct(
         input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
-    ) -> Result<TypeVariantRaw> {
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
+    ) -> Result<TypeVariant> {
+        match Self::read(input, header, fields, comments)? {
+            UDTDiscriminants::Definition(udt) => Ok(TypeVariant::Struct(udt)),
+            UDTDiscriminants::Reference(typeref) => {
+                Ok(TypeVariant::Typeref(Typeref::new_struct(typeref)))
+            }
+        }
+    }
+
+    pub fn read_union(
+        input: &mut impl IdbBufRead,
+        header: &TILSectionHeader,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
+    ) -> Result<TypeVariant> {
+        match Self::read(input, header, fields, comments)? {
+            UDTDiscriminants::Definition(udt) => Ok(TypeVariant::Union(udt)),
+            UDTDiscriminants::Reference(typeref) => {
+                Ok(TypeVariant::Typeref(Typeref::new_union(typeref)))
+            }
+        }
+    }
+
+    fn read(
+        input: &mut impl IdbBufRead,
+        header: &TILSectionHeader,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
+    ) -> Result<UDTDiscriminants> {
         // TODO n == 0 && n_cond == false?
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x325f87
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x303393
@@ -111,12 +80,13 @@ impl StructRaw {
         let Some((n, _)) = input.read_dt_de()? else {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4803b4
             // simple reference
-            let ref_type = TypeRaw::read_ref(&mut *input, header)?;
-            let _taudt_bits = input.read_sdacl()?;
-            let TypeVariantRaw::Typedef(ref_type) = ref_type.variant else {
-                return Err(anyhow!("StructRef Non Typedef"));
+            let ref_type = Type::read_ref(&mut *input, header)?;
+            let _taudt_bits =
+                input.read_sdacl().context("UDT Ref taudt_bits")?;
+            let TypeVariant::Typeref(ref_type) = ref_type.type_variant else {
+                return Err(anyhow!("UDTRef Non Typedef"));
             };
-            return Ok(TypeVariantRaw::StructRef(ref_type));
+            return Ok(UDTDiscriminants::Reference(ref_type));
         };
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x4808f9
@@ -136,10 +106,10 @@ impl StructRaw {
         let mut is_method = false;
         let mut is_bitset2 = false;
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x30379a
-        if let Some(TypeAttribute {
+        if let Some(Some(TypeAttribute {
             tattr,
             extended: _extended,
-        }) = input.read_sdacl()?
+        })) = input.read_sdacl().context("Struct Extended Att")?
         {
             use crate::til::flag::tattr::*;
             use crate::til::flag::tattr_field::*;
@@ -185,22 +155,24 @@ impl StructRaw {
 
         let members = (0..mem_cnt)
             .map(|i| {
-                StructMemberRaw::read(
+                UDTMember::read(
                     &mut *input,
                     header,
                     is_method,
                     is_fixed,
                     is_bitset2,
+                    fields,
+                    comments,
                 )
                 .with_context(|| format!("Member {i}"))
             })
-            .collect::<Result<_, _>>()?;
+            .collect::<Result<_>>()?;
 
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x3269ca
         let extra_padding =
             is_fixed.then(|| input.read_ext_att()).transpose()?;
 
-        Ok(TypeVariantRaw::Struct(Self {
+        Ok(UDTDiscriminants::Definition(Self {
             effective_alignment,
             members,
             extra_padding,
@@ -209,14 +181,21 @@ impl StructRaw {
             is_cppobj,
             is_vft,
             is_fixed,
-            is_unknown_8,
             alignment,
+            is_unknown_8,
         }))
+    }
+
+    pub fn is_cppobj(&self) -> bool {
+        // TODO check innerref, maybe baseclass don't need to be the first, nor
+        // need to only one
+        self.is_cppobj
+            || matches!(self.members.first(), Some(first) if first.is_baseclass)
     }
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct StructMember {
+pub struct UDTMember {
     pub name: Option<IDBString>,
     pub comment: Option<CommentType>,
     pub member_type: Type,
@@ -230,65 +209,29 @@ pub struct StructMember {
     pub is_unknown_8: bool,
 }
 
-impl StructMember {
-    fn new(
-        til: &TILSectionHeader,
-        type_by_name: &HashMap<Vec<u8>, usize>,
-        type_by_ord: &HashMap<u64, usize>,
-        m: StructMemberRaw,
-        fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<CommentType>>,
-    ) -> Result<Self> {
-        let name = fields.next().flatten();
-        let comment = comments.next().flatten();
-        Ok(Self {
-            name,
-            comment,
-            member_type: Type::new(
-                til,
-                type_by_name,
-                type_by_ord,
-                m.ty,
-                fields,
-                None,
-                comments,
-            )?,
-            att: m.att,
-            alignment: m.alignment,
-            is_baseclass: m.is_baseclass,
-            is_unaligned: m.is_unaligned,
-            is_vft: m.is_vft,
-            is_method: m.is_method,
-            is_unknown_8: m.is_unknown_8,
-        })
-    }
-}
-#[derive(Clone, Debug)]
-pub(crate) struct StructMemberRaw {
-    pub ty: TypeRaw,
-    pub att: Option<StructMemberAtt>,
-    pub alignment: Option<NonZeroU8>,
-    pub is_baseclass: bool,
-    pub is_unaligned: bool,
-    pub is_vft: bool,
-    pub is_method: bool,
-    pub is_unknown_8: bool,
-}
-
-impl StructMemberRaw {
+impl UDTMember {
     fn read(
         input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
         is_method: bool,
         is_fixed: bool,
         is_bit_set2: bool,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> Result<Self> {
+        let name = fields.next().flatten();
+        let comment = comments.next().flatten();
         // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x326610
-        let ty = TypeRaw::read(&mut *input, header)?;
+        let member_type =
+            Type::read(&mut *input, header, None, fields, comments)
+                .context("StructMember type")?;
 
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x478256
         let att = is_method
-            .then(|| Self::read_member_att_1(input, header))
+            .then(|| {
+                Self::read_member_att_1(input, header)
+                    .context("StructMember Att 1")
+            })
             .transpose()?;
 
         let mut alignment = None;
@@ -301,10 +244,12 @@ impl StructMemberRaw {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
         if !is_method || att.is_some() {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47825d
-            if let Some(TypeAttribute {
+            if let Some(Some(TypeAttribute {
                 tattr,
                 extended: _extended,
-            }) = input.read_sdacl()?
+            })) = input
+                .read_sdacl()
+                .context("StructMember Extended Att type")?
             {
                 use crate::til::flag::tattr::*;
                 use crate::til::flag::tattr_field::*;
@@ -355,7 +300,9 @@ impl StructMemberRaw {
             if is_fixed && !is_method {
                 // TODO unknown meaning
                 // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x326820
-                let _value = input.read_ext_att()?;
+                let _value = input
+                    .read_ext_att()
+                    .context("StructMember Extended Att")?;
             }
 
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47822d
@@ -367,7 +314,9 @@ impl StructMemberRaw {
         }
 
         Ok(Self {
-            ty,
+            name,
+            comment,
+            member_type,
             att,
             alignment,
             is_baseclass,

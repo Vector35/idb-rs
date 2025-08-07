@@ -1,5 +1,5 @@
 ---
-hash: 29745A12CED85214
+hash: 441506D7E23ECF28
 source: src/test.rs
 expression: til
 ---
@@ -118,7 +118,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),
@@ -143,7 +143,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: UnsolvedName(Some("DWORD")),
+         typeref_value: Name(Some("DWORD")),
         )),
        ),
        att: None,
@@ -163,7 +163,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: UnsolvedName(Some("DWORD")),
+         typeref_value: Name(Some("DWORD")),
         )),
        ),
        att: None,
@@ -183,7 +183,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: UnsolvedName(Some("DWORD")),
+         typeref_value: Name(Some("DWORD")),
         )),
        ),
        att: None,
@@ -203,7 +203,7 @@ Some((
         is_volatile: false,
         type_variant: Typeref((
          ref_type: None,
-         typeref_value: UnsolvedName(Some("DWORD")),
+         typeref_value: Name(Some("DWORD")),
         )),
        ),
        att: None,
@@ -231,7 +231,7 @@ Some((
           is_volatile: false,
           type_variant: Typeref((
            ref_type: Some(Struct),
-           typeref_value: Ref(0),
+           typeref_value: Ordinal(1),
           )),
          ),
         )),
@@ -251,7 +251,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: None,
     )),
    ),

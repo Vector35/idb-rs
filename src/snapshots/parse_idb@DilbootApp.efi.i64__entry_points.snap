@@ -1,5 +1,5 @@
 ---
-hash: BFB11F78F60E34BD
+hash: C0ECC9BF4A44AA5A
 source: src/test.rs
 expression: entry_points
 ---
@@ -20,7 +20,7 @@ expression: entry_points
      is_volatile: false,
      type_variant: Typeref((
       ref_type: None,
-      typeref_value: UnsolvedName(Some("EFI_STATUS")),
+      typeref_value: Name(Some("EFI_STATUS")),
      )),
     ),
     args: [
@@ -33,7 +33,7 @@ expression: entry_points
        is_volatile: false,
        type_variant: Typeref((
         ref_type: None,
-        typeref_value: UnsolvedName(Some("EFI_HANDLE")),
+        typeref_value: Name(Some("EFI_HANDLE")),
        )),
       ),
       loc: None,
@@ -56,7 +56,7 @@ expression: entry_points
          is_volatile: false,
          type_variant: Typeref((
           ref_type: None,
-          typeref_value: UnsolvedName(Some("EFI_SYSTEM_TABLE")),
+          typeref_value: Name(Some("EFI_SYSTEM_TABLE")),
          )),
         ),
        )),

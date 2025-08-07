@@ -39,7 +39,10 @@ fn assert_dyn_data<T: Serialize>(
 
     // ensure the new file is equal to the old one
     // what's the chance of a hash colistion? 1 in u64::MAX?
-    assert!(new_hash == old_hash, "Files Hash don't match");
+    assert!(
+        new_hash == old_hash,
+        "Files Hash don't match: {snapfile:?} {snapfile_new:?}"
+    );
     // if the files are equal delete the new one
     std::fs::remove_file(&snapfile_new).unwrap();
 }

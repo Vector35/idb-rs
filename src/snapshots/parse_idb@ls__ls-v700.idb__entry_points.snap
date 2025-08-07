@@ -1,5 +1,5 @@
 ---
-hash: 130A4E7C8136FB7B
+hash: 3FC63164A6C34EDF
 source: src/test.rs
 expression: entry_points
 ---
@@ -74,7 +74,7 @@ expression: entry_points
          is_volatile: false,
          type_variant: Typeref((
           ref_type: Some(Struct),
-          typeref_value: UnsolvedName(Some("obstack")),
+          typeref_value: Name(Some("obstack")),
          )),
         ),
        )),
@@ -166,7 +166,7 @@ expression: entry_points
      is_volatile: false,
      type_variant: Typeref((
       ref_type: None,
-      typeref_value: UnsolvedName(Some("_IO_FILE")),
+      typeref_value: Name(Some("_IO_FILE")),
      )),
     ),
    )),
@@ -202,7 +202,7 @@ expression: entry_points
      is_volatile: false,
      type_variant: Typeref((
       ref_type: None,
-      typeref_value: UnsolvedName(Some("FILE")),
+      typeref_value: Name(Some("FILE")),
      )),
     ),
    )),

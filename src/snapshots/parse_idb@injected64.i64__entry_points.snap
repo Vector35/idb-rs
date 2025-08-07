@@ -1,5 +1,5 @@
 ---
-hash: EBA827A396944F45
+hash: B25FACD98689C9A1
 source: src/test.rs
 expression: entry_points
 ---
@@ -20,7 +20,7 @@ expression: entry_points
      is_volatile: false,
      type_variant: Typeref((
       ref_type: None,
-      typeref_value: UnsolvedName(Some("BOOL")),
+      typeref_value: Name(Some("BOOL")),
      )),
     ),
     args: [
@@ -33,7 +33,7 @@ expression: entry_points
        is_volatile: false,
        type_variant: Typeref((
         ref_type: None,
-        typeref_value: UnsolvedName(Some("HINSTANCE")),
+        typeref_value: Name(Some("HINSTANCE")),
        )),
       ),
       loc: None,
@@ -48,7 +48,7 @@ expression: entry_points
        is_volatile: false,
        type_variant: Typeref((
         ref_type: None,
-        typeref_value: UnsolvedName(Some("DWORD")),
+        typeref_value: Name(Some("DWORD")),
        )),
       ),
       loc: None,
@@ -63,7 +63,7 @@ expression: entry_points
        is_volatile: false,
        type_variant: Typeref((
         ref_type: None,
-        typeref_value: UnsolvedName(Some("LPVOID")),
+        typeref_value: Name(Some("LPVOID")),
        )),
       ),
       loc: None,

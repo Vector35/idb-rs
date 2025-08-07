@@ -1,5 +1,5 @@
 ---
-hash: AD533839B57FABE2
+hash: 404B6C85FF8B80FB
 source: src/test.rs
 expression: entry_points
 ---
@@ -226,7 +226,7 @@ expression: entry_points
      is_volatile: false,
      type_variant: Typeref((
       ref_type: None,
-      typeref_value: UnsolvedName(Some("FILE")),
+      typeref_value: Name(Some("FILE")),
      )),
     ),
    )),
@@ -250,7 +250,7 @@ expression: entry_points
      is_volatile: false,
      type_variant: Typeref((
       ref_type: None,
-      typeref_value: UnsolvedName(Some("FILE")),
+      typeref_value: Name(Some("FILE")),
      )),
     ),
    )),

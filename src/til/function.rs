@@ -1,14 +1,13 @@
-use std::collections::HashMap;
 use std::num::NonZeroU8;
 
 use crate::ida_reader::{IdbBufRead, IdbRead};
-use crate::til::{Basic, Type, TypeRaw};
+use crate::til::{Basic, Type, TypeVariant};
 use crate::IDBString;
 use anyhow::{anyhow, ensure, Context, Result};
 use serde::Serialize;
 
 use super::section::TILSectionHeader;
-use super::{CommentType, TypeVariantRaw};
+use super::CommentType;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Function {
@@ -29,165 +28,12 @@ pub struct Function {
 }
 
 impl Function {
-    pub(crate) fn new(
-        til: &TILSectionHeader,
-        type_by_name: &HashMap<Vec<u8>, usize>,
-        type_by_ord: &HashMap<u64, usize>,
-        value: FunctionRaw,
-        fields: &mut impl Iterator<Item = Option<IDBString>>,
-        comments: &mut impl Iterator<Item = Option<CommentType>>,
-    ) -> Result<Self> {
-        let ret = Type::new(
-            til,
-            type_by_name,
-            type_by_ord,
-            *value.ret,
-            &mut *fields,
-            None,
-            &mut vec![].into_iter(),
-        )?;
-        let args = value
-            .args
-            .into_iter()
-            .map(move |(ty, loc, flags)| {
-                let name = fields.next().flatten();
-                let comment = comments.next().flatten();
-                let ty = Type::new(
-                    til,
-                    type_by_name,
-                    type_by_ord,
-                    ty,
-                    fields,
-                    None,
-                    comments,
-                )?;
-                Ok(FunctionArg {
-                    name,
-                    comment,
-                    ty,
-                    loc,
-                    flags,
-                })
-            })
-            .collect::<Result<_>>()?;
-        Ok(Self {
-            calling_convention: value.calling_convention,
-            ret: Box::new(ret),
-            args,
-            method: value.method,
-            retloc: value.retloc,
-            is_noret: value.is_noret,
-            is_pure: value.is_pure,
-            is_high: value.is_high,
-            is_static: value.is_static,
-            is_virtual: value.is_virtual,
-            is_const: value.is_const,
-            is_constructor: value.is_constructor,
-            is_destructor: value.is_destructor,
-        })
-    }
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct FunctionArg {
-    pub name: Option<IDBString>,
-    pub comment: Option<CommentType>,
-    pub ty: Type,
-    pub loc: Option<ArgLoc>,
-    pub flags: Option<FunctionArgFlags>,
-}
-
-#[derive(Debug, Clone, Copy, Serialize)]
-pub struct FunctionArgFlags {
-    pub is_hidden: bool,
-    pub is_return_ptr: bool,
-    pub is_struct_ptr: bool,
-    pub is_array_ptr: bool,
-    pub is_unused: bool,
-}
-
-impl FunctionArgFlags {
-    pub(crate) fn from_raw(flags: u32) -> Result<Self> {
-        #[cfg(feature = "restrictive")]
-        if flags > 0x10 {
-            return Err(anyhow!("Invalid value for FunctionArgFlags "));
-        }
-        // TODO find the value for this in `crate::til::flag::*`
-        let is_hidden = flags & 0x1 != 0;
-        let is_return_ptr = flags & 0x2 != 0;
-        let is_struct_ptr = flags & 0x4 != 0;
-        let is_array_ptr = flags & 0x8 != 0;
-        let is_unused = flags & 0x10 != 0;
-        Ok(Self {
-            is_hidden,
-            is_return_ptr,
-            is_struct_ptr,
-            is_array_ptr,
-            is_unused,
-        })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct FunctionRaw {
-    pub ret: Box<TypeRaw>,
-    pub args: Vec<(TypeRaw, Option<ArgLoc>, Option<FunctionArgFlags>)>,
-    pub retloc: Option<ArgLoc>,
-    pub calling_convention: Option<CallingConvention>,
-
-    pub method: Option<CallMethod>,
-    pub is_noret: bool,
-    pub is_pure: bool,
-    pub is_high: bool,
-    pub is_static: bool,
-    pub is_virtual: bool,
-    pub is_const: bool,
-    pub is_constructor: bool,
-    pub is_destructor: bool,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub enum ArgLoc {
-    // TODO add those to flags
-    // ::ALOC_STACK
-    // ::ALOC_STATIC
-    // ::ALOC_REG1
-    // ::ALOC_REG2
-    // ::ALOC_RREL
-    // ::ALOC_DIST
-    // ::ALOC_CUSTOM
-    /// 0 - None
-    None,
-    /// 1 - stack offset
-    Stack(u32),
-    /// 2 - distributed (scattered)
-    Dist(Vec<ArgLocDist>),
-    /// 3 - one register (and offset within it)
-    Reg1(u32),
-    /// 4 - register pair
-    Reg2(u32),
-    /// 5 - register relative
-    RRel { reg: u16, off: u32 },
-    /// 6 - global address
-    Static(u32),
-    // 7..=0xf custom
-    // TODO is possible to know the custom impl len?
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct ArgLocDist {
-    pub info: u16,
-    pub off: u16,
-    pub size: u16,
-}
-
-impl FunctionRaw {
-    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x473190 print_til_type
-    // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x47c8f0
     pub(crate) fn read(
         input: &mut impl IdbBufRead,
         header: &TILSectionHeader,
         metadata: u8,
+        fields: &mut impl Iterator<Item = Option<IDBString>>,
+        comments: &mut impl Iterator<Item = Option<CommentType>>,
     ) -> Result<Self> {
         use super::flag::tf_func::*;
         let method = match metadata {
@@ -248,13 +94,13 @@ impl FunctionRaw {
             flags_upper & !(BFA_CONST | BFA_CONSTRUCTOR | BFA_DESTRUCTOR) == 0
         );
 
-        let ret =
-            TypeRaw::read(&mut *input, header).context("Return Argument")?;
+        let ret = Type::read(&mut *input, header, None, fields, comments)
+            .context("Return Argument")?;
         // TODO double check documentation for [flag::tf_func::BT_FUN]
         let is_special_pe =
             cc.map(CallingConvention::is_special_pe).unwrap_or(false);
         let have_retloc = is_special_pe
-            && !matches!(&ret.variant, TypeVariantRaw::Basic(Basic::Void));
+            && !matches!(&ret.type_variant, TypeVariant::Basic(Basic::Void));
         let retloc = have_retloc
             .then(|| ArgLoc::read(&mut *input))
             .transpose()
@@ -282,28 +128,112 @@ impl FunctionRaw {
 
         let n = input.read_dt()?;
         result.args = (0..n)
-            .map(|i| -> Result<_> {
+            .map(|i| {
+                let name = fields.next().flatten();
+                let comment = comments.next().flatten();
                 let tmp = input.peek_u8()?;
-                let flag = (tmp == Some(0xFF))
+                let flags = (tmp == Some(0xFF))
                     .then(|| {
                         input.consume(1);
                         // TODO what is this?
                         FunctionArgFlags::from_raw(input.read_de()?)
                     })
                     .transpose()?;
-                let tinfo = TypeRaw::read(&mut *input, header)
-                    .with_context(|| format!("Argument Type {i}"))?;
-                let argloc = is_special_pe
+                let ty =
+                    Type::read(&mut *input, header, None, fields, comments)
+                        .with_context(|| format!("Argument Type {i}"))?;
+                let loc = is_special_pe
                     .then(|| ArgLoc::read(&mut *input))
                     .transpose()
                     .with_context(|| format!("Argument Argloc {i}"))?;
 
-                Ok((tinfo, argloc, flag))
+                Ok(FunctionArg {
+                    name,
+                    comment,
+                    ty,
+                    loc,
+                    flags,
+                })
             })
-            .collect::<Result<_, _>>()?;
+            .collect::<Result<_>>()?;
 
         Ok(result)
     }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct FunctionArg {
+    pub name: Option<IDBString>,
+    pub comment: Option<CommentType>,
+    pub ty: Type,
+    pub loc: Option<ArgLoc>,
+    pub flags: Option<FunctionArgFlags>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct FunctionArgFlags {
+    pub is_hidden: bool,
+    pub is_return_ptr: bool,
+    pub is_struct_ptr: bool,
+    pub is_array_ptr: bool,
+    pub is_unused: bool,
+}
+
+impl FunctionArgFlags {
+    pub(crate) fn from_raw(flags: u32) -> Result<Self> {
+        #[cfg(feature = "restrictive")]
+        if flags > 0x10 {
+            return Err(anyhow!("Invalid value for FunctionArgFlags "));
+        }
+        // TODO find the value for this in `crate::til::flag::*`
+        let is_hidden = flags & 0x1 != 0;
+        let is_return_ptr = flags & 0x2 != 0;
+        let is_struct_ptr = flags & 0x4 != 0;
+        let is_array_ptr = flags & 0x8 != 0;
+        let is_unused = flags & 0x10 != 0;
+        Ok(Self {
+            is_hidden,
+            is_return_ptr,
+            is_struct_ptr,
+            is_array_ptr,
+            is_unused,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub enum ArgLoc {
+    // TODO add those to flags
+    // ::ALOC_STACK
+    // ::ALOC_STATIC
+    // ::ALOC_REG1
+    // ::ALOC_REG2
+    // ::ALOC_RREL
+    // ::ALOC_DIST
+    // ::ALOC_CUSTOM
+    /// 0 - None
+    None,
+    /// 1 - stack offset
+    Stack(u32),
+    /// 2 - distributed (scattered)
+    Dist(Vec<ArgLocDist>),
+    /// 3 - one register (and offset within it)
+    Reg1(u32),
+    /// 4 - register pair
+    Reg2(u32),
+    /// 5 - register relative
+    RRel { reg: u16, off: u32 },
+    /// 6 - global address
+    Static(u32),
+    // 7..=0xf custom
+    // TODO is possible to know the custom impl len?
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ArgLocDist {
+    pub info: u16,
+    pub off: u16,
+    pub size: u16,
 }
 
 impl ArgLoc {

@@ -1,5 +1,5 @@
 ---
-hash: 69343DDCC3CEE239
+hash: AD59054A7252C649
 source: src/test.rs
 expression: til
 ---
@@ -284,7 +284,7 @@ Some((
      is_cppobj: false,
      is_vft: false,
      is_fixed: false,
-     is_uknown_8: false,
+     is_unknown_8: false,
      alignment: Some(8),
     )),
    ),
