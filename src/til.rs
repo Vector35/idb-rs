@@ -481,9 +481,9 @@ pub enum TyperefType {
 }
 
 impl Typeref {
-    fn read(input: &mut impl IdbRead) -> Result<Self> {
+    fn read(input: &mut impl IdbBufRead) -> Result<Self> {
         let buf = input.unpack_dt_bytes()?;
-        match &buf[..] {
+        let ref_type = match &buf[..] {
             [b'#', data @ ..] => {
                 // InnerRef 66961e377716596c17e2330a28c01eb3600be518 0x2fbf90
                 let mut tmp = data;
@@ -493,18 +493,23 @@ impl Typeref {
                         "Typedef Ordinal with more data then expected"
                     ));
                 }
-                Ok(Self {
+                Self {
                     ref_type: None,
                     typeref_value: TyperefValue::Ordinal(de),
-                })
+                }
             }
-            _ => Ok(Self {
+            _ => Self {
                 ref_type: None,
                 typeref_value: TyperefValue::Name(
                     (!buf.is_empty()).then(|| IDBString::new(buf)),
                 ),
-            }),
-        }
+            },
+        };
+
+        // TODO find the meaning of this value
+        let _att = input.read_tah().context("Typedef Extended Att")?.flatten();
+
+        Ok(ref_type)
     }
 
     fn new_struct(mut x: Typeref) -> Self {
