@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use serde::Serialize;
 
 use crate::ida_reader::IdbBufRead;
@@ -86,6 +86,9 @@ impl Pointer {
             TAPTR_RESTRICT => Some(PointerModifier::Restricted),
             _ => unreachable!(),
         };
+
+        // TODO find the meaning of this value
+        let _att = input.read_tah().context("Typedef Extended Att")?.flatten();
 
         Ok(Self {
             closure,
