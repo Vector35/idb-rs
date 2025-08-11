@@ -306,21 +306,33 @@ fn get_nam_section(
 }
 
 fn get_til_section(args: &Args) -> Result<TILSection> {
-    struct Parse;
-    impl ParseSection for Parse {
-        type Section<K: IDAKind> = TILSection;
-        fn parse_section<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
-            idb: F,
-            input: I,
-        ) -> Result<Self::Section<K>> {
-            let location = idb.til_location().ok_or_else(|| {
-                anyhow!("IDB file don't contains a Nam sector")
-            })?;
-            idb.read_til(input, location)
+    match args.input_type() {
+        FileType::Til => {
+            let mut input = BufReader::new(File::open(&args.input)?);
+            TILSection::read(&mut input)
         }
-    }
-    match get_sections::<Parse>(args)? {
-        IDAVariants::IDA32(x) | IDAVariants::IDA64(x) => Ok(x),
+        FileType::Idb => {
+            struct Parse;
+            impl ParseSection for Parse {
+                type Section<K: IDAKind> = TILSection;
+                fn parse_section<
+                    K: IDAKind,
+                    F: IDBFormat<K>,
+                    I: BufRead + Seek,
+                >(
+                    idb: F,
+                    input: I,
+                ) -> Result<Self::Section<K>> {
+                    let location = idb.til_location().ok_or_else(|| {
+                        anyhow!("IDB file don't contains a Nam sector")
+                    })?;
+                    idb.read_til(input, location)
+                }
+            }
+            match get_sections::<Parse>(args)? {
+                IDAVariants::IDA32(x) | IDAVariants::IDA64(x) => Ok(x),
+            }
+        }
     }
 }
 
