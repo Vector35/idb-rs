@@ -85,8 +85,11 @@ impl TILTypeInfo {
         #[cfg(feature = "restrictive")]
         ensure!(
             tinfo_cursor.is_empty(),
-            "Unable to parse til type fully, left {} bytes",
-            tinfo_cursor.len()
+            "Unable to parse til type fully, left {} bytes {}",
+            tinfo_cursor.len(),
+            (tinfo_cursor.len() < 10)
+                .then(|| format!("{:02X?}", tinfo_cursor))
+                .unwrap_or("[..]".into())
         );
         #[cfg(feature = "restrictive")]
         ensure!(fields_iter.next().is_none(), "Unparsed name fields");
@@ -174,7 +177,7 @@ impl Type {
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x472e13 print_til_type
         let type_variant = match (type_base, type_flags) {
             (..=flag::tf_last_basic::BT_LAST_BASIC, _) => {
-                Basic::new(header, type_base, type_flags)
+                Basic::new(input, header, type_base, type_flags)
                     .context("Type::Basic")
                     .map(TypeVariant::Basic)?
             }
@@ -354,7 +357,26 @@ pub enum Basic {
 }
 
 impl Basic {
-    fn new(til: &TILSectionHeader, bt: u8, btmt: u8) -> Result<Self> {
+    fn new(
+        input: &mut impl IdbBufRead,
+        til: &TILSectionHeader,
+        bt: u8,
+        btmt: u8,
+    ) -> Result<Self> {
+        let basic = Self::basic_from_value(til, bt, btmt)?;
+        if bt != flag::tf_unk::BT_UNK {
+            // TODO find the meaning of this value
+            let _att =
+                input.read_tah().context("Typedef Extended Att")?.flatten();
+        }
+        Ok(basic)
+    }
+
+    fn basic_from_value(
+        til: &TILSectionHeader,
+        bt: u8,
+        btmt: u8,
+    ) -> Result<Self> {
         const fn bytes(bytes: u8) -> NonZeroU8 {
             let Some(bytes) = NonZeroU8::new(bytes) else {
                 unreachable!()
