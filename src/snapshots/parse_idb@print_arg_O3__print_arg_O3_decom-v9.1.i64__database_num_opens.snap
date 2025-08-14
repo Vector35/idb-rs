@@ -1,6 +1,0 @@
----
-hash: BF291DBB5B98B533
-source: src/test.rs
-expression: database_num_opens
----
-2
