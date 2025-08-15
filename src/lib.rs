@@ -45,6 +45,7 @@ pub mod id1;
 pub mod id2;
 pub(crate) mod ida_reader;
 pub mod nam;
+pub mod processors;
 #[allow(non_camel_case_types)]
 pub mod sdk_comp;
 pub mod til;
