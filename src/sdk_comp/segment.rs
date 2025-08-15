@@ -21,7 +21,7 @@ pub struct segment_t<K: IDAKind> {
     pub bitness: SegmentBitness,
     pub flags: u16,
     pub sel: sel_t<K>,
-    pub defsr: [sel_t<K>; 16usize],
+    pub defsr: [Option<sel_t<K>>; 16usize],
     pub type_: SegmentType,
     pub color: bgcolor_t,
 }

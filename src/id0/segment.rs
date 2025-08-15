@@ -57,7 +57,7 @@ pub struct Segment<K: IDAKind> {
     pub selector: K::Usize,
     /// Default segment register values.
     /// First element of this array keeps information about value of [processor_t::reg_first_sreg](https://hex-rays.com//products/ida/support/sdkdoc/structprocessor__t.html#a4206e35bf99d211c18d53bd1035eb2e3)
-    pub defsr: [K::Usize; 16],
+    pub defsr: [Option<K::Usize>; 16],
     /// the segment color
     pub color: u32,
 }
@@ -103,7 +103,10 @@ impl<K: IDAKind> Segment<K> {
             .ok_or_else(|| anyhow!("Invalid Segment Type value"))?;
         let selector = cursor.unpack_usize()?;
         let defsr: [_; 16] = (0..16)
-            .map(|_| cursor.unpack_usize())
+            .map(|_| -> Result<Option<<K as IDAKind>::Usize>> {
+                let x = cursor.unpack_usize()?;
+                Ok((x != 0u8.into()).then(|| x - 1u8.into()))
+            })
             .collect::<Result<Vec<_>, _>>()?
             .try_into()
             .unwrap();

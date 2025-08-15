@@ -157,7 +157,7 @@ fn produce_idc_inner<K: IDAKind>(
         writeln!(fmt)?;
         produce_gen_info(fmt, til, &root_info)?;
         writeln!(fmt)?;
-        produce_segments(fmt, id0, id1, id2)?;
+        produce_segments(fmt, id0, id1, id2, &root_info)?;
     }
 
     if _unknown_value2 {
@@ -292,6 +292,7 @@ fn produce_segments<K: IDAKind>(
     id0: &ID0Section<K>,
     _id1: &ID1Section<K>,
     id2: Option<&ID2Section<K>>,
+    info: &RootInfo<K>,
 ) -> Result<()> {
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// Information about segmentation")?;
@@ -350,10 +351,25 @@ fn produce_segments<K: IDAKind>(
         writeln!(fmt, "  set_segm_class({startea:#X}, {seg_class_name:?});")?;
 
         //// TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb76ac
-        //for _def_ref in seg.defsr.iter().filter(|x| **x != 0) {
-        //    writeln!(fmt, "SegDefReg({startea:#X}, {seg_class_raw:?}, {:X});")?;
-        //    todo!();
-        //}
+        let processor_name =
+            core::str::from_utf8(&info.target.processor).unwrap();
+        let processor = idb_rs::processors::PROCESSORS
+            .iter()
+            .find(|p| {
+                p.name() == processor_name
+                    || p.alt_names().iter().any(|p| *p == processor_name)
+            })
+            .ok_or_else(|| anyhow!("processor not found: {processor_name}"))?;
+        for (value, name) in
+            seg.defsr.iter().zip(processor.segment_register_names())
+        {
+            if *name == processor.segment_register_code_name() {
+                continue;
+            }
+            if let Some(value) = value {
+                writeln!(fmt, "SegDefReg({startea:#X},{name:?},{value:#X});")?;
+            }
+        }
 
         // InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb74e1
         // https://docs.hex-rays.com/developer-guide/idc/idc-api-reference/alphabetical-list-of-idc-functions/310
