@@ -1,0 +1,191 @@
+---
+hash: 2DE2C16670C7C864
+source: src/test.rs
+expression: srareas
+---
+[
+ (
+  range: (
+   start: (4194304),
+   end: (4199832),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4199832),
+   end: (4199858),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4199858),
+   end: (4199872),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4199872),
+   end: (4201024),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4201024),
+   end: (4229514),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4229514),
+   end: (4229516),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4229516),
+   end: (4229525),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4229525),
+   end: (4229536),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4229536),
+   end: (4233971),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4233971),
+   end: (4233972),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4233972),
+   end: (4234752),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4234752),
+   end: (4238788),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6336016),
+   end: (6336024),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6336024),
+   end: (6336032),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6336032),
+   end: (6336040),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6336040),
+   end: (6336504),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6336504),
+   end: (6336512),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6336512),
+   end: (6337104),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6337104),
+   end: (6337120),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6337120),
+   end: (6337300),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6337300),
+   end: (6337312),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6337312),
+   end: (6339816),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6339816),
+   end: (6340384),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+]

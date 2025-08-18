@@ -1,0 +1,55 @@
+---
+hash: 1F97A61A6F65D737
+source: src/test.rs
+expression: srareas
+---
+[
+ (
+  range: (
+   start: (1754267648),
+   end: (1754271744),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1754271744),
+   end: (1755164672),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1755164672),
+   end: (1755172864),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1755172864),
+   end: (1755177520),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1755213824),
+   end: (1755217920),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1755217920),
+   end: (1755283456),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+]

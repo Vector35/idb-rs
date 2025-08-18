@@ -1,0 +1,47 @@
+---
+hash: 0D4087E2CDEF25F7
+source: src/test.rs
+expression: srareas
+---
+[
+ (
+  range: (
+   start: (4198400),
+   end: (4202496),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4202496),
+   end: (4202712),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4202712),
+   end: (4206592),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4206592),
+   end: (4210688),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4210688),
+   end: (4214784),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+]

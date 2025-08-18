@@ -1,0 +1,71 @@
+---
+hash: F4246943B8B646AC
+source: src/test.rs
+expression: srareas
+---
+[
+ (
+  range: (
+   start: (0),
+   end: (704),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (704),
+   end: (424352),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (424352),
+   end: (551680),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (551680),
+   end: (1489696),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1489696),
+   end: (1499616),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1499616),
+   end: (1505952),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1505952),
+   end: (1510304),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1510304),
+   end: (1511424),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+]

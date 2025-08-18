@@ -1,0 +1,135 @@
+---
+hash: 40E2E12AF36A699A
+source: src/test.rs
+expression: srareas
+---
+[
+ (
+  range: (
+   start: (134518444),
+   end: (134518479),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134518480),
+   end: (134520288),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134520288),
+   end: (134520296),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134520304),
+   end: (134592052),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134592052),
+   end: (134592072),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134592096),
+   end: (134614036),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134614036),
+   end: (134616112),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134616112),
+   end: (134636760),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134643456),
+   end: (134643460),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134643460),
+   end: (134643464),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134643464),
+   end: (134643468),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134643708),
+   end: (134643712),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134643712),
+   end: (134644172),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134644192),
+   end: (134644548),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134644608),
+   end: (134647736),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (134647736),
+   end: (134648200),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+]
