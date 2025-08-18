@@ -1,5 +1,5 @@
 ---
-hash: 81DE7BC9A64CEF18
+hash: FF8F35C8B22FD37E
 source: src/test.rs
 expression: segments
 ---
@@ -19,7 +19,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Code,
   selector: 1,
-  defsr: (1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(3), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -37,7 +37,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Xtrn,
   selector: 5,
-  defsr: (1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(3), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -55,7 +55,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 2,
-  defsr: (1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(3), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -73,7 +73,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 3,
-  defsr: (1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(3), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -91,7 +91,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 4,
-  defsr: (1, 1, 1, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(3), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
 ]

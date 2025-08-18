@@ -1,5 +1,5 @@
 ---
-hash: CF8B9DC33BCF9E87
+hash: 18ACC0E6B92E4CF8
 source: src/test.rs
 expression: segments
 ---
@@ -19,7 +19,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Code,
   selector: 1,
-  defsr: (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
 ]

@@ -1,5 +1,5 @@
 ---
-hash: 0CCC34CC7A39A058
+hash: 10595483CB702721
 source: src/test.rs
 expression: segments
 ---
@@ -19,7 +19,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Code,
   selector: 1,
-  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(16), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -37,7 +37,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Code,
   selector: 4,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -55,7 +55,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Code,
   selector: 1,
-  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(16), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -73,7 +73,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Code,
   selector: 5,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -91,7 +91,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Code,
   selector: 6,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -109,7 +109,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Code,
   selector: 1,
-  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(16), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -127,7 +127,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Code,
   selector: 7,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -145,7 +145,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Code,
   selector: 1,
-  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(16), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -163,7 +163,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 8,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -181,7 +181,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 9,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -199,7 +199,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 10,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -217,7 +217,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 11,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -235,7 +235,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 12,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -253,7 +253,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 13,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -271,7 +271,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 2,
-  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(16), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -289,7 +289,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 14,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -307,7 +307,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 15,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -325,7 +325,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 2,
-  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(16), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -343,7 +343,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 16,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -361,7 +361,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 2,
-  defsr: (1, 1, 1, 17, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(16), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -379,7 +379,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Bss,
   selector: 17,
-  defsr: (0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(16), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -397,7 +397,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Null,
   selector: 18,
-  defsr: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -415,7 +415,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Xtrn,
   selector: 19,
-  defsr: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
 ]
