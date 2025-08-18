@@ -27,6 +27,7 @@ pub use reference_info::*;
 pub use root_info::*;
 pub use segment::*;
 pub mod function;
+pub mod segment_register;
 
 // TODO find this on the SDK, maybe migrate this to flags
 const NETNODE_PREFIX: u8 = b'.';

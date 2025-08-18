@@ -1,0 +1,23 @@
+---
+hash: 01E7A3EBD6599918
+source: src/test.rs
+expression: srareas
+---
+[
+ (
+  range: (
+   start: (0),
+   end: (1),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4160749567),
+   end: (4294967294),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+]

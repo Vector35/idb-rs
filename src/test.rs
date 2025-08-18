@@ -5,6 +5,7 @@ use std::hash::Hasher;
 use std::io::{BufWriter, Cursor};
 use std::path::{Path, PathBuf};
 
+use crate::id0::segment_register::Srarea;
 use crate::id0::{FileRegions, Segment};
 use crate::*;
 
@@ -458,6 +459,11 @@ fn parse_idb_data<K>(
     let root_netnode = id0.root_node().unwrap();
     let ida_info = id0.ida_info(root_netnode.into()).unwrap();
     let netdelta = ida_info.netdelta();
+    let proc = crate::processors::get_processor(
+        ida_info.version,
+        &ida_info.target.processor,
+    )
+    .unwrap();
     assert_dyn!("parse_idb", filename, ida_info);
 
     let seg_idx = id0.segments_idx().unwrap().unwrap();
@@ -467,6 +473,22 @@ fn parse_idb_data<K>(
         (seg.address.start, seg.address.end, seg.selector)
     });
     assert_dyn!("parse_idb", filename, segments);
+
+    // TODO default into `$ regs`?
+    if let Some(srareas_idx) = id0.srareas_idx().unwrap() {
+        let mut srareas: Vec<(&'static str, Vec<Srarea<K>>)> = vec![];
+        for (sreg_idx, sreg) in proc.segment_register_names().iter().enumerate()
+        {
+            let mut srareas_reg: Vec<Srarea<K>> = id0
+                .srareas(srareas_idx, sreg_idx.try_into().unwrap())
+                .map(Result::unwrap)
+                .collect();
+            srareas_reg.sort_unstable_by_key(|seg| seg.range.start);
+            srareas.push((*sreg, srareas_reg));
+        }
+        srareas.sort_unstable_by_key(|seg| seg.0);
+        assert_dyn!("parse_idb", filename, srareas);
+    }
 
     let loader_name: Option<Vec<&str>> = id0
         .loader_name()

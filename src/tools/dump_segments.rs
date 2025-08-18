@@ -30,5 +30,25 @@ fn dump<K: IDAKind>(id0: ID0Section<K>) -> Result<()> {
             println!("  {:x?}", entry?);
         }
     }
+
+    if let Some(idx) = id0.srareas_idx()? {
+        let info_idx = id0.root_node()?;
+        let info = id0.ida_info(info_idx)?;
+        let proc = idb_rs::processors::get_processor(
+            info.version,
+            &info.target.processor,
+        )
+        .unwrap();
+        for (sreg_idx, sreg) in proc.segment_register_names().iter().enumerate()
+        {
+            println!();
+            println!(
+                "segment registers `$ srareas` for segreg {sreg_idx} {sreg:?}: "
+            );
+            for entry in id0.srareas(idx, sreg_idx.try_into().unwrap()) {
+                println!("  {:x?}", entry?);
+            }
+        }
+    }
     Ok(())
 }

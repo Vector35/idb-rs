@@ -1,5 +1,12 @@
 use std::ops::Range;
 
+pub fn get_processor(_version: u16, name: &[u8]) -> Option<&'static Processor> {
+    // TODO get and process multiples versions of the processor
+    PROCESSORS
+        .iter()
+        .find(|p| p.alt_names().iter().any(|n| n.as_bytes() == name))
+}
+
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Processor {
     name: &'static str,
@@ -33,11 +40,11 @@ impl Processor {
     }
 
     pub const fn segment_register_code_name(&self) -> &str {
-        &self.register_names[self.segment_register_code]
+        self.register_names[self.segment_register_code]
     }
 
     pub const fn segment_register_data_name(&self) -> &str {
-        &self.register_names[self.segment_register_data]
+        self.register_names[self.segment_register_data]
     }
 }
 

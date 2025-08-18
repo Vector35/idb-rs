@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Cursor, Seek, Write};
 
@@ -11,6 +12,7 @@ use idb_rs::id1::{
     ID1Section,
 };
 use idb_rs::id2::ID2Section;
+use idb_rs::processors::Processor;
 use idb_rs::sdk_comp::prelude::*;
 use idb_rs::til::section::TILSection;
 use idb_rs::til::TILTypeInfo;
@@ -94,6 +96,20 @@ fn produce_idc_inner<K: IDAKind>(
     let root_info = id0.ida_info(root_info_idx)?;
     let image_base = id0.image_base(root_info_idx)?;
     let netdelta = root_info.netdelta();
+    let processor = idb_rs::processors::PROCESSORS
+        .iter()
+        .find(|p| {
+            p.alt_names()
+                .iter()
+                .any(|p| p.as_bytes() == root_info.target.processor)
+        })
+        .ok_or_else(|| {
+            anyhow!(
+                "processor not found: {}",
+                core::str::from_utf8(&root_info.target.processor).unwrap()
+            )
+        })?;
+
     if !args.banner.is_empty() {
         writeln!(fmt, "//\n// +-------------------------------------------------------------------------+")?;
         for line in &args.banner {
@@ -157,7 +173,7 @@ fn produce_idc_inner<K: IDAKind>(
         writeln!(fmt)?;
         produce_gen_info(fmt, til, &root_info)?;
         writeln!(fmt)?;
-        produce_segments(fmt, id0, id1, id2, &root_info)?;
+        produce_segments(fmt, id0, id1, id2, processor)?;
     }
 
     if _unknown_value2 {
@@ -173,7 +189,7 @@ fn produce_idc_inner<K: IDAKind>(
     produce_functions(fmt, id0, til, netdelta)?;
 
     writeln!(fmt)?;
-    produce_seg_regs(fmt, id0, til)?;
+    produce_seg_regs(fmt, id0, processor)?;
 
     writeln!(fmt)?;
     produce_all_patches(fmt, id0, til)?;
@@ -292,7 +308,7 @@ fn produce_segments<K: IDAKind>(
     id0: &ID0Section<K>,
     _id1: &ID1Section<K>,
     id2: Option<&ID2Section<K>>,
-    info: &RootInfo<K>,
+    processor: &Processor,
 ) -> Result<()> {
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// Information about segmentation")?;
@@ -351,15 +367,6 @@ fn produce_segments<K: IDAKind>(
         writeln!(fmt, "  set_segm_class({startea:#X}, {seg_class_name:?});")?;
 
         //// TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb76ac
-        let processor_name =
-            core::str::from_utf8(&info.target.processor).unwrap();
-        let processor = idb_rs::processors::PROCESSORS
-            .iter()
-            .find(|p| {
-                p.name() == processor_name
-                    || p.alt_names().iter().any(|p| *p == processor_name)
-            })
-            .ok_or_else(|| anyhow!("processor not found: {processor_name}"))?;
         for (value, name) in
             seg.defsr.iter().zip(processor.segment_register_names())
         {
@@ -367,7 +374,10 @@ fn produce_segments<K: IDAKind>(
                 continue;
             }
             if let Some(value) = value {
-                writeln!(fmt, "SegDefReg({startea:#X},{name:?},{value:#X});")?;
+                writeln!(
+                    fmt,
+                    "  SegDefReg({startea:#X},{name:?},{value:#X});"
+                )?;
             }
         }
 
@@ -1063,15 +1073,35 @@ fn produce_functions<K: IDAKind>(
 
 fn produce_seg_regs<K: IDAKind>(
     fmt: &mut impl Write,
-    _id0: &ID0Section<K>,
-    _til: &TILSection,
+    id0: &ID0Section<K>,
+    processor: &Processor,
 ) -> Result<()> {
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// Information about segment registers")?;
     writeln!(fmt)?;
     writeln!(fmt, "static SegRegs(void)")?;
     writeln!(fmt, "{{")?;
-    writeln!(fmt, "  TODO();")?;
+    if let Some(idx) = id0.srareas_idx()? {
+        for (sreg_idx, sreg_name) in
+            processor.segment_register_names().iter().enumerate()
+        {
+            if *sreg_name == processor.segment_register_code_name() {
+                continue;
+            }
+            for area in id0.srareas(idx, sreg_idx.try_into().unwrap()) {
+                let area = area?;
+                writeln!(
+                    fmt,
+                    "  split_sreg_range(0x{:X}, {sreg_name:?}, {}, {});",
+                    area.range.start.into_raw(),
+                    area.value
+                        .map(|x| format!("0x{x:X}").into())
+                        .unwrap_or(Cow::Borrowed("BADSEL")),
+                    area.tag.map(|x| x as u8).unwrap_or(0),
+                )?;
+            }
+        }
+    }
     writeln!(fmt, "}}")?;
     Ok(())
 }

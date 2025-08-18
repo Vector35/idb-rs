@@ -8,6 +8,7 @@ use num_traits::{AsPrimitive, CheckedAdd, PrimInt, ToBytes};
 use crate::addr_info::SubtypeId;
 use crate::id0::entry_iter::EntryTagContinuousFlat;
 use crate::id0::flag::nsup::NSUP_LLABEL;
+use crate::id0::segment_register::{Srarea, SrareasIdx};
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
 use crate::{til, Address, IDBStr};
 use crate::{IDBString, SectionReader};
@@ -1002,6 +1003,21 @@ impl<K: IDAKind> ID0Section<K> {
         idx: FuncIdx<K>,
     ) -> impl Iterator<Item = Result<IDBFunction<K>>> + use<'_, K> {
         fchunks(self, idx)
+    }
+
+    /// read the `$ srareas` idx entry of the database
+    pub fn srareas_idx(&self) -> Result<Option<SrareasIdx<K>>> {
+        segment_register::srareas_idx(self)
+    }
+
+    /// read the `$ srareas` entries, the data suggests that the entries are
+    /// ordered by address start, but that's not necessarily true
+    pub fn srareas(
+        &self,
+        idx: SrareasIdx<K>,
+        segment_register_idx: u8,
+    ) -> impl Iterator<Item = Result<Srarea<K>>> + use<'_, K> {
+        segment_register::srareas(self, idx, segment_register_idx)
     }
 
     fn cmt_inner(

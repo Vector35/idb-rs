@@ -1,0 +1,15 @@
+---
+hash: A9B0C50BFE9206ED
+source: src/test.rs
+expression: srareas
+---
+[
+ (
+  range: (
+   start: (0),
+   end: (13),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+]

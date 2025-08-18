@@ -1,0 +1,39 @@
+---
+hash: DC743411CABC1CDE
+source: src/test.rs
+expression: srareas
+---
+[
+ (
+  range: (
+   start: (4198400),
+   end: (4198548),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4198548),
+   end: (4201456),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4201456),
+   end: (4205116),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (4206592),
+   end: (4206632),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+]

@@ -1,0 +1,39 @@
+---
+hash: FCA3C13EC1A00723
+source: src/test.rs
+expression: srareas
+---
+[
+ (
+  range: (
+   start: (1754271744),
+   end: (1754989621),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1754989621),
+   end: (1755164672),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1755164672),
+   end: (1755172864),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (1755172864),
+   end: (1755177520),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+]

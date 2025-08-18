@@ -1,0 +1,79 @@
+---
+hash: CDFDC9775E7959BD
+source: src/test.rs
+expression: srareas
+---
+[
+ (
+  range: (
+   start: (6442450944),
+   end: (6442455040),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6442455040),
+   end: (6442868736),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6442868736),
+   end: (6443003904),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6443003904),
+   end: (6443012096),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6443012096),
+   end: (6443040768),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6443040768),
+   end: (6443044864),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6443044864),
+   end: (6443266048),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6443266048),
+   end: (6443274240),
+  ),
+  _unk0: 1,
+  tag: Some(Auto),
+ ),
+ (
+  range: (
+   start: (6443274240),
+   end: (6443355136),
+  ),
+  _unk0: 0,
+  tag: Some(Auto),
+ ),
+]
