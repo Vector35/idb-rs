@@ -1,5 +1,5 @@
 ---
-hash: F31670B3EA99CA64
+hash: 24C8638568B43809
 source: src/test.rs
 expression: segments
 ---
@@ -19,7 +19,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 1,
-  defsr: (1, 1, 1, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(4), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -37,7 +37,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 3,
-  defsr: (1, 1, 1, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(4), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -55,7 +55,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 4,
-  defsr: (1, 1, 1, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(4), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
 ]

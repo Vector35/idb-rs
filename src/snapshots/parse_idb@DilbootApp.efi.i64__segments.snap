@@ -1,5 +1,5 @@
 ---
-hash: 9EE8349D96908E09
+hash: 5F20E769C670A3C1
 source: src/test.rs
 expression: segments
 ---
@@ -19,7 +19,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 2,
-  defsr: (0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  defsr: (None, None, None, Some(4), None, None, None, None, None, None, None, None, None, None, None, None),
   color: 0,
  ),
  (
@@ -37,7 +37,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 1,
-  defsr: (1, 1, 1, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(4), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -55,7 +55,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 3,
-  defsr: (1, 1, 1, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(4), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -73,7 +73,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 4,
-  defsr: (1, 1, 1, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(4), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -91,7 +91,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 5,
-  defsr: (1, 1, 1, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(4), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -109,7 +109,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 6,
-  defsr: (1, 1, 1, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(4), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
  (
@@ -127,7 +127,7 @@ expression: segments
   bitness: S64Bits,
   seg_type: Data,
   selector: 0,
-  defsr: (1, 1, 1, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+  defsr: (Some(0), Some(0), Some(0), Some(4), None, None, Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0), Some(0)),
   color: 0,
  ),
 ]
