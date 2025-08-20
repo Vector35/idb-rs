@@ -1,5 +1,5 @@
 ---
-hash: 54D814D1B6F4A744
+hash: A237195895F9C7F8
 source: src/test.rs
 expression: ida_info
 ---
@@ -91,16 +91,16 @@ expression: ida_info
   is_guessed: false,
   compiler: Unknown,
   sizeof: (
-   cm: 19,
+   cm: Some(NN),
    int: 4,
    bool: 4,
-   enum_: 4,
-   short: 2,
-   long: 4,
-   longlong: 8,
-   long_double: 0,
+   enum_: Some(4),
+   short: Some(2),
+   long: Some(4),
+   longlong: Some(8),
+   long_double: None,
   ),
-  alignment: 0,
+  alignment: None,
  ),
  abibits: (0),
  appcall_options: 0,

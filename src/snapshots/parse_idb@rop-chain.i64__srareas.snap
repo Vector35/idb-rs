@@ -1,15 +1,67 @@
 ---
-hash: E343AC1F5A0D95ED
+hash: AA3F712722B4FEEE
 source: src/test.rs
 expression: srareas
 ---
 [
- (
-  range: (
-   start: (4194304),
-   end: (4196155),
+ ("cs", [
+  (
+   range: (
+    start: (4194304),
+    end: (4196155),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
+ ]),
+ ("ds", [
+  (
+   range: (
+    start: (4194304),
+    end: (4196155),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+ ]),
+ ("es", [
+  (
+   range: (
+    start: (4194304),
+    end: (4196155),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+ ]),
+ ("fs", [
+  (
+   range: (
+    start: (4194304),
+    end: (4196155),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+ ]),
+ ("gs", [
+  (
+   range: (
+    start: (4194304),
+    end: (4196155),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+ ]),
+ ("ss", [
+  (
+   range: (
+    start: (4194304),
+    end: (4196155),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+ ]),
 ]

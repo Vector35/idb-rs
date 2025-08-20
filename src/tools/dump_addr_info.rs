@@ -44,7 +44,7 @@ fn dump_inner<K: IDAKind>((id0, id1, id2): Id0Id1Id2Variant<K>) -> Result<()> {
                 write!(&mut buf, " Comment Post + {i}: {comment:?}")
             })?;
         }
-        if let Some(tinfo) = addr_info.tinfo()? {
+        if let Some(tinfo) = addr_info.tinfo(&root_info)? {
             write!(&mut buf, " Tinfo: {tinfo:?}",)?;
         }
         if !buf.is_empty() {

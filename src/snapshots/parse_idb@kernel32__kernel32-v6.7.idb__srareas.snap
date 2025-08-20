@@ -1,39 +1,179 @@
 ---
-hash: FCA3C13EC1A00723
+hash: DECD9F8A73D4FEF1
 source: src/test.rs
 expression: srareas
 ---
 [
- (
-  range: (
-   start: (1754271744),
-   end: (1754989621),
+ ("cs", [
+  (
+   range: (
+    start: (1754271744),
+    end: (1755164672),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (1754989621),
-   end: (1755164672),
+  (
+   range: (
+    start: (1755164672),
+    end: (1755172864),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (1755164672),
-   end: (1755172864),
+  (
+   range: (
+    start: (1755172864),
+    end: (1755177520),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (1755172864),
-   end: (1755177520),
+ ]),
+ ("ds", [
+  (
+   range: (
+    start: (1754271744),
+    end: (1754273429),
+   ),
+   value: Some(2),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
+  (
+   range: (
+    start: (1754273429),
+    end: (1755164672),
+   ),
+   value: Some(2),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (1755164672),
+    end: (1755172864),
+   ),
+   value: Some(2),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (1755172864),
+    end: (1755177520),
+   ),
+   value: Some(2),
+   tag: Some(Auto),
+  ),
+ ]),
+ ("es", [
+  (
+   range: (
+    start: (1754271744),
+    end: (1754989621),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (1754989621),
+    end: (1755164672),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (1755164672),
+    end: (1755172864),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (1755172864),
+    end: (1755177520),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+ ]),
+ ("fs", [
+  (
+   range: (
+    start: (1754271744),
+    end: (1755164672),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (1755164672),
+    end: (1755172864),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (1755172864),
+    end: (1755177520),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("gs", [
+  (
+   range: (
+    start: (1754271744),
+    end: (1755164672),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (1755164672),
+    end: (1755172864),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (1755172864),
+    end: (1755177520),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("ss", [
+  (
+   range: (
+    start: (1754271744),
+    end: (1755164672),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (1755164672),
+    end: (1755172864),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (1755172864),
+    end: (1755177520),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+ ]),
 ]

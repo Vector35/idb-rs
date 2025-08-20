@@ -1,23 +1,115 @@
 ---
-hash: 01E7A3EBD6599918
+hash: E487A1D8E8EB6D79
 source: src/test.rs
 expression: srareas
 ---
 [
- (
-  range: (
-   start: (0),
-   end: (1),
+ ("cs", [
+  (
+   range: (
+    start: (0),
+    end: (1),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (4160749567),
-   end: (4294967294),
+  (
+   range: (
+    start: (4160749567),
+    end: (4294967294),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
+ ]),
+ ("ds", [
+  (
+   range: (
+    start: (0),
+    end: (1),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4160749567),
+    end: (4294967294),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("es", [
+  (
+   range: (
+    start: (0),
+    end: (1),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4160749567),
+    end: (4294967294),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("fs", [
+  (
+   range: (
+    start: (0),
+    end: (1),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4160749567),
+    end: (4294967294),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("gs", [
+  (
+   range: (
+    start: (0),
+    end: (1),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4160749567),
+    end: (4294967294),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("ss", [
+  (
+   range: (
+    start: (0),
+    end: (1),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4160749567),
+    end: (4294967294),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
 ]

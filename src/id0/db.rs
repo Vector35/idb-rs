@@ -1110,7 +1110,10 @@ impl<K: IDAKind> ID0Section<K> {
     }
 
     /// read the `$ entry points` entries of the database
-    pub fn entry_points(&self) -> Result<Vec<EntryPoint<K>>> {
+    pub fn entry_points(
+        &self,
+        info: &RootInfo<K>,
+    ) -> Result<Vec<EntryPoint<K>>> {
         type RawEntryPoint<'a, K> =
             HashMap<K, (Option<K>, Option<&'a str>, Option<&'a str>)>;
         let mut entry_points: RawEntryPoint<'_, K::Usize> = HashMap::new();
@@ -1158,11 +1161,12 @@ impl<K: IDAKind> ID0Section<K> {
                     | (None, _, Some(_))
                     | (None, _, None) => None,
                     (Some(address), forwarded, Some(name)) => {
-                        let entry =
-                            match self.find_entry_point_type(key, address) {
-                                Ok(entry) => entry,
-                                Err(error) => return Some(Err(error)),
-                            };
+                        let entry = match self
+                            .find_entry_point_type(info, key, address)
+                        {
+                            Ok(entry) => entry,
+                            Err(error) => return Some(Err(error)),
+                        };
                         Some(Ok(EntryPoint {
                             name: name.to_owned(),
                             address,
@@ -1186,18 +1190,23 @@ impl<K: IDAKind> ID0Section<K> {
 
     fn find_entry_point_type(
         &self,
+        info: &RootInfo<K>,
         key: K::Usize,
         address: K::Usize,
     ) -> Result<Option<til::Type>> {
-        if let Some(key_entry) =
-            self.find_entry_point_type_value(key, K::Usize::from(0x3000u16))?
-        {
+        if let Some(key_entry) = self.find_entry_point_type_value(
+            info,
+            key,
+            K::Usize::from(0x3000u16),
+        )? {
             return Ok(Some(key_entry));
         }
         // TODO some times it uses the address as key, it's based on the version?
-        if let Some(key_entry) = self
-            .find_entry_point_type_value(address, K::Usize::from(0x3000u16))?
-        {
+        if let Some(key_entry) = self.find_entry_point_type_value(
+            info,
+            address,
+            K::Usize::from(0x3000u16),
+        )? {
             return Ok(Some(key_entry));
         }
         Ok(None)
@@ -1205,6 +1214,7 @@ impl<K: IDAKind> ID0Section<K> {
 
     fn find_entry_point_type_value(
         &self,
+        info: &RootInfo<K>,
         value: K::Usize,
         key_find: K::Usize,
     ) -> Result<Option<til::Type>> {
@@ -1212,7 +1222,7 @@ impl<K: IDAKind> ID0Section<K> {
             let (key, value) = entry?;
             // TODO handle other values for the key
             if key == key_find {
-                return til::Type::new_from_id0(value, vec![])
+                return til::Type::new_from_id0(info, value, vec![])
                     .map(Option::Some);
             }
         }

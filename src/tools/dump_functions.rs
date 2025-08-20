@@ -60,7 +60,7 @@ fn dump<K: IDAKind>((id0, id1, id2): Id0Id1Id2Variant<K>) -> Result<()> {
 
     println!();
     println!("Entry points, AKA `$ entry points`");
-    for entry in id0.entry_points()? {
+    for entry in id0.entry_points(&root_info)? {
         let EntryPoint {
             name,
             address,

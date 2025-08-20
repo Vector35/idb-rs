@@ -1,5 +1,6 @@
 mod migration;
 
+use std::num::NonZeroU8;
 use std::ops::Range;
 
 use anyhow::Result;
@@ -7,7 +8,12 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use num_traits::{WrappingAdd, WrappingSub};
 use serde::Serialize;
 
-use crate::{ida_reader::IdbReadKind, Address, IDAKind, IDAUsize};
+use crate::ida_reader::IdbReadKind;
+use crate::til::function::CCModel;
+use crate::til::section::{
+    TILSectionExtendedSizeofInfo, TILSectionFlags, TILSectionHeader,
+};
+use crate::{Address, IDAKind, IDAUsize, IDBString};
 
 use super::*;
 
@@ -206,27 +212,27 @@ pub struct RootInfoCompiler {
     pub compiler: Compiler,
     pub sizeof: RootInfoCompilerSizeof,
     // offset = 105, tag = 0x0, name = "compiler.alignment"
-    pub alignment: u8,
+    pub alignment: Option<NonZeroU8>,
 }
 
 #[derive(Clone, Debug, Serialize)]
 pub struct RootInfoCompilerSizeof {
     // offset = 101, tag = 0x0
-    pub cm: u8,
+    pub cm: Option<CCModel>,
     // offset = 102, tag = 0x0, name = "compiler.sizeof.int"
-    pub int: u8,
+    pub int: NonZeroU8,
     // offset = 103, tag = 0x0, name = "compiler.sizeof.bool"
-    pub bool: u8,
+    pub bool: NonZeroU8,
     // offset = 104, tag = 0x0, name = "compiler.sizeof.enum"
-    pub enum_: u8,
+    pub enum_: Option<NonZeroU8>,
     // offset = 106, tag = 0x0, name = "compiler.sizeof.short"
-    pub short: u8,
+    pub short: Option<NonZeroU8>,
     // offset = 107, tag = 0x0, name = "compiler.sizeof.long"
-    pub long: u8,
+    pub long: Option<NonZeroU8>,
     // offset = 108, tag = 0x0, name = "compiler.sizeof.longlong"
-    pub longlong: u8,
+    pub longlong: Option<NonZeroU8>,
     // offset = 109, tag = 0x0, name = "compiler.sizeof.long_double"
-    pub long_double: u8,
+    pub long_double: Option<NonZeroU8>,
 }
 
 impl<K: IDAKind> RootInfo<K> {
@@ -442,16 +448,20 @@ impl<K: IDAKind> RootInfo<K> {
                 is_guessed: cc_guessed,
                 compiler: cc_id,
                 sizeof: RootInfoCompilerSizeof {
-                    cm: cc_cm,
-                    int: cc_size_i,
-                    bool: cc_size_b,
-                    enum_: cc_size_e,
-                    short: cc_size_s,
-                    long: cc_size_l,
-                    longlong: cc_size_ll,
-                    long_double: cc_size_ldbl,
+                    cm: CCModel::from_cm_raw(cc_cm),
+                    int: NonZeroU8::new(cc_size_i).ok_or_else(|| {
+                        anyhow!("Invalid sizeof int on RootInfo")
+                    })?,
+                    bool: NonZeroU8::new(cc_size_b).ok_or_else(|| {
+                        anyhow!("Invalid sizeof bool on RootInfo")
+                    })?,
+                    enum_: NonZeroU8::new(cc_size_e),
+                    short: NonZeroU8::new(cc_size_s),
+                    long: NonZeroU8::new(cc_size_l),
+                    longlong: NonZeroU8::new(cc_size_ll),
+                    long_double: NonZeroU8::new(cc_size_ldbl),
                 },
-                alignment: cc_defalign,
+                alignment: NonZeroU8::new(cc_defalign),
             },
             abibits,
             appcall_options,
@@ -656,16 +666,20 @@ impl<K: IDAKind> RootInfo<K> {
                 is_guessed: cc_guessed,
                 compiler: cc_id,
                 sizeof: RootInfoCompilerSizeof {
-                    cm: cc_cm,
-                    int: cc_size_i,
-                    bool: cc_size_b,
-                    enum_: cc_size_e,
-                    short: cc_size_s,
-                    long: cc_size_l,
-                    longlong: cc_size_ll,
-                    long_double: cc_size_ldbl,
+                    cm: CCModel::from_cm_raw(cc_cm),
+                    int: NonZeroU8::new(cc_size_i).ok_or_else(|| {
+                        anyhow!("Invalid sizeof bool on RootInfo")
+                    })?,
+                    bool: NonZeroU8::new(cc_size_b).ok_or_else(|| {
+                        anyhow!("Invalid sizeof bool on RootInfo")
+                    })?,
+                    enum_: NonZeroU8::new(cc_size_e),
+                    short: NonZeroU8::new(cc_size_s),
+                    long: NonZeroU8::new(cc_size_l),
+                    longlong: NonZeroU8::new(cc_size_ll),
+                    long_double: NonZeroU8::new(cc_size_ldbl),
                 },
-                alignment: cc_defalign,
+                alignment: NonZeroU8::new(cc_defalign),
             },
             abibits,
             appcall_options,
@@ -674,6 +688,56 @@ impl<K: IDAKind> RootInfo<K> {
 
     pub fn netdelta(&self) -> Netdelta<K> {
         Netdelta(self.addresses.netdelta)
+    }
+
+    pub fn til_header(&self) -> TILSectionHeader {
+        let size_enum = self.compiler.sizeof.enum_;
+        let size_int = self.compiler.sizeof.int;
+        let size_bool = self
+            .compiler
+            .sizeof
+            .bool
+            .try_into()
+            .ok()
+            .unwrap_or(1.try_into().unwrap());
+        let def_align = self.compiler.alignment;
+        let size_long_double = self.compiler.sizeof.long_double;
+        let short = self.compiler.sizeof.short;
+        let long = self.compiler.sizeof.long;
+        let long_long = self.compiler.sizeof.longlong;
+        let extended_sizeof_info = short.zip(long).zip(long_long).map(
+            |((size_short, size_long), size_long_long)| {
+                TILSectionExtendedSizeofInfo {
+                    size_short,
+                    size_long,
+                    size_long_long,
+                }
+            },
+        );
+        TILSectionHeader {
+            size_enum,
+            size_int,
+            size_bool,
+            def_align,
+            size_long_double,
+            extended_sizeof_info,
+            compiler_guessed: self.compiler.is_guessed,
+            compiler_id: self.compiler.compiler,
+            cm: self.compiler.sizeof.cm,
+            // TODO can we identify the version based on the RootInfo ID0 version?
+            format: 12,
+            // flags are probably always all false
+            flags: TILSectionFlags(0),
+            // don't need any data
+            description: IDBString::new(Vec::new()),
+            dependencies: Vec::new(),
+            // don't have ordinals
+            type_ordinal_alias: None,
+            // could not be identified
+            cc: None,
+            cn: None,
+            is_universal: true,
+        }
     }
 }
 

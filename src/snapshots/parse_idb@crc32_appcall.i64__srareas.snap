@@ -1,31 +1,163 @@
 ---
-hash: C7B52CBDF808D1B0
+hash: C07109BBF42C10E0
 source: src/test.rs
 expression: srareas
 ---
 [
- (
-  range: (
-   start: (4399680),
-   end: (4399732),
+ ("cs", [
+  (
+   range: (
+    start: (4399680),
+    end: (4399732),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (4662656),
-   end: (4663680),
+  (
+   range: (
+    start: (4662656),
+    end: (4663680),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (5150064),
-   end: (5150072),
+  (
+   range: (
+    start: (5150064),
+    end: (5150072),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
+ ]),
+ ("ds", [
+  (
+   range: (
+    start: (4399680),
+    end: (4399732),
+   ),
+   value: Some(4),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4662656),
+    end: (4663680),
+   ),
+   value: Some(4),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (5150064),
+    end: (5150072),
+   ),
+   value: Some(4),
+   tag: Some(Auto),
+  ),
+ ]),
+ ("es", [
+  (
+   range: (
+    start: (4399680),
+    end: (4399732),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4662656),
+    end: (4663680),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (5150064),
+    end: (5150072),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+ ]),
+ ("fs", [
+  (
+   range: (
+    start: (4399680),
+    end: (4399732),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4662656),
+    end: (4663680),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (5150064),
+    end: (5150072),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("gs", [
+  (
+   range: (
+    start: (4399680),
+    end: (4399732),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4662656),
+    end: (4663680),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (5150064),
+    end: (5150072),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("ss", [
+  (
+   range: (
+    start: (4399680),
+    end: (4399732),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4662656),
+    end: (4663680),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (5150064),
+    end: (5150072),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+ ]),
 ]

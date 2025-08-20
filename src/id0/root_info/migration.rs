@@ -1,10 +1,15 @@
+use std::num::NonZeroU8;
+
 use anyhow::{anyhow, Result};
 use num_traits::AsPrimitive;
 use serde::{Deserialize, Serialize};
 
+use crate::id0::*;
 use crate::ida_reader::IdbReadKind;
-use crate::{id0::*, Address};
+use crate::til::function::CCModel;
+use crate::Address;
 use crate::{IDAKind, IDAUsize};
+
 impl<K: IDAKind> RootInfo<K> {
     pub fn read_v2(
         input: &mut impl IdbReadKind<K>,
@@ -144,16 +149,20 @@ impl<K: IDAKind> RootInfo<K> {
                 is_guessed: is_cc_guessed,
                 compiler: cc_id,
                 sizeof: RootInfoCompilerSizeof {
-                    cm: data.cc_cm,
-                    int: data.cc_size_i,
-                    bool: data.cc_size_b,
-                    enum_: data.cc_size_e,
-                    short: data.cc_size_s,
-                    long: data.cc_size_l,
-                    longlong: data.cc_size_ll,
-                    long_double: data.cc_size_ldbl,
+                    cm: CCModel::from_cm_raw(data.cc_cm),
+                    int: NonZeroU8::new(data.cc_size_i).ok_or_else(|| {
+                        anyhow!("Invalid sizeof bool on RootInfo")
+                    })?,
+                    bool: NonZeroU8::new(data.cc_size_b).ok_or_else(|| {
+                        anyhow!("Invalid sizeof bool on RootInfo")
+                    })?,
+                    enum_: NonZeroU8::new(data.cc_size_e),
+                    short: NonZeroU8::new(data.cc_size_s),
+                    long: NonZeroU8::new(data.cc_size_l),
+                    longlong: NonZeroU8::new(data.cc_size_ll),
+                    long_double: NonZeroU8::new(data.cc_size_ldbl),
                 },
-                alignment: data.cc_defalign,
+                alignment: NonZeroU8::new(data.cc_defalign),
             },
             abibits: AbiOptions::new(data.abibits).unwrap(),
             appcall_options: data.appcall_options,
