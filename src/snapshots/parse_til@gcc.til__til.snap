@@ -1,5 +1,5 @@
 ---
-hash: 8DF42D1C53A09DF1
+hash: 79DEC3B0CAAB4900
 source: src/test.rs
 expression: til
 ---
@@ -111,6 +111,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cputype"),
@@ -131,6 +133,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cpusubtype"),
@@ -151,6 +155,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("filetype"),
@@ -171,6 +177,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ncmds"),
@@ -191,6 +199,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("sizeofcmds"),
@@ -211,6 +221,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("flags"),
@@ -231,6 +243,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("reserved"),
@@ -251,6 +265,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -321,6 +337,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cmdsize"),
@@ -341,6 +359,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("segname"),
@@ -368,6 +388,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("vmaddr"),
@@ -388,6 +410,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("vmsize"),
@@ -408,6 +432,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("fileoff"),
@@ -428,6 +454,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("filesize"),
@@ -448,6 +476,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("maxprot"),
@@ -468,6 +498,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("initprot"),
@@ -488,6 +520,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("nsects"),
@@ -508,6 +542,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("flags"),
@@ -528,6 +564,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -578,6 +616,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("segname"),
@@ -605,6 +645,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("addr"),
@@ -625,6 +667,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("size"),
@@ -645,6 +689,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("offset"),
@@ -665,6 +711,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("align"),
@@ -685,6 +733,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("reloff"),
@@ -705,6 +755,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("nreloc"),
@@ -725,6 +777,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("flags"),
@@ -745,6 +799,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("reserved1"),
@@ -765,6 +821,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("reserved2"),
@@ -785,6 +843,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("reserved3"),
@@ -805,6 +865,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -848,6 +910,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cmdsize"),
@@ -868,6 +932,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("rebase_off"),
@@ -888,6 +954,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("rebase_size"),
@@ -908,6 +976,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("bind_off"),
@@ -928,6 +998,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("bind_size"),
@@ -948,6 +1020,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("weak_bind_off"),
@@ -968,6 +1042,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("weak_bind_size"),
@@ -988,6 +1064,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("lazy_bind_off"),
@@ -1008,6 +1086,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("lazy_bind_size"),
@@ -1028,6 +1108,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("export_off"),
@@ -1048,6 +1130,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("export_size"),
@@ -1068,6 +1152,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -1111,6 +1197,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cmdsize"),
@@ -1131,6 +1219,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("symoff"),
@@ -1151,6 +1241,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("nsyms"),
@@ -1171,6 +1263,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("stroff"),
@@ -1191,6 +1285,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("strsize"),
@@ -1211,6 +1307,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -1254,6 +1352,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cmdsize"),
@@ -1274,6 +1374,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ilocalsym"),
@@ -1294,6 +1396,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("nlocalsym"),
@@ -1314,6 +1418,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("iextdefsym"),
@@ -1334,6 +1440,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("nextdefsym"),
@@ -1354,6 +1462,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("iundefsym"),
@@ -1374,6 +1484,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("nundefsym"),
@@ -1394,6 +1506,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("tocoff"),
@@ -1414,6 +1528,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ntoc"),
@@ -1434,6 +1550,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("modtaboff"),
@@ -1454,6 +1572,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("nmodtab"),
@@ -1474,6 +1594,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("extrefsymoff"),
@@ -1494,6 +1616,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("nextrefsyms"),
@@ -1514,6 +1638,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("indirectsymoff"),
@@ -1534,6 +1660,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("nindirectsyms"),
@@ -1554,6 +1682,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("extreloff"),
@@ -1574,6 +1704,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("nextrel"),
@@ -1594,6 +1726,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("locreloff"),
@@ -1614,6 +1748,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("nlocrel"),
@@ -1634,6 +1770,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -1677,6 +1815,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -1720,6 +1860,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cmdsize"),
@@ -1740,6 +1882,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("name"),
@@ -1760,6 +1904,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -1817,6 +1963,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cmdsize"),
@@ -1837,6 +1985,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("uuid"),
@@ -1867,6 +2017,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -1910,6 +2062,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cmdsize"),
@@ -1930,6 +2084,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("platform"),
@@ -1950,6 +2106,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("minos"),
@@ -1970,6 +2128,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("sdk"),
@@ -1990,6 +2150,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ntools"),
@@ -2010,6 +2172,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2053,6 +2217,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cmdsize"),
@@ -2073,6 +2239,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("version"),
@@ -2093,6 +2261,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2136,6 +2306,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cmdsize"),
@@ -2156,6 +2328,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("entryoff"),
@@ -2176,6 +2350,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("stacksize"),
@@ -2196,6 +2372,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2239,6 +2417,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("timestamp"),
@@ -2259,6 +2439,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("current_version"),
@@ -2279,6 +2461,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("compatibility_version"),
@@ -2299,6 +2483,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2342,6 +2528,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cmdsize"),
@@ -2362,6 +2550,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("dylib"),
@@ -2382,6 +2572,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2425,6 +2617,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("cmdsize"),
@@ -2445,6 +2639,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("dataoff"),
@@ -2465,6 +2661,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("datasize"),
@@ -2485,6 +2683,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2535,6 +2735,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("len"),
@@ -2555,6 +2757,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2618,6 +2822,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("len"),
@@ -2638,6 +2844,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2691,6 +2899,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("prev"),
@@ -2721,6 +2931,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("next"),
@@ -2751,6 +2963,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2832,6 +3046,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("MaximumLength"),
@@ -2852,6 +3068,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Buffer"),
@@ -2872,6 +3090,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2915,6 +3135,8 @@ expression: til
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,

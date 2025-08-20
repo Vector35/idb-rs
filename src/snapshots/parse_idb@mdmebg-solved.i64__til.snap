@@ -1,5 +1,5 @@
 ---
-hash: B8FCA9B9ECC53CB0
+hash: CD02DCCE94AF0A33
 source: src/test.rs
 expression: til
 ---
@@ -566,6 +566,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("st_info"),
@@ -586,6 +588,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("st_other"),
@@ -606,6 +610,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("st_shndx"),
@@ -626,6 +632,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("st_value"),
@@ -651,6 +659,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("st_size"),
@@ -671,6 +681,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -714,6 +726,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("r_info"),
@@ -734,6 +748,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("r_addend"),
@@ -754,6 +770,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -797,6 +815,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("d_un"),
@@ -817,6 +837,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -860,6 +882,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("vn_cnt"),
@@ -880,6 +904,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("vn_file"),
@@ -905,6 +931,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("vn_aux"),
@@ -925,6 +953,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("vn_next"),
@@ -945,6 +975,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -988,6 +1020,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("vna_flags"),
@@ -1008,6 +1042,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("vna_other"),
@@ -1028,6 +1064,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("vna_name"),
@@ -1053,6 +1091,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("vna_next"),
@@ -1073,6 +1113,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -1115,6 +1157,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("fp_offset"),
@@ -1134,6 +1178,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("overflow_arg_area"),
@@ -1161,6 +1207,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("reg_save_area"),
@@ -1188,6 +1236,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,

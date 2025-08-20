@@ -1,5 +1,5 @@
 ---
-hash: EE58F9999A7E160E
+hash: 25A200FB72E25CDE
 source: src/test.rs
 expression: til
 ---
@@ -1568,6 +1568,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Data2"),
@@ -1588,6 +1590,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Data3"),
@@ -1608,6 +1612,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Data4"),
@@ -1638,6 +1644,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -1726,6 +1734,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m64_f32"),
@@ -1755,6 +1765,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m64_i8"),
@@ -1785,6 +1797,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m64_i16"),
@@ -1815,6 +1829,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m64_i32"),
@@ -1845,6 +1861,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m64_i64"),
@@ -1865,6 +1883,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m64_u8"),
@@ -1895,6 +1915,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m64_u16"),
@@ -1925,6 +1947,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m64_u32"),
@@ -1955,6 +1979,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2007,6 +2033,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128_u64"),
@@ -2037,6 +2065,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128_i8"),
@@ -2067,6 +2097,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128_i16"),
@@ -2097,6 +2129,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128_i32"),
@@ -2127,6 +2161,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128_i64"),
@@ -2157,6 +2193,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128_u8"),
@@ -2187,6 +2225,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128_u16"),
@@ -2217,6 +2257,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128_u32"),
@@ -2247,6 +2289,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2299,6 +2343,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2352,6 +2398,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128i_i16"),
@@ -2382,6 +2430,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128i_i32"),
@@ -2412,6 +2462,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128i_i64"),
@@ -2442,6 +2494,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128i_u8"),
@@ -2472,6 +2526,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128i_u16"),
@@ -2502,6 +2558,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128i_u32"),
@@ -2532,6 +2590,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m128i_u64"),
@@ -2562,6 +2622,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2614,6 +2676,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2666,6 +2730,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2719,6 +2785,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m256i_i16"),
@@ -2749,6 +2817,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m256i_i32"),
@@ -2779,6 +2849,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m256i_i64"),
@@ -2809,6 +2881,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m256i_u8"),
@@ -2839,6 +2913,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m256i_u16"),
@@ -2869,6 +2945,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m256i_u32"),
@@ -2899,6 +2977,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m256i_u64"),
@@ -2929,6 +3009,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -2981,6 +3063,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -3033,6 +3117,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -3086,6 +3172,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m512i_i16"),
@@ -3116,6 +3204,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m512i_i32"),
@@ -3146,6 +3236,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m512i_i64"),
@@ -3176,6 +3268,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m512i_u8"),
@@ -3206,6 +3300,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m512i_u16"),
@@ -3236,6 +3332,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m512i_u32"),
@@ -3266,6 +3364,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("m512i_u64"),
@@ -3296,6 +3396,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -3444,6 +3546,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Revision"),
@@ -3464,6 +3568,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("HeaderSize"),
@@ -3484,6 +3590,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CRC32"),
@@ -3504,6 +3612,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Reserved"),
@@ -3524,6 +3634,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -3763,6 +3875,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("UnicodeChar"),
@@ -3783,6 +3897,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -3941,6 +4057,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ReadKeyStroke"),
@@ -3961,6 +4079,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("WaitForKey"),
@@ -3981,6 +4101,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -4878,6 +5000,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Mode"),
@@ -4898,6 +5022,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Attribute"),
@@ -4918,6 +5044,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CursorColumn"),
@@ -4938,6 +5066,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CursorRow"),
@@ -4958,6 +5088,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CursorVisible"),
@@ -4978,6 +5110,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -5021,6 +5155,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("OutputString"),
@@ -5041,6 +5177,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("TestString"),
@@ -5061,6 +5199,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("QueryMode"),
@@ -5081,6 +5221,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetMode"),
@@ -5101,6 +5243,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetAttribute"),
@@ -5121,6 +5265,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ClearScreen"),
@@ -5141,6 +5287,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetCursorPosition"),
@@ -5161,6 +5309,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("EnableCursor"),
@@ -5181,6 +5331,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Mode"),
@@ -5211,6 +5363,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -5324,6 +5478,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Month"),
@@ -5344,6 +5500,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Day"),
@@ -5364,6 +5522,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Hour"),
@@ -5384,6 +5544,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Minute"),
@@ -5404,6 +5566,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Second"),
@@ -5424,6 +5588,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Pad1"),
@@ -5444,6 +5610,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Nanosecond"),
@@ -5464,6 +5632,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("TimeZone"),
@@ -5484,6 +5654,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Daylight"),
@@ -5504,6 +5676,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Pad2"),
@@ -5524,6 +5698,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -5567,6 +5743,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Accuracy"),
@@ -5587,6 +5765,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetsToZero"),
@@ -5607,6 +5787,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -6072,6 +6254,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("PhysicalStart"),
@@ -6092,6 +6276,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("VirtualStart"),
@@ -6112,6 +6298,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("NumberOfPages"),
@@ -6132,6 +6320,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Attribute"),
@@ -6152,6 +6342,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -7075,6 +7267,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("HeaderSize"),
@@ -7095,6 +7289,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Flags"),
@@ -7115,6 +7311,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CapsuleImageSize"),
@@ -7135,6 +7333,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -7579,6 +7779,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetTime"),
@@ -7599,6 +7801,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetTime"),
@@ -7619,6 +7823,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetWakeupTime"),
@@ -7639,6 +7845,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetWakeupTime"),
@@ -7659,6 +7867,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetVirtualAddressMap"),
@@ -7679,6 +7889,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ConvertPointer"),
@@ -7699,6 +7911,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetVariable"),
@@ -7719,6 +7933,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetNextVariableName"),
@@ -7739,6 +7955,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetVariable"),
@@ -7759,6 +7977,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetNextHighMonotonicCount"),
@@ -7779,6 +7999,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ResetSystem"),
@@ -7799,6 +8021,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("UpdateCapsule"),
@@ -7819,6 +8043,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("QueryCapsuleCapabilities"),
@@ -7839,6 +8065,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("QueryVariableInfo"),
@@ -7859,6 +8087,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -10216,6 +10446,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SubType"),
@@ -10236,6 +10468,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Length"),
@@ -10266,6 +10500,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -11800,6 +12036,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("VendorTable"),
@@ -11827,6 +12065,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -11870,6 +12110,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ControllerHandle"),
@@ -11890,6 +12132,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Attributes"),
@@ -11910,6 +12154,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("OpenCount"),
@@ -11930,6 +12176,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -13137,6 +13385,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("RaiseTPL"),
@@ -13157,6 +13407,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("RestoreTPL"),
@@ -13177,6 +13429,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("AllocatePages"),
@@ -13197,6 +13451,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FreePages"),
@@ -13217,6 +13473,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetMemoryMap"),
@@ -13237,6 +13495,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("AllocatePool"),
@@ -13257,6 +13517,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FreePool"),
@@ -13277,6 +13539,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CreateEvent"),
@@ -13297,6 +13561,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetTimer"),
@@ -13317,6 +13583,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("WaitForEvent"),
@@ -13337,6 +13605,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SignalEvent"),
@@ -13357,6 +13627,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CloseEvent"),
@@ -13377,6 +13649,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CheckEvent"),
@@ -13397,6 +13671,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("InstallProtocolInterface"),
@@ -13417,6 +13693,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ReinstallProtocolInterface"),
@@ -13437,6 +13715,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("UninstallProtocolInterface"),
@@ -13457,6 +13737,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("HandleProtocol"),
@@ -13477,6 +13759,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Reserved"),
@@ -13504,6 +13788,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("RegisterProtocolNotify"),
@@ -13524,6 +13810,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("LocateHandle"),
@@ -13544,6 +13832,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("LocateDevicePath"),
@@ -13564,6 +13854,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("InstallConfigurationTable"),
@@ -13584,6 +13876,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("LoadImage"),
@@ -13604,6 +13898,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("StartImage"),
@@ -13624,6 +13920,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Exit"),
@@ -13644,6 +13942,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("UnloadImage"),
@@ -13664,6 +13964,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ExitBootServices"),
@@ -13684,6 +13986,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetNextMonotonicCount"),
@@ -13704,6 +14008,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Stall"),
@@ -13724,6 +14030,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetWatchdogTimer"),
@@ -13744,6 +14052,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ConnectController"),
@@ -13764,6 +14074,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("DisconnectController"),
@@ -13784,6 +14096,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("OpenProtocol"),
@@ -13804,6 +14118,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CloseProtocol"),
@@ -13824,6 +14140,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("OpenProtocolInformation"),
@@ -13844,6 +14162,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ProtocolsPerHandle"),
@@ -13864,6 +14184,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("LocateHandleBuffer"),
@@ -13884,6 +14206,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("LocateProtocol"),
@@ -13904,6 +14228,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("InstallMultipleProtocolInterfaces"),
@@ -13924,6 +14250,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("UninstallMultipleProtocolInterfaces"),
@@ -13944,6 +14272,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CalculateCrc32"),
@@ -13964,6 +14294,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CopyMem"),
@@ -13984,6 +14316,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetMem"),
@@ -14004,6 +14338,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CreateEventEx"),
@@ -14024,6 +14360,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -14067,6 +14405,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FirmwareVendor"),
@@ -14097,6 +14437,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FirmwareRevision"),
@@ -14117,6 +14459,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ConsoleInHandle"),
@@ -14137,6 +14481,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ConIn"),
@@ -14167,6 +14513,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ConsoleOutHandle"),
@@ -14187,6 +14535,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ConOut"),
@@ -14217,6 +14567,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("StandardErrorHandle"),
@@ -14237,6 +14589,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("StdErr"),
@@ -14267,6 +14621,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("RuntimeServices"),
@@ -14297,6 +14653,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("BootServices"),
@@ -14327,6 +14685,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("NumberOfTableEntries"),
@@ -14347,6 +14707,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ConfigurationTable"),
@@ -14377,6 +14739,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -14551,6 +14915,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Io"),
@@ -14571,6 +14937,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -14614,6 +14982,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Write"),
@@ -14634,6 +15004,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -15709,6 +16081,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmFirmwareVendor"),
@@ -15739,6 +16113,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmFirmwareRevision"),
@@ -15759,6 +16135,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmInstallConfigurationTable"),
@@ -15779,6 +16157,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmIo"),
@@ -15799,6 +16179,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmAllocatePool"),
@@ -15819,6 +16201,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmFreePool"),
@@ -15839,6 +16223,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmAllocatePages"),
@@ -15859,6 +16245,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmFreePages"),
@@ -15879,6 +16267,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmStartupThisAp"),
@@ -15899,6 +16289,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CurrentlyExecutingCpu"),
@@ -15919,6 +16311,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("NumberOfCpus"),
@@ -15939,6 +16333,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CpuSaveStateSize"),
@@ -15969,6 +16365,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CpuSaveState"),
@@ -16006,6 +16404,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("NumberOfTableEntries"),
@@ -16026,6 +16426,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmConfigurationTable"),
@@ -16056,6 +16458,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmInstallProtocolInterface"),
@@ -16076,6 +16480,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmUninstallProtocolInterface"),
@@ -16096,6 +16502,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmHandleProtocol"),
@@ -16116,6 +16524,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmRegisterProtocolNotify"),
@@ -16136,6 +16546,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmLocateHandle"),
@@ -16156,6 +16568,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmLocateProtocol"),
@@ -16176,6 +16590,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmiManage"),
@@ -16196,6 +16612,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmiHandlerRegister"),
@@ -16216,6 +16634,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmiHandlerUnRegister"),
@@ -16236,6 +16656,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -16307,6 +16729,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Guid"),
@@ -16337,6 +16761,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Ppi"),
@@ -16364,6 +16790,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -16980,6 +17408,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Guid"),
@@ -17010,6 +17440,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Notify"),
@@ -17030,6 +17462,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -18709,6 +19143,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Size"),
@@ -18729,6 +19165,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Type"),
@@ -18749,6 +19187,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -19087,6 +19527,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Write"),
@@ -19107,6 +19549,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -21433,6 +21877,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Io"),
@@ -21453,6 +21899,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("IoRead8"),
@@ -21473,6 +21921,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("IoRead16"),
@@ -21493,6 +21943,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("IoRead32"),
@@ -21513,6 +21965,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("IoRead64"),
@@ -21533,6 +21987,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("IoWrite8"),
@@ -21553,6 +22009,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("IoWrite16"),
@@ -21573,6 +22031,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("IoWrite32"),
@@ -21593,6 +22053,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("IoWrite64"),
@@ -21613,6 +22075,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("MemRead8"),
@@ -21633,6 +22097,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("MemRead16"),
@@ -21653,6 +22119,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("MemRead32"),
@@ -21673,6 +22141,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("MemRead64"),
@@ -21693,6 +22163,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("MemWrite8"),
@@ -21713,6 +22185,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("MemWrite16"),
@@ -21733,6 +22207,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("MemWrite32"),
@@ -21753,6 +22229,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("MemWrite64"),
@@ -21773,6 +22251,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -21816,6 +22296,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Write"),
@@ -21836,6 +22318,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Modify"),
@@ -21856,6 +22340,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Segment"),
@@ -21876,6 +22362,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -22448,6 +22936,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FileType"),
@@ -22468,6 +22958,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FileAttributes"),
@@ -22488,6 +22980,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Buffer"),
@@ -22515,6 +23009,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("BufferSize"),
@@ -22535,6 +23031,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -22690,6 +23188,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FvFormat"),
@@ -22710,6 +23210,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FvName"),
@@ -22730,6 +23232,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FvStart"),
@@ -22757,6 +23261,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FvSize"),
@@ -22777,6 +23283,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -23228,6 +23736,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FileType"),
@@ -23248,6 +23758,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FileAttributes"),
@@ -23268,6 +23780,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Buffer"),
@@ -23295,6 +23809,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("BufferSize"),
@@ -23315,6 +23831,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("AuthenticationStatus"),
@@ -23335,6 +23853,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -23500,6 +24020,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("InstallPpi"),
@@ -23520,6 +24042,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ReInstallPpi"),
@@ -23540,6 +24064,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("LocatePpi"),
@@ -23560,6 +24086,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("NotifyPpi"),
@@ -23580,6 +24108,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetBootMode"),
@@ -23600,6 +24130,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetBootMode"),
@@ -23620,6 +24152,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetHobList"),
@@ -23640,6 +24174,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CreateHob"),
@@ -23660,6 +24196,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FfsFindNextVolume"),
@@ -23680,6 +24218,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FfsFindNextFile"),
@@ -23700,6 +24240,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FfsFindSectionData"),
@@ -23720,6 +24262,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("InstallPeiMemory"),
@@ -23740,6 +24284,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("AllocatePages"),
@@ -23760,6 +24306,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("AllocatePool"),
@@ -23780,6 +24328,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CopyMem"),
@@ -23800,6 +24350,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetMem"),
@@ -23820,6 +24372,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ReportStatusCode"),
@@ -23840,6 +24394,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ResetSystem"),
@@ -23860,6 +24416,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CpuIo"),
@@ -23890,6 +24448,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("PciCfg"),
@@ -23920,6 +24480,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FfsFindFileByName"),
@@ -23940,6 +24502,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FfsGetFileInfo"),
@@ -23960,6 +24524,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FfsGetVolumeInfo"),
@@ -23980,6 +24546,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("RegisterForShadow"),
@@ -24000,6 +24568,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FindSectionData3"),
@@ -24020,6 +24590,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FfsGetFileInfo2"),
@@ -24040,6 +24612,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ResetSystem2"),
@@ -24060,6 +24634,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -24438,6 +25014,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("NextVariableName"),
@@ -24458,6 +25036,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -24501,6 +25081,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmGetNextVariableName"),
@@ -24521,6 +25103,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmSetVariable"),
@@ -24541,6 +25125,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SmmQueryVariableInfo"),
@@ -24561,6 +25147,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -24614,6 +25202,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("BackLink"),
@@ -24644,6 +25234,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -25822,6 +26414,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Type"),
@@ -25842,6 +26436,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -25885,6 +26481,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Status"),
@@ -25905,6 +26503,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("BufferSize"),
@@ -25925,6 +26525,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Buffer"),
@@ -25952,6 +26554,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -26475,6 +27079,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Open"),
@@ -26495,6 +27101,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Close"),
@@ -26515,6 +27123,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Delete"),
@@ -26535,6 +27145,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Read"),
@@ -26555,6 +27167,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Write"),
@@ -26575,6 +27189,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetPosition"),
@@ -26595,6 +27211,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetPosition"),
@@ -26615,6 +27233,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetInfo"),
@@ -26635,6 +27255,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetInfo"),
@@ -26655,6 +27277,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("Flush"),
@@ -26675,6 +27299,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("OpenEx"),
@@ -26695,6 +27321,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ReadEx"),
@@ -26715,6 +27343,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("WriteEx"),
@@ -26735,6 +27365,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FlushEx"),
@@ -26755,6 +27387,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -26986,6 +27620,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetFileInfo"),
@@ -27083,6 +27719,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ReadFile"),
@@ -27202,6 +27840,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("WriteFile"),
@@ -27321,6 +27961,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("CloseFile"),
@@ -27393,6 +28035,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("DeleteFile"),
@@ -27465,6 +28109,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetFilePosition"),
@@ -27562,6 +28208,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("SetFilePosition"),
@@ -27649,6 +28297,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FlushFile"),
@@ -27721,6 +28371,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GetFileSize"),
@@ -27818,6 +28470,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -27860,6 +28514,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("data_size"),
@@ -27879,6 +28535,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("pos_data2"),
@@ -27898,6 +28556,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("size_bytecode"),
@@ -27917,6 +28577,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("p_bytecode"),
@@ -27936,6 +28598,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("data"),
@@ -27955,6 +28619,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -28250,6 +28916,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("data_size"),
@@ -28269,6 +28937,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("pos_bytecode"),
@@ -28288,6 +28958,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("size_bytecode"),
@@ -28307,6 +28979,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("data"),
@@ -28327,6 +29001,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -28380,6 +29056,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("stack"),
@@ -28410,6 +29088,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("p_stack"),
@@ -28440,6 +29120,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("memory"),
@@ -28470,6 +29152,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("check"),
@@ -28490,6 +29174,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,

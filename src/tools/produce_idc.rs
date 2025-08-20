@@ -6,6 +6,7 @@ use anyhow::{anyhow, ensure, Result};
 
 use idb_rs::addr_info::{all_address_info, AddressInfo};
 use idb_rs::id0::flag::netnode::nn_res::*;
+use idb_rs::id0::function::{IDBFunctionNonTail, IDBFunctionTail};
 use idb_rs::id0::{ID0Section, Netdelta, NetnodeIdx, ReferenceInfo, RootInfo};
 use idb_rs::id1::{
     ByteCode, ByteData, ByteDataType, ByteExtended, ByteOp, ByteType,
@@ -15,8 +16,8 @@ use idb_rs::id2::ID2Section;
 use idb_rs::processors::Processor;
 use idb_rs::sdk_comp::prelude::*;
 use idb_rs::til::section::TILSection;
-use idb_rs::til::TILTypeInfo;
-use idb_rs::{Address, IDAKind, IDAVariants, IDBFormat, IDBStr};
+use idb_rs::til::{TILTypeInfo, TILTypeSizeSolver};
+use idb_rs::{Address, IDAKind, IDAUsize, IDAVariants, IDBFormat, IDBStr};
 
 use crate::{Args, FileType, ProduceIdcArgs};
 
@@ -96,6 +97,7 @@ fn produce_idc_inner<K: IDAKind>(
     let root_info = id0.ida_info(root_info_idx)?;
     let image_base = id0.image_base(root_info_idx)?;
     let netdelta = root_info.netdelta();
+    let mut solver = TILTypeSizeSolver::new(&til);
     let processor = idb_rs::processors::PROCESSORS
         .iter()
         .find(|p| {
@@ -186,7 +188,7 @@ fn produce_idc_inner<K: IDAKind>(
     writeln!(fmt)?;
     produce_bytes_info(fmt, id0, id1, id2, til, image_base, netdelta)?;
 
-    produce_functions(fmt, id0, til, netdelta)?;
+    produce_functions(fmt, id0, til, &root_info, &mut solver)?;
 
     writeln!(fmt)?;
     produce_seg_regs(fmt, id0, processor)?;
@@ -424,7 +426,9 @@ fn produce_types(fmt: &mut impl Write, til: &TILSection) -> Result<()> {
     writeln!(fmt, "{{")?;
     writeln!(fmt, "  auto p_type, p_fields, p_cmt, p_fldcmts;")?;
     writeln!(fmt)?;
-    for ty in &til.types {
+    let mut types = til.types.to_vec();
+    types.sort_unstable_by_key(|t| t.ordinal);
+    for ty in &types {
         produce_type_load(fmt, til, ty)?;
     }
     writeln!(fmt, "}}")?;
@@ -1007,7 +1011,8 @@ fn produce_functions<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
     _til: &TILSection,
-    netdelta: Netdelta<K>,
+    info: &RootInfo<K>,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     // TODO find the number of functions
     writeln!(fmt)?;
@@ -1016,15 +1021,22 @@ fn produce_functions<K: IDAKind>(
     let func_qty = get_func_qty(id0)?;
     for n in 0..func_qty {
         let fun = getn_func(id0, n)?.unwrap();
-        let addr = fun.range.start.into_raw();
-        let addr_end = fun.range.end.into_raw();
+        let addr = fun.address.start.into_raw();
+        let addr_end = fun.address.end.into_raw();
         writeln!(fmt, "  add_func({addr:#X}, {addr_end:#X});")?;
-        writeln!(fmt, "  set_func_flags({addr:#X}, {:#x});", fun.flags)?;
+        writeln!(
+            fmt,
+            "  set_func_flags({addr:#X}, {:#x});",
+            fun.flags.into_raw()
+        )?;
         writeln!(fmt, "  apply_type({addr:#X}, \"TODO\");")?;
         for repeatable in [false, true] {
-            if let Some(cmt) =
-                get_func_cmt(id0, netdelta, fun.range.start, repeatable)?
-            {
+            if let Some(cmt) = get_func_cmt(
+                id0,
+                info.netdelta(),
+                fun.address.start,
+                repeatable,
+            )? {
                 writeln!(
                     fmt,
                     "  set_func_cmt({addr:#X}, {:?}, {});",
@@ -1033,11 +1045,11 @@ fn produce_functions<K: IDAKind>(
                 )?;
             }
         }
-        match &fun.func_t_type {
-            func_t_type::T2(func_t_2 { owner, .. }) => {
+        match &fun.extra {
+            func_t_type::Tail(IDBFunctionTail { owner, .. }) => {
                 writeln!(fmt, "  set_frame_size({addr:#X}, {owner:#X?});")?;
             }
-            func_t_type::T1(func_t_1 {
+            func_t_type::NonTail(IDBFunctionNonTail {
                 frsize,
                 frregs,
                 argsize,
@@ -1048,9 +1060,75 @@ fn produce_functions<K: IDAKind>(
                     "  set_frame_size({addr:#X}, {frsize:#X}, {frregs}, {argsize:#X});"
                 )?;
             }
-            func_t_type::T1(_) => {}
+            func_t_type::NonTail(_) => {}
         }
-        for (address, label) in id0.local_labels(netdelta, fun.range.start)? {
+
+        if let func_t_type::NonTail(fun_type) = &fun.extra {
+            // print the variables stored on the stack
+            let vars = id0.function_defined_variables(&info, &fun, fun_type)?;
+            if let Some(ty) = vars.ty {
+                let mut offset_acc = 0;
+                for (_i, member) in ty.members.into_iter().enumerate() {
+                    let member_size = solver
+                        .type_size_bytes(None, &member.member_type)
+                        .unwrap_or(0);
+                    let member_align = solver
+                        .type_align_bytes(
+                            None,
+                            &member.member_type,
+                            member_size,
+                        )
+                        .unwrap_or(1);
+                    let member_size_padded =
+                        idb_rs::til::align_mem(member_size, member_align);
+                    let current_offset = offset_acc;
+                    offset_acc += member_size_padded;
+                    if member.is_frame_r || member.is_frame_s {
+                        continue;
+                    }
+                    let Some(name) = &member.name else {
+                        continue;
+                    };
+                    if name.as_bytes().starts_with(b"arg_")
+                        || name.as_bytes().starts_with(b"var_")
+                        || name.as_bytes() == b"anonymous"
+                    {
+                        continue;
+                    }
+                    let stack_offset_abs =
+                        current_offset.wrapping_sub(fun_type.frsize.into_u64());
+                    let (stack_offset, sign) = if stack_offset_abs as i64 > 0 {
+                        (stack_offset_abs, '+')
+                    } else {
+                        ((!stack_offset_abs) + 1, '-')
+                    };
+                    writeln!(
+                        fmt,
+                        "  define_local_var(0x{addr:X}, 0x{addr_end:X}, \"[bp{}0x{:X}]\", {:?});",
+                        sign,
+                        stack_offset,
+                        member.name.unwrap_or(idb_rs::IDBString::new(vec![]))
+                    )?;
+                }
+            }
+            // print the named registers
+            for reg_value in
+                id0.function_defined_registers(info.netdelta(), &fun, fun_type)
+            {
+                let reg_value = reg_value?;
+                writeln!(
+                    fmt,
+                    "  define_local_var(0x{:X}, 0x{:X}, {:?}, {:?});",
+                    reg_value.range.start,
+                    reg_value.range.end,
+                    reg_value.register_name,
+                    reg_value.variable_name,
+                )?;
+            }
+        }
+        for (address, label) in
+            id0.local_labels(info.netdelta(), fun.address.start)?
+        {
             writeln!(
                 fmt,
                 "  set_name({:#X}, {:?}, SN_LOCAL);",

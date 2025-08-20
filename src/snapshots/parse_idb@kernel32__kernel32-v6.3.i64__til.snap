@@ -1,5 +1,5 @@
 ---
-hash: 441506D7E23ECF28
+hash: 7886E3C9A0EC2ACF
 source: src/test.rs
 expression: til
 ---
@@ -56,6 +56,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("FilterFunc"),
@@ -83,6 +85,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("HandlerFunc"),
@@ -110,6 +114,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,
@@ -153,6 +159,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("GSCookieXOROffset"),
@@ -173,6 +181,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("EHCookieOffset"),
@@ -193,6 +203,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("EHCookieXOROffset"),
@@ -213,6 +225,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
       (
        name: Some("ScopeRecord"),
@@ -243,6 +257,8 @@ Some((
        is_vft: false,
        is_method: false,
        is_unknown_8: false,
+       is_frame_s: false,
+       is_frame_r: false,
       ),
      ],
      extra_padding: None,

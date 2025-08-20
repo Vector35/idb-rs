@@ -1,0 +1,117 @@
+---
+hash: B29FB1B98E5FC811
+source: src/test.rs
+expression: fchunks
+---
+[
+ ((
+  address: (
+   start: (4294983072),
+   end: (4294983245),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 467,
+   frsize: 32,
+   frregs: 8,
+   argsize: 0,
+   pntqty: 4,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4294983248),
+   end: (4294983377),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 470,
+   frsize: 16,
+   frregs: 8,
+   argsize: 0,
+   pntqty: 4,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4294983392),
+   end: (4294983517),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 473,
+   frsize: 16,
+   frregs: 8,
+   argsize: 0,
+   pntqty: 4,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4294983518),
+   end: (4294983524),
+  ),
+  flags: (5312),
+  extra: NonTail((
+   frame: 72057594037927935,
+   frsize: 0,
+   frregs: 0,
+   argsize: 0,
+   pntqty: 0,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4294983524),
+   end: (4294983530),
+  ),
+  flags: (5312),
+  extra: NonTail((
+   frame: 72057594037927935,
+   frsize: 0,
+   frregs: 0,
+   argsize: 0,
+   pntqty: 0,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+]

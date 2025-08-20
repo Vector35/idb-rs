@@ -5,6 +5,7 @@ use std::hash::Hasher;
 use std::io::{BufWriter, Cursor};
 use std::path::{Path, PathBuf};
 
+use crate::id0::function::{IDBFunction, RegisterName, StackNames};
 use crate::id0::segment_register::Srarea;
 use crate::id0::{FileRegions, Segment};
 use crate::*;
@@ -367,6 +368,35 @@ fn parse_idb_data<K>(
                     })
                     .collect();
             assert_dyn!("parse_idb", filename, function_comments);
+
+            let fchunks: Vec<(
+                IDBFunction<K>,
+                Option<(Vec<RegisterName<K>>, StackNames)>,
+            )> = id0
+                .fchunks(funcs_idx)
+                .map(|func| {
+                    let func = func?;
+                    let regs = if let id0::function::IDBFunctionType::NonTail(
+                        func_data,
+                    ) = &func.extra
+                    {
+                        let regs = id0
+                            .function_defined_registers(
+                                netdelta, &func, func_data,
+                            )
+                            .collect::<Result<_>>()?;
+                        let stack = id0.function_defined_variables(
+                            &ida_info, &func, func_data,
+                        )?;
+                        Some((regs, stack))
+                    } else {
+                        None
+                    };
+                    Ok((func, regs))
+                })
+                .collect::<Result<_>>()
+                .unwrap();
+            assert_dyn!("parse_idb", filename, fchunks);
         }
     }
     let entry_points = id0.entry_points(&ida_info).unwrap();

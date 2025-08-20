@@ -1,0 +1,29 @@
+---
+hash: 97470EFDA39FC6CA
+source: src/test.rs
+expression: fchunks
+---
+[
+ ((
+  address: (
+   start: (4160749567),
+   end: (4160749570),
+  ),
+  flags: (17408),
+  extra: NonTail((
+   frame: 87,
+   frsize: 0,
+   frregs: 0,
+   argsize: 0,
+   pntqty: 0,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+]

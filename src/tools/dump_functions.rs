@@ -3,7 +3,7 @@ use crate::{get_id0_id1_id2_sections, Id0Id1Id2Variant};
 
 use anyhow::Result;
 
-use idb_rs::id0::function::EntryPoint;
+use idb_rs::id0::function::{EntryPoint, IDBFunctionType};
 use idb_rs::{Address, IDAKind, IDAVariants};
 
 pub fn dump_functions(args: &Args) -> Result<()> {
@@ -34,9 +34,22 @@ fn dump<K: IDAKind>((id0, id1, id2): Id0Id1Id2Variant<K>) -> Result<()> {
         for idbfunction in id0.fchunks(funcs_idx) {
             let idbfunction = idbfunction?;
             println!(
-                "  Function at {:#x}..{:#x}",
+                "  Function at {:#x}..{:#x}: {idbfunction:X?}",
                 idbfunction.address.start, idbfunction.address.end
             );
+
+            if let IDBFunctionType::NonTail(func_data) = &idbfunction.extra {
+                let regs = id0
+                    .function_defined_registers(
+                        netdelta,
+                        &idbfunction,
+                        &func_data,
+                    )
+                    .collect::<Result<Vec<_>>>()?;
+                if !regs.is_empty() {
+                    println!("Functions register values: {regs:02X?}");
+                }
+            }
         }
 
         if let Some(funcords_idx) = funcords_idx {
