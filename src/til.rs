@@ -283,7 +283,7 @@ impl Type {
             _rest => {
                 #[cfg(feature = "restrictive")]
                 return Err(anyhow!(
-                    "Extra {} bytes after reading TIL from ID0",
+                    "Extra {} bytes after reading TIL from ID0: {_rest:02X?}",
                     _rest.len()
                 ));
             }

@@ -207,6 +207,8 @@ pub struct UDTMember {
     pub is_vft: bool,
     pub is_method: bool,
     pub is_unknown_8: bool,
+    pub is_frame_s: bool,
+    pub is_frame_r: bool,
 }
 
 impl UDTMember {
@@ -238,6 +240,8 @@ impl UDTMember {
         let mut is_baseclass = false;
         let mut is_unaligned = false;
         let mut is_vft = false;
+        let mut is_frame_r = false;
+        let mut is_frame_s = false;
         let mut is_method = false;
         let mut is_unknown_8 = false;
 
@@ -272,8 +276,8 @@ impl UDTMember {
                 // TODO handle those flags
                 let _is_gap = tattr & TAFLD_GAP != 0;
                 let _is_regcmt = tattr & TAFLD_REGCMT != 0;
-                let _is_frame_r = tattr & TAFLD_FRAME_R != 0;
-                let _is_frame_s = tattr & TAFLD_FRAME_S != 0;
+                is_frame_r = tattr & TAFLD_FRAME_R != 0;
+                is_frame_s = tattr & TAFLD_FRAME_S != 0;
                 let _is_bytil = tattr & TAFLD_BYTIL != 0;
                 const _ALL_FLAGS: u16 = MAX_DECL_ALIGN
                     | TAFLD_BASECLASS
@@ -324,6 +328,8 @@ impl UDTMember {
             is_vft,
             is_method,
             is_unknown_8,
+            is_frame_r,
+            is_frame_s,
         })
     }
 

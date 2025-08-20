@@ -1,0 +1,381 @@
+---
+hash: 76F7A9ED9D3E46A8
+source: src/test.rs
+expression: fchunks
+---
+[
+ ((
+  address: (
+   start: (4201456),
+   end: (4201627),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2099,
+   frsize: 496,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 16,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4201632),
+   end: (4201832),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2102,
+   frsize: 496,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 19,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4201840),
+   end: (4202113),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2105,
+   frsize: 76,
+   frregs: 4,
+   argsize: 4,
+   pntqty: 45,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4202128),
+   end: (4202336),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2108,
+   frsize: 1304,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 24,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4202336),
+   end: (4202611),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2111,
+   frsize: 548,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 35,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4202624),
+   end: (4203480),
+  ),
+  flags: (5137),
+  extra: NonTail((
+   frame: 2338,
+   frsize: 272,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 169,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4203488),
+   end: (4203635),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2114,
+   frsize: 8,
+   frregs: 4,
+   argsize: 16,
+   pntqty: 14,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4203648),
+   end: (4203693),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2117,
+   frsize: 4,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 4,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4203696),
+   end: (4203826),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2329,
+   frsize: 8,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 4,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4203840),
+   end: (4203946),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2120,
+   frsize: 4,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 21,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4203952),
+   end: (4204057),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2123,
+   frsize: 4,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 21,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4204064),
+   end: (4204153),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2126,
+   frsize: 88,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 18,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4204160),
+   end: (4204481),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2129,
+   frsize: 1296,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 40,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4204496),
+   end: (4204786),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2132,
+   frsize: 272,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 50,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4204800),
+   end: (4204848),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2135,
+   frsize: 4,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 8,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4204848),
+   end: (4205110),
+  ),
+  flags: (21520),
+  extra: NonTail((
+   frame: 2138,
+   frsize: 528,
+   frregs: 4,
+   argsize: 0,
+   pntqty: 27,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+ ((
+  address: (
+   start: (4205110),
+   end: (4205116),
+  ),
+  flags: (21696),
+  extra: NonTail((
+   frame: 2141,
+   frsize: 0,
+   frregs: 0,
+   argsize: 20,
+   pntqty: 0,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: None,
+ )))),
+]

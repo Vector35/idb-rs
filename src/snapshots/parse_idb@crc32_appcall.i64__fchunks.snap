@@ -1,0 +1,72 @@
+---
+hash: 03E350FBFAA059A2
+source: src/test.rs
+expression: fchunks
+---
+[
+ ((
+  address: (
+   start: (4399680),
+   end: (4399732),
+  ),
+  flags: (21504),
+  extra: NonTail((
+   frame: 4399680,
+   frsize: 0,
+   frregs: 0,
+   argsize: 0,
+   pntqty: 0,
+   llabelqty: 0,
+   regvarqty: 0,
+   regargqty: 0,
+   color: None,
+   tailqty: 0,
+   fpd: 0,
+  )),
+ ), Some(([], (
+  ty: Some((
+   effective_alignment: None,
+   members: [
+    (
+     name: Some("__return_address"),
+     comment: None,
+     member_type: (
+      comment: None,
+      is_const: false,
+      is_volatile: false,
+      type_variant: Pointer((
+       closure: Default,
+       modifier: None,
+       shifted: None,
+       typ: (
+        comment: None,
+        is_const: false,
+        is_volatile: false,
+        type_variant: Basic(Unknown(
+         bytes: 0,
+        )),
+       ),
+      )),
+     ),
+     att: None,
+     alignment: None,
+     is_baseclass: false,
+     is_unaligned: false,
+     is_vft: false,
+     is_method: false,
+     is_unknown_8: true,
+     is_frame_s: false,
+     is_frame_r: true,
+    ),
+   ],
+   extra_padding: Some(8),
+   is_unaligned: false,
+   is_msstruct: false,
+   is_cppobj: false,
+   is_vft: false,
+   is_fixed: true,
+   is_unknown_8: true,
+   alignment: None,
+  )),
+ )))),
+]

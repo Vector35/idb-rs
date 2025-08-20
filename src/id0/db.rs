@@ -1445,4 +1445,22 @@ impl<K: IDAKind> ID0Section<K> {
     ) -> Result<Option<ReferenceInfo<K>>> {
         super::reference_info::reference_info(self, netdelta, address, operand)
     }
+
+    pub fn function_defined_registers<'a>(
+        &'a self,
+        netdelta: Netdelta<K>,
+        func: &IDBFunction<K>,
+        func_data: &IDBFunctionNonTail<K>,
+    ) -> impl Iterator<Item = Result<RegisterName<K>>> + use<'a, K> {
+        register_values(self, netdelta, func, func_data)
+    }
+
+    pub fn function_defined_variables<'a>(
+        &'a self,
+        info: &RootInfo<K>,
+        func: &IDBFunction<K>,
+        func_data: &IDBFunctionNonTail<K>,
+    ) -> Result<StackNames> {
+        stack_values(self, info, func, func_data)
+    }
 }

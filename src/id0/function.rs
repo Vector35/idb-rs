@@ -1,16 +1,16 @@
 use std::ops::Range;
 
 use crate::id0::entry_iter::EntryTagContinuousFlat;
-use crate::id0::parse_maybe_cstr;
+use crate::id0::{parse_maybe_cstr, Netdelta, RootInfo};
 use crate::ida_reader::{IdbBufRead, IdbRead, IdbReadKind, IteratorReader};
-use crate::{flags_to_struct, til, Address, IDAKind, IDBStr};
+use crate::{flags_to_struct, til, Address, IDAKind, IDBStr, IDBString};
 
 use super::flag::func::*;
 use super::flag::netnode::nn_res::ARRAY_SUP_TAG;
 use super::{flag, ID0Section, NetnodeIdx};
 
 use anyhow::{anyhow, ensure, Context, Result};
-use num_traits::{CheckedAdd, WrappingSub};
+use num_traits::{CheckedAdd, WrappingAdd, WrappingSub};
 use serde::Serialize;
 
 #[derive(Clone, Debug, Serialize)]
@@ -81,7 +81,7 @@ pub enum IDBFunctionType<K: IDAKind> {
 #[derive(Clone, Debug, Serialize)]
 pub struct IDBFunctionTail<K: IDAKind> {
     /// function owner of the function start
-    pub owner: K::Usize,
+    pub owner: Address<K>,
     pub _unknown4: u16,
     pub _unknown5: Option<u32>,
 }
@@ -97,7 +97,7 @@ pub struct IDBFunctionNonTail<K: IDAKind> {
     pub argsize: K::Usize,
     pub pntqty: u16,
     pub llabelqty: u16,
-    pub(crate) _unknown1: u16,
+    pub regvarqty: u16,
     pub regargqty: u16,
     pub color: Option<u32>,
     pub tailqty: u16,
@@ -154,7 +154,7 @@ impl<K: IDAKind> IDBFunction<K> {
         let _unknown5 =
             (_unknown4 == 0).then(|| input.unpack_dd()).transpose()?;
         Ok(IDBFunctionType::Tail(IDBFunctionTail {
-            owner,
+            owner: Address::from_raw(owner),
             _unknown4,
             _unknown5,
         }))
@@ -181,7 +181,7 @@ impl<K: IDAKind> IDBFunction<K> {
         let frregs = input.unpack_dw()?;
         let argsize = input.unpack_usize()?;
         let pntqty = input.unpack_dw()?;
-        let _unknown1 = input.unpack_dw()?;
+        let regvarqty = input.unpack_dw()?;
         let llabelqty = input.unpack_dw()?;
         let regargqty = input.unpack_dw()?;
         let color_raw = input.unpack_dd()?;
@@ -198,7 +198,7 @@ impl<K: IDAKind> IDBFunction<K> {
             argsize,
             pntqty,
             llabelqty,
-            _unknown1,
+            regvarqty,
             regargqty,
             color,
             tailqty,
@@ -347,4 +347,101 @@ impl<'a, K: IDAKind> FuncordIterator<'a, K> {
         self.num -= 1u8.into();
         Ok(Some(Address::from_raw(self.acc)))
     }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RegisterName<K: IDAKind> {
+    pub range: Range<Address<K>>,
+    pub register_name: IDBString,
+    pub variable_name: IDBString,
+    pub cmt: IDBString,
+}
+
+pub fn register_values<'a, K: IDAKind>(
+    id0: &'a ID0Section<K>,
+    netdelta: Netdelta<K>,
+    func: &IDBFunction<K>,
+    func_data: &IDBFunctionNonTail<K>,
+) -> impl Iterator<Item = Result<RegisterName<K>>> + use<'a, K> {
+    let netnode = netdelta.ea2node(func.address.start);
+    let entries = id0.blob(netnode, 0x4000u32.into(), ARRAY_SUP_TAG);
+    let mut cursor = IteratorReader::new(entries);
+    let func_address_start = func.address.start.into_raw();
+
+    (0..func_data.regvarqty).map(move |_| {
+        let range_start_offset = IdbReadKind::<K>::unpack_usize(&mut cursor)?;
+        // NOTE this address could be before the function address
+        let range_start = func_address_start.wrapping_add(&range_start_offset);
+        let range_end_offset = IdbReadKind::<K>::unpack_usize(&mut cursor)?;
+        let range_end = range_start
+            .checked_add(&range_end_offset)
+            .ok_or_else(|| anyhow!("Invalid function register address end"))?;
+        let register_name = IDBString::new(IdbRead::unpack_ds(&mut cursor)?);
+        ensure!(
+            !register_name.0.is_empty(),
+            "Invalid function register name"
+        );
+        let variable_name = IDBString::new(IdbRead::unpack_ds(&mut cursor)?);
+        ensure!(
+            !variable_name.0.is_empty(),
+            "Invalid function register variable name"
+        );
+        let cmt = IDBString::new(IdbRead::unpack_ds(&mut cursor)?);
+        Ok(RegisterName {
+            range: Address::from_raw(range_start)..Address::from_raw(range_end),
+            register_name,
+            variable_name,
+            cmt,
+        })
+    })
+}
+
+#[derive(Debug, Serialize)]
+pub struct StackNames {
+    pub ty: Option<crate::til::udt::UDT>,
+}
+
+pub fn stack_values<'a, K: IDAKind>(
+    id0: &'a ID0Section<K>,
+    info: &RootInfo<K>,
+    func: &IDBFunction<K>,
+    // not required by data, but can only be called in function that are not
+    // tail
+    _func_data: &IDBFunctionNonTail<K>,
+) -> Result<StackNames> {
+    let netnode = info.netdelta().ea2node(func.address.start);
+    let entries: Vec<u8> = id0
+        .blob(netnode, 0x10a000u32.into(), ARRAY_SUP_TAG)
+        .collect();
+    let mut cursor = &entries[..];
+
+    let _unk0 = cursor.read_u8_or_nothing()?;
+    #[cfg(feature = "restrictive")]
+    ensure!(_unk0 == None || _unk0 == Some(1));
+    let ty_raw = (cursor.peek_u8()?.is_some())
+        .then(|| cursor.read_c_string_raw())
+        .transpose()?;
+    let ty_fields_raw = (cursor.peek_u8()?.is_some())
+        .then(|| cursor.read_c_string_vec())
+        .transpose()?;
+    let _unk1 = (cursor.peek_u8()?.is_some())
+        .then(|| cursor.read_c_string_raw())
+        .transpose()?;
+    let ty = ty_raw
+        .map(|ty| {
+            crate::til::Type::new_from_id0(
+                info,
+                &ty,
+                ty_fields_raw.unwrap_or(vec![]),
+            )
+        })
+        .transpose()?
+        .map(|ty| {
+            let crate::til::TypeVariant::Struct(ty) = ty.type_variant else {
+                return Err(anyhow!("Function stack have invalid type"));
+            };
+            Ok(ty)
+        })
+        .transpose()?;
+    Ok(StackNames { ty })
 }
