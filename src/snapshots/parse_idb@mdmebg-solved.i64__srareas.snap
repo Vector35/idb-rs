@@ -1,183 +1,1075 @@
 ---
-hash: A4D45DE3C7AA434C
+hash: 9C5F501D26D9BD4E
 source: src/test.rs
 expression: srareas
 ---
 [
- (
-  range: (
-   start: (0),
-   end: (2512),
+ ("cs", [
+  (
+   range: (
+    start: (0),
+    end: (2512),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (4096),
-   end: (4123),
+  (
+   range: (
+    start: (4096),
+    end: (4123),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (4123),
-   end: (4128),
+  (
+   range: (
+    start: (4123),
+    end: (4128),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (4128),
-   end: (4352),
+  (
+   range: (
+    start: (4128),
+    end: (4352),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (4352),
-   end: (4368),
+  (
+   range: (
+    start: (4352),
+    end: (4368),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (4368),
-   end: (4576),
+  (
+   range: (
+    start: (4368),
+    end: (4576),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (4576),
-   end: (7203),
+  (
+   range: (
+    start: (4576),
+    end: (7203),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (7203),
-   end: (7204),
+  (
+   range: (
+    start: (7203),
+    end: (7204),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (7204),
-   end: (7217),
+  (
+   range: (
+    start: (7204),
+    end: (7217),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (8192),
-   end: (13517),
+  (
+   range: (
+    start: (8192),
+    end: (13517),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (13517),
-   end: (13520),
+  (
+   range: (
+    start: (13517),
+    end: (13520),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (13520),
-   end: (13644),
+  (
+   range: (
+    start: (13520),
+    end: (13644),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (13644),
-   end: (13648),
+  (
+   range: (
+    start: (13644),
+    end: (13648),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (13648),
-   end: (14184),
+  (
+   range: (
+    start: (13648),
+    end: (14184),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (19792),
-   end: (19808),
+  (
+   range: (
+    start: (19792),
+    end: (19808),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (19808),
-   end: (19816),
+  (
+   range: (
+    start: (19808),
+    end: (19816),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (19816),
-   end: (20312),
+  (
+   range: (
+    start: (19816),
+    end: (20312),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (20312),
-   end: (20480),
+  (
+   range: (
+    start: (20312),
+    end: (20480),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (20480),
-   end: (20580),
+  (
+   range: (
+    start: (20480),
+    end: (20580),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (20580),
-   end: (20608),
+  (
+   range: (
+    start: (20580),
+    end: (20608),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (20608),
-   end: (20688),
+  (
+   range: (
+    start: (20608),
+    end: (20688),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (20688),
-   end: (20832),
+  (
+   range: (
+    start: (20688),
+    end: (20832),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
+ ]),
+ ("ds", [
+  (
+   range: (
+    start: (0),
+    end: (2512),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4096),
+    end: (4123),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4123),
+    end: (4128),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4128),
+    end: (4352),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4352),
+    end: (4368),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4368),
+    end: (4576),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4576),
+    end: (7203),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (7203),
+    end: (7204),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (7204),
+    end: (7217),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (8192),
+    end: (13517),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13517),
+    end: (13520),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13520),
+    end: (13644),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13644),
+    end: (13648),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13648),
+    end: (14184),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19792),
+    end: (19808),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19808),
+    end: (19816),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19816),
+    end: (20312),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20312),
+    end: (20480),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20480),
+    end: (20580),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20580),
+    end: (20608),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20608),
+    end: (20688),
+   ),
+   value: Some(20),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20688),
+    end: (20832),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("es", [
+  (
+   range: (
+    start: (0),
+    end: (2512),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4096),
+    end: (4123),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4123),
+    end: (4128),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4128),
+    end: (4352),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4352),
+    end: (4368),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4368),
+    end: (4576),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4576),
+    end: (7203),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (7203),
+    end: (7204),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (7204),
+    end: (7217),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (8192),
+    end: (13517),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13517),
+    end: (13520),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13520),
+    end: (13644),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13644),
+    end: (13648),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13648),
+    end: (14184),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19792),
+    end: (19808),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19808),
+    end: (19816),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19816),
+    end: (20312),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20312),
+    end: (20480),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20480),
+    end: (20580),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20580),
+    end: (20608),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20608),
+    end: (20688),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20688),
+    end: (20832),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("fs", [
+  (
+   range: (
+    start: (0),
+    end: (2512),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4096),
+    end: (4123),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4123),
+    end: (4128),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4128),
+    end: (4352),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4352),
+    end: (4368),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4368),
+    end: (4576),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4576),
+    end: (7203),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (7203),
+    end: (7204),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (7204),
+    end: (7217),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (8192),
+    end: (13517),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13517),
+    end: (13520),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13520),
+    end: (13644),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13644),
+    end: (13648),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13648),
+    end: (14184),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19792),
+    end: (19808),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19808),
+    end: (19816),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19816),
+    end: (20312),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20312),
+    end: (20480),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20480),
+    end: (20580),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20580),
+    end: (20608),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20608),
+    end: (20688),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20688),
+    end: (20832),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("gs", [
+  (
+   range: (
+    start: (0),
+    end: (2512),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4096),
+    end: (4123),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4123),
+    end: (4128),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4128),
+    end: (4352),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4352),
+    end: (4368),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4368),
+    end: (4576),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4576),
+    end: (7203),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (7203),
+    end: (7204),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (7204),
+    end: (7217),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (8192),
+    end: (13517),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13517),
+    end: (13520),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13520),
+    end: (13644),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13644),
+    end: (13648),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13648),
+    end: (14184),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19792),
+    end: (19808),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19808),
+    end: (19816),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19816),
+    end: (20312),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20312),
+    end: (20480),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20480),
+    end: (20580),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20580),
+    end: (20608),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20608),
+    end: (20688),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20688),
+    end: (20832),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("ss", [
+  (
+   range: (
+    start: (0),
+    end: (2512),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4096),
+    end: (4123),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4123),
+    end: (4128),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4128),
+    end: (4352),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4352),
+    end: (4368),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4368),
+    end: (4576),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (4576),
+    end: (7203),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (7203),
+    end: (7204),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (7204),
+    end: (7217),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (8192),
+    end: (13517),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13517),
+    end: (13520),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13520),
+    end: (13644),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13644),
+    end: (13648),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (13648),
+    end: (14184),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19792),
+    end: (19808),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19808),
+    end: (19816),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (19816),
+    end: (20312),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20312),
+    end: (20480),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20480),
+    end: (20580),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20580),
+    end: (20608),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20608),
+    end: (20688),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (20688),
+    end: (20832),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
 ]

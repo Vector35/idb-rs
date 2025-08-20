@@ -5,7 +5,7 @@ use crate::id0::flag::netnode::nn_res::ARRAY_SUP_TAG;
 use crate::id0::flag::nsup::NSUP_TYPEINFO;
 use crate::id0::{
     get_sup_from_key, parse_maybe_cstr, ID0CStr, ID0Section, Netdelta,
-    NetnodeIdx,
+    NetnodeIdx, RootInfo,
 };
 use crate::id1::{ByteDataType, ByteInfo, ByteType, ID1Section};
 use crate::id2::ID2Section;
@@ -133,7 +133,7 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
         }
     }
 
-    pub fn tinfo(&self) -> Result<Option<Type>> {
+    pub fn tinfo(&self, info: &RootInfo<K>) -> Result<Option<Type>> {
         let ByteType::Data(byte_data) = self.byte_info.byte_type() else {
             return Ok(None);
         };
@@ -172,7 +172,7 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
         til_raw.extend(iter.flat_map(|e| &e.value[..]));
 
         // create the raw type
-        let til = Type::new_from_id0(&til_raw, field_names)?;
+        let til = Type::new_from_id0(info, &til_raw, field_names)?;
         Ok(Some(til))
     }
 

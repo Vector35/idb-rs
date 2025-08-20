@@ -1,79 +1,459 @@
 ---
-hash: CDFDC9775E7959BD
+hash: 75EDF85CECCC1226
 source: src/test.rs
 expression: srareas
 ---
 [
- (
-  range: (
-   start: (6442450944),
-   end: (6442455040),
+ ("cs", [
+  (
+   range: (
+    start: (6442450944),
+    end: (6442455040),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (6442455040),
-   end: (6442868736),
+  (
+   range: (
+    start: (6442455040),
+    end: (6442868736),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (6442868736),
-   end: (6443003904),
+  (
+   range: (
+    start: (6442868736),
+    end: (6443003904),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (6443003904),
-   end: (6443012096),
+  (
+   range: (
+    start: (6443003904),
+    end: (6443012096),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (6443012096),
-   end: (6443040768),
+  (
+   range: (
+    start: (6443012096),
+    end: (6443040768),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (6443040768),
-   end: (6443044864),
+  (
+   range: (
+    start: (6443040768),
+    end: (6443044864),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (6443044864),
-   end: (6443266048),
+  (
+   range: (
+    start: (6443044864),
+    end: (6443266048),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (6443266048),
-   end: (6443274240),
+  (
+   range: (
+    start: (6443266048),
+    end: (6443274240),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
   ),
-  _unk0: 1,
-  tag: Some(Auto),
- ),
- (
-  range: (
-   start: (6443274240),
-   end: (6443355136),
+  (
+   range: (
+    start: (6443274240),
+    end: (6443355136),
+   ),
+   value: None,
+   tag: Some(Auto),
   ),
-  _unk0: 0,
-  tag: Some(Auto),
- ),
+ ]),
+ ("ds", [
+  (
+   range: (
+    start: (6442450944),
+    end: (6442455040),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6442455040),
+    end: (6442657537),
+   ),
+   value: Some(3),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6442657537),
+    end: (6442868736),
+   ),
+   value: Some(3),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6442868736),
+    end: (6443003904),
+   ),
+   value: Some(3),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443003904),
+    end: (6443012096),
+   ),
+   value: Some(3),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443012096),
+    end: (6443040768),
+   ),
+   value: Some(3),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443040768),
+    end: (6443044864),
+   ),
+   value: Some(3),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443044864),
+    end: (6443266048),
+   ),
+   value: Some(3),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443266048),
+    end: (6443274240),
+   ),
+   value: Some(3),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443274240),
+    end: (6443355136),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("es", [
+  (
+   range: (
+    start: (6442450944),
+    end: (6442455040),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6442455040),
+    end: (6442868736),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6442868736),
+    end: (6443003904),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443003904),
+    end: (6443012096),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443012096),
+    end: (6443040768),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443040768),
+    end: (6443044864),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443044864),
+    end: (6443266048),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443266048),
+    end: (6443274240),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443274240),
+    end: (6443355136),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("fs", [
+  (
+   range: (
+    start: (6442450944),
+    end: (6442455040),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6442455040),
+    end: (6442868736),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6442868736),
+    end: (6443003904),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443003904),
+    end: (6443012096),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443012096),
+    end: (6443040768),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443040768),
+    end: (6443044864),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443044864),
+    end: (6443266048),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443266048),
+    end: (6443274240),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443274240),
+    end: (6443355136),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("gs", [
+  (
+   range: (
+    start: (6442450944),
+    end: (6442455040),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6442455040),
+    end: (6442868736),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6442868736),
+    end: (6443003904),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443003904),
+    end: (6443012096),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443012096),
+    end: (6443040768),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443040768),
+    end: (6443044864),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443044864),
+    end: (6443266048),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443266048),
+    end: (6443274240),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443274240),
+    end: (6443355136),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
+ ("ss", [
+  (
+   range: (
+    start: (6442450944),
+    end: (6442455040),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6442455040),
+    end: (6442868736),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6442868736),
+    end: (6443003904),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443003904),
+    end: (6443012096),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443012096),
+    end: (6443040768),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443040768),
+    end: (6443044864),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443044864),
+    end: (6443266048),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443266048),
+    end: (6443274240),
+   ),
+   value: Some(0),
+   tag: Some(Auto),
+  ),
+  (
+   range: (
+    start: (6443274240),
+    end: (6443355136),
+   ),
+   value: None,
+   tag: Some(Auto),
+  ),
+ ]),
 ]

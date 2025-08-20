@@ -51,7 +51,7 @@ pub fn print_function<K: IDAKind>(
         .transpose()?;
     let ty = info
         .as_ref()
-        .and_then(|info| info.tinfo().transpose())
+        .and_then(|info| info.tinfo(&root_info).transpose())
         .transpose()?;
 
     print!("{:#x}:", address.into_raw());

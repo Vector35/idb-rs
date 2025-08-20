@@ -42,7 +42,6 @@ pub struct TILSectionHeader {
     /// short file name (without path and extension)
     pub description: IDBString,
     pub flags: TILSectionFlags,
-    // TODO unclear what exacly dependency is for
     /// module required
     pub dependencies: Vec<IDBString>,
     /// the compiler used to generated types
@@ -55,8 +54,6 @@ pub struct TILSectionHeader {
     pub cn: Option<CCPtrSize>,
     /// default calling convention model
     pub cm: Option<CCModel>,
-    //pub cc: CallingConvention,
-    //pub cm: CCPtrSize,
     pub def_align: Option<NonZeroU8>,
     // TODO create a struct for ordinal aliases
     pub type_ordinal_alias: Option<Vec<(u32, u32)>>,

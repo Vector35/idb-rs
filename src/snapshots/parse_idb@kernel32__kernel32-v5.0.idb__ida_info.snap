@@ -1,5 +1,5 @@
 ---
-hash: 8D472973D5D2EFAF
+hash: F0630D8F9BF06596
 source: src/test.rs
 expression: ida_info
 ---
@@ -96,16 +96,16 @@ expression: ida_info
   is_guessed: false,
   compiler: VisualStudio,
   sizeof: (
-   cm: 51,
+   cm: Some(NN),
    int: 4,
    bool: 4,
-   enum_: 4,
-   short: 2,
-   long: 4,
-   longlong: 8,
-   long_double: 0,
+   enum_: Some(4),
+   short: Some(2),
+   long: Some(4),
+   longlong: Some(8),
+   long_double: None,
   ),
-  alignment: 4,
+  alignment: Some(4),
  ),
  abibits: (0),
  appcall_options: 0,
