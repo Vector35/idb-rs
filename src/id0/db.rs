@@ -10,6 +10,7 @@ use crate::id0::entry_iter::EntryTagContinuousFlat;
 use crate::id0::flag::nsup::NSUP_LLABEL;
 use crate::id0::segment_register::{Srarea, SrareasIdx};
 use crate::ida_reader::{IdbBufRead, IdbReadKind};
+use crate::processors::Processor;
 use crate::{til, Address, IDBStr};
 use crate::{IDBString, SectionReader};
 
@@ -1462,5 +1463,48 @@ impl<K: IDAKind> ID0Section<K> {
         func_data: &IDBFunctionNonTail<K>,
     ) -> Result<StackNames> {
         stack_values(self, info, func, func_data)
+    }
+
+    pub fn processor(&self, info: &RootInfo<K>) -> Option<&'static Processor> {
+        crate::processors::get_processor(info.version, &info.target.processor)
+    }
+
+    pub fn segment_registers_values<'a>(
+        &'a self,
+        addr: Address<K>,
+        proc: &'static Processor,
+        info: &'a RootInfo<K>,
+        srarea_idx: SrareasIdx<K>,
+        segment_idx: SegmentIdx<K>,
+    ) -> Result<
+        impl Iterator<Item = Result<(&'static str, Option<K::Usize>)>> + use<'a, K>,
+    > {
+        // find the default segment-registers values for this segment
+        let mut default_values: [Option<K::Usize>; 16] = [None; 16];
+        for seg in self.segments(segment_idx) {
+            let seg = seg?;
+            if seg.address.contains(&addr) {
+                default_values = seg.defsr;
+                break;
+            }
+        }
+
+        Ok(proc.segment_register_names().iter().enumerate().map(
+            move |(idx, name)| {
+                // find the value for the segment register in that addr
+                for area in self.srareas(srarea_idx, idx.try_into().unwrap()) {
+                    let area = area?;
+                    if area.range.contains(&addr) {
+                        let value = area
+                            .value
+                            .or(default_values.get(idx).copied().flatten());
+                        return Ok((*name, value));
+                    }
+                }
+                Err(anyhow!(
+                    "Could not find the segment for the segment register"
+                ))
+            },
+        ))
     }
 }
