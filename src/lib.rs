@@ -1399,17 +1399,13 @@ impl IDBString {
 
 impl std::fmt::Display for IDBString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.as_utf8_lossy().fmt(f)
+        <IDBStr as std::fmt::Display>::fmt(&IDBStr::new(&self.0), f)
     }
 }
 
 impl std::fmt::Debug for IDBString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use std::fmt::Write;
-        f.write_char('"')?;
-        f.write_str(&self.as_utf8_lossy())?;
-        f.write_char('"')?;
-        Ok(())
+        <IDBStr as std::fmt::Debug>::fmt(&IDBStr::new(&self.0), f)
     }
 }
 
@@ -1455,7 +1451,15 @@ impl std::fmt::Display for IDBStr<'_> {
 
 impl std::fmt::Debug for IDBStr<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{:?}", self.as_utf8_lossy()))?;
+        for b in self.0 {
+            match b {
+                b'"' => f.write_str("\\\"")?,
+                b if b.is_ascii_graphic() || b.is_ascii_whitespace() => {
+                    std::fmt::Write::write_char(&mut *f, *b as char)?
+                }
+                b => write!(&mut *f, "\\x{b:02X}")?,
+            }
+        }
         Ok(())
     }
 }
