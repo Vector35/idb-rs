@@ -1294,7 +1294,7 @@ impl<K: IDAKind> ID0Section<K> {
         // older versions dont have this prefix
         let value =
             entry.value.strip_prefix(b"$$ ").unwrap_or(&entry.value[..]);
-        Ok(value)
+        Ok(parse_maybe_cstr(value))
     }
 
     /// read the `$ funcords` entries of the database
