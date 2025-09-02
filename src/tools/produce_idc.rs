@@ -98,19 +98,16 @@ fn produce_idc_inner<K: IDAKind>(
     let image_base = id0.image_base(root_info_idx)?;
     let netdelta = root_info.netdelta();
     let mut solver = TILTypeSizeSolver::new(&til);
-    let processor = idb_rs::processors::PROCESSORS
-        .iter()
-        .find(|p| {
-            p.alt_names()
-                .iter()
-                .any(|p| p.as_bytes() == root_info.target.processor)
-        })
-        .ok_or_else(|| {
-            anyhow!(
-                "processor not found: {}",
-                core::str::from_utf8(&root_info.target.processor).unwrap()
-            )
-        })?;
+    let processor = idb_rs::processors::get_processor(
+        root_info.version,
+        &root_info.target.processor,
+    )
+    .ok_or_else(|| {
+        anyhow!(
+            "processor not found: {}",
+            core::str::from_utf8(&root_info.target.processor).unwrap()
+        )
+    })?;
 
     if !args.banner.is_empty() {
         writeln!(fmt, "//\n// +-------------------------------------------------------------------------+")?;
@@ -310,7 +307,7 @@ fn produce_segments<K: IDAKind>(
     id0: &ID0Section<K>,
     _id1: &ID1Section<K>,
     id2: Option<&ID2Section<K>>,
-    processor: &Processor,
+    processor: Processor,
 ) -> Result<()> {
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// Information about segmentation")?;
@@ -369,17 +366,22 @@ fn produce_segments<K: IDAKind>(
         writeln!(fmt, "  set_segm_class({startea:#X}, {seg_class_name:?});")?;
 
         //// TODO InnerRef fb47a09e-b8d8-42f7-aa80-2435c4d1e049 0xb76ac
-        for (value, name) in
-            seg.defsr.iter().zip(processor.segment_register_names())
-        {
-            if *name == processor.segment_register_code_name() {
-                continue;
-            }
-            if let Some(value) = value {
-                writeln!(
-                    fmt,
-                    "  SegDefReg({startea:#X},{name:?},{value:#X});"
-                )?;
+        if let Some(info) = processor.registers_info() {
+            let names = info.segment_register_names();
+            for (sreg_idx, (value, name)) in
+                seg.defsr.iter().zip(names).enumerate()
+            {
+                let reg_idx = sreg_idx + info.segment_registers.start;
+                // ignore the segment register for code
+                if info.is_code_segment(reg_idx) {
+                    continue;
+                }
+                if let Some(value) = value {
+                    writeln!(
+                        fmt,
+                        "  SegDefReg({startea:#X},{name:?},{value:#X});"
+                    )?;
+                }
             }
         }
 
@@ -1152,18 +1154,22 @@ fn produce_functions<K: IDAKind>(
 fn produce_seg_regs<K: IDAKind>(
     fmt: &mut impl Write,
     id0: &ID0Section<K>,
-    processor: &Processor,
+    processor: Processor,
 ) -> Result<()> {
     writeln!(fmt, "//------------------------------------------------------------------------")?;
     writeln!(fmt, "// Information about segment registers")?;
     writeln!(fmt)?;
     writeln!(fmt, "static SegRegs(void)")?;
     writeln!(fmt, "{{")?;
-    if let Some(idx) = id0.srareas_idx()? {
+    if let Some((info, idx)) =
+        processor.registers_info().zip(id0.srareas_idx()?)
+    {
         for (sreg_idx, sreg_name) in
-            processor.segment_register_names().iter().enumerate()
+            info.segment_register_names().iter().enumerate()
         {
-            if *sreg_name == processor.segment_register_code_name() {
+            let reg_idx = sreg_idx + info.segment_registers.start;
+            // ignore the segment register for code
+            if info.is_code_segment(reg_idx) {
                 continue;
             }
             for area in id0.srareas(idx, sreg_idx.try_into().unwrap()) {

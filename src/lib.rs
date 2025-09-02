@@ -1451,15 +1451,25 @@ impl std::fmt::Display for IDBStr<'_> {
 
 impl std::fmt::Debug for IDBStr<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("\"")?;
         for b in self.0 {
             match b {
+                b'\x07' => f.write_str("\\a")?,
+                b'\x08' => f.write_str("\\b")?,
+                b'\t' => f.write_str("\\t")?,
+                b'\n' => f.write_str("\\n")?,
+                b'\x0b' => f.write_str("\\v")?,
+                b'\x0c' => f.write_str("\\f")?,
+                b'\r' => f.write_str("\\r")?,
                 b'"' => f.write_str("\\\"")?,
-                b if b.is_ascii_graphic() || b.is_ascii_whitespace() => {
+                b'\\' => f.write_str("\\\\")?,
+                b' '..=b'~' => {
                     std::fmt::Write::write_char(&mut *f, *b as char)?
                 }
                 b => write!(&mut *f, "\\x{b:02X}")?,
             }
         }
+        f.write_str("\"")?;
         Ok(())
     }
 }
