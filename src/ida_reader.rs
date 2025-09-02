@@ -35,7 +35,7 @@ pub trait IdbRead: Read {
     fn read_u8_or_nothing(&mut self) -> Result<Option<u8>> {
         let mut data = [0; 1];
         let read = self.read_exact_or_nothing(&mut data)?;
-        Ok((read == data.len()).then_some(data[0]))
+        Ok((read == data.len()).then(|| data[0]))
     }
 
     fn read_u16(&mut self) -> Result<u16> {

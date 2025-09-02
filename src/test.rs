@@ -246,9 +246,11 @@ fn parse_idb_data<K>(
     assert_dyn!("parse_idb", filename, segments);
 
     // TODO default into `$ regs`?
-    if let Some(srareas_idx) = id0.srareas_idx().unwrap() {
+    if let Some((info, srareas_idx)) =
+        proc.registers_info().zip(id0.srareas_idx().unwrap())
+    {
         let mut srareas: Vec<(&'static str, Vec<Srarea<K>>)> = vec![];
-        for (sreg_idx, sreg) in proc.segment_register_names().iter().enumerate()
+        for (sreg_idx, sreg) in info.segment_register_names().iter().enumerate()
         {
             let mut srareas_reg: Vec<Srarea<K>> = id0
                 .srareas(srareas_idx, sreg_idx.try_into().unwrap())

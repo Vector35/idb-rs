@@ -412,7 +412,7 @@ impl<K: IDAKind> ID0Section<K> {
         tag: u8,
     ) -> Option<u8> {
         self.sup_value(idx, alt, tag)
-            .and_then(|value| (value.len() == 1).then_some(value[0]))
+            .and_then(|value| (value.len() == 1).then(|| value[0]))
     }
 
     pub fn hash_value<'a>(
@@ -1465,15 +1465,15 @@ impl<K: IDAKind> ID0Section<K> {
         stack_values(self, info, func, func_data)
     }
 
-    pub fn processor(&self, info: &RootInfo<K>) -> Option<&'static Processor> {
+    pub fn processor(&self, info: &RootInfo<K>) -> Option<Processor> {
         crate::processors::get_processor(info.version, &info.target.processor)
     }
 
     pub fn segment_registers_values<'a>(
         &'a self,
         addr: Address<K>,
-        proc: &'static Processor,
-        info: &'a RootInfo<K>,
+        proc: Processor,
+        _info: &'a RootInfo<K>,
         srarea_idx: SrareasIdx<K>,
         segment_idx: SegmentIdx<K>,
     ) -> Result<
@@ -1489,22 +1489,56 @@ impl<K: IDAKind> ID0Section<K> {
             }
         }
 
-        Ok(proc.segment_register_names().iter().enumerate().map(
-            move |(idx, name)| {
-                // find the value for the segment register in that addr
-                for area in self.srareas(srarea_idx, idx.try_into().unwrap()) {
-                    let area = area?;
-                    if area.range.contains(&addr) {
-                        let value = area
-                            .value
-                            .or(default_values.get(idx).copied().flatten());
-                        return Ok((*name, value));
-                    }
+        let info = proc.registers_info();
+        let registers =
+            info.into_iter().flat_map(|i| i.segment_register_names());
+        Ok(registers.enumerate().map(move |(idx, name)| {
+            // find the value for the segment register in that addr
+            for area in self.srareas(srarea_idx, idx.try_into().unwrap()) {
+                let area = area?;
+                if area.range.contains(&addr) {
+                    let value = area
+                        .value
+                        .or(default_values.get(idx).copied().flatten());
+                    return Ok((*name, value));
                 }
-                Err(anyhow!(
-                    "Could not find the segment for the segment register"
-                ))
-            },
+            }
+            Err(anyhow!(
+                "Could not find the segment for the segment register"
+            ))
+        }))
+    }
+
+    pub fn segment_register_value<'a>(
+        &'a self,
+        addr: Address<K>,
+        srarea_idx: SrareasIdx<K>,
+        segment_idx: SegmentIdx<K>,
+        // TODO create a idx type for this
+        segment_reg_idx: usize,
+    ) -> Result<Option<K::Usize>> {
+        // find the default segment-registers values for this segment
+        let mut default_values: Option<K::Usize> = None;
+        for seg in self.segments(segment_idx) {
+            let seg = seg?;
+            if seg.address.contains(&addr) {
+                default_values = seg.defsr[segment_reg_idx];
+                break;
+            }
+        }
+
+        // find the value for the segment register in that addr
+        for area in
+            self.srareas(srarea_idx, segment_reg_idx.try_into().unwrap())
+        {
+            let area = area?;
+            if area.range.contains(&addr) {
+                let value = area.value.or(default_values);
+                return Ok(value);
+            }
+        }
+        Err(anyhow!(
+            "Could not find the segment for the segment register"
         ))
     }
 }

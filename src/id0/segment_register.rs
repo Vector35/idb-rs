@@ -74,7 +74,7 @@ impl<K: IDAKind> Srarea<K> {
         let range = Address::from_raw(start_raw)..Address::from_raw(end_raw);
         // TODO is usize or dq?
         let value_raw = input.unpack_usize()?;
-        let value = (value_raw != 0u8.into()).then_some(value_raw - 1u8.into());
+        let value = (value_raw != 0u8.into()).then(|| value_raw - 1u8.into());
         let tag_raw = input.read_u8_or_nothing()?;
         let tag = tag_raw.map(SRegTag::from_raw).transpose()?;
         Ok(Srarea { range, value, tag })
