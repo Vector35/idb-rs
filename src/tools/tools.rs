@@ -17,6 +17,8 @@ mod dump_functions;
 use dump_functions::dump_functions;
 mod dump_segments;
 use dump_segments::dump_segments;
+mod dump_cpu_arch;
+use dump_cpu_arch::dump_cpu_arch;
 mod dump_segstrings;
 use dump_segstrings::dump_segstrings;
 mod dump_loader_name;
@@ -113,6 +115,8 @@ enum Operation {
     DumpFunctions,
     /// Dump all the segments
     DumpSegments,
+    /// Dump all the segments registers values
+    DumpCpuArch,
     /// Dump all the segments strings
     DumpSegStrings,
     /// Dump the loader names
@@ -383,6 +387,7 @@ fn main() -> Result<()> {
         }
         Operation::DumpFunctions => dump_functions(&args),
         Operation::DumpSegments => dump_segments(&args),
+        Operation::DumpCpuArch => dump_cpu_arch(&args),
         Operation::DumpSegStrings => dump_segstrings(&args),
         Operation::DumpLoaderNames => dump_loader_name(&args),
         Operation::DumpRootInfo => dump_root_info(&args),
