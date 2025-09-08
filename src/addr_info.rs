@@ -134,12 +134,22 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
     }
 
     pub fn tinfo(&self, info: &RootInfo<K>) -> Result<Option<Type>> {
-        let ByteType::Data(byte_data) = self.byte_info.byte_type() else {
-            return Ok(None);
-        };
-        if byte_data.data_type() != ByteDataType::Struct {
-            return Ok(None);
+        // allow if it's a struct type or a function definition
+        match self.byte_info.byte_type() {
+            ByteType::Data(byte_data) => {
+                if byte_data.data_type() != ByteDataType::Struct {
+                    return Ok(None);
+                }
+            }
+            ByteType::Code(byte_code) => {
+                if !byte_code.is_func_start() {
+                    return Ok(None);
+                }
+            }
+            ByteType::Tail(_) => return Ok(None),
+            ByteType::Unknown => return Ok(None),
         }
+
         // take the field names and the continuation (optional!)
         let mut iter = EntryTagContinuousSubkeys::new(
             self.id0,
