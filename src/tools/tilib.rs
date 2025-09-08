@@ -57,12 +57,12 @@ fn print_til_section(
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b926
     writeln!(fmt, "SYMBOLS")?;
-    print_symbols(&mut fmt, section, &mut size_solver)?;
+    print_symbols(&mut fmt, &mut size_solver)?;
     writeln!(fmt)?;
 
     // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x40b94d
     writeln!(fmt, "TYPES")?;
-    print_types(&mut fmt, tilib_args, section, &mut size_solver)?;
+    print_types(&mut fmt, tilib_args, &mut size_solver)?;
     writeln!(fmt)?;
 
     // TODO streams
@@ -214,10 +214,9 @@ fn compiler_id_to_str(compiler: Compiler) -> &'static str {
 
 fn print_symbols(
     fmt: &mut impl Write,
-    section: &TILSection,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
-    for symbol in &section.symbols {
+    for symbol in &solver.section.symbols {
         print_til_type_len(fmt, None, &symbol.tinfo, solver)?;
         let len = solver.type_size_bytes(None, &symbol.tinfo);
         // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x409a80
@@ -260,12 +259,12 @@ fn print_symbols(
             fmt,
             &DEFAULT_TILIB_ARGS,
             0,
-            section,
             Some(name),
             &symbol.tinfo,
             false,
             true,
             true,
+            solver,
         )?;
         writeln!(fmt, ";")?;
     }
@@ -275,36 +274,36 @@ fn print_symbols(
 fn print_types(
     fmt: &mut impl Write,
     tilib_args: &PrintTilibArgs,
-    section: &TILSection,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     // TODO only print by ordinals if there are ordinals
-    if section.header.flags.has_ordinal() {
+    if solver.section.header.flags.has_ordinal() {
         writeln!(fmt, "(enumerated by ordinals)")?;
-        print_types_by_ordinals(fmt, tilib_args, section, solver)?;
+        print_types_by_ordinals(fmt, tilib_args, solver)?;
         writeln!(fmt, "(enumerated by names)")?;
     }
-    print_types_by_name(fmt, tilib_args, section, solver)?;
+    print_types_by_name(fmt, tilib_args, solver)?;
     Ok(())
 }
 
 fn print_types_by_ordinals(
     fmt: &mut impl Write,
     tilib_args: &PrintTilibArgs,
-    section: &TILSection,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     enum OrdType<'a> {
         Alias(&'a (u32, u32)),
         Type { idx: usize, ty: &'a TILTypeInfo },
     }
-    let mut types_sort: Vec<OrdType> = section
+    let mut types_sort: Vec<OrdType> = solver
+        .section
         .types
         .iter()
         .enumerate()
         .map(|(idx, ty)| OrdType::Type { idx, ty })
         .chain(
-            section
+            solver
+                .section
                 .header
                 .type_ordinal_alias
                 .iter()
@@ -323,8 +322,9 @@ fn print_types_by_ordinals(
         };
         let (idx, final_type) = match ord_type {
             OrdType::Alias((_alias_ord, type_ord)) => {
-                let idx = section.get_ord_idx((*type_ord).into()).unwrap();
-                let ty = section.get_type_by_idx(idx);
+                let idx =
+                    solver.section.get_ord_idx((*type_ord).into()).unwrap();
+                let ty = solver.section.get_type_by_idx(idx);
                 (idx, ty)
             }
             OrdType::Type { idx, ty } => (idx, ty),
@@ -337,7 +337,6 @@ fn print_types_by_ordinals(
         print_til_type_root(
             fmt,
             tilib_args,
-            section,
             Some(final_type.name.as_bytes()),
             idx,
             &final_type.tinfo,
@@ -350,10 +349,9 @@ fn print_types_by_ordinals(
 fn print_types_by_name(
     fmt: &mut impl Write,
     tilib_args: &PrintTilibArgs,
-    section: &TILSection,
     solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
-    for (idx, symbol) in section.types.iter().enumerate() {
+    for (idx, symbol) in solver.section.types.iter().enumerate() {
         if symbol.name.as_bytes().is_empty() {
             continue;
         }
@@ -362,7 +360,6 @@ fn print_types_by_name(
         print_til_type_root(
             fmt,
             tilib_args,
-            section,
             Some(symbol.name.as_bytes()),
             idx,
             &symbol.tinfo,
@@ -376,7 +373,6 @@ fn print_types_by_name(
 fn print_til_type_root(
     fmt: &mut impl Write,
     tilib_args: &PrintTilibArgs,
-    section: &TILSection,
     name: Option<&[u8]>,
     til_type_idx: usize,
     til_type: &Type,
@@ -396,7 +392,7 @@ fn print_til_type_root(
         _ => write!(fmt, "typedef ")?,
     }
     print_til_type(
-        fmt, tilib_args, 0, section, name, til_type, false, true, true,
+        fmt, tilib_args, 0, name, til_type, false, true, true, solver,
     )?;
     write!(fmt, ";")?;
     if tilib_args.dump_struct_layout == Some(true) {
@@ -414,7 +410,6 @@ fn print_til_type_root(
                 print_til_type_struct_layout(
                     fmt,
                     tilib_args,
-                    section,
                     name,
                     til_type_idx,
                     til_type,
@@ -435,7 +430,6 @@ fn print_til_type_root(
                 print_til_type_union_layout(
                     fmt,
                     tilib_args,
-                    section,
                     name,
                     til_type_idx,
                     til_type,
@@ -455,12 +449,12 @@ fn print_til_type(
     fmt: &mut impl Write,
     tilib_args: &PrintTilibArgs,
     indent: usize,
-    section: &TILSection,
     name: Option<&[u8]>,
     til_type: &Type,
     is_vft: bool,
     print_pointer_space: bool,
     print_name: bool,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     if let Some(comment) = &til_type.comment {
         write!(fmt, "/// ")?;
@@ -469,41 +463,47 @@ fn print_til_type(
     }
     match &til_type.type_variant {
         TypeVariant::Basic(til_basic) => {
-            print_til_type_basic(fmt, section, name, til_type, til_basic)
+            print_til_type_basic(fmt, name, til_type, til_basic)
         }
         TypeVariant::Pointer(pointer) => print_til_type_pointer(
             fmt,
-            section,
             name,
             til_type,
             pointer,
             is_vft,
             print_pointer_space,
+            solver,
         ),
         TypeVariant::Function(function) => print_til_type_function(
-            fmt, section, name, til_type, function, false,
+            fmt, name, til_type, function, false, solver,
         ),
         TypeVariant::Array(array) => print_til_type_array(
             fmt,
-            section,
             name,
             til_type,
             array,
             print_pointer_space,
+            solver,
         ),
         TypeVariant::Typeref(ref_type) => {
-            print_til_type_typedef(fmt, section, name, til_type, ref_type)
+            print_til_type_typedef(fmt, name, til_type, ref_type, solver)
         }
         TypeVariant::Struct(til_struct) => print_til_type_struct(
-            fmt, tilib_args, indent, section, name, til_type, til_struct,
-            print_name,
+            fmt, tilib_args, indent, name, til_type, til_struct, print_name,
+            solver,
         ),
         TypeVariant::Union(til_union) => print_til_type_union(
-            fmt, tilib_args, indent, section, name, til_type, til_union,
-            print_name,
+            fmt, tilib_args, indent, name, til_type, til_union, print_name,
+            solver,
         ),
         TypeVariant::Enum(til_enum) => print_til_type_enum(
-            fmt, tilib_args, indent, section, name, til_type, til_enum,
+            fmt,
+            tilib_args,
+            indent,
+            solver.section,
+            name,
+            til_type,
+            til_enum,
         ),
         TypeVariant::Bitfield(bitfield) => {
             print_til_type_bitfield(fmt, name, til_type, bitfield)
@@ -514,7 +514,6 @@ fn print_til_type(
 #[allow(clippy::too_many_arguments)]
 fn print_til_type_basic(
     fmt: &mut impl Write,
-    _section: &TILSection,
     name: Option<&[u8]>,
     til_type: &Type,
     til_basic: &Basic,
@@ -536,28 +535,28 @@ fn print_til_type_basic(
 #[allow(clippy::too_many_arguments)]
 fn print_til_type_pointer(
     fmt: &mut impl Write,
-    section: &TILSection,
     name: Option<&[u8]>,
     til_type: &Type,
     pointer: &Pointer,
     is_vft_parent: bool,
     print_pointer_space: bool,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     if let TypeVariant::Function(inner_fun) = &pointer.typ.type_variant {
         // How to handle modifier here?
-        print_til_type_function(fmt, section, name, til_type, inner_fun, true)?;
+        print_til_type_function(fmt, name, til_type, inner_fun, true, solver)?;
     } else {
         // TODO name
         print_til_type(
             fmt,
             &DEFAULT_TILIB_ARGS,
             0,
-            section,
             None,
             &pointer.typ,
             is_vft_parent,
             print_pointer_space,
             true,
+            solver,
         )?;
         // if the innertype is also a pointer, don't print the space
         if print_pointer_space
@@ -604,7 +603,7 @@ fn print_til_type_pointer(
                 write!(fmt, " ")?;
             }
             write!(fmt, "__shifted(")?;
-            print_til_type_only(fmt, section, ty)?;
+            print_til_type_only(fmt, ty, solver)?;
             write!(fmt, ",{value:#X})")?;
             add_space = true;
         }
@@ -619,7 +618,7 @@ fn print_til_type_pointer(
         // if the pointed type itself is a VFT then the pointer need to print that
         // TODO maybe the above is not ture, it it was inheritec from the
         // struct member att
-        if is_vft_parent || is_vft(section, &pointer.typ) {
+        if is_vft_parent || is_vft(&pointer.typ, solver) {
             if add_space {
                 write!(fmt, " ")?;
             }
@@ -632,11 +631,11 @@ fn print_til_type_pointer(
 #[allow(clippy::too_many_arguments)]
 fn print_til_type_function(
     fmt: &mut impl Write,
-    section: &TILSection,
     name: Option<&[u8]>,
     til_type: &Type,
     til_function: &Function,
     is_pointer: bool,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     if til_type.is_volatile {
         write!(fmt, "volatile ")?;
@@ -649,25 +648,24 @@ fn print_til_type_function(
         fmt,
         &DEFAULT_TILIB_ARGS,
         0,
-        section,
         None,
         &til_function.ret,
         false,
         true,
         true,
+        solver,
     )?;
     if !matches!(&til_function.ret.type_variant, TypeVariant::Pointer(_)) {
         write!(fmt, " ")?;
     }
 
-    let cc = match (section.header.cc, til_function.calling_convention) {
+    let cc = match (solver.section.header.cc, til_function.calling_convention) {
         // don't print if using the til section default cc
         | (_, None)
         // if elipsis just print the '...' as last param
         | (_, Some(CallingConvention::Ellipsis))
         // if void arg, just don't print the args (there will be none)
         | (_, Some(CallingConvention::Voidarg)) => None,
-
         (_, Some(cc)) => Some(calling_convention_to_str(cc)),
     };
 
@@ -755,12 +753,12 @@ fn print_til_type_function(
             fmt,
             &DEFAULT_TILIB_ARGS,
             0,
-            section,
             (!arg_name.is_empty()).then_some(&arg_name),
             &arg.ty,
             false,
             true,
             true,
+            solver,
         )?;
     }
     match til_function.calling_convention {
@@ -779,11 +777,11 @@ fn print_til_type_function(
 #[allow(clippy::too_many_arguments)]
 fn print_til_type_array(
     fmt: &mut impl Write,
-    section: &TILSection,
     name: Option<&[u8]>,
     til_type: &Type,
     til_array: &Array,
     print_pointer_space: bool,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     if til_type.is_volatile {
         write!(fmt, "volatile ")?;
@@ -804,12 +802,12 @@ fn print_til_type_array(
         fmt,
         &DEFAULT_TILIB_ARGS,
         0,
-        section,
         None,
         &current_array.elem_type,
         false,
         print_pointer_space,
         true,
+        solver,
     )?;
     if let Some(name) = name {
         // only print space if not a pointer
@@ -832,10 +830,10 @@ fn print_til_type_array(
 #[allow(clippy::too_many_arguments)]
 fn print_til_type_typedef(
     fmt: &mut impl Write,
-    section: &TILSection,
     name: Option<&[u8]>,
     til_type: &Type,
     typedef: &Typeref,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     if til_type.is_volatile {
         write!(fmt, "volatile ")?;
@@ -849,12 +847,18 @@ fn print_til_type_typedef(
         need_space = true;
     }
     // get the type referenced by the typdef
-    if let Some(idx) = section.get_ref_value_idx(&typedef.typeref_value) {
+    if let Some(idx) = solver.get_ref_value_idx(&typedef.typeref_value) {
         if need_space {
             write!(fmt, " ")?;
         }
-        let inner_ty = &section.types[idx];
+        let inner_ty = &solver.section.types[idx];
         fmt.write_all(inner_ty.name.as_bytes())?;
+        need_space = true;
+    } else if let TyperefValue::Name(Some(name)) = &typedef.typeref_value {
+        if need_space {
+            write!(fmt, " ")?;
+        }
+        fmt.write_all(name.as_bytes())?;
         need_space = true;
     }
     // print the type name, if some
@@ -872,11 +876,11 @@ fn print_til_type_struct(
     fmt: &mut impl Write,
     tilib_args: &PrintTilibArgs,
     indent: usize,
-    section: &TILSection,
     name: Option<&[u8]>,
     _til_type: &Type,
     til_struct: &UDT,
     print_name: bool,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     if tilib_args.dump_struct_layout == Some(true) {
         if let Some(packalign) = til_struct.effective_alignment {
@@ -922,12 +926,12 @@ fn print_til_type_struct(
                     fmt,
                     tilib_args,
                     indent,
-                    section,
                     None,
                     &baseclass.member_type,
                     baseclass.is_vft,
                     true,
                     false,
+                    solver,
                 )?;
             }
             _ => {}
@@ -952,13 +956,13 @@ fn print_til_type_struct(
             fmt,
             tilib_args,
             indent,
-            section,
             name,
             member_name,
             &member.member_type,
             member.is_vft,
             true,
             true,
+            solver,
         )?;
         if let Some(att) = &member.att {
             print_til_struct_member_att(fmt, &member.member_type, att)?;
@@ -988,11 +992,11 @@ fn print_til_type_union(
     fmt: &mut impl Write,
     tilib_args: &PrintTilibArgs,
     indent: usize,
-    section: &TILSection,
     name: Option<&[u8]>,
     _til_type: &Type,
     til_union: &UDT,
     print_name: bool,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     if tilib_args.dump_struct_layout == Some(true) {
         if let Some(packalign) = til_union.effective_alignment {
@@ -1024,13 +1028,13 @@ fn print_til_type_union(
             fmt,
             tilib_args,
             indent,
-            section,
             name,
             member_name,
             &member.member_type,
             false,
             true,
             true,
+            &mut *solver,
         )?;
         write!(fmt, ";")?;
         if tilib_args.dump_struct_layout == Some(true) {
@@ -1058,37 +1062,37 @@ fn print_til_type_complex_member(
     fmt: &mut impl Write,
     tilib_args: &PrintTilibArgs,
     indent: usize,
-    section: &TILSection,
     parent_name: Option<&[u8]>,
     name: Option<&[u8]>,
     til: &Type,
     is_vft: bool,
     print_pointer_space: bool,
     print_name: bool,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
-    let mut print_default = || {
+    let mut print_default = |solver| {
         print_til_type(
             fmt,
             tilib_args,
             indent,
-            section,
             name,
             til,
             is_vft,
             print_pointer_space,
             print_name,
+            solver,
         )
     };
     // TODO make closure that print member atts: VFT, align, unaligned, packed, etc
     // if parent is not named, don't embeded it, because we can verify if it's part
     // of the parent
     let Some(parent_name) = parent_name else {
-        return print_default();
+        return print_default(&mut *solver);
     };
 
     // TODO if the field is named, don't embeded it?
     if name.is_some() {
-        return print_default();
+        return print_default(&mut *solver);
     }
 
     // if typedef of complex ref, we may want to embed the definition inside the type
@@ -1096,13 +1100,13 @@ fn print_til_type_complex_member(
     let typedef = match &til.type_variant {
         TypeVariant::Typeref(typedef) => typedef,
         _ => {
-            return print_default();
+            return print_default(&mut *solver);
         }
     };
 
-    let idx = section.get_ref_value_idx(&typedef.typeref_value);
+    let idx = solver.get_ref_value_idx(&typedef.typeref_value);
     let inner_type = match (idx, &typedef.typeref_value) {
-        (Some(idx), _) => &section.types[idx],
+        (Some(idx), _) => &solver.section.types[idx],
         (None, TyperefValue::Name(Some(name))) => {
             if let Some(ref_type) = &typedef.ref_type {
                 print_typeref_type_prefix(fmt, *ref_type)?;
@@ -1111,7 +1115,7 @@ fn print_til_type_complex_member(
             return Ok(());
         }
         (None, _) => {
-            return print_default();
+            return print_default(&mut *solver);
         }
     };
 
@@ -1128,12 +1132,12 @@ fn print_til_type_complex_member(
             fmt,
             tilib_args,
             indent,
-            section,
             name,
             til,
             is_vft,
             print_pointer_space,
             print_name,
+            solver,
         );
     }
 
@@ -1141,12 +1145,12 @@ fn print_til_type_complex_member(
         fmt,
         tilib_args,
         indent,
-        section,
         Some(inner_type.name.as_bytes()),
         &inner_type.tinfo,
         is_vft,
         print_pointer_space,
         false,
+        solver,
     )
 }
 
@@ -1440,15 +1444,15 @@ fn print_til_struct_member_basic_att(
 
 fn print_til_type_only(
     fmt: &mut impl Write,
-    section: &TILSection,
     tinfo: &Type,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     let TypeVariant::Typeref(typeref) = &tinfo.type_variant else {
         return Ok(());
     };
 
-    if let Some(idx) = section.get_ref_value_idx(&typeref.typeref_value) {
-        let ty = &section.types[idx];
+    if let Some(idx) = solver.get_ref_value_idx(&typeref.typeref_value) {
+        let ty = &solver.section.types[idx];
         fmt.write_all(ty.name.as_bytes())?;
     } else if let TypeVariant::Typeref(Typeref {
         typeref_value: TyperefValue::Name(Some(name)),
@@ -1548,18 +1552,18 @@ fn print_types_total(fmt: &mut impl Write, section: &TILSection) -> Result<()> {
     )
 }
 
-fn is_vft(section: &TILSection, typ: &Type) -> bool {
+fn is_vft(typ: &Type, solver: &mut TILTypeSizeSolver<'_>) -> bool {
     match &typ.type_variant {
         // propagate the search?
         //TypeVariant::Pointer(pointer) => todo!(),
         // TODO struct with only function-pointers is also vftable?
         TypeVariant::Struct(ty) => ty.is_vft,
         TypeVariant::Typeref(typedef) => {
-            let Some(idx) = section.get_ref_value_idx(&typedef.typeref_value)
+            let Some(idx) = solver.get_ref_value_idx(&typedef.typeref_value)
             else {
                 return false;
             };
-            is_vft(section, &section.types[idx].tinfo)
+            is_vft(&solver.section.types[idx].tinfo, solver)
         }
         _ => false,
     }
@@ -1626,7 +1630,6 @@ fn print_typeref_type_prefix(
 fn print_til_type_struct_layout(
     fmt: &mut impl Write,
     tilib_args: &PrintTilibArgs,
-    section: &TILSection,
     name: Option<&[u8]>,
     type_idx: usize,
     til_type: &Type,
@@ -1702,8 +1705,8 @@ fn print_til_type_struct_layout(
             None => {
                 print_name_first_time(
                     fmt,
-                    section,
                     &member.member_type.type_variant,
+                    solver,
                 )?;
             }
         }
@@ -1718,12 +1721,12 @@ fn print_til_type_struct_layout(
                 fmt,
                 tilib_args,
                 0,
-                section,
                 None,
                 &member.member_type,
                 member.is_vft,
                 true,
                 false,
+                solver,
             )?;
             writeln!(fmt, ";")?;
         }
@@ -1760,7 +1763,6 @@ fn print_til_type_struct_layout(
 fn print_til_type_union_layout(
     fmt: &mut impl Write,
     tilib_args: &PrintTilibArgs,
-    section: &TILSection,
     name: Option<&[u8]>,
     type_idx: usize,
     til_type: &Type,
@@ -1781,6 +1783,7 @@ fn print_til_type_union_layout(
         let member_align = solver
             .type_align_bytes(None, &member.member_type, member_size)
             .unwrap_or(1);
+        let member_size = idb_rs::til::align_mem(member_size, member_align);
         write!(fmt, "// {i:>2}. {offset:04X} {member_size:04X} effalign({member_align}) fda=0 bits=0000 ")?;
         if let Some(name) = name {
             fmt.write_all(name)?;
@@ -1799,8 +1802,8 @@ fn print_til_type_union_layout(
             None => {
                 print_name_first_time(
                     fmt,
-                    section,
                     &member.member_type.type_variant,
+                    solver,
                 )?;
             }
         }
@@ -1808,12 +1811,12 @@ fn print_til_type_union_layout(
             fmt,
             tilib_args,
             0,
-            section,
             None,
             &member.member_type,
             false,
             true,
             false,
+            solver,
         )?;
         writeln!(fmt, ";")?;
     }
@@ -1838,14 +1841,14 @@ fn print_til_type_union_layout(
 
 fn print_name_first_time(
     fmt: &mut impl Write,
-    section: &TILSection,
     ty: &TypeVariant,
+    solver: &mut TILTypeSizeSolver<'_>,
 ) -> Result<()> {
     match ty {
         TypeVariant::Typeref(typeref) => {
-            if let Some(idx) = section.get_ref_value_idx(&typeref.typeref_value)
+            if let Some(idx) = solver.get_ref_value_idx(&typeref.typeref_value)
             {
-                let ty = section.get_type_by_idx(idx);
+                let ty = solver.section.get_type_by_idx(idx);
                 if let TypeVariant::Struct(_)
                 | TypeVariant::Enum(_)
                 | TypeVariant::Union(_) = &ty.tinfo.type_variant

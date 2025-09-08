@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::num::NonZeroU8;
 
 use crate::til::bitfield::Bitfield;
+use crate::til::TyperefValue;
 
 use super::r#enum::Enum;
 use super::section::TILSection;
@@ -9,10 +10,12 @@ use super::udt::{UDTMember, UDT};
 use super::{Basic, Type, TypeVariant, Typeref};
 
 pub struct TILTypeSizeSolver<'a> {
-    section: &'a TILSection,
+    pub section: &'a TILSection,
+    solved_name: HashMap<Vec<u8>, Option<usize>>,
+    solved_ord: HashMap<u32, Option<usize>>,
     solved_size: HashMap<usize, u64>,
     solved_align: HashMap<usize, u64>,
-    // HACK used to avoid infinte lopping during recursive solving
+    // HACK used to avoid infinte looping during recursive solving
     solving: HashSet<usize>,
 }
 
@@ -23,6 +26,28 @@ impl<'a> TILTypeSizeSolver<'a> {
             solved_size: Default::default(),
             solved_align: Default::default(),
             solving: Default::default(),
+            solved_name: Default::default(),
+            solved_ord: Default::default(),
+        }
+    }
+
+    pub fn get_ref_value_idx(
+        &mut self,
+        ref_value: &TyperefValue,
+    ) -> Option<usize> {
+        match ref_value {
+            TyperefValue::Name(name) => {
+                let name = name.as_ref()?.as_bytes();
+                *self
+                    .solved_name
+                    .entry(name.to_vec())
+                    .or_insert_with(|| self.section.get_name_idx(name))
+            }
+
+            TyperefValue::Ordinal(ord) => *self
+                .solved_ord
+                .entry(*ord)
+                .or_insert_with(|| self.section.get_ord_idx((*ord).into())),
         }
     }
 
@@ -173,7 +198,7 @@ impl<'a> TILTypeSizeSolver<'a> {
     }
 
     fn solve_typedef(&mut self, typedef: &Typeref) -> Option<u64> {
-        let idx = self.section.get_ref_value_idx(&typedef.typeref_value)?;
+        let idx = self.get_ref_value_idx(&typedef.typeref_value)?;
         let ty = self.section.get_type_by_idx(idx);
         self.type_size_bytes(Some(idx), &ty.tinfo)
     }
@@ -218,7 +243,7 @@ impl<'a> TILTypeSizeSolver<'a> {
                 self.inner_type_align_bytes(&array.elem_type, size.unwrap_or(1))
             }
             TypeVariant::Typeref(ty) => {
-                let idx = self.section.get_ref_value_idx(&ty.typeref_value)?;
+                let idx = self.get_ref_value_idx(&ty.typeref_value)?;
                 let ty = &self.section.types[idx].tinfo;
                 let size = self.inner_type_size_bytes(ty).unwrap_or(1);
                 self.inner_type_align_bytes(ty, size)
