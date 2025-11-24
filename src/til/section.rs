@@ -555,6 +555,10 @@ impl TILSection {
         input: &mut impl IdbRead,
     ) -> Result<(u32, u32, u32)> {
         let (ndefs, len) = Self::read_bucket_header(&mut *input)?;
+        // TODO find the innerref for this
+        if ndefs == 0 && len == 0 {
+            return Ok((ndefs, len, 0));
+        }
         let compressed_len = bincode::deserialize_from(&mut *input)?;
         Ok((ndefs, len, compressed_len))
     }
