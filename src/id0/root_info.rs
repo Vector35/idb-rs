@@ -277,7 +277,7 @@ impl<K: IDAKind> RootInfo<K> {
             ..=699 => {}
             700.. => {
                 #[cfg(feature = "restrictive")]
-                ensure!(input.is_empty(), "Data left after the IDBParam",),
+                ensure!(input.is_empty(), "Data left after the IDBParam");
             }
         }
         Ok(param)
