@@ -275,7 +275,10 @@ impl<K: IDAKind> RootInfo<K> {
         match version {
             // TODO old version may contain extra data at the end with unknown purpose
             ..=699 => {}
-            700.. => ensure!(input.is_empty(), "Data left after the IDBParam",),
+            700.. => {
+                #[cfg(feature = "restrictive")]
+                ensure!(input.is_empty(), "Data left after the IDBParam",),
+            }
         }
         Ok(param)
     }
