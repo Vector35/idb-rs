@@ -392,9 +392,10 @@ impl Basic {
             // InnerRef fb47f2c2-3c08-4d40-b7ab-3c7736dce31d 0x480874
             BT_UNK => {
                 let bytes = match btmt {
-                    BTMT_SIZE0 => {
-                        return Err(anyhow!("forbidden use of BT_UNK"))
-                    }
+                    // A bare `BT_UNK` (type byte 0x00) is IDA's unknown type of unspecified
+                    // size; treat it like `BT_UNKNOWN` rather than rejecting it, since it shows
+                    // up in real databases (e.g. as a function argument/return type).
+                    BTMT_SIZE0 => 0,
                     BTMT_SIZE12 => 2,  // BT_UNK_WORD
                     BTMT_SIZE48 => 8,  // BT_UNK_QWORD
                     BTMT_SIZE128 => 0, // BT_UNKNOWN

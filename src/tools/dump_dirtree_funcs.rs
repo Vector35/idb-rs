@@ -20,13 +20,13 @@ fn dump_inner<K: IDAKind>((id0, id1, id2): Id0Id1Id2Variant<K>) -> Result<()> {
     if let Some(dirtree) = id0.dirtree_function_address()? {
         print_dirtree(
             |entry| {
-                print_function(
-                    &id0,
-                    &id1,
-                    id2.as_ref(),
-                    Address::from_raw(*entry),
-                )
-                .unwrap()
+                let address = Address::from_raw(*entry);
+                if let Err(err) =
+                    print_function(&id0, &id1, id2.as_ref(), address)
+                {
+                    // Don't let a single unparsable function abort the whole dump.
+                    println!("{:#x}: <error: {err:#}>", address.into_raw());
+                }
             },
             &dirtree,
         );
@@ -45,14 +45,12 @@ pub fn print_function<K: IDAKind>(
     let root_info = id0.ida_info(root_info_idx)?;
     let image_base = root_info.netdelta();
     let info = AddressInfo::new(id0, id1, id2, image_base, address);
-    let name = info
-        .as_ref()
-        .and_then(|info| info.label().transpose())
-        .transpose()?;
+    // Tolerate per-function label/type parse failures so one bad entry doesn't abort the dump;
+    // such a function simply prints without the failing piece.
+    let name = info.as_ref().and_then(|info| info.label().ok().flatten());
     let ty = info
         .as_ref()
-        .and_then(|info| info.tinfo(&root_info).transpose())
-        .transpose()?;
+        .and_then(|info| info.tinfo(&root_info).ok().flatten());
 
     print!("{:#x}:", address.into_raw());
     match (name, ty) {
