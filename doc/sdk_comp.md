@@ -900,7 +900,7 @@ nalt.hpp | 🚧 | get_xrefpos
 nalt.hpp | 🚧 | upd_abits
 nalt.hpp | 🚧 | get_aflags
 nalt.hpp | 🚧 | get_ind_purged
-nalt.hpp | 🚧 | get_str_type
+nalt.hpp | ✔️ | get_str_type | AddressInfo::str_type
 nalt.hpp | 🚧 | get_array_parameters
 nalt.hpp | 🚧 | get_switch_info
 nalt.hpp | 🚧 | get_custom_data_type_ids

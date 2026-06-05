@@ -1,7 +1,8 @@
 use crate::bytes_info::BytesInfo;
 use crate::id0::entry_iter::EntryTagContinuousSubkeys;
 use crate::id0::flag::nalt::x::NALT_DREF_FROM;
-use crate::id0::flag::netnode::nn_res::ARRAY_SUP_TAG;
+use crate::id0::flag::nalt::NALT_STRTYPE;
+use crate::id0::flag::netnode::nn_res::{ARRAY_ALT_TAG, ARRAY_SUP_TAG};
 use crate::id0::flag::nsup::NSUP_TYPEINFO;
 use crate::id0::{
     get_sup_from_key, parse_maybe_cstr, ID0CStr, ID0Section, Netdelta,
@@ -133,6 +134,17 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
         }
     }
 
+    /// The string literal type IDA assigned to this address, if any.
+    ///
+    /// Decodes the `NALT_STRTYPE` altval (see `get_str_type` in `nalt.hpp`). Returns `None` for
+    /// addresses that are not string literals.
+    pub fn str_type(&self) -> Option<StrType> {
+        let raw =
+            self.id0
+                .sup_value(self.netnode(), NALT_STRTYPE.into(), ARRAY_ALT_TAG)?;
+        Some(StrType::from_code(*raw.first()?))
+    }
+
     pub fn tinfo(&self, info: &RootInfo<K>) -> Result<Option<Type>> {
         // allow if it's a struct type or a function definition
         match self.byte_info.byte_type() {
@@ -238,3 +250,57 @@ pub fn all_address_info<'a, K: IDAKind>(
 
 #[derive(Clone, Copy, Debug)]
 pub struct SubtypeId<K: IDAKind>(pub(crate) K::Usize);
+
+/// The character width of a string literal.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StrWidth {
+    /// One byte per character (C / ASCII / UTF-8).
+    Byte,
+    /// Two bytes per character (UTF-16).
+    Word,
+    /// Four bytes per character (UTF-32).
+    Dword,
+}
+
+/// The in-memory layout of a string literal.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StrLayout {
+    /// Terminated by a zero character (C string).
+    TerminatedChar,
+    /// Length prefixed by a single byte (Pascal).
+    Pascal1,
+    /// Length prefixed by two bytes.
+    Pascal2,
+    /// Length prefixed by four bytes.
+    Pascal4,
+}
+
+/// The type of a string literal IDA defined at an address, decoded from `strtype`.
+///
+/// See `get_str_type` / `NALT_STRTYPE` in the IDA SDK (`nalt.hpp`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StrType {
+    pub width: StrWidth,
+    pub layout: StrLayout,
+}
+
+impl StrType {
+    /// Decode the low (type code) byte of an IDA `strtype` value.
+    pub fn from_code(code: u8) -> Self {
+        // InnerRef: nalt.hpp STRWIDTH_MASK / STRLYT_MASK / STRLYT_SHIFT.
+        let width = match code & 0x03 {
+            1 => StrWidth::Word,
+            2 => StrWidth::Dword,
+            // 0, and the reserved 3, are treated as single byte.
+            _ => StrWidth::Byte,
+        };
+        let layout = match (code & 0xFC) >> 2 {
+            1 => StrLayout::Pascal1,
+            2 => StrLayout::Pascal2,
+            3 => StrLayout::Pascal4,
+            // 0 (and any unexpected value) is a zero-terminated string.
+            _ => StrLayout::TerminatedChar,
+        };
+        Self { width, layout }
+    }
+}
