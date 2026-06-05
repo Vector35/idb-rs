@@ -1298,6 +1298,18 @@ impl<K: IDAKind> ID0Section<K> {
         Ok(parse_maybe_cstr(value))
     }
 
+    /// The name stored on a netnode (its `N` tag), with IDA's `$$ ` prefix stripped.
+    ///
+    /// Type and enum-member netnodes (the ones referenced by a `tid`) keep their name here, so
+    /// this resolves a `tid` to the type/member name it identifies.
+    pub fn netnode_type_name(&self, idx: NetnodeIdx<K>) -> Option<&[u8]> {
+        let key: Vec<u8> = key_from_netnode_tag::<K>(idx.0, b'N').collect();
+        let start = self.binary_search(&key).ok()?;
+        let value = &self.entries[start].value;
+        let value = value.strip_prefix(b"$$ ").unwrap_or(&value[..]);
+        Some(parse_maybe_cstr(value))
+    }
+
     /// read the `$ funcords` entries of the database
     pub fn funcords_idx(&self) -> Result<Option<FuncordsIdx<K>>> {
         self.netnode_idx_by_name("$ funcords")

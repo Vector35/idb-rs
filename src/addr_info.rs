@@ -140,6 +140,12 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
     /// for operand 0 or 1, returning the referenced enumeration's id. Returns `None` when the
     /// operand is not displayed as an enum (or for operands other than 0/1).
     pub fn op_enum(&self, operand: u8) -> Option<u64> {
+        self.op_enum_netnode(operand)
+            .map(|node| node.into_raw().into_u64())
+    }
+
+    /// The enumeration referenced by an operand, as the netnode (tid) it points at.
+    fn op_enum_netnode(&self, operand: u8) -> Option<NetnodeIdx<K>> {
         let index = match operand {
             0 => NALT_ENUM0,
             1 => NALT_ENUM1,
@@ -149,7 +155,18 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
             .altval(self.netnode(), index.into(), ARRAY_ALT_TAG)
             .ok()
             .flatten()
-            .map(|value| value.into_raw().into_u64())
+    }
+
+    /// The symbolic name an enum operand resolves to (an enumeration member, or the enumeration
+    /// itself), recovered from the referenced tid's netnode name.
+    ///
+    /// The tid is itself a netnode; its `N` name holds the symbolic constant / type name. This
+    /// works whether the enumeration lives in a type library or the local types.
+    pub fn op_enum_name(&self, operand: u8) -> Option<IDBString> {
+        let node = self.op_enum_netnode(operand)?;
+        self.id0
+            .netnode_type_name(node)
+            .map(|name| IDBString::new(name.to_vec()))
     }
 
     /// The string literal type IDA assigned to this address, if any.
