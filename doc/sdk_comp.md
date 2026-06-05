@@ -136,8 +136,8 @@ bytes.hpp | 🚧 | is_numop
 bytes.hpp | 🚧 | is_suspop
 bytes.hpp | 🚧 | op_adds_xrefs
 bytes.hpp | 🚧 | op_seg
-bytes.hpp | ✔️ | op_enum | AddressInfo::op_enum / op_enum_name
-bytes.hpp | ✔️ | get_enum_id | AddressInfo::op_enum / op_enum_name
+bytes.hpp | ✔️ | op_enum | AddressInfo::op_enum / op_enum_name / op_enum_type
+bytes.hpp | ✔️ | get_enum_id | AddressInfo::op_enum / op_enum_name / op_enum_type
 bytes.hpp | 🚧 | op_stroff
 bytes.hpp | 🚧 | op_based_stroff
 bytes.hpp | 🚧 | get_stroff_path

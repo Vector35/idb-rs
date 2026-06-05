@@ -10,7 +10,9 @@ use crate::id0::{
 };
 use crate::id1::{ByteDataType, ByteInfo, ByteType, ID1Section};
 use crate::id2::ID2Section;
-use crate::til::Type;
+use crate::til::section::TILSection;
+use crate::til::r#enum::EnumMembers;
+use crate::til::{TILTypeInfo, Type, TypeVariant};
 use crate::{Address, IDAKind, IDAUsize, IDBStr, IDBString};
 
 use anyhow::{anyhow, Result};
@@ -167,6 +169,47 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
         self.id0
             .netnode_type_name(node)
             .map(|name| IDBString::new(name.to_vec()))
+    }
+
+    /// The enumeration type an operand is displayed against.
+    ///
+    /// An enum operand's tid identifies a specific enumeration member, whose netnode sits right
+    /// after the enumeration's own netnode (members are allocated at `enum_tid + 1 ..=
+    /// enum_tid + member_count`). This resolves the member tid back to the enumeration in `til`
+    /// by that tid range, so it returns the exact enumeration regardless of any member-name
+    /// collisions, working for enumerations in a type library or the local types.
+    pub fn op_enum_type<'t>(
+        &self,
+        operand: u8,
+        til: &'t TILSection,
+    ) -> Option<&'t TILTypeInfo> {
+        let member_tid = self.op_enum(operand)?;
+        for ty in &til.types {
+            let TypeVariant::Enum(en) = &ty.tinfo.type_variant else {
+                continue;
+            };
+            let member_count = match &en.members {
+                EnumMembers::Regular(members) => members.len(),
+                EnumMembers::Groups(groups) => {
+                    groups.iter().map(|g| g.sub_fields.len()).sum()
+                }
+            } as u64;
+            // The enumeration's netnode is named with IDA's `$$ ` type-name prefix.
+            let enum_name = format!("$$ {}", ty.name.as_utf8_lossy());
+            let Some(enum_tid) = self
+                .id0
+                .netnode_idx_by_name(&enum_name)
+                .ok()
+                .flatten()
+                .map(|node| node.into_raw().into_u64())
+            else {
+                continue;
+            };
+            if member_tid > enum_tid && member_tid <= enum_tid + member_count {
+                return Some(ty);
+            }
+        }
+        None
     }
 
     /// The string literal type IDA assigned to this address, if any.
