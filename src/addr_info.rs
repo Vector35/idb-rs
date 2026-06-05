@@ -1,7 +1,7 @@
 use crate::bytes_info::BytesInfo;
 use crate::id0::entry_iter::EntryTagContinuousSubkeys;
 use crate::id0::flag::nalt::x::NALT_DREF_FROM;
-use crate::id0::flag::nalt::NALT_STRTYPE;
+use crate::id0::flag::nalt::{NALT_ENUM0, NALT_ENUM1, NALT_STRTYPE};
 use crate::id0::flag::netnode::nn_res::{ARRAY_ALT_TAG, ARRAY_SUP_TAG};
 use crate::id0::flag::nsup::NSUP_TYPEINFO;
 use crate::id0::{
@@ -11,7 +11,7 @@ use crate::id0::{
 use crate::id1::{ByteDataType, ByteInfo, ByteType, ID1Section};
 use crate::id2::ID2Section;
 use crate::til::Type;
-use crate::{Address, IDAKind, IDBStr, IDBString};
+use crate::{Address, IDAKind, IDAUsize, IDBStr, IDBString};
 
 use anyhow::{anyhow, Result};
 
@@ -132,6 +132,24 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
                 }
             }
         }
+    }
+
+    /// The enumeration referenced by an operand displayed as an enum, if any.
+    ///
+    /// Reads the `NALT_ENUM0`/`NALT_ENUM1` altval (see `get_enum_id` / `op_enum` in `bytes.hpp`)
+    /// for operand 0 or 1, returning the referenced enumeration's id. Returns `None` when the
+    /// operand is not displayed as an enum (or for operands other than 0/1).
+    pub fn op_enum(&self, operand: u8) -> Option<u64> {
+        let index = match operand {
+            0 => NALT_ENUM0,
+            1 => NALT_ENUM1,
+            _ => return None,
+        };
+        self.id0
+            .altval(self.netnode(), index.into(), ARRAY_ALT_TAG)
+            .ok()
+            .flatten()
+            .map(|value| value.into_raw().into_u64())
     }
 
     /// The string literal type IDA assigned to this address, if any.
