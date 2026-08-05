@@ -189,6 +189,58 @@ fn parse_idb_inner(file: PathBuf) {
     }
 }
 
+#[test]
+fn identify_v3_header_with_nonzero_unknown_field() {
+    let mut header = Vec::new();
+    header.extend_from_slice(b"IDA1");
+    header.extend_from_slice(&0u16.to_le_bytes());
+    for offset in [0x40u32, 0x80, 0xc0, 0, 0x100] {
+        header.extend_from_slice(&offset.to_le_bytes());
+    }
+    header.extend_from_slice(&0xAABB_CCDDu32.to_le_bytes());
+    header.extend_from_slice(&3u16.to_le_bytes());
+    header.extend_from_slice(&2u32.to_le_bytes());
+    for checksum in [1u32, 2, 3, 0, 4] {
+        header.extend_from_slice(&checksum.to_le_bytes());
+    }
+    header.extend_from_slice(&0x140u32.to_le_bytes());
+    header.extend_from_slice(&5u32.to_le_bytes());
+
+    let IDBFormats::Separated(IDAVariants::IDA32(sections)) =
+        identify_idb_file(&mut Cursor::new(header)).unwrap()
+    else {
+        panic!("expected a 32-bit separated IDB");
+    };
+
+    assert_eq!(sections.id0_location().unwrap().idb_offset(), 0x40);
+    assert_eq!(sections.id2_location().unwrap().idb_offset(), 0x140);
+}
+
+#[test]
+fn identify_v1_header_without_id2_fields() {
+    let mut header = Vec::new();
+    header.extend_from_slice(b"IDA1");
+    header.extend_from_slice(&0u16.to_le_bytes());
+    for offset in [0x3eu32, 0x80, 0xc0, 0, 0x100] {
+        header.extend_from_slice(&offset.to_le_bytes());
+    }
+    header.extend_from_slice(&0xAABB_CCDDu32.to_le_bytes());
+    header.extend_from_slice(&1u16.to_le_bytes());
+    header.extend_from_slice(&0u32.to_le_bytes());
+    for checksum in [1u32, 2, 3, 0, 4] {
+        header.extend_from_slice(&checksum.to_le_bytes());
+    }
+
+    let IDBFormats::Separated(IDAVariants::IDA32(sections)) =
+        identify_idb_file(&mut Cursor::new(header)).unwrap()
+    else {
+        panic!("expected a 32-bit separated IDB");
+    };
+
+    assert_eq!(sections.id0_location().unwrap().idb_offset(), 0x3e);
+    assert!(sections.id2_location().is_none());
+}
+
 fn parse_idb_format<K: IDAKind, F: IDBFormat<K>, I: BufRead + Seek>(
     filename: &str,
     input: &mut I,

@@ -182,9 +182,25 @@ fn read_500_600_header<I: IdbRead>(
     version: IDBSeparatedVersion,
     input: &mut I,
 ) -> Result<IDBFormats> {
-    let id2_offset = input.read_u32()?;
-    ensure!(id2_offset == 0);
-    let checksums: [u32; 5] = bincode::deserialize_from(input)?;
+    // This field is not a section offset. IDA writes non-zero values here
+    // (for example, 2 in some version 3 databases), so keep it opaque until
+    // its meaning is known.
+    let _unknown = input.read_u32()?;
+    let checksums: [u32; 5] = bincode::deserialize_from(&mut *input)?;
+    let id2 = match version {
+        IDBSeparatedVersion::V1 => None,
+        IDBSeparatedVersion::V3 | IDBSeparatedVersion::V4 => {
+            let id2_offset = input.read_u32()?;
+            let id2_checksum = input.read_u32()?;
+            SeparatedSection::new_inner::<IDA32>(
+                id2_offset,
+                Some(id2_checksum),
+            )?
+        }
+        IDBSeparatedVersion::V5 | IDBSeparatedVersion::V6 => {
+            unreachable!("versions 5 and 6 use the extended header")
+        }
+    };
 
     let id0 =
         SeparatedSection::new::<IDA32>(&offsets[0..4], Some(checksums[0]))?;
@@ -196,7 +212,6 @@ fn read_500_600_header<I: IdbRead>(
         SeparatedSection::new::<IDA32>(&offsets[12..16], Some(checksums[3]))?;
     let til =
         SeparatedSection::new::<IDA32>(&offsets[16..20], Some(checksums[4]))?;
-
     #[cfg(feature = "restrictive")]
     {
         // TODO ensure the rest of the header is just zeros
@@ -218,7 +233,7 @@ fn read_500_600_header<I: IdbRead>(
                 nam,
                 seg,
                 til,
-                id2: None,
+                id2,
             },
         )))
     } else {
@@ -232,7 +247,7 @@ fn read_500_600_header<I: IdbRead>(
                 nam,
                 seg,
                 til,
-                id2: None,
+                id2,
             },
         )))
     }
