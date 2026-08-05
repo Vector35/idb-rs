@@ -8,7 +8,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use num_traits::{WrappingAdd, WrappingSub};
 use serde::Serialize;
 
-use crate::ida_reader::IdbReadKind;
+use crate::ida_reader::{IdbRead, IdbReadKind};
 use crate::til::function::CCModel;
 use crate::til::section::{
     TILSectionExtendedSizeofInfo, TILSectionFlags, TILSectionHeader,
@@ -589,6 +589,8 @@ impl<K: IDAKind> RootInfo<K> {
         let cc_size_l = input.read_u8()?;
         let cc_size_ll = input.read_u8()?;
         let cc_size_ldbl = input.read_u8()?;
+        let _extended_calling_convention =
+            read_extended_calling_convention(input, version)?;
         let abibits = AbiOptions::new(input.unpack_dd()?)?;
         let appcall_options = input.unpack_dd()?;
 
@@ -741,6 +743,36 @@ impl<K: IDAKind> RootInfo<K> {
             cn: None,
             is_universal: true,
         }
+    }
+}
+
+fn read_extended_calling_convention(
+    input: &mut impl IdbRead,
+    version: u16,
+) -> Result<Option<u32>> {
+    // IDA 9.2 added compiler_info_t::_new_callcnv after size_ldbl.
+    (version >= 920).then(|| input.unpack_dd()).transpose()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::read_extended_calling_convention;
+
+    #[test]
+    fn extended_calling_convention_was_added_in_ida_9_2() {
+        let mut old_input = &[0][..];
+        assert_eq!(
+            read_extended_calling_convention(&mut old_input, 919).unwrap(),
+            None
+        );
+        assert_eq!(old_input, &[0]);
+
+        let mut new_input = &[0][..];
+        assert_eq!(
+            read_extended_calling_convention(&mut new_input, 920).unwrap(),
+            Some(0)
+        );
+        assert!(new_input.is_empty());
     }
 }
 
