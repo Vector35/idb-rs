@@ -1,4 +1,6 @@
-use crate::{get_id0_id1_id2_sections, get_til_section, Args, Id0Id1Id2Variant};
+use crate::{
+    get_id0_id1_id2_sections, get_til_section, Args, Id0Id1Id2Variant,
+};
 
 use anyhow::Result;
 
@@ -54,7 +56,8 @@ fn dump_inner<K: IDAKind>(
         for operand in 0u8..2 {
             if let Some(id) = addr_info.op_enum(operand) {
                 let name = addr_info.op_enum_name(operand);
-                let enum_ty = til.and_then(|t| addr_info.op_enum_type(operand, t));
+                let enum_ty =
+                    til.and_then(|t| addr_info.op_enum_type(operand, t));
                 write!(
                     &mut buf,
                     " OpEnum[{operand}]: tid={id:#x} member={:?} enum_type={:?}",

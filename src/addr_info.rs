@@ -10,8 +10,8 @@ use crate::id0::{
 };
 use crate::id1::{ByteDataType, ByteInfo, ByteType, ID1Section};
 use crate::id2::ID2Section;
-use crate::til::section::TILSection;
 use crate::til::r#enum::EnumMembers;
+use crate::til::section::TILSection;
 use crate::til::{TILTypeInfo, Type, TypeVariant};
 use crate::{Address, IDAKind, IDAUsize, IDBStr, IDBString};
 
@@ -217,9 +217,11 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
     /// Decodes the `NALT_STRTYPE` altval (see `get_str_type` in `nalt.hpp`). Returns `None` for
     /// addresses that are not string literals.
     pub fn str_type(&self) -> Option<StrType> {
-        let raw =
-            self.id0
-                .sup_value(self.netnode(), NALT_STRTYPE.into(), ARRAY_ALT_TAG)?;
+        let raw = self.id0.sup_value(
+            self.netnode(),
+            NALT_STRTYPE.into(),
+            ARRAY_ALT_TAG,
+        )?;
         Some(StrType::from_code(*raw.first()?))
     }
 
