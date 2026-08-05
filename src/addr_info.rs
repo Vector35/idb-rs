@@ -270,7 +270,7 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
             crate::ida_reader::split_strings_from_array(value)
                 .ok_or_else(|| anyhow!("Invalid Fields for TIL Type"))?
         } else {
-            vec![vec![]]
+            vec![]
         };
 
         // create the raw type
