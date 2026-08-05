@@ -43,7 +43,7 @@ fn dump<K: IDAKind>((id0, id1, id2): Id0Id1Id2Variant<K>) -> Result<()> {
                     .function_defined_registers(
                         netdelta,
                         &idbfunction,
-                        &func_data,
+                        func_data,
                     )
                     .collect::<Result<Vec<_>>>()?;
                 if !regs.is_empty() {

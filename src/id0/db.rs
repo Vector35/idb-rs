@@ -1468,8 +1468,8 @@ impl<K: IDAKind> ID0Section<K> {
         register_values(self, netdelta, func, func_data)
     }
 
-    pub fn function_defined_variables<'a>(
-        &'a self,
+    pub fn function_defined_variables(
+        &self,
         info: &RootInfo<K>,
         func: &IDBFunction<K>,
         func_data: &IDBFunctionNonTail<K>,
@@ -1521,8 +1521,8 @@ impl<K: IDAKind> ID0Section<K> {
         }))
     }
 
-    pub fn segment_register_value<'a>(
-        &'a self,
+    pub fn segment_register_value(
+        &self,
         addr: Address<K>,
         srarea_idx: SrareasIdx<K>,
         segment_idx: SegmentIdx<K>,

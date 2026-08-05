@@ -97,7 +97,7 @@ fn produce_idc_inner<K: IDAKind>(
     let root_info = id0.ida_info(root_info_idx)?;
     let image_base = id0.image_base(root_info_idx)?;
     let netdelta = root_info.netdelta();
-    let mut solver = TILTypeSizeSolver::new(&til);
+    let mut solver = TILTypeSizeSolver::new(til);
     let processor = idb_rs::processors::get_processor(
         root_info.version,
         &root_info.target.processor,
@@ -1067,10 +1067,10 @@ fn produce_functions<K: IDAKind>(
 
         if let func_t_type::NonTail(fun_type) = &fun.extra {
             // print the variables stored on the stack
-            let vars = id0.function_defined_variables(&info, &fun, fun_type)?;
+            let vars = id0.function_defined_variables(info, &fun, fun_type)?;
             if let Some(ty) = vars.ty {
                 let mut offset_acc = 0;
-                for (_i, member) in ty.members.into_iter().enumerate() {
+                for member in ty.members.into_iter() {
                     let member_size = solver
                         .type_size_bytes(None, &member.member_type)
                         .unwrap_or(0);
@@ -1223,7 +1223,7 @@ fn produce_bytes<K: IDAKind>(
 fn count_element(len_bytes: usize, len_elements: usize) -> Result<usize> {
     ensure!(len_bytes >= len_elements, "Expected more ID1 Tail entries");
     ensure!(
-        len_bytes % len_elements == 0,
+        len_bytes.is_multiple_of(len_elements),
         "More ID1 Tails that expects or invalid array len"
     );
     Ok(len_bytes / len_elements)

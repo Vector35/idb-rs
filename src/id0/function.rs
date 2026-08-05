@@ -401,8 +401,8 @@ pub struct StackNames {
     pub ty: Option<crate::til::udt::UDT>,
 }
 
-pub fn stack_values<'a, K: IDAKind>(
-    id0: &'a ID0Section<K>,
+pub fn stack_values<K: IDAKind>(
+    id0: &ID0Section<K>,
     info: &RootInfo<K>,
     func: &IDBFunction<K>,
     // not required by data, but can only be called in function that are not
