@@ -1,5 +1,4 @@
 use crate::bytes_info::BytesInfo;
-use crate::id0::entry_iter::EntryTagContinuousSubkeys;
 use crate::id0::flag::nalt::x::NALT_DREF_FROM;
 use crate::id0::flag::nalt::{NALT_ENUM0, NALT_ENUM1, NALT_STRTYPE};
 use crate::id0::flag::netnode::nn_res::{ARRAY_ALT_TAG, ARRAY_SUP_TAG};
@@ -242,36 +241,37 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
             ByteType::Unknown => return Ok(None),
         }
 
-        // take the field names and the continuation (optional!)
-        let mut iter = EntryTagContinuousSubkeys::new(
-            self.id0,
-            self.netnode(),
-            ARRAY_SUP_TAG,
-            NSUP_TYPEINFO.into(),
-        )
-        .take(0x1000);
-        let Some(first_entry) = iter.next() else {
+        // Type information and field names are stored as interleaved continuation streams:
+        // NSUP_TYPEINFO + 2*n contains type bytes, while NSUP_TYPEINFO + 2*n + 1 contains field
+        // names. Either stream may end before the other one.
+        let type_info_start = u64::from(NSUP_TYPEINFO);
+        let mut chunks = Vec::new();
+        for entry in self.id0.sup_range(self.netnode(), ARRAY_SUP_TAG) {
+            let (index, value) = entry?;
+            let index = index.into_u64();
+            if index < type_info_start {
+                continue;
+            }
+            let offset = index - type_info_start;
+            if offset >= 0x1000 {
+                break;
+            }
+            chunks.push((offset, value));
+        }
+        let (til_raw, fields_raw) = collect_type_info_chunks(chunks);
+        if til_raw.is_empty() {
             return Ok(None);
-        };
-        let mut til_raw: Vec<u8> = first_entry.value.to_vec();
+        }
 
-        // convert the value into fields
-        // usually this string ends with \x00, but maybe there is no garanty for that.
-        // TODO what if there is more fields that can fit a id0 entry
-        let field_names = if let Some(fields_entry) = iter.next() {
-            let value = parse_maybe_cstr(&fields_entry.value);
+        // Convert the reassembled field-name stream into individual fields. It usually ends with
+        // \x00, but there is no guarantee that the terminator is present.
+        let field_names = if !fields_raw.is_empty() {
+            let value = parse_maybe_cstr(&fields_raw);
             crate::ida_reader::split_strings_from_array(value)
                 .ok_or_else(|| anyhow!("Invalid Fields for TIL Type"))?
         } else {
-            // no fields
-            // TODO what if the type requires a continuation but it have no
-            // fields, does it just skip 0x3001? If so can't use
-            // EntryTagContinuousSubkeys above
             vec![vec![]]
         };
-
-        // condensate the data continuation into a single buffer
-        til_raw.extend(iter.flat_map(|e| &e.value[..]));
 
         // create the raw type
         let til = Type::new_from_id0(info, &til_raw, field_names)?;
@@ -294,6 +294,66 @@ impl<'a, K: IDAKind> AddressInfo<'a, K> {
                     .map(SubtypeId)
                     .ok_or_else(|| anyhow!("Invalid tinfo_ref index value"))
             })
+    }
+}
+
+fn collect_type_info_chunks<'a>(
+    chunks: impl IntoIterator<Item = (u64, &'a [u8])>,
+) -> (Vec<u8>, Vec<u8>) {
+    let mut result = [Vec::new(), Vec::new()];
+    let mut expected_offset = [0, 1];
+    let mut complete = [false, false];
+
+    for (offset, value) in chunks {
+        let stream = (offset & 1) as usize;
+        if complete[stream] {
+            continue;
+        }
+        if offset != expected_offset[stream] {
+            complete[stream] = true;
+            continue;
+        }
+        result[stream].extend_from_slice(value);
+        expected_offset[stream] += 2;
+    }
+
+    let [type_info, fields] = result;
+    (type_info, fields)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::collect_type_info_chunks;
+
+    #[test]
+    fn type_info_and_field_continuations_are_reassembled_independently() {
+        let chunks: [(u64, &[u8]); 5] = [
+            (0, b"type-0"),
+            (1, b"fields-0"),
+            (2, b"type-1"),
+            (3, b"fields-1"),
+            (4, b"type-2"),
+        ];
+
+        let (type_info, fields) = collect_type_info_chunks(chunks);
+
+        assert_eq!(type_info, b"type-0type-1type-2");
+        assert_eq!(fields, b"fields-0fields-1");
+    }
+
+    #[test]
+    fn a_gap_ends_only_its_own_continuation_stream() {
+        let chunks: [(u64, &[u8]); 4] = [
+            (0, b"type-0"),
+            (1, b"fields-0"),
+            (3, b"fields-1"),
+            (4, b"not-type-1"),
+        ];
+
+        let (type_info, fields) = collect_type_info_chunks(chunks);
+
+        assert_eq!(type_info, b"type-0");
+        assert_eq!(fields, b"fields-0fields-1");
     }
 }
 
