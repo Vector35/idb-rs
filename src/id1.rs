@@ -1,7 +1,10 @@
 use anyhow::{anyhow, ensure, Result};
 use flag::flags::inst_info::*;
+use num_traits::CheckedAdd;
 
 pub mod flag;
+mod sparse;
+pub use sparse::SparseFlags;
 
 use std::ops::{Div, Range, Rem};
 
@@ -10,9 +13,14 @@ use crate::id0::ID0Section;
 use crate::ida_reader::{IdbRead, IdbReadKind};
 use crate::{Address, IDAKind, SectionReader, VaVersion};
 
+// TODO pages are always 0x2000?
+const PAGE_SIZE: usize = 0x2000;
+
 #[derive(Clone, Debug)]
 pub struct ID1Section<K: IDAKind> {
     pub seglist: Vec<SegInfo<K>>,
+    /// Flags of the ranges without file data, 9.1+ databases only.
+    pub sparse: Option<SparseFlags<K>>,
 }
 
 impl<K: IDAKind> SectionReader<K> for ID1Section<K> {
@@ -28,8 +36,6 @@ impl<K: IDAKind> SectionReader<K> for ID1Section<K> {
 
 impl<K: IDAKind> ID1Section<K> {
     fn read_inner(input: &mut impl std::io::Read) -> Result<Self> {
-        // TODO pages are always 0x2000?
-        const PAGE_SIZE: usize = 0x2000;
         let mut buf = vec![0; PAGE_SIZE];
         input.read_exact(&mut buf[..])?;
         let mut cursor = &buf[..];
@@ -39,7 +45,7 @@ impl<K: IDAKind> ID1Section<K> {
 
         // sort segments by address
         let mut overlay_check = match &seglist_raw {
-            SegInfoRaw::VaN(segs) => {
+            SegInfoRaw::VaN(segs) | SegInfoRaw::VaXOffsets(segs) => {
                 segs.iter().map(|s| s.address.clone()).collect()
             }
             SegInfoRaw::VaX(segs) => segs.clone(),
@@ -49,7 +55,7 @@ impl<K: IDAKind> ID1Section<K> {
         // make sure segments don't overlap
         let overlap = overlay_check.windows(2).any(|segs| {
             let [seg1, seg2] = segs else { unreachable!() };
-            seg1.end >= seg2.start
+            seg1.end > seg2.start
         });
         ensure!(!overlap);
 
@@ -70,40 +76,12 @@ impl<K: IDAKind> ID1Section<K> {
 
         // populated the seglist data using the pages
         let seglist = match seglist_raw {
-            SegInfoRaw::VaN(mut segs) => {
-                // sort it by disk offset, so we can read one after the other
-                segs.sort_unstable_by_key(|s| s.offset);
-                let mut current_offset = K::Usize::try_from(PAGE_SIZE).unwrap();
-                segs.into_iter()
-                    .map(|seg| {
-                        // skip any gaps
-                        match seg.offset.cmp(&current_offset) {
-                            std::cmp::Ordering::Less => {
-                                return Err(anyhow!("invalid offset"))
-                            }
-                            std::cmp::Ordering::Greater => {
-                                // TODO can be any deleted sector contains randon data?
-                                // skip intermidiate bytes, also ensuring they are all zeros
-                                ensure_all_bytes_are_zero(
-                                    std::io::Read::take(
-                                        &mut *input,
-                                        (seg.offset - current_offset).into(),
-                                    ),
-                                    &mut buf,
-                                )?;
-                                current_offset = seg.offset;
-                            }
-                            std::cmp::Ordering::Equal => {}
-                        }
-                        let len = seg.address.end - seg.address.start;
-                        let data = read_data::<K>(&mut *input, len)?;
-                        current_offset += len * K::Usize::from(4u8);
-                        Ok(SegInfo {
-                            offset: Address::from_raw(seg.address.start),
-                            data,
-                        })
-                    })
-                    .collect::<Result<_>>()?
+            SegInfoRaw::VaN(segs) => {
+                read_by_offset(&mut *input, segs, &mut buf, true)?
+            }
+            // kind 4 (IDA 9.5+) leaves stale data of moved ranges in the gaps
+            SegInfoRaw::VaXOffsets(segs) => {
+                read_by_offset(&mut *input, segs, &mut buf, false)?
             }
             SegInfoRaw::VaX(segs) => {
                 // the data for the segments are stored sequentialy in disk
@@ -128,7 +106,10 @@ impl<K: IDAKind> ID1Section<K> {
         // deleted segment
         ignore_bytes(input, &mut buf)?;
 
-        Ok(Self { seglist })
+        Ok(Self {
+            seglist,
+            sparse: None,
+        })
     }
 
     fn read_header(
@@ -166,13 +147,28 @@ impl<K: IDAKind> ID1Section<K> {
                 Ok((u32::from(npages), SegInfoRaw::VaN(seglist)))
             }
             VaVersion::VaX => {
-                let unknown_always3 = input.read_u32()?;
-                ensure!(unknown_always3 == 3);
+                let kind = input.read_u32()?;
                 let nsegments = input.read_u32()?;
                 let unknown_always2048 = input.read_u32()?;
                 ensure!(unknown_always2048 == 2048);
                 let npages = input.read_u32()?;
 
+                if kind == 4 {
+                    let seglist = (0..nsegments)
+                        .map(|_| {
+                            let start = input.read_usize()?;
+                            let end = input.read_usize()?;
+                            ensure!(start <= end);
+                            let offset = input.read_usize()?;
+                            Ok(SegInfoVaNRaw {
+                                address: start..end,
+                                offset,
+                            })
+                        })
+                        .collect::<Result<_>>()?;
+                    return Ok((npages, SegInfoRaw::VaXOffsets(seglist)));
+                }
+                ensure!(kind == 3, "Unknown ID1 VA* kind {kind}");
                 let seglist = (0..nsegments)
                     // TODO the reference code uses the magic version, should it use
                     // the version itself instead?
@@ -224,43 +220,200 @@ impl<K: IDAKind> ID1Section<K> {
     }
 
     pub fn byte_by_address(&self, address: Address<K>) -> Option<ByteInfo> {
-        self.segment_by_address(address).map(|seg| {
-            let idx: usize = (address.into_raw() - seg.offset.into_raw())
-                .try_into()
-                .unwrap();
-            ByteInfo(seg.data[idx])
+        self.segment_by_address(address)
+            .map(|seg| {
+                let idx: usize = (address.into_raw() - seg.offset.into_raw())
+                    .try_into()
+                    .unwrap();
+                ByteInfo(seg.data[idx])
+            })
+            .or_else(|| {
+                self.sparse
+                    .as_ref()?
+                    .flags(address.into_raw())
+                    .map(ByteInfo)
+            })
+    }
+
+    /// Contiguous address ranges that have flags, in address order. A range
+    /// can be stored partly in ID1 and partly in IDAS.
+    pub fn ranges(
+        &self,
+    ) -> impl Iterator<Item = Range<Address<K>>> + use<'_, K> {
+        let mut stored = self.stored_ranges().peekable();
+        std::iter::from_fn(move || {
+            let mut range = stored.next()?;
+            while let Some(next) = stored.next_if(|r| r.start == range.end) {
+                range.end = next.end;
+            }
+            Some(to_address_range(range))
         })
+    }
+
+    /// The range from [`Self::ranges`] that contains `address`.
+    pub fn range_by_address(
+        &self,
+        address: Address<K>,
+    ) -> Option<Range<Address<K>>> {
+        let address = address.into_raw();
+        let (_, range) = self.ranges_around(|r| r.end <= address);
+        range
+            .filter(|r| r.start <= address)
+            .map(|r| to_address_range(self.contiguous(r)))
+    }
+
+    /// The first range from [`Self::ranges`] that starts after `address`.
+    pub fn next_range(&self, address: Address<K>) -> Option<Range<Address<K>>> {
+        let address = address.into_raw();
+        let (_, range) = self.ranges_around(|r| r.start <= address);
+        let mut range = self.contiguous(range?);
+        if range.start <= address {
+            // continues the range that contains `address`
+            let end = range.end;
+            let (_, next) = self.ranges_around(|r| r.start < end);
+            range = self.contiguous(next?);
+        }
+        Some(to_address_range(range))
+    }
+
+    /// The last range from [`Self::ranges`] that ends before `address`, and
+    /// before the range that contains it.
+    pub fn prev_range(&self, address: Address<K>) -> Option<Range<Address<K>>> {
+        let address = address.into_raw();
+        let (range, _) = self.ranges_around(|r| r.end <= address);
+        let mut range = self.contiguous(range?);
+        if range.end > address {
+            // part of the range that contains `address`
+            let start = range.start;
+            let (prev, _) = self.ranges_around(|r| r.end <= start);
+            range = self.contiguous(prev?);
+        }
+        Some(to_address_range(range))
+    }
+
+    /// Extend a stored range with the ranges that touch it. ID1 and IDAS
+    /// don't store touching ranges themselves, but a range of one can touch
+    /// a range of the other.
+    fn contiguous(&self, mut range: Range<K::Usize>) -> Range<K::Usize> {
+        loop {
+            let start = range.start;
+            match self.ranges_around(|r| r.end < start).1 {
+                Some(prev) if prev.end == start && prev.start < start => {
+                    range.start = prev.start
+                }
+                _ => break,
+            }
+        }
+        loop {
+            let end = range.end;
+            match self.ranges_around(|r| r.start < end).1 {
+                Some(next) if next.start == end && next.end > end => {
+                    range.end = next.end
+                }
+                _ => break,
+            }
+        }
+        range
+    }
+
+    /// The last range for which `before` holds and the first range for which
+    /// it does not. `before` must hold for a prefix of the ranges in address
+    /// order.
+    pub(crate) fn ranges_around(
+        &self,
+        before: impl Fn(&Range<K::Usize>) -> bool,
+    ) -> (Option<Range<K::Usize>>, Option<Range<K::Usize>>) {
+        let id1 = self.seglist.partition_point(|seg| before(&seg.raw_range()));
+        let sparse = self.sparse_ranges();
+        let sparse_idx = sparse.partition_point(&before);
+        let last = [
+            id1.checked_sub(1).map(|i| self.seglist[i].raw_range()),
+            sparse_idx.checked_sub(1).map(|i| sparse[i].clone()),
+        ]
+        .into_iter()
+        .flatten()
+        .max_by_key(|r| r.start);
+        let first = [
+            self.seglist.get(id1).map(SegInfo::raw_range),
+            sparse.get(sparse_idx).cloned(),
+        ]
+        .into_iter()
+        .flatten()
+        .min_by_key(|r| r.start);
+        (last, first)
+    }
+
+    fn sparse_ranges(&self) -> &[Range<K::Usize>] {
+        self.sparse.as_ref().map_or(&[], |sparse| sparse.ranges())
+    }
+
+    /// Ranges as stored in ID1 and IDAS, in address order.
+    fn stored_ranges(
+        &self,
+    ) -> impl Iterator<Item = Range<K::Usize>> + use<'_, K> {
+        let mut id1 = self.seglist.iter().map(SegInfo::raw_range).peekable();
+        let mut sparse = self.sparse_ranges().iter().cloned().peekable();
+        std::iter::from_fn(move || match (id1.peek(), sparse.peek()) {
+            (Some(a), Some(b)) if b.start < a.start => sparse.next(),
+            (Some(_), _) => id1.next(),
+            (None, _) => sparse.next(),
+        })
+    }
+
+    /// Flags of the addresses in `range`, which must be inside one of
+    /// [`Self::stored_ranges`].
+    fn range_bytes(
+        &self,
+        range: Range<K::Usize>,
+    ) -> Box<dyn DoubleEndedIterator<Item = (Address<K>, ByteInfo)> + '_> {
+        match self.segment_by_address(Address::from_raw(range.start)) {
+            Some(seg) => {
+                let base = seg.offset.into_raw();
+                let idx =
+                    |a: K::Usize| -> usize { (a - base).try_into().unwrap() };
+                Box::new(
+                    seg.data[idx(range.start)..idx(range.end)]
+                        .iter()
+                        .enumerate()
+                        .map(move |(i, b)| {
+                            let addr =
+                                range.start + K::Usize::try_from(i).unwrap();
+                            (Address::from_raw(addr), ByteInfo(*b))
+                        }),
+                )
+            }
+            None => Box::new(
+                self.sparse
+                    .iter()
+                    .flat_map(move |sparse| sparse.range_flags(range.clone()))
+                    .map(|(a, flags)| (Address::from_raw(a), ByteInfo(flags))),
+            ),
+        }
     }
 
     pub fn all_bytes(
         &self,
     ) -> impl Iterator<Item = (Address<K>, ByteInfo)> + use<'_, K> {
-        self.seglist.iter().flat_map(|seg| {
-            seg.data.iter().enumerate().map(|(i, b)| {
-                let raw_addr =
-                    seg.offset.into_raw() + K::Usize::try_from(i).unwrap();
-                (Address::from_raw(raw_addr), ByteInfo(*b))
-            })
-        })
+        self.stored_ranges().flat_map(|r| self.range_bytes(r))
     }
 
     pub fn all_bytes_no_tails(
         &self,
     ) -> impl Iterator<Item = (Address<K>, ByteInfo, usize)> + use<'_, K> {
-        self.seglist.iter().flat_map(|seg| {
-            seg.data
-                .iter()
-                .enumerate()
-                .filter(|(_i, b)| !ByteInfo(**b).byte_type().is_tail())
-                .map(|(i, b)| {
-                    let size = 1 + seg.data[i + 1..]
-                        .iter()
-                        .take_while(|x| ByteInfo(**x).byte_type().is_tail())
-                        .count();
-                    let raw_addr =
-                        seg.offset.into_raw() + K::Usize::try_from(i).unwrap();
-                    (Address::from_raw(raw_addr), ByteInfo(*b), size)
-                })
+        self.stored_ranges().flat_map(|r| {
+            let mut bytes = self.range_bytes(r).peekable();
+            std::iter::from_fn(move || loop {
+                let (address, byte) = bytes.next()?;
+                if byte.byte_type().is_tail() {
+                    continue;
+                }
+                let mut size = 1;
+                while bytes.next_if(|(_, b)| b.byte_type().is_tail()).is_some()
+                {
+                    size += 1;
+                }
+                return Some((address, byte, size));
+            })
         })
     }
 
@@ -270,45 +423,31 @@ impl<K: IDAKind> ID1Section<K> {
         &self,
         ea: Address<K>,
     ) -> Option<(Address<K>, ByteInfo)> {
-        // TODO can data span multiple segments? If so this is incorrect
-        let (seg, seg_offset_max) = match self.segment_idx_by_address(ea) {
-            // if the segment that contains the offset, check bytes from
-            // the current address to the start of the segment
-            Ok(idx) => {
-                let seg = &self.seglist[idx];
-                let addr: usize =
-                    ((ea - seg.offset).into_raw()).try_into().unwrap();
-                (seg, addr + 1)
-            }
-            // Not part not part of any segment, use the previous segment,
-            // check all bytes in the segment
-            Err(idx) => {
-                let seg = self.seglist.get(idx.checked_sub(1)?).unwrap();
-                (seg, seg.len())
-            }
+        // TODO can data span multiple ranges? If so this is incorrect
+        let ea = ea.into_raw();
+        // the range that contains the address, or the one before it
+        let (range, _) = self.ranges_around(|r| r.start <= ea);
+        let range = range?;
+        let end = if ea < range.end {
+            ea + K::Usize::from(1u8)
+        } else {
+            range.end
         };
-        seg.all_bytes()
-            .take(seg_offset_max)
+        self.range_bytes(range.start..end)
             .rev()
             .find(|(_addr, byte)| !byte.byte_type().is_tail())
     }
 
-    // get the address of the next non tail thing
+    // get the address of the next non tail thing after `ea`
     pub fn next_not_tail(
         &self,
         ea: Address<K>,
     ) -> Option<(Address<K>, ByteInfo)> {
-        // TODO can data span multiple segments? If so this is incorrect
-        let segs = match self.segment_idx_by_address(ea) {
-            // if the segment that contains the offset
-            Ok(idx) => &self.seglist[idx..],
-            // Not part not part of any segment use the previous
-            Err(idx) => &self.seglist[idx.checked_sub(1)?..],
-        };
-        segs.iter().find_map(|seg| {
-            seg.all_bytes()
-                .find(|(_addr, byte_info)| !byte_info.byte_type().is_tail())
-        })
+        let start = ea.into_raw().checked_add(&K::Usize::from(1u8))?;
+        self.stored_ranges()
+            .filter(|r| r.end > start)
+            .flat_map(|r| self.range_bytes(r.start.max(start)..r.end))
+            .find(|(_addr, byte)| !byte.byte_type().is_tail())
     }
 }
 
@@ -320,6 +459,11 @@ pub struct SegInfo<K: IDAKind> {
 }
 
 impl<K: IDAKind> SegInfo<K> {
+    fn raw_range(&self) -> Range<K::Usize> {
+        let start = self.offset.into_raw();
+        start..start + K::Usize::try_from(self.data.len()).unwrap()
+    }
+
     /// len of the segment in bytes
     pub fn len(&self) -> usize {
         self.data.len()
@@ -811,6 +955,10 @@ fn get_forced_operand<K: IDAKind>(
 enum SegInfoRaw<K: IDAKind> {
     VaN(Vec<SegInfoVaNRaw<K>>),
     VaX(Vec<Range<K::Usize>>),
+    /// `VA*` kind 4 (IDA 9.5): every range carries its byte offset in the
+    /// section. Ranges are not stored in address order, and the space between
+    /// them can hold stale data from ranges IDA moved.
+    VaXOffsets(Vec<SegInfoVaNRaw<K>>),
 }
 
 #[derive(Clone, Debug)]
@@ -852,6 +1000,47 @@ fn ignore_bytes(mut input: impl IdbRead, buf: &mut [u8]) -> Result<()> {
         };
     }
     Ok(())
+}
+
+fn to_address_range<K: IDAKind>(range: Range<K::Usize>) -> Range<Address<K>> {
+    Address::from_raw(range.start)..Address::from_raw(range.end)
+}
+
+/// Read ranges that are stored at their own offset in the section and return
+/// them in address order. If `zero_gaps`, the bytes between ranges must be
+/// zero.
+fn read_by_offset<K: IDAKind>(
+    mut input: impl IdbRead,
+    mut segs: Vec<SegInfoVaNRaw<K>>,
+    buf: &mut [u8],
+    zero_gaps: bool,
+) -> Result<Vec<SegInfo<K>>> {
+    segs.sort_unstable_by_key(|s| s.offset);
+    let mut current_offset = K::Usize::try_from(PAGE_SIZE).unwrap();
+    let mut seglist = segs
+        .into_iter()
+        .map(|seg| {
+            ensure!(seg.offset >= current_offset, "Invalid ID1 range offset");
+            let gap = std::io::Read::take(
+                &mut input,
+                (seg.offset - current_offset).into(),
+            );
+            if zero_gaps {
+                ensure_all_bytes_are_zero(gap, buf)?;
+            } else {
+                ignore_bytes(gap, buf)?;
+            }
+            let len = seg.address.end - seg.address.start;
+            let data = read_data::<K>(&mut input, len)?;
+            current_offset = seg.offset + len * K::Usize::from(4u8);
+            Ok(SegInfo {
+                offset: Address::from_raw(seg.address.start),
+                data,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    seglist.sort_unstable_by_key(|s| s.offset);
+    Ok(seglist)
 }
 
 fn read_data<K: IDAKind>(

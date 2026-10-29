@@ -363,9 +363,8 @@ pub fn all_address_info<'a, K: IDAKind>(
     id2: Option<&ID2Section<K>>,
     netdelta: Netdelta<K>,
 ) -> Vec<(AddressInfo<'a, K>, usize)> {
-    BytesInfo::new(Some(id1), id2)
-        .all_bytes_no_tails()
-        .into_iter()
+    let mut heads: Vec<_> = BytesInfo::new(Some(id1), id2)
+        .heads()
         .filter(|(_a, b, _len)| {
             // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4b3370
             b.has_name()
@@ -376,6 +375,10 @@ pub fn all_address_info<'a, K: IDAKind>(
                     ByteType::Tail(_) | ByteType::Unknown
                 )
         })
+        .collect();
+    heads.sort_unstable_by_key(|(address, _, _)| *address);
+    heads
+        .into_iter()
         .map(move |(address, byte_info, len)| {
             let addr_info = AddressInfo {
                 id0,

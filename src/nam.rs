@@ -98,8 +98,9 @@ impl<K: IDAKind> NamSection<K> {
                 Ok((npages, nnames, pagesize))
             }
             VaVersion::VaX => {
-                let always3 = input.read_u32()?;
-                ensure!(always3 == 3);
+                // 3 up to IDA 9.4, 4 since IDA 9.5
+                let kind = input.read_u32()?;
+                ensure!(kind == 3 || kind == 4, "Unknown NAM VA* kind {kind}");
                 let one_or_zero = input.read_u32()?;
                 ensure!([0, 1].contains(&one_or_zero));
                 // TODO always2048 have some relation to pagesize?
@@ -113,6 +114,11 @@ impl<K: IDAKind> NamSection<K> {
                 if K::BYTES == 8 {
                     // TODO nnames / 2? Why?
                     nnames /= K::Usize::from(2u8);
+                }
+                if kind == 4 {
+                    // kind 4 stores the page size that kind 3 left implicit
+                    let pagesize = input.read_u64()?;
+                    ensure!(pagesize == DEFAULT_PAGE_SIZE as u64);
                 }
                 Ok((npages, nnames, DEFAULT_PAGE_SIZE.try_into().unwrap()))
             }

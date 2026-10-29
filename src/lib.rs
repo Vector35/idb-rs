@@ -325,7 +325,7 @@ fn read_910_header(
     match version {
         // This code is here just to cause an error on compilation when a new
         // version is added
-        IDBInlineVersion::V910 => {}
+        IDBInlineVersion::V910 | IDBInlineVersion::V950 => {}
     }
     let compression = input.read_u8()?;
     let compression = IDBSectionCompression::from_raw(compression)
@@ -667,6 +667,7 @@ impl IDBVersion {
             5 => Ok(IDBVersion::PreV910(IDBSeparatedVersion::V5)),
             6 => Ok(IDBVersion::PreV910(IDBSeparatedVersion::V6)),
             910 => Ok(IDBVersion::PostV910(IDBInlineVersion::V910)),
+            950 => Ok(IDBVersion::PostV910(IDBInlineVersion::V950)),
             value => Err(anyhow!("Invalid IDBVersion: {value}")),
         }
     }
@@ -698,9 +699,10 @@ impl<'de> Deserialize<'de> for IDBVersion {
                     5 => Ok(IDBVersion::PreV910(IDBSeparatedVersion::V5)),
                     6 => Ok(IDBVersion::PreV910(IDBSeparatedVersion::V6)),
                     910 => Ok(IDBVersion::PostV910(IDBInlineVersion::V910)),
+                    950 => Ok(IDBVersion::PostV910(IDBInlineVersion::V950)),
                     value => Err(E::invalid_value(
                         serde::de::Unexpected::Unsigned(value.into()),
-                        &"u16 value (1 | 4..=6 | 910)",
+                        &"u16 value (1 | 4..=6 | 910 | 950)",
                     )),
                 }
             }
@@ -726,9 +728,10 @@ pub enum IDBSeparatedVersion {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum IDBInlineVersion {
-    // Versions: 9.1
+    // Versions: 9.1 to 9.4
     V910 = 910,
-    // NOTE more will be added in the future
+    // Versions: 9.5
+    V950 = 950,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -916,11 +919,21 @@ impl InlineUnCompressedSections {
     ) -> Result<ID1Section<IDA64>> {
         input.seek(SeekFrom::Start(location.offset))?;
         // TODO find the InnerRef and check the magic/version relation here
-        read_section_uncompressed::<ID1Section<IDA64>, _, _>(
-            input,
+        let mut id1 = read_section_uncompressed::<ID1Section<IDA64>, _, _>(
+            &mut input,
             location.size.get(),
             IDBMagic::IDA2,
-        )
+        )?;
+        if let Some(size) = self.sections.seg_size {
+            input.seek(SeekFrom::Start(
+                self.sections.seg_offset_raw(self.data_start),
+            ))?;
+            let mut data = vec![0; usize::try_from(size.get())?];
+            input.read_exact(&mut data)?;
+            id1.sparse =
+                Some(id1::SparseFlags::read(&data).context("Read IDAS")?);
+        }
+        Ok(id1)
     }
 
     pub fn read_id2<I: IdbBufRead + Seek>(
@@ -1099,7 +1112,7 @@ impl InlineSections {
         }
         offset
     }
-    fn _seg_offset_raw(&self, start: u64) -> u64 {
+    fn seg_offset_raw(&self, start: u64) -> u64 {
         let mut offset = self.til_offset_raw(start);
         if let Some(size) = self.til_size {
             offset += size.get()

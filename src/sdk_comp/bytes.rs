@@ -58,7 +58,7 @@ pub fn chunk_start<K: IDAKind>(
     address: ea_t<K>,
 ) -> Option<ea_t<K>> {
     crate::sdk_comp::range::rangeset_t_find_range(id1, address)
-        .map(|seg| seg.offset)
+        .map(|range| range.start)
 }
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4dede0
@@ -67,7 +67,7 @@ pub fn chunk_size<K: IDAKind>(
     address: ea_t<K>,
 ) -> Option<ea_t<K>> {
     crate::sdk_comp::range::rangeset_t_find_range(id1, address)
-        .map(|seg| ea_t::from_raw(seg.len().try_into().unwrap()))
+        .map(|range| range.end - range.start)
 }
 
 // InnerRef v9.1 fa53bd30-ebf1-4641-80ef-4ddc73db66cd 0x4e2230
@@ -99,35 +99,21 @@ pub fn find_free_chunk<K: IDAKind>(
         }
         end.checked_sub(&start)
             .filter(|block_size| *block_size >= size)
+            .map(|_| start)
     }
-    let start_idx = match id1.segment_idx_by_address(start) {
-        Ok(idx) => idx,
-        Err(next_idx) => {
-            let segment = &id1.seglist[next_idx];
-            if let Some(ea) = fit_between::<K>(
-                start.into_raw(),
-                segment.offset.into_raw(),
-                size,
-                alignment,
-            ) {
-                // space between start and first block have this size
-                return Some(ea_t::from_raw(ea));
-            }
-            next_idx
+    let mut free_start = start.into_raw();
+    for range in id1.ranges() {
+        let (range_start, range_end) =
+            (range.start.into_raw(), range.end.into_raw());
+        if range_end <= free_start {
+            continue;
         }
-    };
-    for segs in id1.seglist[start_idx..].windows(2) {
-        let [seg1, seg2] = segs else {
-            unreachable!();
-        };
-        if let Some(ea) = fit_between::<K>(
-            seg1.offset.into_raw() + K::Usize::try_from(seg1.len()).unwrap(),
-            seg2.offset.into_raw(),
-            size,
-            alignment,
-        ) {
+        if let Some(ea) =
+            fit_between::<K>(free_start, range_start, size, alignment)
+        {
             return Some(ea_t::from_raw(ea));
         }
+        free_start = range_end;
     }
     None
 }

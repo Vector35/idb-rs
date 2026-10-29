@@ -17,7 +17,8 @@ There are three main kinds of IDB files:
 * V0, created by older version, around version 5.0 and prior.
 * V1, V3 and V4, used between around version 5.0 and 6.0, NOTE V2 is unknown.
 * V5 and V6, used between around version 6.0 and 9.0.
-* V910 used after version 9.1
+* V910 used by versions 9.1 to 9.4.
+* V950 used after version 9.5, same header as V910.
 
 Those kinds of IDB files can be divided in two main layouts:
 
@@ -82,7 +83,7 @@ The IDB file contains the following sections:
 * ID2: Binary data and information for a few bytes in certain ranges.
 * NAM: Some kind a "cache" for labels.
 * TIL: Database for local types and symbols.
-* SEG: Unknown data, only older versions of IDA contains this section.
+* SEG: In versions 9.1+, the flags of address ranges without file data (`IDAS`).
 
 
 ### ID0
@@ -116,6 +117,16 @@ It's possible that some data of this section is not parsed, because it's was see
 Although this is possibly some vestigial data from the original binary.
 
 
+The `VA*` header has a kind field: 3 up to version 9.4, 4 since 9.5.
+Kind 3 lists `(start, end)` per range and stores the ranges one after the other.
+Kind 4 lists `(start, end, offset)` per range, `offset` being the byte offset of
+the range data in the section. Kind 4 ranges are not stored in address order,
+and the space between them can hold stale data from ranges IDA moved.
+
+Since 9.1, ranges without file data (`.bss`, `extern`, alignment padding) are
+not in ID1 at all; their flags are in the SEG section.
+
+
 ### ID2
 
 Similar to ID1, but contains information for only a few bytes of the range.
@@ -127,6 +138,10 @@ It's a sparse version of ID1.
 The Nam section contains memory address, is known to point to labels.
 
 It's probably used as a cache to speed up the search and goto.
+
+
+The `VA*` header kind is 3 up to version 9.4 and 4 since 9.5; kind 4 adds a
+`u64` page size (0x2000) after the names count.
 
 
 ### TIL
@@ -143,4 +158,32 @@ NOTE: All IDA versions include a `til` directory in it's installation folder wit
 
 ### SEG
 
-The contents of this data each format is not known at the time.
+Older versions use a format that is not known at the time.
+
+Since 9.1 the section holds the flags of the address ranges that have no bytes
+in ID1, as sparse records. Numbers use IDA's packed encoding (`dd`/`dq`):
+
+```txt
+"IDAS" u32(0x5555A51D) dd(version = 0)
+dd(n) n * (dq(start delta), dq(size))   ranges whose flags are stored here
+dd(m) m * (dq(start delta), dq(size))   sub-ranges whose bytes have a value (0)
+records: dq(address delta) dd(flags) dq(item size)
+```
+
+Range starts are deltas from the end of the previous range. Record addresses
+are deltas from the previous record, and the records end with a delta that
+makes the address `BADADDR`. A record sets the flags of its address; the next
+`item size - 1` bytes are tails (`FF_TAIL`) unless a later record names them.
+Bytes in the second list also have `FF_IVL` set.
+
+## Argument locations
+
+`__usercall`-style function types store a location for the return value and
+each argument. A first byte other than `0xFF` is a short form (a register, a
+register pair, or the stack). After `0xFF` comes a `dt`: `0x80 | n` starts `n`
+scattered parts, each `location dt(offset) de(size)`; otherwise the byte is
+`0x20 | ALOC_*`, followed by `dt(reg) dt(offset)` for one register, two `dt`
+registers for a pair, `dt(reg)` and a 64-bit value for register relative, or a
+64-bit value for stack and static locations. 64-bit values are two `de`, low
+half first. Stack arguments are stored without their offset (short form `0x80`);
+IDA computes the offsets from the argument sizes.
